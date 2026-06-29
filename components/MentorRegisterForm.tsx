@@ -63,6 +63,7 @@ export function MentorRegisterForm() {
     }
     if (data.session) {
       router.push('/mentor/onboarding');
+      router.refresh();
       return;
     }
     setPendingVerification(true);
@@ -77,6 +78,7 @@ export function MentorRegisterForm() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         router.push('/mentor/onboarding');
+        router.refresh();
       }
     });
     return () => subscription.unsubscribe();

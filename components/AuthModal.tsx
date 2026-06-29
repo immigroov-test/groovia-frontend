@@ -40,6 +40,8 @@ function AuthModalInner() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSent, setResendSent] = useState(false);
 
+  const isMentor = role === 'mentor';
+
   useEffect(() => {
     if (isOpen) {
       setRole(paramRole);
@@ -59,6 +61,18 @@ function AuthModalInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  // If the user confirms their email in another tab, onAuthStateChange fires here too —
+  // move them forward instead of leaving them stuck on the "verify your email" screen.
+  useEffect(() => {
+    if (!pendingVerification) return;
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sessionObj) => {
+      if (event === 'SIGNED_IN' && sessionObj) goAfterAuth();
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingVerification, isMentor, next]);
+
   function close() {
     const p = new URLSearchParams(params.toString());
     p.delete('auth');
@@ -75,8 +89,6 @@ function AuthModalInner() {
     setForgotSent(false);
     if (m === 'forgot') setForgotEmail(email);
   }
-
-  const isMentor = role === 'mentor';
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
@@ -128,10 +140,18 @@ function AuthModalInner() {
       return;
     }
     if (data.session) {
-      window.location.href = isMentor ? '/mentor' : (next ?? '/chat');
+      goAfterAuth();
       return;
     }
     setPendingVerification(true);
+  }
+
+  // Navigate within the app shell (left nav stays mounted; only the page swaps) and
+  // refresh server components so they pick up the new session. No full-page reload.
+  function goAfterAuth() {
+    const dest = isMentor ? '/mentor' : (next ?? '/chat');
+    router.push(dest);
+    router.refresh();
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -149,7 +169,7 @@ function AuthModalInner() {
       setError(loginError.message);
       return;
     }
-    window.location.href = isMentor ? '/mentor/onboarding' : (next ?? '/chat');
+    goAfterAuth();
   }
 
   async function handleResend() {
