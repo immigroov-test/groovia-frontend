@@ -19,9 +19,10 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="h-screen overflow-hidden">
+      {/* TopNav is a fixed floating overlay (logo + auto-hiding nav), not in flow. */}
       <TopNav authed={!!user} email={user?.email ?? null} role={role} />
-      <main className="flex-1 min-h-0 overflow-y-auto">
+      <main id="app-scroll" className="h-full overflow-y-auto pt-16">
         <PageTransition>{children}</PageTransition>
       </main>
       <AuthModal />
