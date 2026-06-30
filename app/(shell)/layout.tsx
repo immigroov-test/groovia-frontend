@@ -1,7 +1,5 @@
 import { createClient } from '../../lib/supabase/server';
-import { Sidebar } from '../../components/Sidebar';
-import { MobileNav } from '../../components/MobileNav';
-import { TopBar } from '../../components/TopBar';
+import { TopNav } from '../../components/TopNav';
 import { AuthModal } from '../../components/AuthModal';
 import { PageTransition } from '../../components/PageTransition';
 import { IdleLogout } from '../../components/IdleLogout';
@@ -21,18 +19,11 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen overflow-hidden">
-      <MobileNav authed={!!user} email={user?.email ?? null} role={role} />
-      <Sidebar authed={!!user} role={role} />
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-        {/* TopBar handles auth on desktop only; MobileNav handles it on mobile */}
-        <div className="hidden md:block">
-          <TopBar />
-        </div>
-        <main className="flex-1 min-h-0 overflow-y-auto pb-24 md:pb-0">
-          <PageTransition>{children}</PageTransition>
-        </main>
-      </div>
+    <div className="flex flex-col h-screen overflow-hidden">
+      <TopNav authed={!!user} email={user?.email ?? null} role={role} />
+      <main className="flex-1 min-h-0 overflow-y-auto">
+        <PageTransition>{children}</PageTransition>
+      </main>
       <AuthModal />
       <IdleLogout authed={!!user} />
     </div>
