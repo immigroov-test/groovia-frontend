@@ -82,7 +82,7 @@ function safeSetMessages(messages: ChatMessage[]): void {
 }
 
 // ↓ Adjust these two values to tune the visual balance
-const LANDMARKS_OPACITY = 0.12;       // 0.0 = invisible  · 1.0 = fully visible
+const LANDMARKS_OPACITY = 0.22;       // 0.0 = invisible  · 1.0 = fully visible
 const CHAT_INPUT_OPACITY = 0.92;      // 0.7 = see-through · 1.0 = fully white
 
 export default function ChatInterface({ authed }: Props) {

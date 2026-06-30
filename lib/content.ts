@@ -19,9 +19,9 @@ export const UI_CONTENT = {
     title: "Hi, I'm Groovia.",
     tagline: 'The AI assistant of Immigroov.',
     intro:
-      "Tell me where you want to go — I'll plan the route and connect you with people who've already made the move.",
+      "Tell me where you want to go, and I'll plan the route and connect you with people who've already made the move.",
     movement:
-      "Immigroov isn't just a platform — it's a movement. A global community of people helping people move smarter, together.",
+      "Immigroov isn't just a platform, it's a movement. A global community of people helping people move smarter, together.",
     features: [
       'Discover 3–5 countries that fit your skills and budget.',
       "Book meetings with real mentors who've already made the move.",

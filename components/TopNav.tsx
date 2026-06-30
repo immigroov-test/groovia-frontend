@@ -1,9 +1,9 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, LogOut, LogIn } from 'lucide-react';
+import { Menu, X, LogOut, LogIn } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UI_CONTENT } from '../lib/content';
 import { clearLocalChat } from '../lib/chatStorage';
@@ -16,28 +16,13 @@ interface Props {
   role?: string | null;
 }
 
-// Floating top nav: the logo stays fixed top-left (no background, always visible);
-// the links + auth auto-hide on scroll, leaving a chevron arrow you can click to
-// expand (arrow ▲) or collapse (arrow ▼).
+// Fixed top nav: floating logo (no background) on the left, a centered links pill,
+// and auth on the right. Always visible. Mobile uses a hamburger menu.
 export function TopNav({ authed, email, role }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const [open, setOpen] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-
-  useEffect(() => {
-    const el = document.getElementById('app-scroll');
-    if (!el) return;
-    let lastY = el.scrollTop;
-    const onScroll = () => {
-      const y = el.scrollTop;
-      if (y < 10) setOpen(true);            // at the top → show
-      else if (y > lastY + 6) setOpen(false); // scrolling down → hide
-      lastY = y;
-    };
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
 
   function hrefFor(realHref: string, gated: boolean): string {
     if (!gated || authed) return realHref;
@@ -64,36 +49,24 @@ export function TopNav({ authed, email, role }: Props) {
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),
   ];
 
-  const hideCls = open ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-16 pointer-events-none';
-
   return (
-    <>
-      {/* Floating logo — fixed, transparent, always visible */}
-      <Link href="/chat" aria-label="Immigroov home" className="fixed top-4 left-5 z-50 inline-flex items-center">
-        <Image
-          src="/Immigroov_Transparent_Logo.png"
-          alt="Immigroov"
-          width={280}
-          height={60}
-          priority
-          className="object-contain"
-          style={{ height: '26px', width: 'auto' }}
-        />
-      </Link>
+    <header className="fixed top-0 inset-x-0 z-40 h-16">
+      <div className="relative mx-auto max-w-6xl h-full px-4 sm:px-6 flex items-center justify-between gap-4">
+        {/* Floating logo — no background */}
+        <Link href="/chat" aria-label="Immigroov home" className="shrink-0 inline-flex items-center">
+          <Image
+            src="/Immigroov_Transparent_Logo.png"
+            alt="Immigroov"
+            width={280}
+            height={60}
+            priority
+            className="object-contain"
+            style={{ height: '26px', width: 'auto' }}
+          />
+        </Link>
 
-      {/* Arrow toggle — fixed, always visible; flips direction with state */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? 'Hide menu' : 'Show menu'}
-        className="fixed top-3.5 right-5 z-50 h-9 w-9 rounded-full bg-card shadow-[0_4px_14px_-4px_rgba(15,23,42,0.25)] flex items-center justify-center text-brand-900 hover:bg-brand-50 transition-colors"
-      >
-        {open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-      </button>
-
-      {/* Desktop: centered links pill */}
-      <div className={cn('hidden md:flex fixed top-3 left-1/2 -translate-x-1/2 z-40 transition-all duration-300', hideCls)}>
-        <nav className="flex items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5">
+        {/* Desktop: centered links pill */}
+        <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5">
           {nav.map(({ href, label, gated }) => {
             const active = pathname === href;
             return (
@@ -110,37 +83,47 @@ export function TopNav({ authed, email, role }: Props) {
             );
           })}
         </nav>
-      </div>
 
-      {/* Desktop: auth (to the left of the arrow toggle) */}
-      <div className={cn('hidden md:flex fixed top-3.5 right-16 z-40 items-center gap-2 transition-all duration-300', hideCls)}>
-        {authed ? (
-          <>
-            <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)]">
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
-                {(email?.[0] ?? 'U').toUpperCase()}
+        {/* Desktop: auth on the right */}
+        <div className="hidden md:flex items-center gap-2 shrink-0">
+          {authed ? (
+            <>
+              <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)]">
+                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
+                  {(email?.[0] ?? 'U').toUpperCase()}
+                </div>
+                <span className="text-sm text-brand-900 font-medium max-w-[140px] truncate">{email}</span>
               </div>
-              <span className="text-sm text-brand-900 font-medium max-w-[140px] truncate">{email}</span>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut} className="bg-card/90 backdrop-blur-md">
-              <LogOut className="h-4 w-4" /> Sign out
+              <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut} className="bg-card/90 backdrop-blur-md">
+                <LogOut className="h-4 w-4" /> Sign out
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={openSignIn}>
+              <LogIn className="h-4 w-4" /> Login
             </Button>
-          </>
-        ) : (
-          <Button size="sm" onClick={openSignIn}>
-            <LogIn className="h-4 w-4" /> Login
-          </Button>
-        )}
+          )}
+        </div>
+
+        {/* Mobile: hamburger */}
+        <button
+          type="button"
+          className="md:hidden p-2 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_14px_-4px_rgba(15,23,42,0.25)] text-brand-900"
+          aria-label="Menu"
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
 
-      {/* Mobile: dropdown menu under the arrow */}
-      {open && (
-        <div className="md:hidden fixed top-14 right-4 left-4 z-40 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
+      {/* Mobile menu */}
+      {menuOpen && (
+        <div className="md:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
           {nav.map(({ href, label, gated }) => (
             <Link
               key={href}
               href={hrefFor(href, gated)}
-              onClick={() => setOpen(false)}
+              onClick={() => setMenuOpen(false)}
               className={cn(
                 'px-3 py-2.5 rounded-xl text-sm font-medium',
                 pathname === href ? 'bg-brand-50 text-brand-900' : 'text-muted hover:bg-brand-50/60',
@@ -159,13 +142,13 @@ export function TopNav({ authed, email, role }: Props) {
                 <LogOut className="h-4 w-4" /> Sign out
               </button>
             ) : (
-              <Button className="w-full" onClick={() => { setOpen(false); openSignIn(); }}>
+              <Button className="w-full" onClick={() => { setMenuOpen(false); openSignIn(); }}>
                 <LogIn className="h-4 w-4" /> Login
               </Button>
             )}
           </div>
         </div>
       )}
-    </>
+    </header>
   );
 }
