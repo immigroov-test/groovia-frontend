@@ -15,7 +15,7 @@ export default function LandingPage() {
             </Badge>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-brand-900 max-w-3xl">
               Your immigration journey
-              <span className="block text-accent-600">doesn&apos;t have to be lonely.</span>
+              <span className="block text-brand-700">doesn&apos;t have to be lonely.</span>
             </h1>
             <p className="mt-5 text-lg text-muted max-w-2xl">
               AI-powered guidance and mentors who have actually made the move.

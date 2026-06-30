@@ -61,13 +61,13 @@ export function ChatIntro({ onStart }: { onStart?: () => void }) {
   return (
     <section ref={sectionRef} className="relative min-h-full overflow-hidden flex flex-col">
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 via-brand-700 to-accent-600 bg-clip-text text-transparent">
+        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 via-brand-700 to-brand-500 bg-clip-text text-transparent">
           <TypeText text={hero.title} />
         </h1>
 
         <motion.p
           {...fadeUp(0.75)}
-          className="mt-3 text-lg sm:text-xl font-semibold text-accent-600"
+          className="mt-3 text-lg sm:text-xl font-semibold text-brand-700"
         >
           {hero.tagline}
         </motion.p>

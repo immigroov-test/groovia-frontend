@@ -13,7 +13,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    'bg-brand-900 text-white hover:bg-brand-800 active:bg-brand-900 shadow-sm',
+    'bg-brand-900 text-white hover:bg-[#2a2e39] active:bg-brand-900 shadow-sm',
   secondary:
     'bg-brand-50 text-brand-900 hover:bg-brand-100 active:bg-brand-200',
   outline:

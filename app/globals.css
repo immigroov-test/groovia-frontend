@@ -15,7 +15,9 @@
   --brand-600: #1E40AF;
   --brand-700: #1E3A8A;
   --brand-800: #14296B;
-  --brand-900: #0F2C6B;
+  /* Headings + primary buttons read as a deep near-black charcoal (Odyssey-restrained);
+     navy lives in brand-50..800 and the page gradients as a subtle base. */
+  --brand-900: #15181F;
 
   /* Accent — warm orange (energy, CTA) */
   --accent-50:  #FFF7ED;
