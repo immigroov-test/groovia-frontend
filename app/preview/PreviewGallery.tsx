@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card, CardBody } from '../../components/ui/Card';
@@ -60,7 +60,7 @@ function GoogleButtonMock() {
 }
 
 // ── Previews, organized by user flow ─────────────────────────────────────────
-const PREVIEWS: { group: string; title: string; real?: boolean; node: ReactNode }[] = [
+export const PREVIEWS: { group: string; title: string; real?: boolean; node: ReactNode }[] = [
   // 1. DISCOVER (public) -----------------------------------------------------
   { group: '1 · Discover', title: 'Landing page', real: true, node: <LandingPage /> },
   {
@@ -349,10 +349,15 @@ export function PreviewGallery() {
             <button onClick={() => setMobile(true)} className={`px-2.5 py-1 rounded-md ${mobile ? 'bg-white shadow-sm font-medium' : 'text-muted'}`}>Mobile</button>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-6 flex justify-center">
-          <div className={`bg-background rounded-xl border border-[--color-border] overflow-hidden ${mobile ? 'w-[390px]' : 'w-full max-w-5xl'}`}>
-            <Suspense fallback={<div className="p-8 text-sm text-muted">Loading preview…</div>}>{current.node}</Suspense>
-          </div>
+        {/* Rendered in an iframe so CSS media queries (sm:/md:/lg:) respond to the
+            frame width — i.e. "Mobile" is a TRUE mobile viewport, not a shrunken box. */}
+        <div className="flex-1 min-h-0 p-6 flex justify-center bg-slate-100">
+          <iframe
+            key={`${active}-${mobile ? 'm' : 'd'}`}
+            src={`/preview/frame?i=${active}`}
+            title="preview"
+            className={`h-full rounded-xl border border-[--color-border] bg-background shadow-sm ${mobile ? 'w-[390px]' : 'w-full max-w-5xl'}`}
+          />
         </div>
       </main>
     </div>
