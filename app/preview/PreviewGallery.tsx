@@ -10,7 +10,7 @@ import { mockMentor, mockMentors } from './mockData';
 // Real pages/components — rendered with mock data so the gallery stays in sync with
 // the live app. Backend calls are intercepted by MockFetch in the preview frame.
 import LandingPage from '../(shell)/page';
-import AboutPage from '../(shell)/about/page';
+import { AboutContent } from '../../components/AboutContent';
 import { MentorBrowser } from '../../components/MentorBrowser';
 import { DirectBookingWidget } from '../../components/DirectBookingWidget';
 import { BookingManager } from '../../components/BookingManager';
@@ -138,7 +138,7 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
     ),
   },
   { group: '1 · Discover', title: 'Mentor profile + booking', real: true, node: <MentorProfilePreview /> },
-  { group: '1 · Discover', title: 'About', real: true, node: <AboutPage /> },
+  { group: '1 · Discover', title: 'About', real: true, node: <AboutContent /> },
   { group: '1 · Discover', title: 'Privacy policy', node: (
       <PageWrap><h1 className="text-3xl font-semibold text-brand-900 mb-4">Privacy Policy</h1><p className="text-sm text-muted">Static legal text page. View the real content at <code>/privacy</code> — it renders without auth, so it&apos;s not mocked here.</p></PageWrap>
     ) },
