@@ -12,6 +12,7 @@ export interface ManagedBooking {
   status: string;
   slot_time: string | null;
   slot_end: string | null;
+  mentor_tz?: string | null;
   meeting_url: string | null;
   service_title: string | null;
   service_duration: number | null;
@@ -43,6 +44,16 @@ function fmt(iso: string | null): string {
     timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
   });
+}
+
+function fmtTimeInTz(iso: string, tz: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+}
+
+function shortTz(tz: string): string {
+  return tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
 }
 
 const STATUS_TONE: Record<string, 'brand' | 'accent' | 'neutral'> = {
@@ -109,22 +120,39 @@ export function BookingManager({ role }: { role: Role }) {
     return <p className="text-sm text-muted">No bookings yet.</p>;
   }
 
+  const isUpcoming = (b: ManagedBooking) =>
+    (b.status === 'confirmed' || b.status === 'rescheduled') &&
+    (!b.slot_time || new Date(b.slot_time).getTime() > Date.now());
+  const upcoming = bookings.filter(isUpcoming);
+  const past = bookings.filter((b) => !isUpcoming(b));
+
+  const renderCard = (b: ManagedBooking) => (
+    <BookingCard key={b.id} b={b} role={role} busy={busyId === b.id} act={act} />
+  );
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-8">
       {actionError && (
         <p className="text-sm text-red-600 flex items-center gap-1.5">
           <AlertTriangle className="h-4 w-4 shrink-0" /> {actionError}
         </p>
       )}
-      {bookings.map((b) => (
-        <BookingCard
-          key={b.id}
-          b={b}
-          role={role}
-          busy={busyId === b.id}
-          act={act}
-        />
-      ))}
+      {upcoming.length > 0 && (
+        <section>
+          <h3 className="text-sm font-semibold text-brand-900 mb-3">
+            Upcoming <span className="text-muted font-normal">· {upcoming.length}</span>
+          </h3>
+          <div className="flex flex-col gap-4">{upcoming.map(renderCard)}</div>
+        </section>
+      )}
+      {past.length > 0 && (
+        <section>
+          <h3 className="text-sm font-semibold text-brand-900 mb-3">
+            Past &amp; cancelled <span className="text-muted font-normal">· {past.length}</span>
+          </h3>
+          <div className="flex flex-col gap-4 opacity-90">{past.map(renderCard)}</div>
+        </section>
+      )}
     </div>
   );
 }
@@ -166,8 +194,13 @@ function BookingCard({
             )}
           </div>
           <p className="text-sm text-muted mt-1 flex items-center gap-1.5">
-            <CalendarClock className="h-3.5 w-3.5 shrink-0" /> {fmt(b.slot_time)} ({TZ})
+            <CalendarClock className="h-3.5 w-3.5 shrink-0" /> {fmt(b.slot_time)} · {shortTz(TZ)}
           </p>
+          {b.slot_time && b.mentor_tz && b.mentor_tz !== TZ && (
+            <p className="text-xs text-muted ml-5">
+              mentor {fmtTimeInTz(b.slot_time, b.mentor_tz)} ({shortTz(b.mentor_tz)})
+            </p>
+          )}
           <p className="text-xs text-muted mt-0.5">
             {role === 'mentee' ? 'with ' : ''}{b.other_name ?? 'your ' + (role === 'mentee' ? 'mentor' : 'mentee')}
           </p>
