@@ -90,6 +90,7 @@ export default async function MentorProfilePage({
 
           <div>
             <DirectBookingWidget
+              mentorTimezone={mentor.timezone ?? undefined}
               mentor={{
                 id:           mentor.id,
                 slug:         mentor.slug,

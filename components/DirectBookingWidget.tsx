@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  CalendarCheck, ChevronLeft, ChevronRight, Clock, DollarSign,
+  CalendarCheck, Check, ChevronLeft, ChevronRight, Clock, DollarSign,
   Globe, Loader2, MessageSquare, Video,
 } from 'lucide-react';
 import { Button } from './ui/Button';
@@ -72,6 +72,47 @@ function formatSlotTime(isoStr: string): string {
   return new Date(isoStr).toLocaleTimeString(undefined, {
     timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true,
   });
+}
+
+function formatSlotTimeInTz(isoStr: string, tz: string): string {
+  return new Date(isoStr).toLocaleTimeString(undefined, {
+    timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+}
+
+// "Europe/Amsterdam" → "Amsterdam"
+function shortTz(tz: string): string {
+  return tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
+}
+
+// Step progress header (Service → Date & time → Confirm).
+function StepBar({ step }: { step: Step }) {
+  const steps = [
+    { key: 'service', label: 'Service' },
+    { key: 'datetime', label: 'Date & time' },
+    { key: 'form', label: 'Confirm' },
+  ] as const;
+  const idx = steps.findIndex((s) => s.key === step);
+  return (
+    <div className="flex items-center gap-1 px-6 py-3.5 border-b border-[--color-border] bg-brand-50/40">
+      {steps.map((s, i) => {
+        const done = i < idx;
+        const active = i === idx;
+        return (
+          <div key={s.key} className="flex items-center gap-2">
+            <span className={cn(
+              'h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0',
+              done ? 'bg-emerald-500 text-white' : active ? 'bg-brand-900 text-white' : 'bg-brand-100 text-muted',
+            )}>
+              {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+            </span>
+            <span className={cn('text-sm font-medium', active || done ? 'text-brand-900' : 'text-muted')}>{s.label}</span>
+            {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted/40 mx-1 shrink-0" />}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function formatSlotRange(start: string, end: string): string {
@@ -183,9 +224,11 @@ function CalendarPanel({
 
 interface Props {
   mentor: MentorInfo;
+  mentorTimezone?: string;
 }
 
-export function DirectBookingWidget({ mentor }: Props) {
+export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
+  const showMentorTz = !!mentorTimezone && mentorTimezone !== TZ;
   const [step, setStep]                   = useState<Step>('service');
   const [services, setServices]           = useState<Service[] | null>(null);
   const [servicesError, setServicesError] = useState<string | null>(null);
@@ -272,7 +315,7 @@ export function DirectBookingWidget({ mentor }: Props) {
   // Submit booking
   async function submitBooking() {
     if (!selectedSlot || !selectedService) return;
-    if (!name.trim() || !email.trim()) { setFormError('Name and email are required.'); return; }
+    if (!email.trim()) { setFormError('Email is required.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
     setFormError(null);
@@ -341,8 +384,13 @@ export function DirectBookingWidget({ mentor }: Props) {
                   {formatDate(slotDateKey(selectedSlot.slot_start))}
                 </p>
                 <p className="text-sm text-muted">
-                  {formatSlotRange(selectedSlot.slot_start, selectedSlot.slot_end)} — {TZ}
+                  {formatSlotRange(selectedSlot.slot_start, selectedSlot.slot_end)} · {shortTz(TZ)}
                 </p>
+                {showMentorTz && (
+                  <p className="text-xs text-muted">
+                    Mentor: {formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!)} ({shortTz(mentorTimezone!)})
+                  </p>
+                )}
                 <p className="text-xs text-muted mt-1">Booking ID: <code>{bookingId}</code></p>
               </div>
             )}
@@ -354,6 +402,7 @@ export function DirectBookingWidget({ mentor }: Props) {
 
   return (
     <div className="rounded-2xl border border-[--color-border] overflow-hidden">
+      <StepBar step={step} />
       <div className={cn(
         'grid',
         step === 'service'
@@ -367,16 +416,22 @@ export function DirectBookingWidget({ mentor }: Props) {
           <MentorMeta mentor={mentor} initials={initials} />
           {selectedService && <ServiceSummary svc={selectedService} />}
           {selectedSlot && (
-            <div className="flex items-start gap-2 text-sm text-brand-700 font-medium">
+            <div className="flex items-start gap-2 text-sm text-brand-900 font-medium">
               <CalendarCheck className="h-4 w-4 mt-0.5 shrink-0" />
               <span>
                 {formatDate(slotDateKey(selectedSlot.slot_start))}<br />
                 {formatSlotRange(selectedSlot.slot_start, selectedSlot.slot_end)}
+                {showMentorTz && (
+                  <><br /><span className="text-xs text-muted font-normal">
+                    mentor {formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!)} ({shortTz(mentorTimezone!)})
+                  </span></>
+                )}
               </span>
             </div>
           )}
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <Globe className="h-4 w-4 shrink-0" />{TZ}
+          <div className="flex flex-col gap-1 text-sm text-muted">
+            <span className="flex items-center gap-2"><Globe className="h-4 w-4 shrink-0" />Your time · {shortTz(TZ)}</span>
+            {showMentorTz && <span className="ml-6 text-xs">Mentor · {shortTz(mentorTimezone!)}</span>}
           </div>
         </aside>
 
@@ -467,17 +522,25 @@ export function DirectBookingWidget({ mentor }: Props) {
         {/* ── Step 2b: Time slots ───────────────────────────────────── */}
         {step === 'datetime' && selectedDate && slots && (
           <div className="p-6">
-            <h3 className="text-sm font-semibold text-brand-900 mb-3">{formatDate(selectedDate)}</h3>
+            <h3 className="text-sm font-semibold text-brand-900 mb-1">{formatDate(selectedDate)}</h3>
+            <p className="text-xs text-muted mb-3">{timeSlotsForDay.length} open · your time</p>
             <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1">
               {timeSlotsForDay.map(slot => (
                 <button
                   key={slot.slot_start}
                   type="button"
                   onClick={() => selectSlot(slot)}
-                  className="flex items-center gap-2.5 px-4 h-11 rounded-lg border border-[--color-border] text-sm font-medium text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors text-left"
+                  className="flex flex-col gap-0.5 px-4 py-2 rounded-lg border border-[--color-border] hover:border-brand-500 hover:bg-brand-50 transition-colors text-left"
                 >
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                  {formatSlotTime(slot.slot_start)}
+                  <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                    {formatSlotTime(slot.slot_start)}
+                  </span>
+                  {showMentorTz && (
+                    <span className="text-xs text-muted ml-[18px]">
+                      mentor {formatSlotTimeInTz(slot.slot_start, mentorTimezone!)}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -495,10 +558,10 @@ export function DirectBookingWidget({ mentor }: Props) {
               <ChevronLeft className="h-3.5 w-3.5" /> Change time
             </button>
             <h3 className="text-base font-semibold text-brand-900">Your details</h3>
-            <Input label="Full name *" value={name} onChange={e => setName(e.target.value)}
+            <Input label="Full name" value={name} onChange={e => setName(e.target.value)}
               placeholder="Your name" autoComplete="name" />
-            <Input label="Email *" type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com" autoComplete="email" />
+            <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com" autoComplete="email" hint="We'll send your confirmation here." />
             {questions.map(q => (
               <div key={q.id} className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">
@@ -531,7 +594,7 @@ export function DirectBookingWidget({ mentor }: Props) {
               variant="accent"
               onClick={submitBooking}
               loading={submitting}
-              disabled={!name.trim() || !email.trim()}
+              disabled={!email.trim()}
             >
               Confirm booking
             </Button>

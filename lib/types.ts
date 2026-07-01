@@ -12,6 +12,7 @@ export interface Mentor {
   languages: string[];
   professional_domains: string[];
   years_lived_experience: number | null;
+  timezone?: string | null;
 }
 
 export interface AvailabilitySlot {
