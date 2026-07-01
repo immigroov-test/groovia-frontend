@@ -184,9 +184,9 @@ function AuthModalInner() {
             )}
           </div>
 
-          {/* Right — brand panel with why-join + quote; full photo shown uncropped as a bottom band (desktop) */}
+          {/* Right — brand panel with why-join; quote overlaid on the photo band (desktop) */}
           <div className="hidden md:flex md:w-1/2 flex-col bg-brand-900 text-white">
-            <div className="flex-1 px-8 pt-20 pb-8 flex flex-col">
+            <div className="flex-1 px-8 pt-20 pb-6 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
               <ul className="mt-6 flex flex-col gap-4">
                 {UI_CONTENT.whyJoin.map((w) => (
@@ -198,14 +198,15 @@ function AuthModalInner() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-auto pt-8">
-                <p className="text-base text-white leading-relaxed font-serif">“{quote.text}”</p>
-                {quote.author && <p className="text-xs text-white/70 mt-1.5">{quote.author}</p>}
-              </div>
             </div>
-            {/* aspect matches the image (848×450) so the whole photo shows with no crop */}
+            {/* Full photo (848×450, uncropped) with the quote overlaid — gradient scrim keeps it readable */}
             <div className="relative w-full aspect-[848/450] shrink-0">
               <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover" sizes="(max-width: 896px) 50vw, 448px" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 px-8 pb-5">
+                <p className="text-sm text-white leading-snug font-serif">“{quote.text}”</p>
+                {quote.author && <p className="text-[11px] text-white/70 mt-1">{quote.author}</p>}
+              </div>
             </div>
           </div>
         </div>
