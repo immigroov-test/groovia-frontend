@@ -75,17 +75,17 @@ export default async function MentorProfilePage({
         </Link>
 
         {/* Compact profile header (full width) */}
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-5 sm:gap-6">
           {mentor.photo_url ? (
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-16 w-16 rounded-full object-cover shrink-0" />
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover shrink-0" />
           ) : (
-            <div className="h-16 w-16 rounded-full bg-brand-100 flex items-center justify-center text-lg font-semibold text-brand-700 shrink-0">
+            <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-brand-100 flex items-center justify-center text-3xl font-semibold text-brand-700 shrink-0">
               {initials}
             </div>
           )}
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-brand-900">{mentor.display_name}</h1>
-            {mentor.headline && <p className="text-base text-muted mt-1 max-w-2xl">{mentor.headline}</p>}
+            {mentor.headline && <p className="text-base text-muted mt-1">{mentor.headline}</p>}
             <div className="flex flex-wrap gap-2 mt-2">
               {mentor.expertise_country_codes.map((c) => <Badge key={c} tone="brand">{c}</Badge>)}
               {(mentor.expertise_categories ?? []).map((cat) => <Badge key={cat} tone="neutral">{cat}</Badge>)}
@@ -95,7 +95,7 @@ export default async function MentorProfilePage({
         </div>
 
         {mentor.bio && (
-          <p className="text-sm text-foreground/80 leading-relaxed max-w-2xl mt-4 mb-8 whitespace-pre-line">
+          <p className="text-sm text-foreground/80 leading-relaxed max-w-4xl mt-5 mb-8 whitespace-pre-line">
             {mentor.bio}
           </p>
         )}

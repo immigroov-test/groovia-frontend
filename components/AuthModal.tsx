@@ -23,12 +23,13 @@ function AuthModalInner() {
 
   const [stage, setStage] = useState<Stage>('email');
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState<{ text: string; author: string }>({ ...UI_CONTENT.quote });
 
   useEffect(() => {
-    if (isOpen) { setStage('email'); setEmail(''); setError(null); }
+    if (isOpen) { setStage('email'); setEmail(''); setName(''); setError(null); }
   }, [isOpen]);
 
   // Daily quote — falls back to the default in content.ts if the API isn't reachable.
@@ -56,7 +57,12 @@ function AuthModalInner() {
     const supabase = createClient();
     return supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
-      options: { shouldCreateUser: true, emailRedirectTo: redirectTo() },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: redirectTo(),
+        // Stored on the user at creation; ignored for existing users.
+        data: name.trim() ? { full_name: name.trim() } : undefined,
+      },
     });
   }
 
@@ -97,59 +103,58 @@ function AuthModalInner() {
 
           {/* Left — form */}
           <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-9 flex flex-col min-h-[520px]">
-            <div className="mt-2">
-              {stage === 'email' ? (
-                <>
-                  <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
-                  <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
-                  <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
-                    <Input
-                      type="email" required value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel}
-                    />
-                    {error && <p className="text-xs text-red-600">{error}</p>}
-                    <Button type="submit" loading={loading} className="w-full">
-                      {t.continueWithEmail}
-                    </Button>
-                  </form>
-                  <div className="my-4 flex items-center gap-3 text-xs text-muted">
-                    <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
-                  </div>
-                  <GoogleButton label={t.continueWithGoogle} next={next} />
-                  <p className="mt-4 text-[11px] leading-snug text-muted">
-                    {t.termsNote}{' '}
-                    <Link href="/terms" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                    <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
-                    <Mail className="h-5 w-5" />
-                  </div>
-                  <h2 className="mt-4 text-2xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
-                  <p className="text-sm text-muted mt-2 leading-relaxed">{t.linkSubheading(email)}</p>
-                  <div className="mt-6 flex items-center gap-4 text-xs">
-                    <button type="button" onClick={() => sendLink()} className="text-brand-700 hover:underline">{t.resend}</button>
-                    <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Quote */}
-            <div className="mt-auto pt-8">
-              <p className="text-base text-foreground/75 leading-relaxed font-serif">“{quote.text}”</p>
-              {quote.author && <p className="text-xs text-muted mt-1.5">— {quote.author}</p>}
-            </div>
+            {stage === 'email' ? (
+              <>
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
+                <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
+                <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
+                  <Input
+                    type="text" value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel}
+                    className="border border-brand-300 focus:border-brand-500"
+                  />
+                  <Input
+                    type="email" required value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel}
+                    className="border border-brand-300 focus:border-brand-500"
+                  />
+                  {error && <p className="text-xs text-red-600">{error}</p>}
+                  <Button type="submit" loading={loading} className="w-full">
+                    {t.continueWithEmail}
+                  </Button>
+                </form>
+                <div className="my-4 flex items-center gap-3 text-xs text-muted">
+                  <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
+                </div>
+                <GoogleButton label={t.continueWithGoogle} next={next} />
+                <p className="mt-4 text-[11px] leading-snug text-muted">
+                  {t.termsNote}{' '}
+                  <Link href="/terms" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                  <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <h2 className="mt-4 text-2xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
+                <p className="text-sm text-muted mt-2 leading-relaxed">{t.linkSubheading(email)}</p>
+                <div className="mt-6 flex items-center gap-4 text-xs">
+                  <button type="button" onClick={() => sendLink()} className="text-brand-700 hover:underline">{t.resend}</button>
+                  <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Right — image background with why-join titles (desktop) */}
+          {/* Right — image background with why-join titles + quote (desktop) */}
           <div className="hidden md:block md:w-1/2 relative">
-            <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover" sizes="(max-width: 896px) 50vw, 448px" />
-            <div className="absolute inset-0 bg-brand-900/70" />
-            <div className="relative h-full px-8 py-10 flex flex-col justify-center text-white">
+            <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover object-center" sizes="(max-width: 896px) 50vw, 448px" />
+            <div className="absolute inset-0 bg-brand-900/65" />
+            <div className="relative h-full px-8 pt-20 pb-9 flex flex-col text-white">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
               <ul className="mt-6 flex flex-col gap-4">
                 {UI_CONTENT.whyJoin.map((w) => (
@@ -161,6 +166,11 @@ function AuthModalInner() {
                   </li>
                 ))}
               </ul>
+              {/* Quote pinned to the bottom */}
+              <div className="mt-auto pt-8">
+                <p className="text-base text-white leading-relaxed font-serif">“{quote.text}”</p>
+                {quote.author && <p className="text-xs text-white/70 mt-1.5">{quote.author}</p>}
+              </div>
             </div>
           </div>
         </div>

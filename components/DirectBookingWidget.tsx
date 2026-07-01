@@ -1,13 +1,16 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   CalendarCheck, Check, ChevronLeft, ChevronRight, Clock, DollarSign,
-  Globe, Loader2, MessageSquare, Video,
+  Globe, Home, Loader2, MessageSquare, Video,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { createClient } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
+
+const NOTES_MAX = 500;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -244,6 +247,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [answers, setAnswers]       = useState<Record<string, string>>({});
   const [name, setName]             = useState('');
   const [email, setEmail]           = useState('');
+  const [notes, setNotes]           = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
   const [bookingId, setBookingId]   = useState<string | null>(null);
@@ -335,6 +339,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           slot_time:   selectedSlot.slot_start,
           email:       email.trim(),
           name:        name.trim(),
+          notes:       notes.trim(),
           timezone:    TZ,
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
         }),
@@ -394,6 +399,15 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 <p className="text-xs text-muted mt-1">Booking ID: <code>{bookingId}</code></p>
               </div>
             )}
+            <div className="flex flex-wrap gap-2 mt-1">
+              <Link href="/account"><Button variant="primary">View my sessions</Button></Link>
+              <Link href="/mentors"><Button variant="outline">Book another mentor</Button></Link>
+              <Link href="/"><Button variant="ghost"><Home className="h-4 w-4" /> Home</Button></Link>
+            </div>
+            <p className="text-xs text-muted">
+              Need to reschedule or cancel? You can manage this session anytime under{' '}
+              <Link href="/account" className="underline hover:text-foreground">My sessions</Link>.
+            </p>
           </div>
         </div>
       </div>
@@ -562,6 +576,20 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               placeholder="Your name" autoComplete="name" />
             <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
               placeholder="your@email.com" autoComplete="email" hint="We'll send your confirmation here." />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">
+                What should your mentor prepare? <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <textarea
+                rows={3}
+                maxLength={NOTES_MAX}
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Share your goal, current situation, or specific questions so your mentor can prepare."
+                className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+              />
+              <p className="text-xs text-muted text-right">{notes.length}/{NOTES_MAX}</p>
+            </div>
             {questions.map(q => (
               <div key={q.id} className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">

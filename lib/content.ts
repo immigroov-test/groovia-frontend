@@ -89,6 +89,8 @@ export const UI_CONTENT = {
   auth: {
     heading: 'Get started with your email',
     subheading: 'Free to start. No card required.',
+    nameLabel: 'Full name',
+    namePlaceholder: 'Your name (optional)',
     emailLabel: 'Email address',
     emailPlaceholder: 'you@example.com',
     continueWithEmail: 'Continue with email',
