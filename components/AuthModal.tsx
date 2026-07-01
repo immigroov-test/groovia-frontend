@@ -42,6 +42,19 @@ function AuthModalInner() {
       .catch(() => {});
   }, [isOpen]);
 
+  // While the popup is open, watch for sign-in — e.g. the user clicks the magic link
+  // in another tab. Supabase syncs auth across tabs, so we close the popup and refresh
+  // so this tab reflects the logged-in state too.
+  useEffect(() => {
+    if (!isOpen) return;
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') { close(); router.refresh(); }
+    });
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   function close() {
     const p = new URLSearchParams(params.toString());
     ['auth', 'role', 'mode', 'next'].forEach((k) => p.delete(k));
@@ -67,22 +80,35 @@ function AuthModalInner() {
     });
   }
 
-  // Step 1: email only. Probe with shouldCreateUser:false — if the account exists we
-  // send the login link straight away; if it doesn't, advance to collect the name.
+  // Step 1: email only. Ask the backend whether the account exists (no email sent) —
+  // existing → send the login link now; new → advance to collect the name. Sending
+  // exactly one link avoids Supabase's per-email OTP rate limit.
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
-    const { error } = await sendLink(false);
-    setLoading(false);
-    if (!error) { setIsNew(false); setStage('sent'); return; }
-    const msg = (error.message || '').toLowerCase();
-    const notFound =
-      error.status === 422 ||
-      msg.includes('signups not allowed') ||
-      msg.includes('user not found') ||
-      msg.includes('not found');
-    if (notFound) { setError(null); setStage('details'); return; }
-    setError(error.message);
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      if (res.ok) {
+        const { exists } = await res.json();
+        if (exists) {
+          const { error } = await sendLink(false);
+          setLoading(false);
+          if (error) { setError(error.message); return; }
+          setIsNew(false); setStage('sent');
+          return;
+        }
+      }
+      // New account (or the check is unavailable) → collect the name next.
+      setLoading(false);
+      setStage('details');
+    } catch {
+      setLoading(false);
+      setStage('details');
+    }
   }
 
   // Step 2 (new users only): collect the name, then create + send the link.
