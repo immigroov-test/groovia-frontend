@@ -80,23 +80,26 @@ function AuthModalInner() {
         <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
           <button
             type="button" onClick={close} aria-label="Close"
-            className="absolute top-4 right-4 z-20 p-1.5 rounded-full text-muted hover:text-foreground hover:bg-black/5"
+            className="absolute top-4 right-4 z-30 p-1.5 rounded-full text-white/80 md:text-white/80 hover:text-white hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
 
-          {/* Left — form */}
-          <div className="w-full md:w-1/2 px-7 sm:px-9 py-9 flex flex-col min-h-[520px]">
-            <Image
-              src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
-              className="object-contain" style={{ height: '26px', width: 'auto' }}
-            />
+          {/* Logo centered across the divider (half over each side) */}
+          <Image
+            src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
+            priority
+            className="object-contain absolute top-6 left-1/2 -translate-x-1/2 z-30"
+            style={{ height: '28px', width: 'auto' }}
+          />
 
-            <div className="mt-8">
+          {/* Left — form */}
+          <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-9 flex flex-col min-h-[520px]">
+            <div className="mt-2">
               {stage === 'email' ? (
                 <>
-                  <h2 className="text-3xl font-semibold tracking-tight text-brand-900">{t.heading}</h2>
-                  <p className="text-sm text-muted mt-1">{t.subheading}</p>
+                  <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
+                  <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
                   <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
                     <Input
                       type="email" required value={email}
@@ -104,7 +107,7 @@ function AuthModalInner() {
                       placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel}
                     />
                     {error && <p className="text-xs text-red-600">{error}</p>}
-                    <Button type="submit" variant="accent" loading={loading} className="w-full">
+                    <Button type="submit" loading={loading} className="w-full">
                       {t.continueWithEmail}
                     </Button>
                   </form>
@@ -120,10 +123,10 @@ function AuthModalInner() {
                 </>
               ) : (
                 <>
-                  <div className="h-11 w-11 rounded-full bg-accent-50 border border-accent-200 flex items-center justify-center text-accent-600">
+                  <div className="h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
                     <Mail className="h-5 w-5" />
                   </div>
-                  <h2 className="mt-4 text-3xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
+                  <h2 className="mt-4 text-2xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
                   <p className="text-sm text-muted mt-2 leading-relaxed">{t.linkSubheading(email)}</p>
                   <div className="mt-6 flex items-center gap-4 text-xs">
                     <button type="button" onClick={() => sendLink()} className="text-brand-700 hover:underline">{t.resend}</button>
@@ -135,8 +138,8 @@ function AuthModalInner() {
 
             {/* Quote */}
             <div className="mt-auto pt-8">
-              <p className="text-sm italic text-muted leading-relaxed">“{quote.text}”</p>
-              {quote.author && <p className="text-xs text-muted mt-1">— {quote.author}</p>}
+              <p className="text-base text-foreground/75 leading-relaxed font-serif">“{quote.text}”</p>
+              {quote.author && <p className="text-xs text-muted mt-1.5">— {quote.author}</p>}
             </div>
           </div>
 
@@ -149,7 +152,7 @@ function AuthModalInner() {
               <ul className="mt-6 flex flex-col gap-4">
                 {UI_CONTENT.whyJoin.map((w) => (
                   <li key={w.title} className="flex items-start gap-3">
-                    <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-accent-500/90 flex items-center justify-center">
+                    <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
                       <Check className="h-3 w-3 text-white" />
                     </span>
                     <span className="text-sm font-medium leading-snug">{w.title}</span>

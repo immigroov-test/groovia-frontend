@@ -67,41 +67,51 @@ export default async function MentorProfilePage({
 
   // ── Direct booking (new system) ──────────────────────────────────────────────
   if (hasDirectBooking) {
+    const initials = mentor.display_name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase();
     return (
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
-        <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 mb-8">
+        <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 mb-6">
           ← All mentors
         </Link>
 
-        <div className="grid lg:grid-cols-[320px_1fr] gap-8 items-start">
-          <div>
-            {profileBlock}
-            {mentor.bio && (
-              <Card>
-                <CardBody className="pt-5">
-                  <h2 className="text-sm font-semibold text-foreground mb-2">About</h2>
-                  <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">
-                    {mentor.bio}
-                  </p>
-                </CardBody>
-              </Card>
-            )}
-          </div>
-
-          <div>
-            <DirectBookingWidget
-              mentorTimezone={mentor.timezone ?? undefined}
-              mentor={{
-                id:           mentor.id,
-                slug:         mentor.slug,
-                display_name: mentor.display_name,
-                headline:     mentor.headline ?? null,
-                bio:          mentor.bio ?? null,
-                photo_url:    mentor.photo_url ?? null,
-              }}
-            />
+        {/* Compact profile header (full width) */}
+        <div className="flex items-start gap-4">
+          {mentor.photo_url ? (
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-16 w-16 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="h-16 w-16 rounded-full bg-brand-100 flex items-center justify-center text-lg font-semibold text-brand-700 shrink-0">
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-brand-900">{mentor.display_name}</h1>
+            {mentor.headline && <p className="text-base text-muted mt-1 max-w-2xl">{mentor.headline}</p>}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {mentor.expertise_country_codes.map((c) => <Badge key={c} tone="brand">{c}</Badge>)}
+              {(mentor.expertise_categories ?? []).map((cat) => <Badge key={cat} tone="neutral">{cat}</Badge>)}
+              {mentor.languages.map((lang) => <Badge key={lang} tone="neutral">{lang.toUpperCase()}</Badge>)}
+            </div>
           </div>
         </div>
+
+        {mentor.bio && (
+          <p className="text-sm text-foreground/80 leading-relaxed max-w-2xl mt-4 mb-8 whitespace-pre-line">
+            {mentor.bio}
+          </p>
+        )}
+
+        {/* Booking widget — full width */}
+        <DirectBookingWidget
+          mentorTimezone={mentor.timezone ?? undefined}
+          mentor={{
+            id:           mentor.id,
+            slug:         mentor.slug,
+            display_name: mentor.display_name,
+            headline:     mentor.headline ?? null,
+            bio:          mentor.bio ?? null,
+            photo_url:    mentor.photo_url ?? null,
+          }}
+        />
       </div>
     );
   }

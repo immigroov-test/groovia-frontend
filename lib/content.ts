@@ -87,8 +87,8 @@ export const UI_CONTENT = {
   },
   // ── Passwordless auth popup ──────────────────────────────────────────────
   auth: {
-    heading: 'Log in or register',
-    subheading: 'Make the most of Immigroov',
+    heading: 'Get started with your email',
+    subheading: 'Free to start. No card required.',
     emailLabel: 'Email address',
     emailPlaceholder: 'you@example.com',
     continueWithEmail: 'Continue with email',
