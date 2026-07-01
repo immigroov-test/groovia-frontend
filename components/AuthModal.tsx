@@ -85,13 +85,15 @@ function AuthModalInner() {
             <X className="h-4 w-4" />
           </button>
 
-          {/* Logo centered across the divider (half over each side) */}
-          <Image
-            src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
-            priority
-            className="object-contain absolute top-6 left-1/2 -translate-x-1/2 z-30"
-            style={{ height: '28px', width: 'auto' }}
-          />
+          {/* Logo centered across the divider, in a white box so it reads on both sides */}
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-md">
+            <Image
+              src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
+              priority
+              className="object-contain"
+              style={{ height: '26px', width: 'auto' }}
+            />
+          </div>
 
           {/* Left — form */}
           <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-9 flex flex-col min-h-[520px]">
@@ -145,7 +147,7 @@ function AuthModalInner() {
 
           {/* Right — image background with why-join titles (desktop) */}
           <div className="hidden md:block md:w-1/2 relative">
-            <Image src="/tourists-go-up-hill-sunrise.jpg" alt="" fill className="object-cover" sizes="(max-width: 896px) 50vw, 448px" />
+            <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover" sizes="(max-width: 896px) 50vw, 448px" />
             <div className="absolute inset-0 bg-brand-900/70" />
             <div className="relative h-full px-8 py-10 flex flex-col justify-center text-white">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
