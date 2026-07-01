@@ -10,7 +10,7 @@ import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
 
-type Stage = 'email' | 'sent';
+type Stage = 'email' | 'details' | 'sent';
 
 function AuthModalInner() {
   const router = useRouter();
@@ -24,12 +24,13 @@ function AuthModalInner() {
   const [stage, setStage] = useState<Stage>('email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [isNew, setIsNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState<{ text: string; author: string }>({ ...UI_CONTENT.quote });
 
   useEffect(() => {
-    if (isOpen) { setStage('email'); setEmail(''); setName(''); setError(null); }
+    if (isOpen) { setStage('email'); setEmail(''); setName(''); setIsNew(false); setError(null); }
   }, [isOpen]);
 
   // Daily quote — falls back to the default in content.ts if the API isn't reachable.
@@ -53,26 +54,45 @@ function AuthModalInner() {
     return next ? `${base}?next=${encodeURIComponent(next)}` : base;
   }
 
-  async function sendLink() {
+  async function sendLink(create: boolean, fullName?: string) {
     const supabase = createClient();
     return supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
       options: {
-        shouldCreateUser: true,
+        shouldCreateUser: create,
         emailRedirectTo: redirectTo(),
-        // Stored on the user at creation; ignored for existing users.
-        data: name.trim() ? { full_name: name.trim() } : undefined,
+        // Stored on the user at creation.
+        data: fullName ? { full_name: fullName } : undefined,
       },
     });
   }
 
+  // Step 1: email only. Probe with shouldCreateUser:false — if the account exists we
+  // send the login link straight away; if it doesn't, advance to collect the name.
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
-    const { error } = await sendLink();
+    const { error } = await sendLink(false);
+    setLoading(false);
+    if (!error) { setIsNew(false); setStage('sent'); return; }
+    const msg = (error.message || '').toLowerCase();
+    const notFound =
+      error.status === 422 ||
+      msg.includes('signups not allowed') ||
+      msg.includes('user not found') ||
+      msg.includes('not found');
+    if (notFound) { setError(null); setStage('details'); return; }
+    setError(error.message);
+  }
+
+  // Step 2 (new users only): collect the name, then create + send the link.
+  async function handleDetails(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    const { error } = await sendLink(true, name.trim() || undefined);
     setLoading(false);
     if (error) { setError(error.message); return; }
-    setStage('sent');
+    setIsNew(true); setStage('sent');
   }
 
   if (!isOpen) return null;
@@ -103,17 +123,11 @@ function AuthModalInner() {
 
           {/* Left — form */}
           <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-9 flex flex-col min-h-[520px]">
-            {stage === 'email' ? (
+            {stage === 'email' && (
               <>
                 <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
                 <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
                 <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
-                  <Input
-                    type="text" value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel}
-                    className="border border-brand-300 focus:border-brand-500"
-                  />
                   <Input
                     type="email" required value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -135,7 +149,27 @@ function AuthModalInner() {
                   <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
                 </p>
               </>
-            ) : (
+            )}
+            {stage === 'details' && (
+              <>
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.detailsHeading}</h2>
+                <p className="text-sm text-muted mt-1 text-center">{t.detailsSubheading}</p>
+                <form onSubmit={handleDetails} className="mt-6 flex flex-col gap-3">
+                  <Input
+                    type="text" required autoFocus value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel}
+                    className="border border-brand-300 focus:border-brand-500"
+                  />
+                  {error && <p className="text-xs text-red-600">{error}</p>}
+                  <Button type="submit" loading={loading} className="w-full">
+                    {t.continue}
+                  </Button>
+                </form>
+                <button type="button" onClick={() => { setStage('email'); setError(null); }} className="mt-4 text-xs text-muted hover:text-foreground text-center">{t.back}</button>
+              </>
+            )}
+            {stage === 'sent' && (
               <>
                 <div className="h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
                   <Mail className="h-5 w-5" />
@@ -143,7 +177,7 @@ function AuthModalInner() {
                 <h2 className="mt-4 text-2xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
                 <p className="text-sm text-muted mt-2 leading-relaxed">{t.linkSubheading(email)}</p>
                 <div className="mt-6 flex items-center gap-4 text-xs">
-                  <button type="button" onClick={() => sendLink()} className="text-brand-700 hover:underline">{t.resend}</button>
+                  <button type="button" onClick={() => sendLink(isNew, isNew ? name.trim() : undefined)} className="text-brand-700 hover:underline">{t.resend}</button>
                   <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
                 </div>
               </>
