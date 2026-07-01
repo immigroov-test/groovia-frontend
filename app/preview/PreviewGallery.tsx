@@ -1,14 +1,19 @@
 'use client';
 import { useState, type ReactNode } from 'react';
+import { Check } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-import { MentorCard } from '../../components/MentorCard';
-import type { Mentor } from '../../lib/types';
-// Real pages/components (faithful + self-updating). Login/signup pages only redirect,
-// so those are recreated as static cards below.
+import { UI_CONTENT } from '../../lib/content';
+import { mockMentor, mockMentors } from './mockData';
+// Real pages/components — rendered with mock data so the gallery stays in sync with
+// the live app. Backend calls are intercepted by MockFetch in the preview frame.
 import LandingPage from '../(shell)/page';
+import AboutPage from '../(shell)/about/page';
+import { MentorBrowser } from '../../components/MentorBrowser';
+import { DirectBookingWidget } from '../../components/DirectBookingWidget';
+import { BookingManager } from '../../components/BookingManager';
 import { MentorLanding } from '../../components/MentorLanding';
 import { MentorRegisterForm } from '../../components/MentorRegisterForm';
 import { MentorOnboardingForm } from '../../components/MentorOnboardingForm';
@@ -16,35 +21,10 @@ import { MentorAvailabilityForm } from '../../components/MentorAvailabilityForm'
 import { ProfileEditor } from '../../components/ProfileEditor';
 import { ChatIntro } from '../../components/ChatIntro';
 
-// ── Mock data ────────────────────────────────────────────────────────────────
-const mockMentor: Mentor = {
-  id: '1', slug: 'maya-singh', display_name: 'Maya Singh',
-  headline: 'Ex-Google PM who moved India → Netherlands on a Blue Card',
-  bio: 'Six years navigating the Dutch tech market and the IND sponsor system.',
-  photo_url: null, expertise_country_codes: ['NL', 'DE', 'SE'],
-  expertise_categories: ['job_career', 'visa_pr'], languages: ['English', 'Hindi'],
-  professional_domains: ['IT'], years_lived_experience: 6,
-};
-const mockMentors: Mentor[] = [
-  mockMentor,
-  { ...mockMentor, id: '2', slug: 'lars-jansen', display_name: 'Lars Jansen',
-    headline: 'Relocation & housing in Amsterdam for new arrivals',
-    expertise_country_codes: ['NL'], expertise_categories: ['life_settling'] },
-  { ...mockMentor, id: '3', slug: 'priya-mehta', display_name: 'Priya Mehta',
-    headline: 'Study-abroad & student visa guidance for the EU',
-    expertise_country_codes: ['DE', 'FR'], expertise_categories: ['study_abroad'] },
-];
-
 function PageWrap({ children }: { children: ReactNode }) {
-  return <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">{children}</div>;
+  return <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">{children}</div>;
 }
-function AuthCard({ children }: { children: ReactNode }) {
-  return (
-    <div className="p-8 flex justify-center">
-      <div className="w-full max-w-md bg-card rounded-2xl shadow-2xl px-6 sm:px-7 pt-7 pb-6">{children}</div>
-    </div>
-  );
-}
+
 function GoogleButtonMock() {
   return (
     <Button variant="outline" className="w-full">
@@ -59,109 +39,115 @@ function GoogleButtonMock() {
   );
 }
 
+// Faithful mirror of the live AuthModal popup (which only mounts when opened via
+// ?auth=open). Keep this in sync when the modal's layout changes.
+function LoginPopupPreview() {
+  const t = UI_CONTENT.auth;
+  return (
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+      <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        {/* Logo in a white box, centered across the divider */}
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-md">
+          <img src="/Immigroov_Transparent_Logo.png" alt="Immigroov" style={{ height: '26px', width: 'auto' }} className="object-contain" />
+        </div>
+
+        {/* Left — form */}
+        <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-9 flex flex-col min-h-[520px]">
+          <div className="mt-2">
+            <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
+            <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
+            <div className="mt-6 flex flex-col gap-3">
+              <Input type="email" placeholder={t.emailPlaceholder} />
+              <Button className="w-full">{t.continueWithEmail}</Button>
+            </div>
+            <div className="my-4 flex items-center gap-3 text-xs text-muted">
+              <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
+            </div>
+            <GoogleButtonMock />
+            <p className="mt-4 text-[11px] leading-snug text-muted">
+              {t.termsNote} <span className="underline">{t.terms}</span> and <span className="underline">{t.privacy}</span>.
+            </p>
+          </div>
+          <div className="mt-auto pt-8">
+            <p className="text-base text-foreground/75 leading-relaxed font-serif">“{UI_CONTENT.quote.text}”</p>
+          </div>
+        </div>
+
+        {/* Right — image + why-join */}
+        <div className="hidden md:block md:w-1/2 relative min-h-[520px]">
+          <img src="/tourists-go-up-hill-sunrise.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-brand-900/70" />
+          <div className="relative h-full px-8 py-10 flex flex-col justify-center text-white">
+            <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
+            <ul className="mt-6 flex flex-col gap-4">
+              {UI_CONTENT.whyJoin.map((w) => (
+                <li key={w.title} className="flex items-start gap-3">
+                  <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </span>
+                  <span className="text-sm font-medium leading-snug">{w.title}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Real mentor profile layout (compact header + full-width booking widget). The
+// widget's services/slots come from MockFetch.
+function MentorProfilePreview() {
+  const initials = mockMentor.display_name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase();
+  return (
+    <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
+      <span className="text-sm text-muted">← All mentors</span>
+      <div className="flex items-start gap-4 mt-6">
+        <div className="h-16 w-16 rounded-full bg-brand-100 flex items-center justify-center text-lg font-semibold text-brand-700 shrink-0">{initials}</div>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-brand-900">{mockMentor.display_name}</h1>
+          <p className="text-base text-muted mt-1 max-w-2xl">{mockMentor.headline}</p>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {mockMentor.expertise_country_codes.map((c) => <Badge key={c} tone="brand">{c}</Badge>)}
+            {(mockMentor.expertise_categories ?? []).map((cat) => <Badge key={cat} tone="neutral">{cat}</Badge>)}
+            {mockMentor.languages.map((l) => <Badge key={l} tone="neutral">{l.toUpperCase()}</Badge>)}
+          </div>
+        </div>
+      </div>
+      <p className="text-sm text-foreground/80 leading-relaxed max-w-2xl mt-4 mb-8 whitespace-pre-line">{mockMentor.bio}</p>
+      <DirectBookingWidget
+        mentorTimezone={mockMentor.timezone ?? undefined}
+        mentor={{ id: mockMentor.id, slug: mockMentor.slug, display_name: mockMentor.display_name,
+          headline: mockMentor.headline ?? null, bio: mockMentor.bio ?? null, photo_url: null }}
+      />
+    </div>
+  );
+}
+
 // ── Previews, organized by user flow ─────────────────────────────────────────
 export const PREVIEWS: { group: string; title: string; real?: boolean; node: ReactNode }[] = [
   // 1. DISCOVER (public) -----------------------------------------------------
   { group: '1 · Discover', title: 'Landing page', real: true, node: <LandingPage /> },
   {
-    group: '1 · Discover', title: 'Browse mentors', node: (
+    group: '1 · Discover', title: 'Browse mentors', real: true, node: (
       <PageWrap>
         <h1 className="text-3xl font-semibold tracking-tight text-brand-900 mb-6">Find a mentor</h1>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {mockMentors.map((m) => <MentorCard key={m.id} mentor={m} />)}
-        </div>
+        <MentorBrowser mentors={mockMentors} />
       </PageWrap>
     ),
   },
-  {
-    group: '1 · Discover', title: 'Mentor profile', node: (
-      <PageWrap>
-        <div className="flex flex-col gap-6">
-          <div className="flex items-start gap-4">
-            <div className="h-16 w-16 rounded-full bg-brand-100 flex items-center justify-center text-xl font-semibold text-brand-700">MS</div>
-            <div>
-              <h1 className="text-2xl font-semibold text-brand-900">Maya Singh</h1>
-              <p className="text-sm text-muted">{mockMentor.headline}</p>
-              <div className="flex gap-1.5 mt-2">
-                {mockMentor.expertise_country_codes.map((c) => <Badge key={c} tone="brand">{c}</Badge>)}
-              </div>
-            </div>
-          </div>
-          <Card><CardBody className="pt-6"><h2 className="text-base font-semibold text-foreground mb-2">About</h2><p className="text-sm text-muted">{mockMentor.bio}</p></CardBody></Card>
-          <Card><CardBody className="pt-6 flex flex-col gap-3">
-            <h2 className="text-base font-semibold text-foreground">Book a session</h2>
-            <div className="rounded-lg border border-[--color-border] p-4 flex items-center justify-between">
-              <div><p className="text-sm font-medium text-foreground">Visa & PR guidance</p><p className="text-xs text-muted">60 min · €60</p></div>
-              <Button size="sm">Select</Button>
-            </div>
-          </CardBody></Card>
-        </div>
-      </PageWrap>
-    ),
-  },
+  { group: '1 · Discover', title: 'Mentor profile + booking', real: true, node: <MentorProfilePreview /> },
+  { group: '1 · Discover', title: 'About', real: true, node: <AboutPage /> },
   { group: '1 · Discover', title: 'Privacy policy', node: (
-      <PageWrap><h1 className="text-3xl font-semibold text-brand-900 mb-4">Privacy Policy</h1><p className="text-sm text-muted">Static legal text page. View the real content at <code>/privacy</code> — it renders normally without auth, so it&apos;s not mocked here.</p></PageWrap>
+      <PageWrap><h1 className="text-3xl font-semibold text-brand-900 mb-4">Privacy Policy</h1><p className="text-sm text-muted">Static legal text page. View the real content at <code>/privacy</code> — it renders without auth, so it&apos;s not mocked here.</p></PageWrap>
     ) },
   { group: '1 · Discover', title: 'Terms', node: (
       <PageWrap><h1 className="text-3xl font-semibold text-brand-900 mb-4">Terms &amp; Conditions</h1><p className="text-sm text-muted">Static legal text page. View the real content at <code>/terms</code>.</p></PageWrap>
     ) },
 
-  // 2. SIGN UP & LOGIN -------------------------------------------------------
-  {
-    group: '2 · Sign up & login', title: 'Sign up', node: (
-      <AuthCard>
-        <div className="text-center mb-5">
-          <h2 className="text-2xl font-semibold tracking-tight text-brand-900">Create your account</h2>
-          <p className="text-sm mt-1 font-semibold text-emerald-600">Free to start. No card required.</p>
-        </div>
-        <GoogleButtonMock />
-        <div className="my-4 flex items-center gap-3 text-xs text-muted"><div className="h-px flex-1 bg-[--color-border]" /><span>or with email</span><div className="h-px flex-1 bg-[--color-border]" /></div>
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3"><Input label="First name" /><Input label="Last name" /></div>
-          <Input label="Email" type="email" /><Input label="Password" type="password" hint="At least 8 characters." /><Input label="Confirm password" type="password" />
-          <Button>Create account</Button>
-        </div>
-      </AuthCard>
-    ),
-  },
-  {
-    group: '2 · Sign up & login', title: 'Login', node: (
-      <AuthCard>
-        <div className="text-center mb-5"><h2 className="text-2xl font-semibold tracking-tight text-brand-900">Welcome back</h2><p className="text-sm mt-1 text-muted">Login to continue your journey.</p></div>
-        <GoogleButtonMock />
-        <div className="my-4 flex items-center gap-3 text-xs text-muted"><div className="h-px flex-1 bg-[--color-border]" /><span>or with email</span><div className="h-px flex-1 bg-[--color-border]" /></div>
-        <div className="flex flex-col gap-3"><Input label="Email" type="email" /><Input label="Password" type="password" /><Button>Login</Button><button className="text-xs text-muted text-center hover:text-foreground">Forgot password?</button></div>
-      </AuthCard>
-    ),
-  },
-  {
-    group: '2 · Sign up & login', title: 'Verify email', node: (
-      <AuthCard>
-        <div className="flex flex-col gap-4">
-          <h2 className="text-xl font-semibold tracking-tight text-brand-900">Verify your email</h2>
-          <p className="text-sm text-muted">A verification link was sent to <b className="text-foreground">maya@example.com</b>. Click it to confirm your account.</p>
-          <p className="text-xs text-muted">Don&apos;t see it? Check your spam folder.</p>
-          <button className="text-sm text-brand-700 hover:underline text-left">Resend verification email</button>
-        </div>
-      </AuthCard>
-    ),
-  },
-  {
-    group: '2 · Sign up & login', title: 'Forgot password', node: (
-      <AuthCard>
-        <div className="text-center mb-2"><h2 className="text-2xl font-semibold tracking-tight text-brand-900">Forgot password?</h2><p className="text-sm text-muted mt-1">We&apos;ll email you a reset link.</p></div>
-        <div className="flex flex-col gap-3 mt-3"><Input label="Email" type="email" /><Button>Send reset link</Button></div>
-      </AuthCard>
-    ),
-  },
-  {
-    group: '2 · Sign up & login', title: 'Reset password', node: (
-      <AuthCard>
-        <div className="text-center mb-2"><h2 className="text-2xl font-semibold tracking-tight text-brand-900">Set a new password</h2></div>
-        <div className="flex flex-col gap-3 mt-3"><Input label="New password" type="password" hint="At least 8 characters." /><Input label="Confirm password" type="password" /><Button>Update password</Button></div>
-      </AuthCard>
-    ),
-  },
+  // 2. LOGIN -----------------------------------------------------------------
+  { group: '2 · Login', title: 'Login popup (magic link)', node: <LoginPopupPreview /> },
 
   // 3. BECOME A MENTOR (flow order) ------------------------------------------
   {
@@ -215,14 +201,6 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
       </PageWrap>
     ),
   },
-  {
-    group: '3 · Become a mentor', title: '⑦ Hub — rejected', node: (
-      <PageWrap>
-        <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Mentor Hub</h1>
-        <div className="mt-8"><Card><CardBody className="pt-6"><h2 className="text-base font-semibold text-foreground">Application not approved</h2><p className="text-sm text-muted mt-1">Your mentor application wasn&apos;t approved this time. You can update your profile and re-apply, or contact support.</p></CardBody></Card></div>
-      </PageWrap>
-    ),
-  },
 
   // 4. CANDIDATE -------------------------------------------------------------
   {
@@ -236,33 +214,15 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
     ),
   },
 
-  // 5. BOOK A MENTOR ---------------------------------------------------------
+  // 5. MY SESSIONS (real BookingManager) -------------------------------------
   {
-    group: '5 · Book a mentor', title: 'Confirmation', node: (
-      <PageWrap>
-        <div className="max-w-md mx-auto"><Card><CardBody className="pt-8 pb-6 text-center flex flex-col gap-3">
-          <div className="mx-auto h-12 w-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-xl">✓</div>
-          <h2 className="text-xl font-semibold text-brand-900">Booking confirmed</h2>
-          <p className="text-sm text-muted">Your session with <b className="text-foreground">Maya Singh</b> is booked.</p>
-          <div className="rounded-lg border border-[--color-border] p-4 text-left text-sm flex flex-col gap-1 mt-2">
-            <div className="flex justify-between"><span className="text-muted">When</span><span className="text-foreground">Tue 12 May, 15:00 CET</span></div>
-            <div className="flex justify-between"><span className="text-muted">Service</span><span className="text-foreground">Visa & PR guidance (60 min)</span></div>
-            <div className="flex justify-between"><span className="text-muted">Ref</span><span className="text-foreground">IMG-8F3A1</span></div>
-          </div>
-          <Button className="mt-2">Join Google Meet</Button>
-        </CardBody></Card></div>
-      </PageWrap>
+    group: '5 · My sessions', title: 'Mentee — upcoming & past', real: true, node: (
+      <PageWrap><h1 className="text-2xl font-semibold tracking-tight text-brand-900 mb-6">Your sessions</h1><BookingManager role="mentee" /></PageWrap>
     ),
   },
   {
-    group: '5 · Book a mentor', title: 'Manage booking', node: (
-      <PageWrap>
-        <h1 className="text-2xl font-semibold tracking-tight text-brand-900 mb-6">Your bookings</h1>
-        <Card><CardBody className="pt-6 flex flex-col gap-4">
-          <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium text-foreground">Maya Singh · Visa & PR guidance</p><p className="text-xs text-muted mt-0.5">Tue 12 May, 15:00 CET · 60 min</p></div><Badge tone="success">Confirmed</Badge></div>
-          <div className="flex flex-wrap gap-2"><Button size="sm" variant="outline">Reschedule</Button><Button size="sm" variant="outline">Cancel</Button><Button size="sm" variant="ghost">Report no-show</Button></div>
-        </CardBody></Card>
-      </PageWrap>
+    group: '5 · My sessions', title: 'Mentor — sessions', real: true, node: (
+      <PageWrap><h1 className="text-2xl font-semibold tracking-tight text-brand-900 mb-6">Mentor sessions</h1><BookingManager role="mentor" /></PageWrap>
     ),
   },
 
@@ -323,7 +283,7 @@ export function PreviewGallery() {
       <aside className="w-64 shrink-0 border-r border-[--color-border] bg-white h-screen sticky top-0 overflow-y-auto">
         <div className="px-4 py-4 border-b border-[--color-border]">
           <p className="text-sm font-semibold text-brand-900">Page preview</p>
-          <p className="text-[11px] text-muted mt-0.5">Mock data · no login · design only</p>
+          <p className="text-[11px] text-muted mt-0.5">Mock data · no login · live components</p>
         </div>
         <nav className="p-2">
           {GROUPS.map((g) => (
