@@ -3,14 +3,14 @@ import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { X, Check } from 'lucide-react';
+import { X, Check, Mail } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
 
-type Stage = 'email' | 'code' | 'name';
+type Stage = 'email' | 'sent';
 
 function AuthModalInner() {
   const router = useRouter();
@@ -23,18 +23,12 @@ function AuthModalInner() {
 
   const [stage, setStage] = useState<Stage>('email');
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState<{ text: string; author: string }>({ ...UI_CONTENT.quote });
 
   useEffect(() => {
-    if (isOpen) {
-      setStage('email');
-      setEmail(''); setCode(''); setFirstName(''); setLastName(''); setError(null);
-    }
+    if (isOpen) { setStage('email'); setEmail(''); setError(null); }
   }, [isOpen]);
 
   // Daily quote — falls back to the default in content.ts if the API isn't reachable.
@@ -53,58 +47,26 @@ function AuthModalInner() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
-  function goAfterAuth() {
-    router.push(next ?? '/chat');
-    router.refresh();
+  function redirectTo(): string {
+    const base = `${window.location.origin}/auth/callback`;
+    return next ? `${base}?next=${encodeURIComponent(next)}` : base;
+  }
+
+  async function sendLink() {
+    const supabase = createClient();
+    return supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { shouldCreateUser: true, emailRedirectTo: redirectTo() },
+    });
   }
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { shouldCreateUser: true },
-    });
+    const { error } = await sendLink();
     setLoading(false);
     if (error) { setError(error.message); return; }
-    setStage('code');
-  }
-
-  async function handleVerify(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null); setLoading(true);
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: email.trim().toLowerCase(),
-      token: code.trim(),
-      type: 'email',
-    });
-    setLoading(false);
-    if (error) { setError('That code is invalid or expired. Please try again.'); return; }
-    const fullName = (data.user?.user_metadata?.full_name as string | undefined)?.trim();
-    if (!fullName) { setStage('name'); return; } // new user → collect name
-    goAfterAuth();
-  }
-
-  async function handleName(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null); setLoading(true);
-    const full = `${firstName.trim()} ${lastName.trim()}`.trim();
-    const supabase = createClient();
-    await supabase.auth.updateUser({ data: { full_name: full } });
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) { await supabase.from('profiles').update({ full_name: full }).eq('id', user.id); }
-    setLoading(false);
-    goAfterAuth();
-  }
-
-  async function handleResend() {
-    const supabase = createClient();
-    await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { shouldCreateUser: true },
-    });
+    setStage('sent');
   }
 
   if (!isOpen) return null;
@@ -117,9 +79,7 @@ function AuthModalInner() {
       >
         <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
           <button
-            type="button"
-            onClick={close}
-            aria-label="Close"
+            type="button" onClick={close} aria-label="Close"
             className="absolute top-4 right-4 z-20 p-1.5 rounded-full text-muted hover:text-foreground hover:bg-black/5"
           >
             <X className="h-4 w-4" />
@@ -128,16 +88,12 @@ function AuthModalInner() {
           {/* Left — form */}
           <div className="w-full md:w-1/2 px-7 sm:px-9 py-9 flex flex-col min-h-[520px]">
             <Image
-              src="/Immigroov_Transparent_Logo.png"
-              alt="Immigroov"
-              width={280}
-              height={60}
-              className="object-contain"
-              style={{ height: '26px', width: 'auto' }}
+              src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
+              className="object-contain" style={{ height: '26px', width: 'auto' }}
             />
 
             <div className="mt-8">
-              {stage === 'email' && (
+              {stage === 'email' ? (
                 <>
                   <h2 className="text-3xl font-semibold tracking-tight text-brand-900">{t.heading}</h2>
                   <p className="text-sm text-muted mt-1">{t.subheading}</p>
@@ -162,41 +118,17 @@ function AuthModalInner() {
                     <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
                   </p>
                 </>
-              )}
-
-              {stage === 'code' && (
+              ) : (
                 <>
-                  <h2 className="text-3xl font-semibold tracking-tight text-brand-900">{t.codeHeading}</h2>
-                  <p className="text-sm text-muted mt-1">{t.codeSubheading(email)}</p>
-                  <form onSubmit={handleVerify} className="mt-6 flex flex-col gap-3">
-                    <Input
-                      inputMode="numeric" required value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      placeholder="123456" aria-label={t.codeLabel}
-                      className="tracking-[0.4em] text-center text-lg"
-                    />
-                    {error && <p className="text-xs text-red-600">{error}</p>}
-                    <Button type="submit" variant="accent" loading={loading} className="w-full">{t.verify}</Button>
-                  </form>
-                  <div className="mt-4 flex items-center justify-between text-xs">
-                    <button type="button" onClick={handleResend} className="text-brand-700 hover:underline">{t.resend}</button>
+                  <div className="h-11 w-11 rounded-full bg-accent-50 border border-accent-200 flex items-center justify-center text-accent-600">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <h2 className="mt-4 text-3xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
+                  <p className="text-sm text-muted mt-2 leading-relaxed">{t.linkSubheading(email)}</p>
+                  <div className="mt-6 flex items-center gap-4 text-xs">
+                    <button type="button" onClick={() => sendLink()} className="text-brand-700 hover:underline">{t.resend}</button>
                     <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
                   </div>
-                </>
-              )}
-
-              {stage === 'name' && (
-                <>
-                  <h2 className="text-3xl font-semibold tracking-tight text-brand-900">{t.nameHeading}</h2>
-                  <p className="text-sm text-muted mt-1">{t.nameSubheading}</p>
-                  <form onSubmit={handleName} className="mt-6 flex flex-col gap-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t.firstName} autoComplete="given-name" />
-                      <Input required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t.lastName} autoComplete="family-name" />
-                    </div>
-                    {error && <p className="text-xs text-red-600">{error}</p>}
-                    <Button type="submit" variant="accent" loading={loading} className="w-full">{t.finish}</Button>
-                  </form>
                 </>
               )}
             </div>
