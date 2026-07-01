@@ -44,18 +44,24 @@ export function ChatIntro({ onStart }: { onStart?: () => void }) {
   const [atTop, setAtTop] = useState(true);
 
   useEffect(() => {
-    // Walk up to find the nearest scrollable ancestor
-    let el: Element | null = sectionRef.current?.parentElement ?? null;
-    while (el) {
-      const { overflowY } = window.getComputedStyle(el);
-      if (overflowY === 'auto' || overflowY === 'scroll') break;
-      el = el.parentElement;
+    // The shell's scroll container has id="app-scroll"; fall back to the nearest
+    // scrollable ancestor (e.g. in the /preview frame where the shell isn't present).
+    let scrollEl: Element | null = document.getElementById('app-scroll');
+    if (!scrollEl) {
+      let el: Element | null = sectionRef.current?.parentElement ?? null;
+      while (el) {
+        const { overflowY } = window.getComputedStyle(el);
+        if (overflowY === 'auto' || overflowY === 'scroll') break;
+        el = el.parentElement;
+      }
+      scrollEl = el;
     }
-    if (!el) return;
-    const scrollEl = el;
-    const onScroll = () => setAtTop(scrollEl.scrollTop < 10);
-    scrollEl.addEventListener('scroll', onScroll, { passive: true });
-    return () => scrollEl.removeEventListener('scroll', onScroll);
+    if (!scrollEl) return;
+    const node = scrollEl;
+    const onScroll = () => setAtTop(node.scrollTop < 10);
+    onScroll();
+    node.addEventListener('scroll', onScroll, { passive: true });
+    return () => node.removeEventListener('scroll', onScroll);
   }, []);
 
   return (

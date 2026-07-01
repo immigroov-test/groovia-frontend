@@ -1,10 +1,11 @@
+import Link from 'next/link';
+import { CalendarClock, ChevronRight } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/server';
 import { Card, CardBody } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { ProfileEditor } from '../../../components/ProfileEditor';
-import { BookingManager } from '../../../components/BookingManager';
 
-export const metadata = { title: 'Account — Immigroov' };
+export const metadata = { title: 'Profile — Immigroov' };
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -17,7 +18,7 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Account</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Profile</h1>
       <p className="text-sm text-muted mt-1">Your profile and contact details.</p>
 
       <div className="mt-8 grid gap-4">
@@ -47,17 +48,22 @@ export default async function AccountPage() {
           initialSummary={profile?.profile_summary ?? ''}
         />
 
-        <Card>
-          <CardBody className="pt-6 flex flex-col gap-4">
-            <div>
-              <h2 className="text-base font-semibold text-foreground">Your sessions</h2>
-              <p className="text-sm text-muted mt-0.5">
-                Manage your bookings — reschedule, cancel, or report a no-show.
-              </p>
-            </div>
-            <BookingManager role="mentee" />
-          </CardBody>
-        </Card>
+        <Link href="/account/sessions" className="block">
+          <Card className="hover:border-brand-300 transition-colors">
+            <CardBody className="pt-6 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="h-10 w-10 rounded-full bg-brand-50 flex items-center justify-center text-brand-700">
+                  <CalendarClock className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">My sessions</h2>
+                  <p className="text-sm text-muted mt-0.5">Reschedule, cancel, or report a no-show.</p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted shrink-0" />
+            </CardBody>
+          </Card>
+        </Link>
       </div>
     </div>
   );

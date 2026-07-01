@@ -400,13 +400,13 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               </div>
             )}
             <div className="flex flex-wrap gap-2 mt-1">
-              <Link href="/account"><Button variant="primary">View my sessions</Button></Link>
+              <Link href="/account/sessions"><Button variant="primary">View my sessions</Button></Link>
               <Link href="/mentors"><Button variant="outline">Book another mentor</Button></Link>
               <Link href="/"><Button variant="ghost"><Home className="h-4 w-4" /> Home</Button></Link>
             </div>
             <p className="text-xs text-muted">
               Need to reschedule or cancel? You can manage this session anytime under{' '}
-              <Link href="/account" className="underline hover:text-foreground">My sessions</Link>.
+              <Link href="/account/sessions" className="underline hover:text-foreground">My sessions</Link>.
             </p>
           </div>
         </div>
