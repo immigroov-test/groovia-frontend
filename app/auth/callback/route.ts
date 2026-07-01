@@ -24,12 +24,18 @@ async function syncAccount(supabase: SupabaseClient) {
   }
 }
 
+// Only allow same-origin relative paths — blocks open redirects like //evil.com.
+function safeNext(next: string | null): string {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/chat';
+  return next;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as EmailOtpType | null;
-  const next = searchParams.get('next') ?? '/chat';
+  const next = safeNext(searchParams.get('next'));
 
   const supabase = await createClient();
 
