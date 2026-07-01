@@ -148,7 +148,7 @@ function AuthModalInner() {
           </div>
 
           {/* Left — form */}
-          <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-9 flex flex-col min-h-[520px]">
+          <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-6 flex flex-col min-h-[440px]">
             {stage === 'email' && (
               <>
                 <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
@@ -197,11 +197,11 @@ function AuthModalInner() {
             )}
             {stage === 'sent' && (
               <>
-                <div className="h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
+                <div className="mt-4 h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
                   <Mail className="h-5 w-5" />
                 </div>
-                <h2 className="mt-4 text-2xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
-                <p className="text-sm text-muted mt-2 leading-relaxed">{t.linkSubheading(email)}</p>
+                <p className="text-sm text-muted mt-3 leading-relaxed">{t.linkSubheading(email)}</p>
                 <div className="mt-6 flex items-center gap-4 text-xs">
                   <button type="button" onClick={() => sendLink(isNew, isNew ? name.trim() : undefined)} className="text-brand-700 hover:underline">{t.resend}</button>
                   <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
@@ -210,11 +210,11 @@ function AuthModalInner() {
             )}
           </div>
 
-          {/* Right — brand panel with why-join; quote overlaid on the photo band (desktop) */}
+          {/* Right — brand panel with why-join; quote overlaid on the upper photo band (desktop) */}
           <div className="hidden md:flex md:w-1/2 flex-col bg-brand-900 text-white">
-            <div className="flex-1 px-8 pt-20 pb-6 flex flex-col">
+            <div className="flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
-              <ul className="mt-6 flex flex-col gap-4">
+              <ul className="mt-5 flex flex-col gap-3">
                 {UI_CONTENT.whyJoin.map((w) => (
                   <li key={w.title} className="flex items-start gap-3">
                     <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
@@ -225,11 +225,11 @@ function AuthModalInner() {
                 ))}
               </ul>
             </div>
-            {/* Full photo (848×450, uncropped) with the quote overlaid — gradient scrim keeps it readable */}
-            <div className="relative w-full aspect-[848/450] shrink-0">
-              <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover" sizes="(max-width: 896px) 50vw, 448px" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 px-8 pb-5">
+            {/* Photo band (cropped shorter to keep the popup compact); quote near the top with a top scrim */}
+            <div className="relative w-full aspect-[848/330] shrink-0">
+              <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover object-center" sizes="(max-width: 896px) 50vw, 448px" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/30 to-transparent" />
+              <div className="absolute inset-x-0 top-0 px-8 pt-4">
                 <p className="text-sm text-white leading-snug font-serif">“{quote.text}”</p>
                 {quote.author && <p className="text-[11px] text-white/70 mt-1">{quote.author}</p>}
               </div>

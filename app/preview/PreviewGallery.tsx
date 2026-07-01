@@ -88,10 +88,10 @@ function LoginPopupPreview() {
               ))}
             </ul>
           </div>
-          <div className="relative w-full aspect-[848/450]">
-            <img src="/tourists-go-up-hill-sunrise.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-            <p className="absolute inset-x-0 bottom-0 px-8 pb-5 text-sm text-white leading-snug font-serif">“{UI_CONTENT.quote.text}”</p>
+          <div className="relative w-full aspect-[848/330]">
+            <img src="/tourists-go-up-hill-sunrise.png" alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/30 to-transparent" />
+            <p className="absolute inset-x-0 top-0 px-8 pt-4 text-sm text-white leading-snug font-serif">“{UI_CONTENT.quote.text}”</p>
           </div>
         </div>
       </div>
