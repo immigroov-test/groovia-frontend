@@ -1,4 +1,4 @@
-import { MentorCard } from '../../../components/MentorCard';
+import { MentorBrowser } from '../../../components/MentorBrowser';
 import type { Mentor } from '../../../lib/types';
 import { backendBaseUrl } from '../../../lib/backend';
 
@@ -39,11 +39,7 @@ export default async function MentorsPage() {
           No mentors loaded yet. (Backend not running, or empty database.)
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {mentors.map((m) => (
-            <MentorCard key={m.id} mentor={m} />
-          ))}
-        </div>
+        <MentorBrowser mentors={mentors} />
       )}
     </div>
   );
