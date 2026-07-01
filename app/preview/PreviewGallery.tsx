@@ -73,11 +73,9 @@ function LoginPopupPreview() {
           </div>
         </div>
 
-        {/* Right — image + why-join */}
-        <div className="hidden md:block md:w-1/2 relative min-h-[520px]">
-          <img src="/tourists-go-up-hill-sunrise.png" alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-brand-900/70" />
-          <div className="relative h-full px-8 py-10 flex flex-col justify-center text-white">
+        {/* Right — brand panel + why-join + quote; full photo as an uncropped bottom band */}
+        <div className="hidden md:flex md:w-1/2 flex-col bg-brand-900 text-white min-h-[520px]">
+          <div className="flex-1 px-8 pt-20 pb-8 flex flex-col">
             <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
             <ul className="mt-6 flex flex-col gap-4">
               {UI_CONTENT.whyJoin.map((w) => (
@@ -89,7 +87,11 @@ function LoginPopupPreview() {
                 </li>
               ))}
             </ul>
+            <div className="mt-auto pt-8">
+              <p className="text-base text-white leading-relaxed font-serif">“{UI_CONTENT.quote.text}”</p>
+            </div>
           </div>
+          <img src="/tourists-go-up-hill-sunrise.png" alt="" className="w-full aspect-[848/450] object-cover" />
         </div>
       </div>
     </div>
