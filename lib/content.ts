@@ -30,16 +30,14 @@ export const UI_CONTENT = {
     scrollCta: 'Scroll down to start your journey',
   },
   sidebar: {
-    newChat: 'New chat',
     chat: 'Chat',
     mentors: 'Mentors',
     account: 'Account',
     mentorPortal: 'Join as Mentor',
+    about: 'About',
     admin: 'Admin',
     history: 'Recent chats',
     historyEmpty: 'No previous chats yet.',
-    signIn: 'Login',
-    signOut: 'Sign out',
   },
   admin: {
     title: 'Admin',
@@ -86,6 +84,78 @@ export const UI_CONTENT = {
     haveAccount: 'I already have an account',
     requireAccount: 'We need an account before continuing.',
     noCreditCard: 'No credit card needed',
+  },
+  // ── Passwordless auth popup ──────────────────────────────────────────────
+  auth: {
+    heading: 'Log in or register',
+    subheading: 'Make the most of Immigroov',
+    emailLabel: 'Email address',
+    emailPlaceholder: 'you@example.com',
+    continueWithEmail: 'Continue with email',
+    continueWithGoogle: 'Continue with Google',
+    orDivider: 'or',
+    codeHeading: 'Check your email',
+    codeSubheading: (email: string) => `We sent a 6-digit code to ${email}. Enter it below to continue.`,
+    codeLabel: 'Verification code',
+    verify: 'Verify & continue',
+    resend: 'Resend code',
+    changeEmail: 'Use a different email',
+    nameHeading: 'Almost there',
+    nameSubheading: 'Tell us your name to finish setting up your account.',
+    firstName: 'First name',
+    lastName: 'Last name',
+    finish: 'Finish',
+    termsNote: 'By continuing you agree to our',
+    terms: 'Terms',
+    privacy: 'Privacy Policy',
+    whyJoinTitle: 'Why join Immigroov',
+  },
+  // Default proverb shown if the daily quote API is unreachable.
+  quote: {
+    text: 'Seek wealth, even if it means crossing the ocean.',
+    author: '',
+  },
+  // Reasons to join — titles surface on the login popup; full text on About.
+  whyJoin: [
+    {
+      title: 'Guidance That Fits Your Life',
+      body: 'Our mentors tailor their advice to your exact situation, goals, and questions, not generic info dumps.',
+    },
+    {
+      title: 'Handpicked Mentors, Not Just Volunteers',
+      body: 'We select expats and locals based on how long they have lived abroad, what they know, and their ability to guide.',
+    },
+    {
+      title: 'Honest Answers, Not Just Encouragement',
+      body: 'Get real insights into what works, what to avoid, and how to plan smart. No sugar-coating.',
+    },
+    {
+      title: 'Private, Personal Mentorship',
+      body: 'No group chats or forums. Every session is personal, one-on-one, and focused entirely on your journey.',
+    },
+    {
+      title: 'You Move Forward Faster',
+      body: 'Skip weeks of confusion. Learn directly from someone who has already solved your exact challenges.',
+    },
+    {
+      title: 'Relevance Over Noise',
+      body: 'There is no shortage of information online. What you need is someone to filter what actually matters.',
+    },
+  ],
+  about: {
+    whatWeDoTitle: 'What we do',
+    whatWeDo: [
+      'At Immigroov, we believe moving abroad should feel exciting, not overwhelming.',
+      'We created a mentoring platform where real expats and locals already living in your destination country guide you on moving and settling into your new country.',
+      'Whether you are handling visas, finding jobs, planning studies, or figuring out daily life, from banking, taxes, and housing to transport, culture, and cost of living, our mentors do not just share stories. They give you honest, personal guidance based on what actually works for your situation.',
+      'Maybe, once you are settled, you will become a mentor too, sharing your journey, earning, and giving back.',
+      'Immigroov is not just a platform, it is a movement.',
+      'A global community of people helping people move smarter, together.',
+    ],
+    whyChooseKicker: 'Why Choose Immigroov',
+    whyChooseHeadline: 'Information is Everywhere, But Relevance is Rare',
+    whyChooseIntro:
+      'Immigroov helps you cut through the noise by connecting you with people who have lived it, so you get advice that is relevant, personal, and proven.',
   },
 } as const;
 

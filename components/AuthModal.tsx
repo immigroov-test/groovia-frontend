@@ -1,202 +1,113 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
-import { getRecaptchaToken } from '../lib/recaptcha';
-import { cn } from '../lib/utils';
+import { UI_CONTENT } from '../lib/content';
 
-type Role = 'candidate' | 'mentor';
-type Mode = 'signup' | 'login' | 'forgot';
+type Stage = 'email' | 'code' | 'name';
 
 function AuthModalInner() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const t = UI_CONTENT.auth;
 
   const isOpen = params.get('auth') === 'open';
-  const paramRole = params.get('role') === 'mentor' ? 'mentor' : 'candidate';
-  const paramMode: Mode = params.get('mode') === 'login' ? 'login' : 'signup';
   const next = params.get('next') ?? undefined;
 
-  const [role, setRole] = useState<Role>(paramRole);
-  const [mode, setMode] = useState<Mode>(paramMode);
+  const [stage, setStage] = useState<Stage>('email');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [agreedTerms, setAgreedTerms] = useState(false);
-  const [agreedMentor, setAgreedMentor] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSent, setForgotSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [pendingVerification, setPendingVerification] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendSent, setResendSent] = useState(false);
-
-  const isMentor = role === 'mentor';
+  const [quote, setQuote] = useState<{ text: string; author: string }>({ ...UI_CONTENT.quote });
 
   useEffect(() => {
     if (isOpen) {
-      setRole(paramRole);
-      setMode(paramRole === 'mentor' ? 'login' : paramMode);
-      setFirstName('');
-      setLastName('');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      setAgreedTerms(false);
-      setAgreedMentor(false);
-      setForgotEmail('');
-      setForgotSent(false);
-      setError(null);
-      setPendingVerification(false);
+      setStage('email');
+      setEmail(''); setCode(''); setFirstName(''); setLastName(''); setError(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // If the user confirms their email in another tab, onAuthStateChange fires here too —
-  // move them forward instead of leaving them stuck on the "verify your email" screen.
+  // Daily quote — falls back to the default in content.ts if the API isn't reachable.
   useEffect(() => {
-    if (!pendingVerification) return;
-    const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sessionObj) => {
-      if (event === 'SIGNED_IN' && sessionObj) goAfterAuth();
-    });
-    return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingVerification, isMentor, next]);
+    if (!isOpen) return;
+    fetch('/api/quote')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((q) => { if (q?.text) setQuote({ text: q.text, author: q.author ?? '' }); })
+      .catch(() => {});
+  }, [isOpen]);
 
   function close() {
     const p = new URLSearchParams(params.toString());
-    p.delete('auth');
-    p.delete('role');
-    p.delete('mode');
-    p.delete('next');
+    ['auth', 'role', 'mode', 'next'].forEach((k) => p.delete(k));
     const qs = p.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
-  function switchMode(m: Mode) {
-    setMode(m);
-    setError(null);
-    setForgotSent(false);
-    if (m === 'forgot') setForgotEmail(email);
-  }
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
-    if (!agreedTerms) { setError('Please accept the Terms and Privacy Policy.'); return; }
-    if (isMentor && !agreedMentor) { setError('Please accept the Mentor Agreement.'); return; }
-    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
-    setError(null);
-    setLoading(true);
-
-    const recaptchaToken = await getRecaptchaToken('signup').catch(() => null);
-    if (recaptchaToken) {
-      try {
-        const r = await fetch('/api/auth/verify-recaptcha', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: recaptchaToken }),
-        });
-        const { success } = await r.json();
-        if (!success) { setLoading(false); setError('Verification failed. Please try again.'); return; }
-      } catch { /* fail open */ }
-    }
-
-    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
-    const supabase = createClient();
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName, role },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    setLoading(false);
-    if (signUpError) {
-      if (/already (registered|in use)/i.test(signUpError.message)) {
-        setError('An account with this email already exists. Login instead?');
-        return;
-      }
-      setError(signUpError.message);
-      return;
-    }
-    // Anti-enumeration: when the email already belongs to a (confirmed) account,
-    // Supabase returns no error and a user object with an EMPTY identities array
-    // instead of a real "already registered" error. Detect that and steer to login,
-    // otherwise the user is wrongly shown the "verify your email" screen forever.
-    const identities = data.user?.identities;
-    if (data.user && Array.isArray(identities) && identities.length === 0) {
-      setError('An account with this email already exists. Login instead?');
-      return;
-    }
-    if (data.session) {
-      goAfterAuth();
-      return;
-    }
-    setPendingVerification(true);
-  }
-
-  // Navigate within the app shell (left nav stays mounted; only the page swaps) and
-  // refresh server components so they pick up the new session. No full-page reload.
   function goAfterAuth() {
-    const dest = isMentor ? '/mentor' : (next ?? '/chat');
-    router.push(dest);
+    router.push(next ?? '/chat');
     router.refresh();
   }
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setError(null); setLoading(true);
     const supabase = createClient();
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { shouldCreateUser: true },
+    });
     setLoading(false);
-    if (loginError) {
-      if (/email not confirmed/i.test(loginError.message)) {
-        setPendingVerification(true);
-        return;
-      }
-      setError(loginError.message);
-      return;
-    }
+    if (error) { setError(error.message); return; }
+    setStage('code');
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: code.trim(),
+      type: 'email',
+    });
+    setLoading(false);
+    if (error) { setError('That code is invalid or expired. Please try again.'); return; }
+    const fullName = (data.user?.user_metadata?.full_name as string | undefined)?.trim();
+    if (!fullName) { setStage('name'); return; } // new user → collect name
+    goAfterAuth();
+  }
+
+  async function handleName(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    const full = `${firstName.trim()} ${lastName.trim()}`.trim();
+    const supabase = createClient();
+    await supabase.auth.updateUser({ data: { full_name: full } });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) { await supabase.from('profiles').update({ full_name: full }).eq('id', user.id); }
+    setLoading(false);
     goAfterAuth();
   }
 
   async function handleResend() {
-    setResendLoading(true);
-    setResendSent(false);
     const supabase = createClient();
-    await supabase.auth.resend({ type: 'signup', email });
-    setResendLoading(false);
-    setResendSent(true);
-  }
-
-  async function handleForgotPassword(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    const supabase = createClient();
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    await supabase.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: { shouldCreateUser: true },
     });
-    setLoading(false);
-    if (resetError) { setError(resetError.message); return; }
-    setForgotSent(true);
   }
 
   if (!isOpen) return null;
-
-  const googleNext = isMentor ? '/mentor' : next;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-brand-900/50 backdrop-blur-sm">
@@ -204,229 +115,118 @@ function AuthModalInner() {
         className="flex min-h-full items-center justify-center p-4"
         onClick={(e) => { if (e.target === e.currentTarget) close(); }}
       >
-      <div className="relative w-full max-w-md bg-card rounded-2xl shadow-2xl animate-fade-up">
-        <button
-          type="button"
-          onClick={close}
-          aria-label="Close"
-          className="absolute top-4 right-4 z-10 p-1.5 rounded-full text-muted hover:text-foreground hover:bg-black/5 transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close"
+            className="absolute top-4 right-4 z-20 p-1.5 rounded-full text-muted hover:text-foreground hover:bg-black/5"
+          >
+            <X className="h-4 w-4" />
+          </button>
 
-        <div className="px-6 sm:px-7 pt-7 pb-6">
-          {pendingVerification ? (
-            <div className="flex flex-col gap-4">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight text-brand-900">Verify your email</h2>
-                <p className="text-sm text-muted mt-2">
-                  A verification link was sent to <b className="text-foreground">{email}</b>.
-                  Click it to confirm your account
-                  {isMentor ? ' and complete your mentor profile.' : '.'}
-                </p>
-                <p className="text-xs text-muted mt-1">Don&apos;t see it? Check your spam folder.</p>
-              </div>
-              {resendSent ? (
-                <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                  Verification email resent. Check your inbox.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={resendLoading}
-                  className="text-sm text-brand-700 hover:underline disabled:opacity-50 text-left"
-                >
-                  {resendLoading ? 'Sending…' : 'Resend verification email'}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => { setPendingVerification(false); switchMode('login'); }}
-                className="text-xs text-muted hover:text-foreground text-left"
-              >
-                ← Back to login
-              </button>
-            </div>
-          ) : mode === 'forgot' ? (
-            <div className="flex flex-col gap-4">
-              <div className="text-center">
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900">Forgot password?</h2>
-                <p className="text-sm text-muted mt-1">We&apos;ll email you a reset link.</p>
-              </div>
-              {forgotSent ? (
-                <div className="flex flex-col gap-4 text-center">
-                  <p className="text-sm text-muted">
-                    If <span className="font-medium text-foreground">{forgotEmail}</span> matches an account,
-                    a reset link is on its way. Check your spam folder if it doesn&apos;t arrive within a
-                    few minutes.
-                  </p>
-                  <Button variant="outline" onClick={() => switchMode('login')}>
-                    Back to login
-                  </Button>
-                </div>
-              ) : (
-                <form onSubmit={handleForgotPassword} className="flex flex-col gap-3">
-                  <Input
-                    label="Email"
-                    type="email"
-                    required
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    autoComplete="email"
-                  />
-                  {error && <p className="text-xs text-red-600">{error}</p>}
-                  <Button type="submit" loading={loading}>Send reset link</Button>
-                  <button
-                    type="button"
-                    onClick={() => switchMode('login')}
-                    className="text-xs text-muted text-center hover:text-foreground"
-                  >
-                    ← Back to login
-                  </button>
-                </form>
-              )}
-            </div>
-          ) : (
-            <>
-              <div className="text-center mb-5">
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900">
-                  {mode === 'signup' ? 'Create your account' : 'Welcome back'}
-                </h2>
-                <p className="text-sm mt-1">
-                  {mode === 'signup'
-                    ? (isMentor
-                        ? <span className="text-muted">Join Immigroov as a mentor.</span>
-                        : <span className="font-semibold text-emerald-600">Free to start. No card required.</span>)
-                    : <span className="text-muted">Login to continue your journey.</span>}
-                </p>
-              </div>
+          {/* Left — form */}
+          <div className="w-full md:w-1/2 px-7 sm:px-9 py-9 flex flex-col min-h-[520px]">
+            <Image
+              src="/Immigroov_Transparent_Logo.png"
+              alt="Immigroov"
+              width={280}
+              height={60}
+              className="object-contain"
+              style={{ height: '26px', width: 'auto' }}
+            />
 
-              {/* Role toggle */}
-              <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-brand-100 p-1">
-                {(['candidate', 'mentor'] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => { setRole(r); setError(null); if (r === 'mentor') setMode('login'); }}
-                    className={cn(
-                      'h-9 rounded-lg text-sm font-semibold transition-all',
-                      role === r
-                        ? 'bg-white text-brand-900 shadow-sm ring-1 ring-brand-200'
-                        : 'text-brand-700 hover:text-brand-900 hover:bg-white/60',
-                    )}
-                  >
-                    {r === 'candidate' ? 'User' : 'Mentor'}
-                  </button>
-                ))}
-              </div>
-
-              {/* Mode toggle — hidden for mentor; mentor signup goes through MentorLanding */}
-              {!isMentor && (
-                <div className="mb-5 flex rounded-lg overflow-hidden text-sm border border-brand-200">
-                  {(['signup', 'login'] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => switchMode(m)}
-                      className={cn(
-                        'flex-1 h-10 font-semibold transition-all',
-                        mode === m
-                          ? 'bg-brand-900 text-white'
-                          : 'bg-white text-brand-800 hover:bg-brand-50 hover:text-brand-900',
-                      )}
-                    >
-                      {m === 'signup' ? 'Sign up' : 'Login'}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <GoogleButton label="Continue with Google" next={googleNext} />
-              {mode === 'signup' && (
-                <p className="mt-2 text-[11px] leading-snug text-muted text-center">
-                  By continuing with Google, you agree to our{' '}
-                  <Link href="/terms" className="underline hover:text-foreground">Terms</Link> and{' '}
-                  <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>
-                  {isMentor ? ' and the Mentor Agreement' : ''}.
-                </p>
-              )}
-
-              <div className="my-4 flex items-center gap-3 text-xs text-muted">
-                <div className="h-px flex-1 bg-[--color-border]" />
-                <span>or with email</span>
-                <div className="h-px flex-1 bg-[--color-border]" />
-              </div>
-
-              {mode === 'signup' ? (
-                <form onSubmit={handleSignup} className="flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input label="First name" type="text" required value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" />
-                    <Input label="Last name" type="text" required value={lastName}
-                      onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" />
+            <div className="mt-8">
+              {stage === 'email' && (
+                <>
+                  <h2 className="text-3xl font-semibold tracking-tight text-brand-900">{t.heading}</h2>
+                  <p className="text-sm text-muted mt-1">{t.subheading}</p>
+                  <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
+                    <Input
+                      type="email" required value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel}
+                    />
+                    {error && <p className="text-xs text-red-600">{error}</p>}
+                    <Button type="submit" variant="accent" loading={loading} className="w-full">
+                      {t.continueWithEmail}
+                    </Button>
+                  </form>
+                  <div className="my-4 flex items-center gap-3 text-xs text-muted">
+                    <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
                   </div>
-                  <Input label="Email" type="email" required value={email}
-                    onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-                  <Input label="Password" type="password" required minLength={8} value={password}
-                    onChange={(e) => setPassword(e.target.value)} autoComplete="new-password"
-                    hint="At least 8 characters." />
-                  <Input label="Confirm password" type="password" required minLength={8}
-                    value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                    autoComplete="new-password" />
-                  <label className="text-xs text-muted flex items-start gap-2 select-none">
-                    <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]"
-                      checked={agreedTerms} onChange={(e) => setAgreedTerms(e.target.checked)} />
-                    <span>
-                      I agree to the{' '}
-                      <Link href="/terms" className="underline hover:text-foreground">Terms</Link> and{' '}
-                      <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>.
-                    </span>
-                  </label>
-                  {isMentor && (
-                    <label className="text-xs text-muted flex items-start gap-2 select-none">
-                      <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]"
-                        checked={agreedMentor} onChange={(e) => setAgreedMentor(e.target.checked)} />
-                      <span>
-                        I agree to the Mentor Terms, Data Processing Agreement, commission structure,
-                        and consent to anonymised session insights improving Groovia.
-                      </span>
-                    </label>
-                  )}
-                  {error && (
-                    <p className="text-xs text-red-600">
-                      {error}{' '}
-                      {error.includes('already exists') && (
-                        <button type="button" onClick={() => switchMode('login')}
-                          className="underline font-medium">Switch to login</button>
-                      )}
-                    </p>
-                  )}
-                  <Button type="submit" variant={isMentor ? 'accent' : 'primary'} loading={loading}>
-                    {isMentor ? 'Create mentor account' : 'Create account'}
-                  </Button>
-                </form>
-              ) : (
-                <form onSubmit={handleLogin} className="flex flex-col gap-3">
-                  <Input label="Email" type="email" required value={email}
-                    onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-                  <Input label="Password" type="password" required value={password}
-                    onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-                  {error && <p className="text-xs text-red-600">{error}</p>}
-                  <Button type="submit" loading={loading}>Login</Button>
-                  <button
-                    type="button"
-                    onClick={() => switchMode('forgot')}
-                    className="text-xs text-muted text-center hover:text-foreground"
-                  >
-                    Forgot password?
-                  </button>
-                </form>
+                  <GoogleButton label={t.continueWithGoogle} next={next} />
+                  <p className="mt-4 text-[11px] leading-snug text-muted">
+                    {t.termsNote}{' '}
+                    <Link href="/terms" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                    <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
+                  </p>
+                </>
               )}
-            </>
-          )}
+
+              {stage === 'code' && (
+                <>
+                  <h2 className="text-3xl font-semibold tracking-tight text-brand-900">{t.codeHeading}</h2>
+                  <p className="text-sm text-muted mt-1">{t.codeSubheading(email)}</p>
+                  <form onSubmit={handleVerify} className="mt-6 flex flex-col gap-3">
+                    <Input
+                      inputMode="numeric" required value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="123456" aria-label={t.codeLabel}
+                      className="tracking-[0.4em] text-center text-lg"
+                    />
+                    {error && <p className="text-xs text-red-600">{error}</p>}
+                    <Button type="submit" variant="accent" loading={loading} className="w-full">{t.verify}</Button>
+                  </form>
+                  <div className="mt-4 flex items-center justify-between text-xs">
+                    <button type="button" onClick={handleResend} className="text-brand-700 hover:underline">{t.resend}</button>
+                    <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
+                  </div>
+                </>
+              )}
+
+              {stage === 'name' && (
+                <>
+                  <h2 className="text-3xl font-semibold tracking-tight text-brand-900">{t.nameHeading}</h2>
+                  <p className="text-sm text-muted mt-1">{t.nameSubheading}</p>
+                  <form onSubmit={handleName} className="mt-6 flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder={t.firstName} autoComplete="given-name" />
+                      <Input required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder={t.lastName} autoComplete="family-name" />
+                    </div>
+                    {error && <p className="text-xs text-red-600">{error}</p>}
+                    <Button type="submit" variant="accent" loading={loading} className="w-full">{t.finish}</Button>
+                  </form>
+                </>
+              )}
+            </div>
+
+            {/* Quote */}
+            <div className="mt-auto pt-8">
+              <p className="text-sm italic text-muted leading-relaxed">“{quote.text}”</p>
+              {quote.author && <p className="text-xs text-muted mt-1">— {quote.author}</p>}
+            </div>
+          </div>
+
+          {/* Right — image background with why-join titles (desktop) */}
+          <div className="hidden md:block md:w-1/2 relative">
+            <Image src="/tourists-go-up-hill-sunrise.jpg" alt="" fill className="object-cover" sizes="(max-width: 896px) 50vw, 448px" />
+            <div className="absolute inset-0 bg-brand-900/70" />
+            <div className="relative h-full px-8 py-10 flex flex-col justify-center text-white">
+              <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
+              <ul className="mt-6 flex flex-col gap-4">
+                {UI_CONTENT.whyJoin.map((w) => (
+                  <li key={w.title} className="flex items-start gap-3">
+                    <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-accent-500/90 flex items-center justify-center">
+                      <Check className="h-3 w-3 text-white" />
+                    </span>
+                    <span className="text-sm font-medium leading-snug">{w.title}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );
