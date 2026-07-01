@@ -23,7 +23,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link href="/?auth=open">
-                <Button size="lg">Start with Groovia</Button>
+                <Button size="lg" variant="accent">Start with Groovia</Button>
               </Link>
               <Link href="/mentors">
                 <Button size="lg" variant="outline">Browse mentors</Button>

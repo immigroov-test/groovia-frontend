@@ -5,19 +5,17 @@
  * Immigroov design tokens — navy + warm orange, slate neutrals
  * ============================================================================ */
 :root {
-  /* Brand — navy (deep, trustworthy) */
-  --brand-50:  #EFF4FB;
-  --brand-100: #DBE6F5;
-  --brand-200: #B7CCE9;
-  --brand-300: #93B2DC;
-  --brand-400: #5B85C7;
-  --brand-500: #1D4ED8;
-  --brand-600: #1E40AF;
-  --brand-700: #1E3A8A;
-  --brand-800: #14296B;
-  /* Headings + primary buttons read as a deep near-black charcoal (Odyssey-restrained);
-     navy lives in brand-50..800 and the page gradients as a subtle base. */
-  --brand-900: #15181F;
+  /* Brand — neutral monochrome (Odyssey black/white/gray). Orange is the only accent. */
+  --brand-50:  #F6F6F5;
+  --brand-100: #ECECEA;
+  --brand-200: #DBDBD8;
+  --brand-300: #C0C0BC;
+  --brand-400: #9A9A95;
+  --brand-500: #737370;
+  --brand-600: #52524F;
+  --brand-700: #383836;
+  --brand-800: #232322;
+  --brand-900: #131312;   /* near-black — headings + primary buttons */
 
   /* Accent — warm orange (energy, CTA) */
   --accent-50:  #FFF7ED;
@@ -29,11 +27,11 @@
   --accent-600: #D97706;
   --accent-700: #B45309;
 
-  /* Surfaces */
-  --background: #FAFBFD;
-  --foreground: #0F172A;
-  --muted:      #64748B;
-  --border:     #E2E8F0;
+  /* Surfaces — neutral (no blue tint) */
+  --background: #FBFBFA;
+  --foreground: #171716;
+  --muted:      #6B6B67;
+  --border:     #E6E6E3;
   --card:       #FFFFFF;
 }
 
@@ -92,7 +90,7 @@ body {
   background: var(--background);
   /* Soft layered gradient — adds depth without visible lines. */
   background-image:
-    radial-gradient(ellipse 1200px 800px at 0% 0%, rgba(29, 78, 216, 0.04), transparent 60%),
+    radial-gradient(ellipse 1200px 800px at 0% 0%, rgba(0, 0, 0, 0.025), transparent 60%),
     radial-gradient(ellipse 1000px 700px at 100% 100%, rgba(245, 158, 11, 0.035), transparent 60%);
   background-attachment: fixed;
   color: var(--foreground);
@@ -194,7 +192,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Hero gradient — subtle navy → orange wash for landing */
 .hero-gradient {
   background:
-    radial-gradient(1200px 600px at 20% 0%, rgba(29, 78, 216, 0.08), transparent 60%),
+    radial-gradient(1200px 600px at 20% 0%, rgba(0, 0, 0, 0.04), transparent 60%),
     radial-gradient(900px 500px at 100% 30%, rgba(245, 158, 11, 0.08), transparent 60%),
     var(--background);
 }
@@ -216,8 +214,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .hero-grid {
   background-image:
-    linear-gradient(rgba(15, 44, 107, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 44, 107, 0.055) 1px, transparent 1px);
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 75% 65% at 50% 38%, black 25%, transparent 78%);
 }
