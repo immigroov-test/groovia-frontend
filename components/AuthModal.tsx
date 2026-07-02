@@ -182,7 +182,7 @@ function AuthModalInner() {
                 <p className="text-sm text-muted mt-1 text-center">{t.detailsSubheading}</p>
                 <form onSubmit={handleDetails} className="mt-6 flex flex-col gap-3">
                   <Input
-                    type="text" required autoFocus value={name}
+                    type="text" required autoFocus value={name} maxLength={80}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel}
                     className="border border-brand-300 focus:border-brand-500"

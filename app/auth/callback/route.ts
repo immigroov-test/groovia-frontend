@@ -47,5 +47,5 @@ export async function GET(request: NextRequest) {
     if (!error) { await syncAccount(supabase); return NextResponse.redirect(`${origin}${next}`); }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=callback_failed`);
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
 }
