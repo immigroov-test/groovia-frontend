@@ -211,7 +211,7 @@ function AuthModalInner() {
           </div>
 
           {/* Right — brand panel with why-join; quote overlaid on the upper photo band (desktop) */}
-          <div className="hidden md:flex md:w-1/2 flex-col bg-brand-900 text-white">
+          <div className="hidden md:flex md:w-1/2 flex-col bg-[#102a4c] text-white">
             <div className="flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
               <ul className="mt-5 flex flex-col gap-3">
