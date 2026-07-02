@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Loader2, CalendarClock, Video, AlertTriangle } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Button } from './ui/Button';
@@ -331,26 +332,9 @@ function BookingCard({
                   </Button>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs font-medium text-foreground">
-                    {b.deadline_state === 'free' ? 'Reschedule to a new time' : 'Request a reschedule'}
-                  </p>
-                  {b.deadline_state === 'free' ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input type="datetime-local" value={newTime} onChange={(e) => setNewTime(e.target.value)}
-                        className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
-                      <Button variant="outline" loading={busy} disabled={!newTime}
-                        onClick={() => act(b.id, '/api/booking/reschedule/customer', { booking_id: b.id, slot_time: toIso(newTime) })}>
-                        Reschedule
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button variant="outline" loading={busy}
-                      onClick={() => act(b.id, '/api/booking/reschedule/request', { booking_id: b.id })}>
-                      Ask mentor to approve a reschedule
-                    </Button>
-                  )}
-                </div>
+                <Link href={`/account/sessions/${b.id}/reschedule`}>
+                  <Button variant="outline">Reschedule</Button>
+                </Link>
               )}
 
               <Button
