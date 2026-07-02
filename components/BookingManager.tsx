@@ -205,10 +205,10 @@ function BookingCard({
             {role === 'mentee' ? 'with ' : ''}{b.other_name ?? 'your ' + (role === 'mentee' ? 'mentor' : 'mentee')}
           </p>
         </div>
-        {b.meeting_url && active && (
-          <a href={b.meeting_url} target="_blank" rel="noreferrer"
+        {active && !isPast && (
+          <a href={`/meeting/${b.id}`}
             className="text-sm font-medium text-brand-700 hover:underline flex items-center gap-1 shrink-0">
-            <Video className="h-4 w-4" /> Join
+            <Video className="h-4 w-4" /> Join meeting
           </a>
         )}
       </div>
