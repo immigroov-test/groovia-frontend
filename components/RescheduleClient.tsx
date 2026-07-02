@@ -22,6 +22,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [needsApproval, setNeedsApproval] = useState(false);
   const [done, setDone] = useState<string | null>(null);
 
   const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
@@ -73,7 +74,17 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
         body: JSON.stringify({ booking_id: bookingId, slot_time: selectedSlot.slot_start }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setError(data.detail || 'Could not reschedule. Please try another time.'); return; }
+      if (!res.ok) {
+        const msg: string = data.detail || 'Could not reschedule. Please try another time.';
+        if (/approval|24 ?h/i.test(msg)) {
+          // Crossed into the <24h window since the page loaded — switch to a request.
+          setNeedsApproval(true);
+          setError(null);
+          return;
+        }
+        setError(msg);
+        return;
+      }
       router.push('/account/sessions');
       router.refresh();
     } catch { setError('Could not reschedule. Please try again.'); }
@@ -183,9 +194,16 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
 
             <div className="sm:col-span-2 flex flex-col gap-2">
               {error && <p className="text-sm text-red-600">{error}</p>}
-              <Button onClick={confirmReschedule} loading={submitting} disabled={!selectedSlot} className="self-start">
-                <CalendarCheck className="h-4 w-4" /> Confirm new time
-              </Button>
+              {needsApproval ? (
+                <>
+                  <p className="text-sm text-amber-900">This session is now within 24 hours, so a reschedule needs your mentor’s approval.</p>
+                  <Button onClick={sendRequest} loading={submitting} className="self-start">Send reschedule request</Button>
+                </>
+              ) : (
+                <Button onClick={confirmReschedule} loading={submitting} disabled={!selectedSlot} className="self-start">
+                  <CalendarCheck className="h-4 w-4" /> Confirm new time
+                </Button>
+              )}
             </div>
           </div>
         )
