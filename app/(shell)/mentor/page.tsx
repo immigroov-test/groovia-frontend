@@ -70,7 +70,7 @@ export default async function MentorPage() {
         )}
       </div>
 
-      <div className="mt-8 flex flex-col gap-4">
+      <div className="mt-8 flex flex-col gap-4 reveal-children">
         {mentor.status === 'pending_review' && (
           <>
             <Card>
