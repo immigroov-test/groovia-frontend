@@ -302,9 +302,25 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, pendingBook]);
 
-  function startAuthThenBook() {
-    setPendingBook(true);
-    router.push(`${pathname}?auth=open&guest=1`);
+  // Not logged in: an email with an existing account must log in first; any other
+  // email books directly as a guest (the confirmation email verifies the address).
+  async function handleConfirm() {
+    if (isLoggedIn) { submitBooking(); return; }
+    if (!email.trim()) { setFormError('Email is required.'); return; }
+    setFormError(null); setSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setSubmitting(false);
+      if (data.has_password) { setPendingBook(true); router.push(`${pathname}?auth=open`); }
+      else submitBooking();               // new email → guest booking
+    } catch {
+      setSubmitting(false);
+      submitBooking();
+    }
   }
 
   // Load slots when a service is selected
@@ -605,14 +621,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               <ChevronLeft className="h-3.5 w-3.5" /> Change time
             </button>
             <h3 className="text-base font-semibold text-brand-900">Your details</h3>
-            {isLoggedIn && (
-              <>
-                <Input label="Full name" value={name} onChange={e => setName(e.target.value)}
-                  placeholder="Your name" autoComplete="name" />
-                <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com" autoComplete="email" hint="We'll send your confirmation here." />
-              </>
-            )}
+            <Input label="Full name" value={name} onChange={e => setName(e.target.value)}
+              placeholder="Your name" autoComplete="name" />
+            <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com" autoComplete="email" hint="We'll send your confirmation here." />
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">
                 What should your mentor prepare? <span className="text-muted font-normal">(optional)</span>
@@ -655,17 +667,14 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               </div>
             ))}
             {formError && <p className="text-sm text-red-600">{formError}</p>}
-            {isLoggedIn ? (
-              <Button variant="accent" onClick={() => submitBooking()} loading={submitting} disabled={!email.trim()}>
-                Confirm booking
-              </Button>
-            ) : (
-              <>
-                <Button variant="accent" onClick={startAuthThenBook} loading={submitting || pendingBook}>
-                  Continue to confirm
-                </Button>
-                <p className="text-xs text-muted">You’ll sign in or continue as a guest in the next step.</p>
-              </>
+            <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook} disabled={!email.trim()}>
+              Confirm booking
+            </Button>
+            {!isLoggedIn && (
+              <p className="text-xs text-muted">
+                Booking as a guest — if this email already has an account you’ll be asked to log in.
+                Guests get a confirmation email but can’t log in or manage the booking later.
+              </p>
             )}
           </div>
         )}

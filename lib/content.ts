@@ -110,8 +110,8 @@ export const UI_CONTENT = {
     forgotHeading: 'Reset your password',
     forgotSubheading: 'Enter your email and we’ll send a reset link.',
     sendReset: 'Send reset link',
-    confirmHeading: 'Confirm your email',
-    confirmBody: (email: string) => `We sent a confirmation link to ${email}. Click it to activate your account, then sign in.`,
+    confirmHeading: 'Check your email',
+    confirmBody: (email: string) => `We sent a link to ${email}. Click it to verify your email, then you’ll set your password.`,
     resetHeading: 'Check your email',
     resetBody: (email: string) => `If ${email} has an account, a password reset link is on its way.`,
     resendConfirm: 'Resend confirmation',
@@ -146,8 +146,8 @@ export const UI_CONTENT = {
   },
   // Default proverb shown if the daily quote API is unreachable.
   quote: {
-    text: 'Seek wealth, even if it means crossing the ocean.',
-    author: '',
+    text: 'Venture across the oceans and seek prosperity.',
+    author: 'Avvaiyar',
   },
   // Titles shown on the login popup — decoupled from `whyJoin` (used on About) so
   // they can be edited independently.
