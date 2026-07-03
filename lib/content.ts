@@ -116,7 +116,7 @@ export const UI_CONTENT = {
     resetBody: (email: string) => `If ${email} has an account, a password reset link is on its way.`,
     resendConfirm: 'Resend confirmation',
     notConfirmed: 'Your email isn’t confirmed yet — check your inbox for the link.',
-    badCredentials: 'Incorrect email or password.',
+    badCredentials: 'Incorrect password. Forgot it — or signed up with Google? Use “Forgot password?” below to set or reset it.',
     // Code-based verification
     verifyHeading: 'Verify your email',
     verifySubheading: (email: string) => `Enter the 6-digit code we sent to ${email}.`,
