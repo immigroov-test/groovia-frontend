@@ -10,7 +10,7 @@ import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
 
-type Stage = 'email' | 'details' | 'sent';
+type Stage = 'email' | 'login' | 'signup' | 'forgot' | 'sent';
 
 function AuthModalInner() {
   const router = useRouter();
@@ -24,13 +24,17 @@ function AuthModalInner() {
   const [stage, setStage] = useState<Stage>('email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [isNew, setIsNew] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [sentType, setSentType] = useState<'confirm' | 'reset'>('confirm');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState<{ text: string; author: string }>({ ...UI_CONTENT.quote });
 
   useEffect(() => {
-    if (isOpen) { setStage('email'); setEmail(''); setName(''); setIsNew(false); setError(null); }
+    if (isOpen) {
+      setStage('email'); setEmail(''); setName(''); setPassword(''); setConfirm(''); setError(null);
+    }
   }, [isOpen]);
 
   // Daily quote — falls back to the default in content.ts if the API isn't reachable.
@@ -42,9 +46,7 @@ function AuthModalInner() {
       .catch(() => {});
   }, [isOpen]);
 
-  // While the popup is open, watch for sign-in — e.g. the user clicks the magic link
-  // in another tab. Supabase syncs auth across tabs, so we close the popup and refresh
-  // so this tab reflects the logged-in state too.
+  // While open, close + refresh if sign-in completes (this tab or another).
   useEffect(() => {
     if (!isOpen) return;
     const supabase = createClient();
@@ -67,22 +69,9 @@ function AuthModalInner() {
     return next ? `${base}?next=${encodeURIComponent(next)}` : base;
   }
 
-  async function sendLink(create: boolean, fullName?: string) {
-    const supabase = createClient();
-    return supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        shouldCreateUser: create,
-        emailRedirectTo: redirectTo(),
-        // Stored on the user at creation.
-        data: fullName ? { full_name: fullName } : undefined,
-      },
-    });
-  }
+  const cleanEmail = () => email.trim().toLowerCase();
 
-  // Step 1: email only. Ask the backend whether the account exists (no email sent) —
-  // existing → send the login link now; new → advance to collect the name. Sending
-  // exactly one link avoids Supabase's per-email OTP rate limit.
+  // Step 1 — email only: does an account already exist?
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
@@ -90,38 +79,74 @@ function AuthModalInner() {
       const res = await fetch('/api/auth/check-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ email: cleanEmail() }),
       });
-      if (res.ok) {
-        const { exists } = await res.json();
-        if (exists) {
-          const { error } = await sendLink(false);
-          setLoading(false);
-          if (error) { setError(error.message); return; }
-          setIsNew(false); setStage('sent');
-          return;
-        }
-      }
-      // New account (or the check is unavailable) → collect the name next.
+      if (!res.ok) { setLoading(false); setError('Something went wrong. Please try again.'); return; }
+      const { exists } = await res.json();
       setLoading(false);
-      setStage('details');
+      setStage(exists ? 'login' : 'signup');
     } catch {
       setLoading(false);
-      setStage('details');
+      setError('Something went wrong. Please try again.');
     }
   }
 
-  // Step 2 (new users only): collect the name, then create + send the link.
-  async function handleDetails(e: React.FormEvent) {
+  // Existing account → password login.
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
-    const { error } = await sendLink(true, name.trim() || undefined);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail(), password });
+    setLoading(false);
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('not confirmed')) { setError(t.notConfirmed); return; }
+      if (msg.includes('invalid login')) { setError(t.badCredentials); return; }
+      setError(error.message);
+      return;
+    }
+    close(); router.refresh();
+  }
+
+  // New account → create + email confirmation.
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (password.length < 8) { setError(t.passwordHint); return; }
+    if (password !== confirm) { setError('Passwords do not match.'); return; }
+    setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail(),
+      password,
+      options: { data: { full_name: name.trim() }, emailRedirectTo: redirectTo() },
+    });
     setLoading(false);
     if (error) { setError(error.message); return; }
-    setIsNew(true); setStage('sent');
+    if (data.session) { close(); router.refresh(); return; } // confirmation disabled
+    setSentType('confirm'); setStage('sent');
+  }
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail(), {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    });
+    setLoading(false);
+    if (error) { setError(error.message); return; }
+    setSentType('reset'); setStage('sent');
+  }
+
+  async function resendConfirm() {
+    const supabase = createClient();
+    await supabase.auth.resend({ type: 'signup', email: cleanEmail() });
   }
 
   if (!isOpen) return null;
+
+  const inputBorder = 'border border-brand-300 focus:border-brand-500';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-brand-900/50 backdrop-blur-sm">
@@ -132,7 +157,7 @@ function AuthModalInner() {
         <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
           <button
             type="button" onClick={close} aria-label="Close"
-            className="absolute top-4 right-4 z-30 p-1.5 rounded-full text-white/80 md:text-white/80 hover:text-white hover:bg-white/10"
+            className="absolute top-4 right-4 z-30 p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
@@ -141,9 +166,7 @@ function AuthModalInner() {
           <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-md">
             <Image
               src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
-              priority
-              className="object-contain"
-              style={{ height: '26px', width: 'auto' }}
+              priority className="object-contain" style={{ height: '26px', width: 'auto' }}
             />
           </div>
 
@@ -154,16 +177,10 @@ function AuthModalInner() {
                 <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
                 <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
                 <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
-                  <Input
-                    type="email" required value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel}
-                    className="border border-brand-300 focus:border-brand-500"
-                  />
+                  <Input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel} className={inputBorder} />
                   {error && <p className="text-xs text-red-600">{error}</p>}
-                  <Button type="submit" loading={loading} className="w-full">
-                    {t.continueWithEmail}
-                  </Button>
+                  <Button type="submit" loading={loading} className="w-full">{t.continue}</Button>
                 </form>
                 <div className="my-4 flex items-center gap-3 text-xs text-muted">
                   <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
@@ -176,34 +193,71 @@ function AuthModalInner() {
                 </p>
               </>
             )}
-            {stage === 'details' && (
+
+            {stage === 'login' && (
               <>
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.detailsHeading}</h2>
-                <p className="text-sm text-muted mt-1 text-center">{t.detailsSubheading}</p>
-                <form onSubmit={handleDetails} className="mt-6 flex flex-col gap-3">
-                  <Input
-                    type="text" required autoFocus value={name} maxLength={80}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel}
-                    className="border border-brand-300 focus:border-brand-500"
-                  />
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.loginHeading}</h2>
+                <p className="text-sm text-muted mt-1 text-center">{email}</p>
+                <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-3">
+                  <Input type="password" required autoFocus value={password} onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t.passwordPlaceholder} autoComplete="current-password" aria-label={t.passwordLabel} className={inputBorder} />
+                  {error && (
+                    <p className="text-xs text-red-600">
+                      {error}{error === t.notConfirmed && <> <button type="button" onClick={resendConfirm} className="underline">{t.resendConfirm}</button></>}
+                    </p>
+                  )}
+                  <Button type="submit" loading={loading} className="w-full">{t.signIn}</Button>
+                </form>
+                <div className="mt-4 flex items-center justify-between text-xs">
+                  <button type="button" onClick={() => { setStage('forgot'); setError(null); }} className="text-brand-700 hover:underline">{t.forgot}</button>
+                  <button type="button" onClick={() => { setStage('email'); setPassword(''); setError(null); }} className="text-muted hover:text-foreground">{t.back}</button>
+                </div>
+              </>
+            )}
+
+            {stage === 'signup' && (
+              <>
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.signupHeading}</h2>
+                <p className="text-sm text-muted mt-1 text-center">{t.signupSubheading}</p>
+                <form onSubmit={handleSignup} className="mt-6 flex flex-col gap-3">
+                  <Input type="text" required autoFocus value={name} maxLength={80} onChange={(e) => setName(e.target.value)}
+                    placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel} className={inputBorder} />
+                  <Input type="password" required value={password} minLength={8} onChange={(e) => setPassword(e.target.value)}
+                    placeholder={t.passwordLabel} autoComplete="new-password" aria-label={t.passwordLabel} className={inputBorder} />
+                  <Input type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                    placeholder={t.confirmLabel} autoComplete="new-password" aria-label={t.confirmLabel} className={inputBorder} />
                   {error && <p className="text-xs text-red-600">{error}</p>}
-                  <Button type="submit" loading={loading} className="w-full">
-                    {t.continue}
-                  </Button>
+                  <Button type="submit" loading={loading} className="w-full">{t.createAccount}</Button>
                 </form>
                 <button type="button" onClick={() => { setStage('email'); setError(null); }} className="mt-4 text-xs text-muted hover:text-foreground text-center">{t.back}</button>
               </>
             )}
+
+            {stage === 'forgot' && (
+              <>
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.forgotHeading}</h2>
+                <p className="text-sm text-muted mt-1 text-center">{t.forgotSubheading}</p>
+                <form onSubmit={handleForgot} className="mt-6 flex flex-col gap-3">
+                  <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                    placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel} className={inputBorder} />
+                  {error && <p className="text-xs text-red-600">{error}</p>}
+                  <Button type="submit" loading={loading} className="w-full">{t.sendReset}</Button>
+                </form>
+                <button type="button" onClick={() => { setStage('login'); setError(null); }} className="mt-4 text-xs text-muted hover:text-foreground text-center">← Back</button>
+              </>
+            )}
+
             {stage === 'sent' && (
               <>
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900">{t.linkHeading}</h2>
+                <h2 className="text-2xl font-semibold tracking-tight text-brand-900">{sentType === 'confirm' ? t.confirmHeading : t.resetHeading}</h2>
                 <div className="mt-4 h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
                   <Mail className="h-5 w-5" />
                 </div>
-                <p className="text-sm text-muted mt-3 leading-relaxed">{t.linkSubheading(email)}</p>
+                <p className="text-sm text-muted mt-3 leading-relaxed">
+                  {sentType === 'confirm' ? t.confirmBody(email) : t.resetBody(email)}
+                </p>
                 <div className="mt-6 flex items-center gap-4 text-xs">
-                  <button type="button" onClick={() => sendLink(isNew, isNew ? name.trim() : undefined)} className="text-brand-700 hover:underline">{t.resend}</button>
+                  {sentType === 'confirm' && <button type="button" onClick={resendConfirm} className="text-brand-700 hover:underline">{t.resendConfirm}</button>}
                   <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
                 </div>
               </>
@@ -225,7 +279,6 @@ function AuthModalInner() {
                 ))}
               </ul>
             </div>
-            {/* Photo band (cropped shorter to keep the popup compact); quote near the top with a top scrim */}
             <div className="relative w-full aspect-[848/330] shrink-0">
               <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover object-center" sizes="(max-width: 896px) 50vw, 448px" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/30 to-transparent" />
