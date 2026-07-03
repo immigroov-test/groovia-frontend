@@ -50,7 +50,7 @@ export function TopNav({ authed, email, role }: Props) {
 
   const nav = [
     { href: '/chat', label: UI_CONTENT.sidebar.chat, gated: false },
-    { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: true },
+    { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
     ...(role !== 'admin' ? [{ href: '/mentor', label: UI_CONTENT.sidebar.mentorPortal, gated: false }] : []),

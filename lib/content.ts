@@ -117,6 +117,16 @@ export const UI_CONTENT = {
     resendConfirm: 'Resend confirmation',
     notConfirmed: 'Your email isn’t confirmed yet — check your inbox for the link.',
     badCredentials: 'Incorrect email or password.',
+    // Code-based verification
+    verifyHeading: 'Verify your email',
+    verifySubheading: (email: string) => `Enter the 6-digit code we sent to ${email}.`,
+    codeLabel: 'Verification code',
+    codePlaceholder: '123456',
+    verifyButton: 'Verify',
+    resendCode: 'Resend code',
+    setupHeading: 'Finish setting up',
+    setupSubheading: 'Add your name and a password to secure your account.',
+    badCode: 'That code is invalid or expired. Try again or resend.',
     emailLabel: 'Email address',
     emailPlaceholder: 'you@example.com',
     continueWithEmail: 'Continue with email',
@@ -136,6 +146,16 @@ export const UI_CONTENT = {
     text: 'Seek wealth, even if it means crossing the ocean.',
     author: '',
   },
+  // Titles shown on the login popup — decoupled from `whyJoin` (used on About) so
+  // they can be edited independently.
+  authPoints: [
+    'Guidance That Fits Your Life',
+    'AI-Powered Guidance, Anytime',
+    'Handpicked Mentors, Not Just Volunteers',
+    'Honest Answers, Not Just Encouragement',
+    'Private, Personal Mentorship',
+    'You Move Forward Faster',
+  ],
   // Reasons to join — titles surface on the login popup; full text on About.
   whyJoin: [
     {

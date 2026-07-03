@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,7 +10,7 @@ import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
 
-type Stage = 'email' | 'login' | 'signup' | 'forgot' | 'sent';
+type Stage = 'email' | 'login' | 'verify' | 'setup' | 'forgot' | 'sent';
 
 function AuthModalInner() {
   const router = useRouter();
@@ -26,18 +26,22 @@ function AuthModalInner() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [sentType, setSentType] = useState<'confirm' | 'reset'>('confirm');
+  const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState<{ text: string; author: string }>({ ...UI_CONTENT.quote });
 
+  // Suppresses the auto-close listener while a new user verifies + sets a password
+  // (verifyOtp signs them in mid-flow; we don't want the popup to close before setup).
+  const settingUp = useRef(false);
+
   useEffect(() => {
     if (isOpen) {
-      setStage('email'); setEmail(''); setName(''); setPassword(''); setConfirm(''); setError(null);
+      setStage('email'); setEmail(''); setName(''); setPassword(''); setConfirm(''); setCode(''); setError(null);
+      settingUp.current = false;
     }
   }, [isOpen]);
 
-  // Daily quote — falls back to the default in content.ts if the API isn't reachable.
   useEffect(() => {
     if (!isOpen) return;
     fetch('/api/quote')
@@ -46,12 +50,11 @@ function AuthModalInner() {
       .catch(() => {});
   }, [isOpen]);
 
-  // While open, close + refresh if sign-in completes (this tab or another).
   useEffect(() => {
     if (!isOpen) return;
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') { close(); router.refresh(); }
+      if (event === 'SIGNED_IN' && !settingUp.current) { close(); router.refresh(); }
     });
     return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -64,11 +67,6 @@ function AuthModalInner() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
-  function redirectTo(): string {
-    const base = `${window.location.origin}/auth/callback`;
-    return next ? `${base}?next=${encodeURIComponent(next)}` : base;
-  }
-
   const cleanEmail = () => email.trim().toLowerCase();
 
   // Step 1 — email only: does an account already exist?
@@ -77,18 +75,22 @@ function AuthModalInner() {
     setError(null); setLoading(true);
     try {
       const res = await fetch('/api/auth/check-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail() }),
       });
       if (!res.ok) { setLoading(false); setError('Something went wrong. Please try again.'); return; }
       const { exists } = await res.json();
-      setLoading(false);
-      setStage(exists ? 'login' : 'signup');
+      if (exists) { setLoading(false); setStage('login'); return; }
+      await sendCode();               // new email → email a verification code
+      setLoading(false); setStage('verify');
     } catch {
-      setLoading(false);
-      setError('Something went wrong. Please try again.');
+      setLoading(false); setError('Something went wrong. Please try again.');
     }
+  }
+
+  async function sendCode() {
+    const supabase = createClient();
+    return supabase.auth.signInWithOtp({ email: cleanEmail(), options: { shouldCreateUser: true } });
   }
 
   // Existing account → password login.
@@ -102,29 +104,35 @@ function AuthModalInner() {
       const msg = (error.message || '').toLowerCase();
       if (msg.includes('not confirmed')) { setError(t.notConfirmed); return; }
       if (msg.includes('invalid login')) { setError(t.badCredentials); return; }
-      setError(error.message);
-      return;
+      setError(error.message); return;
     }
     close(); router.refresh();
   }
 
-  // New account → create + email confirmation.
-  async function handleSignup(e: React.FormEvent) {
+  // New user — verify the 6-digit code, then set up name + password.
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    settingUp.current = true;         // keep the popup open through setup
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({ email: cleanEmail(), token: code.trim(), type: 'email' });
+    setLoading(false);
+    if (error) { settingUp.current = false; setError(t.badCode); return; }
+    setStage('setup');
+  }
+
+  async function handleSetup(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (password.length < 8) { setError(t.passwordHint); return; }
     if (password !== confirm) { setError('Passwords do not match.'); return; }
     setLoading(true);
     const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail(),
-      password,
-      options: { data: { full_name: name.trim() }, emailRedirectTo: redirectTo() },
-    });
+    const { error } = await supabase.auth.updateUser({ password, data: { full_name: name.trim() } });
     setLoading(false);
     if (error) { setError(error.message); return; }
-    if (data.session) { close(); router.refresh(); return; } // confirmation disabled
-    setSentType('confirm'); setStage('sent');
+    settingUp.current = false;
+    close(); router.refresh();
   }
 
   async function handleForgot(e: React.FormEvent) {
@@ -136,12 +144,7 @@ function AuthModalInner() {
     });
     setLoading(false);
     if (error) { setError(error.message); return; }
-    setSentType('reset'); setStage('sent');
-  }
-
-  async function resendConfirm() {
-    const supabase = createClient();
-    await supabase.auth.resend({ type: 'signup', email: cleanEmail() });
+    setStage('sent');
   }
 
   if (!isOpen) return null;
@@ -157,24 +160,22 @@ function AuthModalInner() {
         <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
           <button
             type="button" onClick={close} aria-label="Close"
-            className="absolute top-4 right-4 z-30 p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10"
+            className="absolute top-4 right-4 z-30 p-1.5 rounded-full text-brand-500 hover:text-brand-900 hover:bg-brand-50 md:text-white/80 md:hover:text-white md:hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
 
           {/* Logo centered across the divider, in a white box so it reads on both sides */}
           <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-md">
-            <Image
-              src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
-              priority className="object-contain" style={{ height: '26px', width: 'auto' }}
-            />
+            <Image src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
+              priority className="object-contain" style={{ height: '26px', width: 'auto' }} />
           </div>
 
           {/* Left — form */}
-          <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-6 flex flex-col min-h-[440px]">
+          <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:min-h-[440px]">
             {stage === 'email' && (
               <>
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
                 <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
                 <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
                   <Input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
@@ -196,16 +197,12 @@ function AuthModalInner() {
 
             {stage === 'login' && (
               <>
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.loginHeading}</h2>
-                <p className="text-sm text-muted mt-1 text-center">{email}</p>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.loginHeading}</h2>
+                <p className="text-sm text-muted mt-1 text-center break-all">{email}</p>
                 <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-3">
                   <Input type="password" required autoFocus value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder={t.passwordPlaceholder} autoComplete="current-password" aria-label={t.passwordLabel} className={inputBorder} />
-                  {error && (
-                    <p className="text-xs text-red-600">
-                      {error}{error === t.notConfirmed && <> <button type="button" onClick={resendConfirm} className="underline">{t.resendConfirm}</button></>}
-                    </p>
-                  )}
+                  {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading} className="w-full">{t.signIn}</Button>
                 </form>
                 <div className="mt-4 flex items-center justify-between text-xs">
@@ -215,11 +212,30 @@ function AuthModalInner() {
               </>
             )}
 
-            {stage === 'signup' && (
+            {stage === 'verify' && (
               <>
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.signupHeading}</h2>
-                <p className="text-sm text-muted mt-1 text-center">{t.signupSubheading}</p>
-                <form onSubmit={handleSignup} className="mt-6 flex flex-col gap-3">
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.verifyHeading}</h2>
+                <p className="text-sm text-muted mt-1 text-center break-words">{t.verifySubheading(email)}</p>
+                <form onSubmit={handleVerify} className="mt-6 flex flex-col gap-3">
+                  <Input type="text" inputMode="numeric" autoComplete="one-time-code" required autoFocus maxLength={6}
+                    value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder={t.codePlaceholder} aria-label={t.codeLabel}
+                    className={`${inputBorder} text-center tracking-[0.4em] text-lg`} />
+                  {error && <p className="text-xs text-red-600">{error}</p>}
+                  <Button type="submit" loading={loading} disabled={code.length < 6} className="w-full">{t.verifyButton}</Button>
+                </form>
+                <div className="mt-4 flex items-center justify-between text-xs">
+                  <button type="button" onClick={() => sendCode()} className="text-brand-700 hover:underline">{t.resendCode}</button>
+                  <button type="button" onClick={() => { setStage('email'); setCode(''); setError(null); }} className="text-muted hover:text-foreground">{t.back}</button>
+                </div>
+              </>
+            )}
+
+            {stage === 'setup' && (
+              <>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.setupHeading}</h2>
+                <p className="text-sm text-muted mt-1 text-center">{t.setupSubheading}</p>
+                <form onSubmit={handleSetup} className="mt-6 flex flex-col gap-3">
                   <Input type="text" required autoFocus value={name} maxLength={80} onChange={(e) => setName(e.target.value)}
                     placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel} className={inputBorder} />
                   <Input type="password" required value={password} minLength={8} onChange={(e) => setPassword(e.target.value)}
@@ -229,13 +245,12 @@ function AuthModalInner() {
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading} className="w-full">{t.createAccount}</Button>
                 </form>
-                <button type="button" onClick={() => { setStage('email'); setError(null); }} className="mt-4 text-xs text-muted hover:text-foreground text-center">{t.back}</button>
               </>
             )}
 
             {stage === 'forgot' && (
               <>
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.forgotHeading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.forgotHeading}</h2>
                 <p className="text-sm text-muted mt-1 text-center">{t.forgotSubheading}</p>
                 <form onSubmit={handleForgot} className="mt-6 flex flex-col gap-3">
                   <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
@@ -249,32 +264,27 @@ function AuthModalInner() {
 
             {stage === 'sent' && (
               <>
-                <h2 className="text-2xl font-semibold tracking-tight text-brand-900">{sentType === 'confirm' ? t.confirmHeading : t.resetHeading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900">{t.resetHeading}</h2>
                 <div className="mt-4 h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
                   <Mail className="h-5 w-5" />
                 </div>
-                <p className="text-sm text-muted mt-3 leading-relaxed">
-                  {sentType === 'confirm' ? t.confirmBody(email) : t.resetBody(email)}
-                </p>
-                <div className="mt-6 flex items-center gap-4 text-xs">
-                  {sentType === 'confirm' && <button type="button" onClick={resendConfirm} className="text-brand-700 hover:underline">{t.resendConfirm}</button>}
-                  <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
-                </div>
+                <p className="text-sm text-muted mt-3 leading-relaxed">{t.resetBody(email)}</p>
+                <button type="button" onClick={() => { setStage('email'); setError(null); }} className="mt-6 text-xs text-muted hover:text-foreground">{t.changeEmail}</button>
               </>
             )}
           </div>
 
-          {/* Right — brand panel with why-join; quote overlaid on the upper photo band (desktop) */}
+          {/* Right — brand panel with points; quote overlaid on the upper photo band (desktop) */}
           <div className="hidden md:flex md:w-1/2 flex-col bg-[#102a4c] text-white">
             <div className="flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
               <ul className="mt-5 flex flex-col gap-3">
-                {UI_CONTENT.whyJoin.map((w) => (
-                  <li key={w.title} className="flex items-start gap-3">
+                {UI_CONTENT.authPoints.map((point) => (
+                  <li key={point} className="flex items-start gap-3">
                     <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
                       <Check className="h-3 w-3 text-white" />
                     </span>
-                    <span className="text-sm font-medium leading-snug">{w.title}</span>
+                    <span className="text-sm font-medium leading-snug">{point}</span>
                   </li>
                 ))}
               </ul>

@@ -78,12 +78,12 @@ function LoginPopupPreview() {
           <div className="flex-1 px-8 pt-20 pb-6 flex flex-col">
             <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
             <ul className="mt-6 flex flex-col gap-4">
-              {UI_CONTENT.whyJoin.map((w) => (
-                <li key={w.title} className="flex items-start gap-3">
+              {UI_CONTENT.authPoints.map((point) => (
+                <li key={point} className="flex items-start gap-3">
                   <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
                     <Check className="h-3 w-3 text-white" />
                   </span>
-                  <span className="text-sm font-medium leading-snug">{w.title}</span>
+                  <span className="text-sm font-medium leading-snug">{point}</span>
                 </li>
               ))}
             </ul>
