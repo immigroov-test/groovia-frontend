@@ -120,6 +120,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 .animate-fade-up { animation: fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
 
+/* Staggered "fall into position" entrance for a page's content blocks.
+   Put `reveal-children` on a container; its direct children animate in with a stagger. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.reveal-children > * { animation: reveal-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.reveal-children > *:nth-child(1) { animation-delay: 0.04s; }
+.reveal-children > *:nth-child(2) { animation-delay: 0.12s; }
+.reveal-children > *:nth-child(3) { animation-delay: 0.20s; }
+.reveal-children > *:nth-child(4) { animation-delay: 0.28s; }
+.reveal-children > *:nth-child(5) { animation-delay: 0.36s; }
+.reveal-children > *:nth-child(6) { animation-delay: 0.44s; }
+.reveal-children > *:nth-child(n+7) { animation-delay: 0.5s; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal-children > * { animation: none; }
+}
+
 /* Triple-arrow scroll indicator: each arrow fades in/down with a stagger */
 @keyframes arrow-cascade {
   0%, 60%, 100% { opacity: 0.15; transform: translateY(-4px); }

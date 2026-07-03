@@ -80,9 +80,11 @@ function AuthModalInner() {
         body: JSON.stringify({ email: cleanEmail() }),
       });
       if (!res.ok) { setLoading(false); setError('Something went wrong. Please try again.'); return; }
-      const { exists } = await res.json();
-      if (exists) { setLoading(false); setStage('login'); return; }
-      await sendCode();               // new email → email a verification code
+      const { has_password } = await res.json();
+      // Only accounts that actually have a password go to login. New / unconfirmed /
+      // passwordless accounts go back through verify → set a password.
+      if (has_password) { setLoading(false); setStage('login'); return; }
+      await sendCode();
       setLoading(false); setStage('verify');
     } catch {
       setLoading(false); setError('Something went wrong. Please try again.');

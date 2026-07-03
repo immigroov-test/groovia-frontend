@@ -21,7 +21,7 @@ export default async function AccountPage() {
       <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Profile</h1>
       <p className="text-sm text-muted mt-1">Your profile and contact details.</p>
 
-      <div className="mt-8 grid gap-4">
+      <div className="mt-8 grid gap-4 reveal-children">
         <Card>
           <CardBody className="pt-6">
             <div className="flex items-center justify-between gap-4">

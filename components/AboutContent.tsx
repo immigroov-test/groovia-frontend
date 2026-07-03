@@ -27,7 +27,7 @@ export function AboutContent() {
         </h2>
         <p className="mt-4 text-base text-muted leading-relaxed max-w-2xl">{a.whyChooseIntro}</p>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 reveal-children">
           {UI_CONTENT.whyJoin.map((w) => (
             <Card key={w.title}>
               <CardBody className="pt-6">
