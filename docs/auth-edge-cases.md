@@ -1,13 +1,39 @@
 # Auth / login edge cases
 
-Our flow: popup email → `POST /api/auth/check-email` (looks up `profiles.email`, sends
-no email) → existing ⇒ `signInWithOtp({shouldCreateUser:false})`; new ⇒ collect name ⇒
-`signInWithOtp({shouldCreateUser:true, data:{full_name}})`. Google is a separate OAuth
-button. Callback (`/auth/callback`) exchanges the link, calls backend `/auth/sync` (mentor
-auto-link), then redirects. Every auth user gets a `profiles` row via the
-`handle_new_user` trigger (copies `full_name`, `role` from metadata).
+**Current model (2026-07-03): email + PASSWORD, with 6-digit CODE verification for new
+users.** Popup email → `POST /api/auth/check-email` → **existing ⇒ password login**
+(`signInWithPassword`, + forgot-password) · **new ⇒ send code** (`signInWithOtp`) →
+`verifyOtp(code)` → **set name + password** (`updateUser`). Google is a separate OAuth
+button. `handle_new_user` trigger copies `full_name`/`role` into `profiles`.
 
 Legend: ✅ handled · ⚠️ works, has a caveat/config · 🔧 candidate fix
+
+## Current-model edge cases (email + password + code)
+| # | Scenario | Handling | Status |
+|---|----------|----------|--------|
+| C1 | **Account with no password** (Google-only, or verified the code then abandoned before setting a password) → email routes to Login → password fails | `signInWithPassword` errors; the message now guides to **Forgot password** (works for any existing user → sets a password), or use the Google button | ✅ recover via forgot-pwd; 🔧 nicer: `check-email` returns `has_password` to route them to setup |
+| C2 | **Abandoned setup** after verifying the code | They're already signed in (session) with no password/name; password only matters for a future fresh login (forgot-pwd recovers). Name can be set in Account | ⚠️ low |
+| C3 | **Email enumeration** via `check-email` | Reveals if an email is registered — inherent to routing existing→login / new→signup | ⚠️ accepted (rate-limit to harden) |
+| C4 | **Verification-email abuse** (entering many emails to spam codes) | Mitigated by Supabase per-email + hourly OTP rate limits | 🔧 add our own rate-limit on check-email/send |
+| C5 | **OTP brute force** — 6-digit code | 1M combos, ~1h expiry, Supabase throttles verify attempts | ✅ low risk |
+| C6 | **verifyOtp signs the user in mid-flow** → could close the popup before they set a password | `settingUp` ref suppresses the auto-close until `updateUser` completes | ✅ handled |
+| C7 | **Open redirect** via `?next` | `safeNext` allows same-origin paths only | ✅ fixed |
+| C8 | **Password reset** link | Routed through `/auth/callback?next=/reset-password` → session → `updateUser`; link is one-time + unguessable | ✅ |
+| C9 | **Password strength** | Min 8 chars client-side + Supabase policy | 🔧 optionally require upper/number in Supabase Auth |
+| C10 | **Supabase email template still shows the magic link** | If present, clicking it logs in but skips setup | 🔧 set template to show only `{{ .Token }}` (the code) |
+
+## Guest-mode booking edge cases (current state — full guest flow not built yet)
+| # | Scenario | Handling | Status |
+|---|----------|----------|--------|
+| G1 | Guests currently book with an **unverified email** (booking form takes email, no code yet) | Code verification + `role=guest` is the next build; until then a stranger's email could be used | 🔧 guest integration |
+| G2 | **Guest can't reschedule/cancel** | Reschedule endpoints require `candidate_id == user.id`; guest bookings have NULL `candidate_id` | 🔧 guest verified account (candidate_id set) fixes it |
+| G3 | **`role='guest'` not in the enum** | `user_role` is `candidate|mentor|admin` — needs `guest` added | 🔧 DB change in guest integration |
+| G4 | **Guest re-login** — a guest account has no password | Can't log in by password later; recovers by verifying a code again, or forgot-password (which upgrades them to a full account) | ⚠️ design note |
+
+---
+
+## (Historical) magic-link model edge cases
+The table below documents the previous passwordless magic-link model, kept for reference.
 
 ## Identity — same email, different method
 | # | Scenario | What happens | Status |
