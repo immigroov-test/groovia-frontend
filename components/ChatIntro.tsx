@@ -33,9 +33,9 @@ function TypeText({ text, speed = 45, className }: { text: string; speed?: numbe
 }
 
 const fadeUp = (delay: number) => ({
-  initial: { opacity: 0, y: 14 },
+  initial: { opacity: 0, y: 22 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.35, delay, ease: [0.4, 0, 0.2, 1] as const },
+  transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
 });
 
 export function ChatIntro({ onStart }: { onStart?: () => void }) {
@@ -44,21 +44,18 @@ export function ChatIntro({ onStart }: { onStart?: () => void }) {
   const [atTop, setAtTop] = useState(true);
 
   useEffect(() => {
-    // The shell's scroll container has id="app-scroll"; fall back to the nearest
-    // scrollable ancestor (e.g. in the /preview frame where the shell isn't present).
-    let scrollEl: Element | null = document.getElementById('app-scroll');
-    if (!scrollEl) {
-      let el: Element | null = sectionRef.current?.parentElement ?? null;
-      while (el) {
-        const { overflowY } = window.getComputedStyle(el);
-        if (overflowY === 'auto' || overflowY === 'scroll') break;
-        el = el.parentElement;
-      }
-      scrollEl = el;
+    // The chat page scrolls an INNER overflow-y-auto div, not #app-scroll — so find the
+    // nearest scrollable ancestor of this section; fall back to #app-scroll.
+    let scrollEl: Element | null = sectionRef.current?.parentElement ?? null;
+    while (scrollEl) {
+      const { overflowY } = window.getComputedStyle(scrollEl);
+      if (overflowY === 'auto' || overflowY === 'scroll') break;
+      scrollEl = scrollEl.parentElement;
     }
+    scrollEl = scrollEl ?? document.getElementById('app-scroll');
     if (!scrollEl) return;
     const node = scrollEl;
-    const onScroll = () => setAtTop(node.scrollTop < 10);
+    const onScroll = () => setAtTop(node.scrollTop < 8);
     onScroll();
     node.addEventListener('scroll', onScroll, { passive: true });
     return () => node.removeEventListener('scroll', onScroll);
@@ -67,9 +64,12 @@ export function ChatIntro({ onStart }: { onStart?: () => void }) {
   return (
     <section ref={sectionRef} className="relative min-h-full overflow-hidden flex flex-col">
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent">
+        <motion.h1
+          {...fadeUp(0)}
+          className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent"
+        >
           <TypeText text={hero.title} />
-        </h1>
+        </motion.h1>
 
         <motion.p
           {...fadeUp(0.75)}
