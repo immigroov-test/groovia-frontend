@@ -20,6 +20,7 @@ function AuthModalInner() {
 
   const isOpen = params.get('auth') === 'open';
   const next = params.get('next') ?? undefined;
+  const guestAllowed = params.get('guest') === '1';   // booking context → offer "continue as guest"
 
   const [stage, setStage] = useState<Stage>('email');
   const [email, setEmail] = useState('');
@@ -135,6 +136,25 @@ function AuthModalInner() {
     close(); router.refresh();
   }
 
+  // Booking context: verified email, no password → guest (books once, no login/manage).
+  async function handleGuest() {
+    setError(null);
+    if (!name.trim()) { setError('Please enter your name.'); return; }
+    setLoading(true);
+    const supabase = createClient();
+    await supabase.auth.updateUser({ data: { full_name: name.trim() } });
+    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      await fetch('/api/auth/set-guest', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+      });
+    } catch { /* role marker is best-effort */ }
+    setLoading(false);
+    settingUp.current = false;
+    close(); router.refresh();
+  }
+
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
@@ -234,7 +254,7 @@ function AuthModalInner() {
             {stage === 'setup' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.setupHeading}</h2>
-                <p className="text-sm text-muted mt-1 text-center">{t.setupSubheading}</p>
+                <p className="text-sm text-muted mt-1 text-center">{guestAllowed ? t.setupSubheadingGuest : t.setupSubheading}</p>
                 <form onSubmit={handleSetup} className="mt-6 flex flex-col gap-3">
                   <Input type="text" required autoFocus value={name} maxLength={80} onChange={(e) => setName(e.target.value)}
                     placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel} className={inputBorder} />
@@ -245,6 +265,15 @@ function AuthModalInner() {
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading} className="w-full">{t.createAccount}</Button>
                 </form>
+                {guestAllowed && (
+                  <>
+                    <div className="my-4 flex items-center gap-3 text-xs text-muted">
+                      <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
+                    </div>
+                    <Button type="button" variant="outline" onClick={handleGuest} loading={loading} className="w-full">{t.guestContinue}</Button>
+                    <p className="mt-2 text-[11px] leading-snug text-muted">{t.guestNote}</p>
+                  </>
+                )}
               </>
             )}
 

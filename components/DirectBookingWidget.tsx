@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   CalendarCheck, Check, ChevronLeft, ChevronRight, Clock, DollarSign,
@@ -231,7 +232,11 @@ interface Props {
 }
 
 export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
   const showMentorTz = !!mentorTimezone && mentorTimezone !== TZ;
+  const [isLoggedIn, setIsLoggedIn]       = useState(false);
+  const [pendingBook, setPendingBook]     = useState(false);
   const [step, setStep]                   = useState<Step>('service');
   const [services, setServices]           = useState<Service[] | null>(null);
   const [servicesError, setServicesError] = useState<string | null>(null);
@@ -264,18 +269,43 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     })();
   }, [mentor.slug]);
 
-  // Pre-fill name/email from session
+  // Pre-fill name/email from session + track auth state.
   useEffect(() => {
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setIsLoggedIn(true);
         setEmail(user.email ?? '');
         const fn = user.user_metadata?.full_name || user.user_metadata?.name;
         if (typeof fn === 'string') setName(fn);
       }
     })();
   }, []);
+
+  // Guest/sign-in from the popup completes → capture the session identity.
+  useEffect(() => {
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== 'SIGNED_IN' || !session?.user) return;
+      setIsLoggedIn(true);
+      setEmail(session.user.email ?? '');
+      const fn = session.user.user_metadata?.full_name || session.user.user_metadata?.name;
+      if (typeof fn === 'string' && fn) setName(fn);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // After the popup signs them in, finish the booking they were mid-way through.
+  useEffect(() => {
+    if (isLoggedIn && pendingBook && selectedSlot) { setPendingBook(false); submitBooking(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, pendingBook]);
+
+  function startAuthThenBook() {
+    setPendingBook(true);
+    router.push(`${pathname}?auth=open&guest=1`);
+  }
 
   // Load slots when a service is selected
   async function selectService(svc: Service) {
@@ -575,10 +605,14 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               <ChevronLeft className="h-3.5 w-3.5" /> Change time
             </button>
             <h3 className="text-base font-semibold text-brand-900">Your details</h3>
-            <Input label="Full name" value={name} onChange={e => setName(e.target.value)}
-              placeholder="Your name" autoComplete="name" />
-            <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com" autoComplete="email" hint="We'll send your confirmation here." />
+            {isLoggedIn && (
+              <>
+                <Input label="Full name" value={name} onChange={e => setName(e.target.value)}
+                  placeholder="Your name" autoComplete="name" />
+                <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com" autoComplete="email" hint="We'll send your confirmation here." />
+              </>
+            )}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">
                 What should your mentor prepare? <span className="text-muted font-normal">(optional)</span>
@@ -621,14 +655,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               </div>
             ))}
             {formError && <p className="text-sm text-red-600">{formError}</p>}
-            <Button
-              variant="accent"
-              onClick={submitBooking}
-              loading={submitting}
-              disabled={!email.trim()}
-            >
-              Confirm booking
-            </Button>
+            {isLoggedIn ? (
+              <Button variant="accent" onClick={() => submitBooking()} loading={submitting} disabled={!email.trim()}>
+                Confirm booking
+              </Button>
+            ) : (
+              <>
+                <Button variant="accent" onClick={startAuthThenBook} loading={submitting || pendingBook}>
+                  Continue to confirm
+                </Button>
+                <p className="text-xs text-muted">You’ll sign in or continue as a guest in the next step.</p>
+              </>
+            )}
           </div>
         )}
       </div>
