@@ -256,6 +256,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
   const [bookingId, setBookingId]   = useState<string | null>(null);
+  const [idemKey, setIdemKey]       = useState('');   // stable per booking attempt → server dedupes retries
 
   // Load services
   useEffect(() => {
@@ -352,6 +353,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // Load questions when moving to form
   async function selectSlot(slot: Slot) {
     setSelectedSlot(slot);
+    setIdemKey(crypto.randomUUID());   // one key per chosen slot; reused across retries
     setStep('form');
     try {
       const res = await fetch(`/api/mentor/services/${selectedService!.id}/questions/public`, { cache: 'no-store' });
@@ -387,6 +389,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           name:        name.trim(),
           notes:       notes.trim(),
           timezone:    TZ,
+          idempotency_key: idemKey,
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
         }),
       });
