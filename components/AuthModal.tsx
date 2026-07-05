@@ -179,15 +179,18 @@ function AuthModalInner() {
     <div className="fixed inset-0 z-50 overflow-y-auto bg-brand-900/50 backdrop-blur-sm">
       <div
         className="flex min-h-full items-center justify-center p-4"
-        onClick={(e) => { if (e.target === e.currentTarget) close(); }}
+        onClick={(e) => { if (e.target === e.currentTarget && stage !== 'setup') close(); }}
       >
         <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
-          <button
-            type="button" onClick={close} aria-label="Close"
-            className="absolute top-4 right-4 z-30 p-1.5 rounded-full text-brand-500 hover:text-brand-900 hover:bg-brand-50 md:text-white/80 md:hover:text-white md:hover:bg-white/10"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {/* No dismiss during 'setup' — a verified user must finish setting a password. */}
+          {stage !== 'setup' && (
+            <button
+              type="button" onClick={close} aria-label="Close"
+              className="absolute top-4 right-4 z-30 p-1.5 rounded-full text-brand-500 hover:text-brand-900 hover:bg-brand-50 md:text-white/80 md:hover:text-white md:hover:bg-white/10"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
 
           {/* Logo centered across the divider */}
           <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-md">
