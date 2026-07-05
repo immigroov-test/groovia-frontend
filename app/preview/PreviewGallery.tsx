@@ -1,6 +1,6 @@
 'use client';
 import { useState, type ReactNode } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Mail } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Card, CardBody } from '../../components/ui/Card';
@@ -41,43 +41,96 @@ function GoogleButtonMock() {
 
 // Faithful mirror of the live AuthModal popup (which only mounts when opened via
 // ?auth=open). Keep this in sync when the modal's layout changes.
-function LoginPopupPreview() {
+type PopupStage = 'email' | 'login' | 'setup' | 'forgot' | 'sent';
+const MOCK_EMAIL = 'jane@example.com';
+
+// Mirror of the real AuthModal left-column, one stage at a time (design review only).
+function LoginPopupPreview({ stage }: { stage: PopupStage }) {
   const t = UI_CONTENT.auth;
+  const input = 'border border-brand-300';
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
       <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-        {/* Logo in a white box, centered across the divider */}
         <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-md">
           <img src="/Immigroov_Transparent_Logo.png" alt="Immigroov" style={{ height: '26px', width: 'auto' }} className="object-contain" />
         </div>
 
-        {/* Left — form */}
-        <div className="w-full md:w-1/2 px-7 sm:px-9 pt-20 pb-9 flex flex-col min-h-[520px]">
-          <div className="mt-2">
-            <h2 className="text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
-            <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
-            <div className="mt-6 flex flex-col gap-3">
-              <Input type="email" placeholder={t.emailPlaceholder} />
-              <Button className="w-full">{t.continueWithEmail}</Button>
-            </div>
-            <div className="my-4 flex items-center gap-3 text-xs text-muted">
-              <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
-            </div>
-            <GoogleButtonMock />
-            <p className="mt-4 text-[11px] leading-snug text-muted">
-              {t.termsNote} <span className="underline">{t.terms}</span> and <span className="underline">{t.privacy}</span>.
-            </p>
-          </div>
-          <div className="mt-auto pt-8">
-            <p className="text-base text-foreground/75 leading-relaxed font-serif">“{UI_CONTENT.quote.text}”</p>
-          </div>
+        {/* Left — form (per stage) */}
+        <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:min-h-[440px]">
+          {stage === 'email' && (
+            <>
+              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
+              <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
+              <div className="mt-6 flex flex-col gap-3">
+                <Input type="email" placeholder={t.emailPlaceholder} className={input} />
+                <Button className="w-full">{t.continue}</Button>
+              </div>
+              <div className="my-4 flex items-center gap-3 text-xs text-muted">
+                <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
+              </div>
+              <GoogleButtonMock />
+              <p className="mt-4 text-[11px] leading-snug text-muted">
+                {t.termsNote} <span className="underline">{t.terms}</span> and <span className="underline">{t.privacy}</span>.
+              </p>
+            </>
+          )}
+          {stage === 'login' && (
+            <>
+              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.loginHeading}</h2>
+              <p className="text-sm text-muted mt-1 text-center">{MOCK_EMAIL}</p>
+              <div className="mt-6 flex flex-col gap-3">
+                <Input type="password" placeholder={t.passwordPlaceholder} className={input} />
+                <Button className="w-full">{t.signIn}</Button>
+              </div>
+              <div className="mt-4 flex items-center justify-between text-xs">
+                <span className="text-brand-700">{t.forgot}</span>
+                <span className="text-muted">{t.back}</span>
+              </div>
+            </>
+          )}
+          {stage === 'setup' && (
+            <>
+              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.setupHeading}</h2>
+              <p className="text-sm text-muted mt-1 text-center">{t.setupSubheading}</p>
+              <div className="mt-6 flex flex-col gap-3">
+                <Input placeholder={t.namePlaceholder} className={input} />
+                <Input type="password" placeholder={t.passwordLabel} className={input} />
+                <Input type="password" placeholder={t.confirmLabel} className={input} />
+                <Button className="w-full">{t.createAccount}</Button>
+              </div>
+            </>
+          )}
+          {stage === 'forgot' && (
+            <>
+              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.forgotHeading}</h2>
+              <p className="text-sm text-muted mt-1 text-center">{t.forgotSubheading}</p>
+              <div className="mt-6 flex flex-col gap-3">
+                <Input type="email" placeholder={t.emailPlaceholder} className={input} />
+                <Button className="w-full">{t.sendReset}</Button>
+              </div>
+              <p className="mt-4 text-xs text-muted text-center">← Back</p>
+            </>
+          )}
+          {stage === 'sent' && (
+            <>
+              <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900">{t.confirmHeading}</h2>
+              <div className="mt-4 h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
+                <Mail className="h-5 w-5" />
+              </div>
+              <p className="text-sm text-muted mt-3 leading-relaxed">{t.confirmBody(MOCK_EMAIL)}</p>
+              <div className="mt-6 flex items-center gap-4 text-xs">
+                <span className="text-brand-700">{t.resend ?? 'Resend link'}</span>
+                <span className="text-muted">{t.changeEmail}</span>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Right — brand panel + why-join; quote overlaid on the photo band */}
-        <div className="hidden md:flex md:w-1/2 flex-col bg-[#102a4c] text-white min-h-[520px]">
-          <div className="flex-1 px-8 pt-20 pb-6 flex flex-col">
+        {/* Right — brand panel + points; quote overlaid on the lower photo band */}
+        <div className="hidden md:flex md:w-1/2 flex-col bg-[#102a4c] text-white min-h-[440px]">
+          <div className="flex-1 px-8 pt-20 pb-5 flex flex-col">
             <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
-            <ul className="mt-6 flex flex-col gap-4">
+            <ul className="mt-5 flex flex-col gap-3">
               {UI_CONTENT.authPoints.map((point) => (
                 <li key={point} className="flex items-start gap-3">
                   <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
@@ -150,7 +203,11 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
     ) },
 
   // 2. LOGIN -----------------------------------------------------------------
-  { group: '2 · Login', title: 'Login popup (magic link)', node: <LoginPopupPreview /> },
+  { group: '2 · Login', title: '① Email step', node: <LoginPopupPreview stage="email" /> },
+  { group: '2 · Login', title: '② Password (returning user)', node: <LoginPopupPreview stage="login" /> },
+  { group: '2 · Login', title: '③ Set password (new user, after link)', node: <LoginPopupPreview stage="setup" /> },
+  { group: '2 · Login', title: '④ Check your email', node: <LoginPopupPreview stage="sent" /> },
+  { group: '2 · Login', title: '⑤ Forgot password', node: <LoginPopupPreview stage="forgot" /> },
 
   // 3. BECOME A MENTOR (flow order) ------------------------------------------
   {

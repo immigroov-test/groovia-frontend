@@ -97,14 +97,9 @@ function AuthModalInner() {
       if (!res.ok) { setLoading(false); setError('Something went wrong. Please try again.'); return; }
       const { has_password } = await res.json();
       if (has_password) { setLoading(false); setStage('login'); return; }
-      const dest = next ?? '/chat';
-      const setupNext = dest + (dest.includes('?') ? '&' : '?') + 'auth=open&mode=setpw';
       const { error } = await createClient().auth.signInWithOtp({
         email: cleanEmail(),
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(setupNext)}`,
-        },
+        options: { shouldCreateUser: true, emailRedirectTo: signupSetupRedirect() },
       });
       setLoading(false);
       if (error) { setError(error.message); return; }
@@ -142,6 +137,12 @@ function AuthModalInner() {
     close(); router.refresh();
   }
 
+  function signupSetupRedirect(): string {
+    const dest = next ?? '/chat';
+    const setupNext = dest + (dest.includes('?') ? '&' : '?') + 'auth=open&mode=setpw';
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(setupNext)}`;
+  }
+
   async function handleForgot(e: React.FormEvent) {
     e.preventDefault();
     setError(null); setLoading(true);
@@ -151,6 +152,23 @@ function AuthModalInner() {
     setLoading(false);
     if (error) { setError(error.message); return; }
     setSentType('reset'); setStage('sent');
+  }
+
+  // Re-send whichever email the 'sent' screen is waiting on (link didn't arrive / expired).
+  async function resend() {
+    setError(null); setLoading(true);
+    const supabase = createClient();
+    if (sentType === 'signup') {
+      await supabase.auth.signInWithOtp({
+        email: cleanEmail(),
+        options: { shouldCreateUser: true, emailRedirectTo: signupSetupRedirect() },
+      });
+    } else {
+      await supabase.auth.resetPasswordForEmail(cleanEmail(), {
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      });
+    }
+    setLoading(false);
   }
 
   if (!isOpen) return null;
@@ -258,7 +276,10 @@ function AuthModalInner() {
                 <p className="text-sm text-muted mt-3 leading-relaxed">
                   {sentType === 'signup' ? t.confirmBody(email) : t.resetBody(email)}
                 </p>
-                <button type="button" onClick={() => { setStage('email'); setError(null); }} className="mt-6 text-xs text-muted hover:text-foreground">{t.changeEmail}</button>
+                <div className="mt-6 flex items-center gap-4 text-xs">
+                  <button type="button" onClick={resend} className="text-brand-700 hover:underline disabled:opacity-50" disabled={loading}>{t.resend}</button>
+                  <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
+                </div>
               </>
             )}
           </div>
