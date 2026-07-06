@@ -5,16 +5,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const authHeader = req.headers.get('authorization');
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
-  const body = await req.text();
   try {
-    const res = await fetch(`${backendBaseUrl()}/admin/mentors/${id}/reject`, {
+    const res = await fetch(`${backendBaseUrl()}/admin/mentors/${id}/reset-strikes`, {
       method: 'POST',
-      headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
-      body: body || '{}',
+      headers: { Authorization: authHeader },
       cache: 'no-store',
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(await res.json(), { status: res.status });
   } catch {
     return NextResponse.json({ error: 'Failed to reach backend' }, { status: 502 });
   }

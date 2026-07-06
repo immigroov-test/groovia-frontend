@@ -208,8 +208,8 @@ function BookingCard({
         </div>
         {active && !isPast && (
           <a href={`/meeting/${b.id}`}
-            className="text-sm font-medium text-brand-700 hover:underline flex items-center gap-1 shrink-0">
-            <Video className="h-4 w-4" /> Join meeting
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 transition-colors shrink-0">
+            <Video className="h-4 w-4" /> Join
           </a>
         )}
       </div>

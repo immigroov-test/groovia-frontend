@@ -55,8 +55,10 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [details, setDetails] = useState<Record<string, MentorDetail | null>>({});
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
 
-  async function act(id: string, action: Action) {
+  async function act(id: string, action: Action, rejectReason?: string) {
     setPending((p) => ({ ...p, [id]: action }));
     setErrors((e) => { const n = { ...e }; delete n[id]; return n; });
     try {
@@ -64,7 +66,8 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/admin/mentors/${id}/${action}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}`, 'Content-Type': 'application/json' },
+        body: action === 'reject' ? JSON.stringify({ reason: rejectReason ?? '' }) : undefined,
       });
       if (res.ok) {
         if (removeOnAction) {
@@ -162,13 +165,39 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                       size="sm"
                       loading={pending[mentor.id] === loadingKey}
                       disabled={!!pending[mentor.id]}
-                      onClick={() => act(mentor.id, action)}
+                      onClick={() => action === 'reject'
+                        ? (setRejectingId(mentor.id), setReason(''))
+                        : act(mentor.id, action)}
                     >
                       {label}
                     </Button>
                   ))}
                 </div>
               </div>
+
+              {/* Rejection reason — shown to the mentor + emailed to them */}
+              {rejectingId === mentor.id && (
+                <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[--color-border] bg-brand-50/40 p-3">
+                  <label className="text-xs font-medium text-foreground">
+                    Reason for rejection <span className="text-muted font-normal">(shown to the mentor)</span>
+                  </label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={2}
+                    maxLength={500}
+                    placeholder="e.g. We need more detail on your experience before approving."
+                    className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none"
+                  />
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" loading={pending[mentor.id] === 'reject'}
+                      onClick={() => act(mentor.id, 'reject', reason)}>
+                      Confirm rejection
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setRejectingId(null)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
 
               {/* Detail panel */}
               {isExpanded && (

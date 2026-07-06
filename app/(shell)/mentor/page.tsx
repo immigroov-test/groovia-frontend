@@ -15,6 +15,7 @@ interface MentorMe {
   slug: string;
   display_name: string;
   status: 'pending_review' | 'approved' | 'rejected' | 'suspended';
+  rejection_reason?: string | null;
 }
 
 export default async function MentorPage() {
@@ -104,10 +105,18 @@ export default async function MentorPage() {
             <CardBody className="pt-6">
               <h2 className="text-base font-semibold text-foreground">Application not approved</h2>
               <p className="text-sm text-muted mt-1">
-                Your mentor application wasn&apos;t approved this time. If you think this is a mistake or would
-                like to update your profile and re-apply, please{' '}
-                <Link href="/mentor/profile" className="text-brand-700 hover:underline">edit your profile</Link>{' '}
-                or contact support.
+                Your mentor application wasn&apos;t approved this time.
+              </p>
+              {mentor.rejection_reason && (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Reviewer note</p>
+                  <p className="text-sm text-amber-900 mt-1 whitespace-pre-line">{mentor.rejection_reason}</p>
+                </div>
+              )}
+              <p className="text-sm text-muted mt-3">
+                You can{' '}
+                <Link href="/mentor/profile" className="text-brand-700 hover:underline">update your profile</Link>{' '}
+                and re-apply, or contact support.
               </p>
             </CardBody>
           </Card>

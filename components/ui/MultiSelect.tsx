@@ -123,6 +123,11 @@ export function MultiSelect({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onClick={(e) => e.stopPropagation()}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            name={`filter-${id}`}
           />
         )}
 

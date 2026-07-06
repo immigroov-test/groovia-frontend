@@ -1,9 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 import { backendBaseUrl } from '../../../lib/backend';
-import { AdminMentorList } from '../../../components/AdminMentorList';
-import { Card, CardBody } from '../../../components/ui/Card';
-import { UI_CONTENT } from '../../../lib/content';
+import { AdminDashboard } from '../../../components/AdminDashboard';
 
 export const metadata = { title: 'Admin — Immigroov' };
 
@@ -65,73 +63,5 @@ export default async function AdminPage() {
     total_bookings: 0,
   };
 
-  const t = UI_CONTENT.admin;
-
-  return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">{t.title}</h1>
-      <p className="text-sm text-muted mt-1">{t.subtitle}</p>
-
-      {/* Stats cards */}
-      <div className="mt-6 grid grid-cols-3 gap-3">
-        <Card>
-          <CardBody className="pt-5 pb-5">
-            <p className="text-2xl font-bold text-foreground">{stats.pending_mentor_count}</p>
-            <p className="text-xs text-muted mt-0.5">Pending review</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="pt-5 pb-5">
-            <p className="text-2xl font-bold text-foreground">{stats.approved_mentor_count}</p>
-            <p className="text-xs text-muted mt-0.5">Active mentors</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody className="pt-5 pb-5">
-            <p className="text-2xl font-bold text-foreground">{stats.total_bookings}</p>
-            <p className="text-xs text-muted mt-0.5">Total bookings</p>
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Pending Applications */}
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-foreground">{t.pendingTitle}</h2>
-        <p className="text-sm text-muted mt-0.5 mb-4">{t.pendingSubtitle}</p>
-        <AdminMentorList
-          initialMentors={pending}
-          actions={[
-            { action: 'reject', label: t.reject, variant: 'outline', loadingKey: 'reject' },
-            { action: 'approve', label: t.approve, variant: 'accent', loadingKey: 'approve' },
-          ]}
-        />
-      </section>
-
-      {/* Active Mentors */}
-      <section className="mt-10">
-        <h2 className="text-lg font-semibold text-foreground">{t.activeTitle}</h2>
-        <p className="text-sm text-muted mt-0.5 mb-4">{t.activeSubtitle}</p>
-        <AdminMentorList
-          initialMentors={approved}
-          actions={[
-            { action: 'suspend', label: t.suspend, variant: 'outline', loadingKey: 'suspend' },
-          ]}
-        />
-      </section>
-
-      {/* Suspended Mentors */}
-      {suspended.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-lg font-semibold text-foreground">{t.suspendedTitle}</h2>
-          <p className="text-sm text-muted mt-0.5 mb-4">{t.suspendedSubtitle}</p>
-          <AdminMentorList
-            initialMentors={suspended}
-            actions={[
-              { action: 'reinstate', label: t.reinstate, variant: 'accent', loadingKey: 'reinstate' },
-            ]}
-          />
-        </section>
-      )}
-    </div>
-  );
+  return <AdminDashboard stats={stats} pending={pending} approved={approved} suspended={suspended} />;
 }
