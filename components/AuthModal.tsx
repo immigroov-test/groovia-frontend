@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { X, Check, Mail } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Input } from './ui/Input';
+import { PasswordInput } from './ui/PasswordInput';
+import { PasswordChecklist, passwordMeetsPolicy } from './ui/PasswordChecklist';
 import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
@@ -27,6 +29,7 @@ function AuthModalInner() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [sentType, setSentType] = useState<'signup' | 'reset'>('signup');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +41,7 @@ function AuthModalInner() {
 
   useEffect(() => {
     if (!isOpen) return;
-    setEmail(''); setName(''); setPassword(''); setConfirm(''); setError(null);
+    setEmail(''); setName(''); setPassword(''); setConfirm(''); setAgreed(false); setError(null);
     if (mode === 'setpw') {
       // Returned from the verification link → set a password. Require a real session.
       settingUp.current = true;
@@ -127,8 +130,9 @@ function AuthModalInner() {
   async function handleSetup(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < 8) { setError(t.passwordHint); return; }
+    if (!passwordMeetsPolicy(password)) { setError('Please meet all the password requirements.'); return; }
     if (password !== confirm) { setError('Passwords do not match.'); return; }
+    if (!agreed) { setError('Please agree to the Terms and Privacy Policy.'); return; }
     setLoading(true);
     const { error } = await createClient().auth.updateUser({ password, data: { full_name: name.trim() } });
     setLoading(false);
@@ -227,7 +231,7 @@ function AuthModalInner() {
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.loginHeading}</h2>
                 <p className="text-sm text-muted mt-1 text-center break-all">{email}</p>
                 <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-3">
-                  <Input type="password" required autoFocus value={password} onChange={(e) => setPassword(e.target.value)}
+                  <PasswordInput required autoFocus value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder={t.passwordPlaceholder} autoComplete="current-password" aria-label={t.passwordLabel} className={inputBorder} />
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading} className="w-full">{t.signIn}</Button>
@@ -246,12 +250,23 @@ function AuthModalInner() {
                 <form onSubmit={handleSetup} className="mt-6 flex flex-col gap-3">
                   <Input type="text" required autoFocus value={name} maxLength={80} onChange={(e) => setName(e.target.value)}
                     placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel} className={inputBorder} />
-                  <Input type="password" required value={password} minLength={8} onChange={(e) => setPassword(e.target.value)}
+                  <PasswordInput required value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder={t.passwordLabel} autoComplete="new-password" aria-label={t.passwordLabel} className={inputBorder} />
-                  <Input type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)}
+                  <PasswordChecklist password={password} />
+                  <PasswordInput required value={confirm} onChange={(e) => setConfirm(e.target.value)}
                     placeholder={t.confirmLabel} autoComplete="new-password" aria-label={t.confirmLabel} className={inputBorder} />
+                  <label className="flex items-start gap-2 text-[11px] leading-snug text-muted">
+                    <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
+                    <span>
+                      I agree to Immigroov&apos;s{' '}
+                      <Link href="/terms" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                      <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
+                    </span>
+                  </label>
                   {error && <p className="text-xs text-red-600">{error}</p>}
-                  <Button type="submit" loading={loading} className="w-full">{t.createAccount}</Button>
+                  <Button type="submit" loading={loading}
+                    disabled={!passwordMeetsPolicy(password) || password !== confirm || !agreed}
+                    className="w-full">{t.createAccount}</Button>
                 </form>
               </>
             )}

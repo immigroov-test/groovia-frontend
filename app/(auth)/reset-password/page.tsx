@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/client';
 import { Card, CardBody } from '../../../components/ui/Card';
-import { Input } from '../../../components/ui/Input';
+import { PasswordInput } from '../../../components/ui/PasswordInput';
+import { PasswordChecklist, passwordMeetsPolicy } from '../../../components/ui/PasswordChecklist';
 import { Button } from '../../../components/ui/Button';
 
 export default function ResetPasswordPage() {
@@ -15,6 +16,7 @@ export default function ResetPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!passwordMeetsPolicy(password)) { setError('Please meet all the password requirements.'); return; }
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password });
@@ -32,21 +34,19 @@ export default function ResetPasswordPage() {
       <CardBody className="pt-7">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-semibold tracking-tight text-brand-900">Set a new password</h1>
-          <p className="text-sm text-muted mt-1">Choose something memorable.</p>
+          <p className="text-sm text-muted mt-1">Choose something secure.</p>
         </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            label="New password"
-            type="password"
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <label className="text-sm font-medium text-foreground">New password</label>
+          <PasswordInput
             required
-            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
-            hint="At least 8 characters."
           />
+          <PasswordChecklist password={password} />
           {error && <p className="text-xs text-red-600">{error}</p>}
-          <Button type="submit" loading={loading}>Update password</Button>
+          <Button type="submit" loading={loading} disabled={!passwordMeetsPolicy(password)} className="mt-1">Update password</Button>
         </form>
       </CardBody>
     </Card>

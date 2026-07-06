@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Card, CardBody } from './ui/Card';
 import { AdminMentorList } from './AdminMentorList';
 import { AdminBookings } from './AdminBookings';
+import { AdminPendingServices } from './AdminPendingServices';
 import { UI_CONTENT } from '../lib/content';
 import type { AdminMentor } from '../app/(shell)/admin/page';
 
@@ -47,6 +48,9 @@ export function AdminDashboard({ stats, pending, approved, suspended }: {
       <div className="mt-6">
         {tab === 'approval' && (
           <div className="flex flex-col gap-10">
+            <Section title="Services awaiting approval" subtitle="New services added by approved mentors — review before they go live.">
+              <AdminPendingServices />
+            </Section>
             <Section title={t.pendingTitle} subtitle={t.pendingSubtitle}>
               <AdminMentorList initialMentors={pending} actions={[
                 { action: 'reject', label: t.reject, variant: 'outline', loadingKey: 'reject' },

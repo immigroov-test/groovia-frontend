@@ -18,6 +18,7 @@ interface Service {
   platform_fee: number;
   is_active: boolean;
   is_ppp: boolean;
+  status?: string;   // 'pending' | 'approved' | 'rejected'
 }
 
 interface Question {
@@ -170,12 +171,18 @@ export function ServicesManager() {
             <div className="flex flex-col gap-0.5 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-semibold text-foreground">{svc.title}</span>
-                <span className={cn(
-                  'text-xs px-1.5 py-0.5 rounded-full font-medium',
-                  svc.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-muted',
-                )}>
-                  {svc.is_active ? 'Active' : 'Inactive'}
-                </span>
+                {svc.status === 'pending' ? (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700">Pending review</span>
+                ) : svc.status === 'rejected' ? (
+                  <span className="text-xs px-1.5 py-0.5 rounded-full font-medium bg-red-50 text-red-700">Rejected</span>
+                ) : (
+                  <span className={cn(
+                    'text-xs px-1.5 py-0.5 rounded-full font-medium',
+                    svc.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-neutral-100 text-muted',
+                  )}>
+                    {svc.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted">
                 {svc.duration}m · {svc.type === 'video' ? 'Video' : 'DM'} · {svc.set_price === 0 ? 'Free' : `${svc.set_currency} ${svc.set_price}`}
