@@ -16,9 +16,12 @@ export default function PrivacyPage() {
   return (
     <LegalDoc
       title="Privacy Policy"
-      updated="Last updated: pending legal review"
-      customer={read('privacy-customer.md')}
-      mentor={read('privacy-mentor.md')}
+      updated="Last updated: 01 Aug 2025"
+      groups={[
+        { label: 'For Mentors', content: read('privacy-mentor.md') },
+        { label: 'For Customers', content: read('privacy-customer.md') },
+        { label: 'Marketing consent', content: read('privacy-marketing-consent.md') },
+      ]}
     />
   );
 }

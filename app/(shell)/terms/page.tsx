@@ -16,9 +16,11 @@ export default function TermsPage() {
   return (
     <LegalDoc
       title="Terms of Service"
-      updated="Last updated: pending legal review"
-      customer={read('terms-customer.md')}
-      mentor={read('terms-mentor.md')}
+      updated="Last updated: 01 Aug 2025"
+      groups={[
+        { label: 'For Mentors', content: read('terms-mentor.md') },
+        { label: 'For Customers', content: read('terms-customer.md') },
+      ]}
     />
   );
 }

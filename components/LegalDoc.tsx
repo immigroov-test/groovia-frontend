@@ -1,43 +1,65 @@
 'use client';
 import { useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-// Renders a legal document (Terms / Privacy) with a Customer / Mentor toggle.
-// Content is plain Markdown passed in from the server page.
-export function LegalDoc({ title, updated, customer, mentor }: {
-  title: string;
-  updated?: string;
-  customer: string;
-  mentor: string;
-}) {
-  const [aud, setAud] = useState<'customer' | 'mentor'>('customer');
-  const content = aud === 'customer' ? customer : mentor;
+export interface LegalGroup { label: string; content: string }
+
+// Split a document on "## " headings. Text before the first heading is the intro.
+function parse(md: string): { intro: string; sections: { title: string; body: string }[] } {
+  const parts = md.split(/^##[ \t]+/m);
+  const intro = parts[0].trim();
+  const sections = parts.slice(1).map((p) => {
+    const nl = p.indexOf('\n');
+    const title = (nl === -1 ? p : p.slice(0, nl)).trim();
+    const body = (nl === -1 ? '' : p.slice(nl + 1)).trim();
+    return { title, body };
+  });
+  return { intro, sections };
+}
+
+export function LegalDoc({ title, updated, groups }: { title: string; updated?: string; groups: LegalGroup[] }) {
+  const [open, setOpen] = useState<string | null>(null);
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">{title}</h1>
-      {updated && <p className="text-sm text-muted mt-2">{updated}</p>}
+      <h1 className="text-3xl font-semibold tracking-tight text-brand-900 text-center">{title}</h1>
+      {updated && <p className="text-sm text-muted mt-2 text-center">{updated}</p>}
 
-      <div className="mt-6 inline-flex items-center gap-1 rounded-full bg-brand-50 p-1">
-        {(['customer', 'mentor'] as const).map((a) => (
-          <button
-            key={a}
-            onClick={() => setAud(a)}
-            className={cn(
-              'px-4 py-1.5 rounded-full text-sm font-medium transition-colors',
-              aud === a ? 'bg-white shadow-sm text-brand-900' : 'text-muted hover:text-foreground',
-            )}
-          >
-            {a === 'customer' ? 'For customers' : 'For mentors'}
-          </button>
-        ))}
-      </div>
+      {groups.map((g) => {
+        const { intro, sections } = parse(g.content);
+        return (
+          <section key={g.label} className="mt-10">
+            <h2 className="text-xl font-semibold text-brand-700">{g.label}</h2>
+            {intro && <p className="mt-2 text-sm text-muted whitespace-pre-line leading-relaxed">{intro}</p>}
 
-      <article className="mt-6 prose prose-sm max-w-none prose-headings:text-brand-900 prose-headings:font-semibold prose-a:text-brand-700 prose-strong:text-brand-900">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-      </article>
+            <div className="mt-4 flex flex-col gap-2">
+              {sections.map((s, i) => {
+                const id = `${g.label}-${i}`;
+                const isOpen = open === id;
+                return (
+                  <div key={id} className="rounded-xl border border-[--color-border] bg-card overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setOpen(isOpen ? null : id)}
+                      aria-expanded={isOpen}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-brand-50/50 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-brand-900">{i + 1}. {s.title}</span>
+                      <ChevronDown className={cn('h-4 w-4 text-muted shrink-0 transition-transform', isOpen && 'rotate-180')} />
+                    </button>
+                    {isOpen && (
+                      <div className="px-4 pb-4 pt-3 border-t border-[--color-border]">
+                        <div className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{s.body}</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
