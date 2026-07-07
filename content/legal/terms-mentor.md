@@ -1,6 +1,6 @@
 Immigroov Mentor Legal Policies and Agreements
 
-Last Updated: [01/Aug/2025]
+Last Updated: 01/Aug/2025
 
 By registering as a Mentor on the Immigroov platform and clicking 'I Agree' during the sign-up process, you acknowledge that you have read, understood, and agreed to be bound by the following terms, policies, and conditions.
 
@@ -11,8 +11,6 @@ Immigroov Consulting India LLP, a limited liability partnership registered under
 Immigroov may perform operations, communications, and payouts through either entity depending on internal operations and applicable jurisdiction. However, your mentor relationship remains unified across the platform.
 
 ## Mentor Policy
-
-### Mentor Terms and Conditions
 
 Issued By:
 This Mentor Agreement is jointly issued by:
