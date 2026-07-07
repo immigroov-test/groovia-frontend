@@ -1,11 +1,9 @@
 'use client';
-import { Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BadgeCheck,
   BookOpen,
   CalendarCheck,
-  ChevronRight,
   DollarSign,
   UserPlus,
   User,
@@ -58,19 +56,19 @@ const STEPS = [
     description: 'Your info & expertise',
   },
   {
-    icon: ShieldCheck,
-    label: 'Review',
-    description: 'Admin approval',
-  },
-  {
     icon: Calendar,
     label: 'Availability',
     description: 'Set your schedule',
   },
   {
+    icon: ShieldCheck,
+    label: 'Review',
+    description: 'Admin approval',
+  },
+  {
     icon: Rocket,
     label: 'Go Live',
-    description: 'Accept bookings',
+    description: 'Accept bookings & start earning',
   },
 ];
 
@@ -82,60 +80,63 @@ export function MentorLanding() {
   }
 
   return (
-    <div className="flex flex-col gap-16">
-      {/* Why become a mentor */}
+    <div className="flex flex-col gap-10">
       <section>
         <h2 className="text-2xl font-semibold tracking-tight text-center text-brand-900">
-          Why become a Mentor at Immigroov?
+          Become a Mentor
         </h2>
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {BENEFITS.map(({ icon: Icon, iconBg, iconColor, title, description }) => (
-            <div
-              key={title}
-              className="flex gap-4 items-start p-5 rounded-2xl bg-white border border-[--color-border] shadow-sm"
-            >
-              <div className={`shrink-0 flex items-center justify-center w-12 h-12 rounded-xl ${iconBg}`}>
-                <Icon className={`h-6 w-6 ${iconColor}`} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{title}</p>
-                <p className="text-sm text-muted mt-0.5">{description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* How it works */}
-      <section>
-        <h2 className="text-2xl font-semibold tracking-tight text-center text-brand-900">
-          How it works
-        </h2>
-        <div className="mt-8 flex items-start justify-between">
-          {STEPS.map(({ icon: Icon, label, description }, i) => (
-            <Fragment key={label}>
-              {i > 0 && (
-                <div className="flex items-center pt-4 shrink-0">
-                  <ChevronRight className="h-4 w-4 text-muted" />
+        {/* Left: reasons to join · Right: the vertical journey */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_16rem] gap-8 lg:gap-12 items-start">
+
+          {/* Benefits — stacked one below the other */}
+          <div className="flex flex-col gap-4">
+            {BENEFITS.map(({ icon: Icon, iconBg, iconColor, title, description }) => (
+              <div
+                key={title}
+                className="flex gap-4 items-start p-5 rounded-2xl bg-white border border-[--color-border] shadow-sm"
+              >
+                <div className={`shrink-0 flex items-center justify-center w-11 h-11 rounded-xl ${iconBg}`}>
+                  <Icon className={`h-5 w-5 ${iconColor}`} />
                 </div>
-              )}
-              <div className="flex flex-col items-center text-center flex-1 min-w-0">
-                <div
-                  className={`flex items-center justify-center w-12 h-12 rounded-full border-2 ${
-                    i === 0
-                      ? 'bg-brand-700 border-brand-700 text-white'
-                      : 'bg-white border-[--color-border] text-muted'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{title}</p>
+                  <p className="text-sm text-muted mt-0.5">{description}</p>
                 </div>
-                <p className={`mt-2 text-xs font-semibold ${i === 0 ? 'text-brand-700' : 'text-foreground'}`}>
-                  {label}
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted leading-tight px-1">{description}</p>
               </div>
-            </Fragment>
-          ))}
+            ))}
+          </div>
+
+          {/* How it works — vertical stepper */}
+          <div className="rounded-2xl bg-brand-50/40 border border-[--color-border] p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted mb-4">How it works</p>
+            <ol className="flex flex-col">
+              {STEPS.map(({ icon: Icon, label, description }, i) => (
+                <li key={label} className="flex gap-3">
+                  {/* Rail: circle + connector line */}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0 ${
+                        i === 0
+                          ? 'bg-brand-700 border-brand-700 text-white'
+                          : 'bg-white border-[--color-border] text-muted'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    {i < STEPS.length - 1 && <div className="w-0.5 flex-1 min-h-6 bg-[--color-border] my-1" />}
+                  </div>
+                  {/* Text */}
+                  <div className={i < STEPS.length - 1 ? 'pb-5' : ''}>
+                    <p className={`text-sm font-semibold leading-none pt-2.5 ${i === 0 ? 'text-brand-700' : 'text-foreground'}`}>
+                      {label}
+                    </p>
+                    <p className="mt-1 text-xs text-muted leading-tight">{description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 
