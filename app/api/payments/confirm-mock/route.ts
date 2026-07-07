@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { backendBaseUrl } from '../../../lib/backend';
+import { backendBaseUrl } from '../../../../lib/backend';
 
 export async function POST(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
   const body = await req.text();
   try {
-    const res = await fetch(`${backendBaseUrl()}/booking`, {
+    const res = await fetch(`${backendBaseUrl()}/payments/confirm-mock`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(authHeader ? { Authorization: authHeader } : {}),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body,
       cache: 'no-store',
     });

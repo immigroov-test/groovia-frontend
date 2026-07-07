@@ -256,7 +256,6 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
   const [bookingId, setBookingId]   = useState<string | null>(null);
-  const [idemKey, setIdemKey]       = useState('');   // stable per booking attempt → server dedupes retries
 
   // Load services
   useEffect(() => {
@@ -353,7 +352,6 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // Load questions when moving to form
   async function selectSlot(slot: Slot) {
     setSelectedSlot(slot);
-    setIdemKey(crypto.randomUUID());   // one key per chosen slot; reused across retries
     setStep('form');
     try {
       const res = await fetch(`/api/mentor/services/${selectedService!.id}/questions/public`, { cache: 'no-store' });
@@ -364,7 +362,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     } catch { /* questions are optional */ }
   }
 
-  // Submit booking
+  // Submit booking — quote -> reserve (10-min payment hold) -> confirm.
+  // A binding price quote is required before a hold can be reserved; the
+  // quote is single-use, so retrying this whole sequence never double-books
+  // (a re-used quote_id is rejected server-side).
   async function submitBooking() {
     if (!selectedSlot || !selectedService) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
@@ -373,15 +374,20 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     setFormError(null);
     setSubmitting(true);
     try {
+      const quoteRes = await fetch(`/api/pricing/quote/${selectedService.id}`, { cache: 'no-store' });
+      const quote = await quoteRes.json();
+      if (!quoteRes.ok) { setFormError(quote.detail || 'Could not price this session. Please try again.'); return; }
+
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/booking', {
+      const reserveRes = await fetch('/api/payments/reserve', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({
+          quote_id:    quote.quote_id,
           mentor_id:   mentor.id,
           service_id:  selectedService.id,
           slot_time:   selectedSlot.slot_start,
@@ -389,13 +395,30 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           name:        name.trim(),
           notes:       notes.trim(),
           timezone:    TZ,
-          idempotency_key: idemKey,
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
         }),
       });
-      const data = await res.json();
-      if (!res.ok) { setFormError(data.detail || 'Booking failed. Please try another slot.'); return; }
-      setBookingId(data.booking_id);
+      const reserved = await reserveRes.json();
+      if (!reserveRes.ok) { setFormError(reserved.detail || 'Booking failed. Please try another slot.'); return; }
+
+      const configRes = await fetch('/api/payments/config', { cache: 'no-store' });
+      const { payments_enabled } = await configRes.json();
+      if (payments_enabled) {
+        // Real Razorpay checkout isn't wired into this widget yet — the hold
+        // still expires in 10 minutes if nothing confirms it.
+        setFormError('Online payment isn’t available for this session yet — please contact the mentor directly to arrange payment.');
+        return;
+      }
+
+      const confirmRes = await fetch('/api/payments/confirm-mock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ booking_id: reserved.booking_id }),
+      });
+      const confirmed = await confirmRes.json();
+      if (!confirmRes.ok) { setFormError(confirmed.detail || 'Could not confirm the booking. Please try again.'); return; }
+
+      setBookingId(reserved.booking_id);
       setStep('confirmed');
     } catch { setFormError('Could not complete the booking. Please try again.'); }
     finally { setSubmitting(false); }
