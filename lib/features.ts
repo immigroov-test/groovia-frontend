@@ -17,8 +17,8 @@ export const FEATURES = {
   // UI-only flags (no backend equivalent needed)
   cookieConsent:         flag('COOKIE_CONSENT', false),  // not implemented yet — off
   analytics:             flag('ANALYTICS',      false),  // not implemented yet — off
-  idleLogout:            flag('IDLE_LOGOUT',    false),  // auto sign-out after inactivity; off by default
+  idleLogout:            flag('IDLE_LOGOUT',    true),   // auto sign-out after inactivity; on by default
 } as const;
 
-// Minutes of inactivity before idleLogout signs the user out.
+// Minutes of inactivity before idleLogout signs the user out (client-side, while a tab is open).
 export const IDLE_TIMEOUT_MINUTES = Number(process.env.NEXT_PUBLIC_IDLE_TIMEOUT_MINUTES) || 30;
