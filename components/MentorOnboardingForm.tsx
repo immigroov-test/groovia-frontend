@@ -55,9 +55,10 @@ const TZ_OPTIONS = Intl.supportedValuesOf('timeZone').map((tz) => ({
 
 interface Props {
   defaultName?: string;
+  userId?: string;
 }
 
-export function MentorOnboardingForm({ defaultName = '' }: Props) {
+export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const router = useRouter();
 
   //Profile fields
@@ -229,7 +230,7 @@ export function MentorOnboardingForm({ defaultName = '' }: Props) {
               <label className="text-sm font-medium text-foreground">Profile Photo</label>
               <span className="text-xs text-muted">(Recommended, helps mentees connect with you)</span>
             </div>
-            <PhotoUpload value={photoUrl} onChange={setPhotoUrl} />
+            <PhotoUpload value={photoUrl} onChange={setPhotoUrl} userId={userId} />
           </div>
 
           {/* Display name */}

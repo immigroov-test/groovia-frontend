@@ -14,7 +14,7 @@ interface Props {
   required?: boolean;
 }
 
-export function PhotoUpload({ value, onChange }: Props) {
+export function PhotoUpload({ value, onChange, userId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -37,28 +37,31 @@ export function PhotoUpload({ value, onChange }: Props) {
 
   const saveCrop = useCallback(async () => {
     if (!rawSrc || !areaPixels) return;
+    if (!userId) { setError('Please sign in again before uploading a photo.'); return; }
     setUploading(true);
     setError('');
     try {
       const blob = await getCroppedBlob(rawSrc, areaPixels, 512);
-      const dataUrl = await readFileAsDataURL(blob);
+      // Upload straight to Storage under the user's own folder ({auth.uid}/...).
+      // RLS scopes writes to that folder; the file is served from Supabase's CDN.
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch('/api/mentor/photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
-        body: JSON.stringify({ image: dataUrl }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || 'Upload failed. Please try again.');
-      onChange(json.url + `?t=${Date.now()}`);
+      const path = `${userId}/avatar.jpg`;
+      const { error: uploadErr } = await supabase.storage
+        .from('mentor-photos')
+        .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (uploadErr) throw uploadErr;
+      const { data } = supabase.storage.from('mentor-photos').getPublicUrl(path);
+      onChange(data.publicUrl + `?t=${Date.now()}`);
       setRawSrc(null);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Upload failed. Please try again.');
+      const msg = e instanceof Error ? e.message : 'Upload failed. Please try again.';
+      setError(/bucket not found/i.test(msg)
+        ? 'Photo storage is not set up yet. Please run the storage migration.'
+        : msg);
     } finally {
       setUploading(false);
     }
-  }, [rawSrc, areaPixels, onChange]);
+  }, [rawSrc, areaPixels, userId, onChange]);
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
