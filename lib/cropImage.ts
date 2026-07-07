@@ -26,7 +26,7 @@ export async function getCroppedBlob(src: string, crop: PixelCrop, size = 512): 
   });
 }
 
-export function readFileAsDataURL(file: File): Promise<string> {
+export function readFileAsDataURL(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);

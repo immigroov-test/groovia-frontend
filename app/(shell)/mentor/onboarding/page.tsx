@@ -33,7 +33,7 @@ export default async function MentorOnboardingPage() {
         Complete the form below and our team will review your application, usually within 1–2 business days.
       </p>
       <div className="mt-8">
-        <MentorOnboardingForm defaultName={defaultName} userId={session.user.id} />
+        <MentorOnboardingForm defaultName={defaultName} />
       </div>
     </div>
   );

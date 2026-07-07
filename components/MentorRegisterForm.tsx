@@ -90,8 +90,8 @@ export function MentorRegisterForm() {
         <h2 className="text-xl font-semibold text-brand-900">Check your inbox</h2>
         <p className="text-sm text-muted">
           We sent a verification link to{' '}
-          <strong className="text-foreground">{email}</strong>. Click it to confirm your email —
-          you&apos;ll then be taken to set up your mentor profile.
+          <strong className="text-foreground">{email}</strong>. Click it to confirm your email,
+          then you&apos;ll be taken to set up your mentor profile.
         </p>
         <Link
           href="/?auth=open&role=mentor&mode=login"

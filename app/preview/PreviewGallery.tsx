@@ -224,8 +224,8 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
     ),
   },
   {
-    group: '3 · Become a mentor', title: '③ Onboarding — details', real: true, node: (
-      <PageWrap><h1 className="text-2xl font-semibold text-brand-900 mb-6">Set up your mentor profile</h1><MentorOnboardingForm defaultName="Maya Singh" userId="mock" /></PageWrap>
+    group: '3 · Become a mentor', title: '③ Onboarding - details', real: true, node: (
+      <PageWrap><h1 className="text-2xl font-semibold text-brand-900 mb-6">Set up your mentor profile</h1><MentorOnboardingForm defaultName="Maya Singh" /></PageWrap>
     ),
   },
   {

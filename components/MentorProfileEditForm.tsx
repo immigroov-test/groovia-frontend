@@ -154,7 +154,7 @@ export function MentorProfileEditForm({ mentor }: Props) {
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">Basic info</h2>
-              <p className="text-sm text-muted mt-0.5">Changes here take effect immediately — no re-review needed.</p>
+              <p className="text-sm text-muted mt-0.5">Changes here take effect immediately, no re-review needed.</p>
             </div>
             <Input
               label="Display name *"
@@ -220,7 +220,7 @@ export function MentorProfileEditForm({ mentor }: Props) {
         </Card>
       </form>
 
-      {/* Critical fields — triggers re-approval */}
+      {/* Critical fields, triggers re-approval */}
       <form onSubmit={saveCritical}>
         <Card>
           <CardBody className="pt-6 flex flex-col gap-4">

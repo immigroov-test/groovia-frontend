@@ -85,7 +85,7 @@ export function MentorLanding() {
       {/* Left: reasons to join · Right: the vertical journey */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_15rem] gap-8 lg:gap-12 items-start">
 
-        {/* Benefits — stacked one below the other, staggered entrance */}
+        {/* Benefits: stacked one below the other, staggered entrance */}
         <div className="flex flex-col gap-4 reveal-children">
           {BENEFITS.map(({ icon: Icon, iconBg, iconColor, title, description }) => (
             <div
@@ -103,7 +103,7 @@ export function MentorLanding() {
           ))}
         </div>
 
-        {/* How it works — vertical stepper, no box */}
+        {/* How it works: vertical stepper, no box */}
         <div className="lg:pt-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted mb-4">How it works</p>
           <ol className="flex flex-col reveal-children">

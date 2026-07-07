@@ -12,9 +12,10 @@ import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
 import { CountrySelect } from './ui/CountrySelect';
 import { RichTextEditor } from './ui/RichTextEditor';
+import { Flag } from './ui/Flag';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { WeeklyAvailabilityGrid, type AvailabilitySlot } from './WeeklyAvailabilityGrid';
-import { COUNTRIES, countryFlag } from '../lib/countries';
+import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
@@ -25,7 +26,7 @@ const DURATION_OPTIONS = [
   { minutes: 90, label: '90 min' },
 ];
 
-const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: countryFlag(c.code) }));
+const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
 const DOMAIN_OPTIONS = [
@@ -38,46 +39,59 @@ const DOMAIN_OPTIONS = [
 const BIO_MAX = 2000;
 const NOTES_MAX = 500;
 
+// Timezone list with current GMT offset, e.g. "Europe/Amsterdam (GMT+2)".
+function tzOffsetLabel(tz: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date());
+    return parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT';
+  } catch {
+    return 'GMT';
+  }
+}
+const TZ_OPTIONS = Intl.supportedValuesOf('timeZone').map((tz) => ({
+  tz,
+  label: `${tz.replace(/_/g, ' ')} (${tzOffsetLabel(tz)})`,
+}));
+
 interface Props {
   defaultName?: string;
-  userId?: string;
 }
 
-export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
+export function MentorOnboardingForm({ defaultName = '' }: Props) {
   const router = useRouter();
 
-  // — Profile fields
+  //Profile fields
   const [displayName, setDisplayName] = useState(defaultName);
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [phone, setPhone] = useState('');
 
-  // — About
+  //About
   const [bio, setBio] = useState('');
 
-  // — Location
+  //Location
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
 
-  // — Presence
+  //Presence
   const [languages, setLanguages] = useState<string[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [publicNotes, setPublicNotes] = useState('');
 
-  // — Expertise (critical fields — trigger re-approval)
+  // Expertise (critical fields, trigger re-approval)
   const [expertiseCountries, setExpertiseCountries] = useState<string[]>([]);
   const [yearsExp, setYearsExp] = useState('');
   const [domains, setDomains] = useState<string[]>([]);
 
-  // — Availability (step 2)
+  //Availability (step 2)
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [duration, setDuration] = useState(60);
 
-  // — Agreement
+  //Agreement
   const [agreedMentor, setAgreedMentor] = useState(false);
 
-  // — Wizard state
+  //Wizard state
   const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -119,7 +133,7 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
     e.preventDefault();
     setError(null);
 
-    // Guard the whole payload — a user could jump straight to submit.
+    // Guard the whole payload in case a user jumps straight to submit.
     const detailErr = validateDetails();
     if (detailErr) { setError(detailErr); setStep(1); return; }
     if (slots.length === 0) { setError('Add at least one weekly availability slot before submitting.'); return; }
@@ -213,9 +227,9 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-baseline gap-2">
               <label className="text-sm font-medium text-foreground">Profile Photo</label>
-              <span className="text-xs text-muted">(Recommended — helps mentees connect with you)</span>
+              <span className="text-xs text-muted">(Recommended, helps mentees connect with you)</span>
             </div>
-            <PhotoUpload value={photoUrl} onChange={setPhotoUrl} userId={userId} />
+            <PhotoUpload value={photoUrl} onChange={setPhotoUrl} />
           </div>
 
           {/* Display name */}
@@ -224,26 +238,26 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="e.g. Priya Nair"
+            autoComplete="name"
             required
           />
 
-          {/* Professional title */}
+          {/* Headline */}
           <Input
-            label="Professional Title *"
+            label="Headline *"
             value={professionalTitle}
             onChange={(e) => setProfessionalTitle(e.target.value)}
             placeholder="e.g. Supply Chain Professional, Software Engineer, AI Developer, Career Expert"
             required
-            hint="How you'll appear to mentees — your role or area of expertise."
           />
 
           {/* Phone */}
           <PhoneInput
-            label="Phone Number *"
+            label="Phone Number"
             value={phone}
             onChange={setPhone}
             required
-            hint="Used for urgent session coordination only. Not shown publicly."
+            hint="Used for session coordination. Not shown to users."
           />
         </CardBody>
       </Card>
@@ -251,17 +265,12 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
       {/* ── Section 2: About You ─────────────────────────────────── */}
       <Card>
         <CardBody className="pt-6 flex flex-col gap-4">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">About You *</h2>
-            <p className="text-sm text-muted mt-0.5">
-              Introduce yourself — share your experience, skills, and approach to helping clients.
-            </p>
-          </div>
+          <h2 className="text-base font-semibold text-foreground">About You *</h2>
           <RichTextEditor
             value={bio}
             onChange={setBio}
             maxChars={BIO_MAX}
-            placeholder="Tell mentees about your immigration journey, your current role, and how you can help them… Use the toolbar to add bullet points or emphasis."
+            placeholder="Introduce yourself: your experience, skills, and approach towards clients. Use the toolbar for bullet points or emphasis."
           />
         </CardBody>
       </Card>
@@ -275,11 +284,11 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
 
           {/* Country (where they live now) */}
           <CountrySelect
-            label="Country *"
+            label="Country"
             value={country}
             onChange={onCountryChange}
             required
-            placeholder="Select your current country…"
+            placeholder="Select your current country"
             hint="Country you currently live in."
           />
 
@@ -288,11 +297,13 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
             label="City"
             value={city}
             onChange={(e) => setCity(e.target.value)}
-            placeholder="e.g. Amsterdam"
-            hint="Optional — shown on your public profile."
+            placeholder={country ? 'e.g. Amsterdam' : 'Select a country first'}
+            disabled={!country}
+            autoComplete="address-level2"
+            hint="Optional, shown on your public profile."
           />
 
-          {/* Timezone — auto-filled from country, editable */}
+          {/* Timezone: auto-filled from country, editable */}
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground">Timezone</label>
             <select
@@ -304,8 +315,8 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
                 'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]',
               )}
             >
-              {Intl.supportedValuesOf('timeZone').map((tz) => (
-                <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>
+              {TZ_OPTIONS.map(({ tz, label }) => (
+                <option key={tz} value={tz}>{label}</option>
               ))}
             </select>
             <p className="text-xs text-muted">Auto-selected from your country. You can adjust it.</p>
@@ -329,10 +340,10 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
           <div>
             <h2 className="text-base font-semibold text-foreground">Social Links</h2>
             <p className="text-sm text-muted mt-0.5">
-              Add links to your public profiles — helps mentees learn more about you.
+              Add links to your public profiles. Helps mentees learn more about you.
             </p>
           </div>
-          <SocialLinks value={socialLinks} onChange={setSocialLinks} hint="Optional — up to one link per platform." />
+          <SocialLinks value={socialLinks} onChange={setSocialLinks} hint="Optional, up to one link per platform." />
         </CardBody>
       </Card>
 
@@ -382,19 +393,13 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
       {/* ── Section 6: Public Notes ──────────────────────────────── */}
       <Card>
         <CardBody className="pt-6 flex flex-col gap-4">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Public Notes</h2>
-            <p className="text-sm text-muted mt-0.5">
-              Instructions, disclaimers, or anything clients should know before booking.
-              Visible on your profile.
-            </p>
-          </div>
+          <h2 className="text-base font-semibold text-foreground">Public Notes</h2>
           <div className="flex flex-col gap-1.5">
             <textarea
               rows={3}
               value={publicNotes}
               onChange={(e) => setPublicNotes(e.target.value.slice(0, NOTES_MAX))}
-              placeholder="e.g. I only accept sessions in English. I specialise in Netherlands visa pathways."
+              placeholder="Anything clients should know before booking (visible on your profile). e.g. I only accept sessions in English; I specialise in Netherlands visa pathways."
               className={cn(
                 'px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-y',
                 'placeholder:text-muted',

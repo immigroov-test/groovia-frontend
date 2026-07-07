@@ -33,8 +33,10 @@ export function MultiSelect({
   const id = useId();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [highlight, setHighlight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     function onOutsideClick(e: MouseEvent) {
@@ -46,6 +48,12 @@ export function MultiSelect({
     document.addEventListener('mousedown', onOutsideClick);
     return () => document.removeEventListener('mousedown', onOutsideClick);
   }, []);
+
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const el = listRef.current.children[highlight] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [highlight, open]);
 
   function toggle(v: string) {
     if (value.includes(v)) {
@@ -69,14 +77,24 @@ export function MultiSelect({
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
 
-  // Enter adds the first available match; Backspace on an empty query removes the last chip.
+  // Arrow keys move the highlight; Enter toggles it; Backspace on an empty query
+  // removes the last chip; Escape closes.
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      const pick = filtered.find((o) => !value.includes(o.value));
-      if (pick && !(maxSelected && value.length >= maxSelected)) toggle(pick.value);
+      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const pick = filtered[highlight];
+      if (pick && (value.includes(pick.value) || !(maxSelected && value.length >= maxSelected))) toggle(pick.value);
     } else if (e.key === 'Backspace' && query === '' && value.length > 0) {
       onChange(value.slice(0, -1));
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+      setQuery('');
     }
   }
 
@@ -134,7 +152,7 @@ export function MultiSelect({
             className="flex-1 min-w-[6rem] outline-none bg-transparent text-sm placeholder:text-muted"
             placeholder="Type to filter…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setHighlight(0); }}
             onKeyDown={onKeyDown}
             onClick={(e) => e.stopPropagation()}
             autoComplete="off"
@@ -155,6 +173,7 @@ export function MultiSelect({
 
       {open && (
         <ul
+          ref={listRef}
           id={`${id}-listbox`}
           role="listbox"
           aria-multiselectable="true"
@@ -163,7 +182,7 @@ export function MultiSelect({
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">No results</li>
           ) : (
-            filtered.map((opt) => {
+            filtered.map((opt, i) => {
               const selected = value.includes(opt.value);
               const disabled = !selected && !!maxSelected && value.length >= maxSelected;
               return (
@@ -172,9 +191,11 @@ export function MultiSelect({
                   role="option"
                   aria-selected={selected}
                   onClick={() => !disabled && toggle(opt.value)}
+                  onMouseEnter={() => setHighlight(i)}
                   className={cn(
                     'flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer select-none',
                     selected ? 'text-brand-900 bg-brand-50' : 'text-foreground',
+                    i === highlight && !disabled && 'bg-brand-50',
                     disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-brand-50',
                   )}
                 >

@@ -10,11 +10,11 @@ import { cn } from '../../lib/utils';
 interface Props {
   value: string | null;
   onChange: (url: string | null) => void;
-  userId: string;
+  userId?: string;
   required?: boolean;
 }
 
-export function PhotoUpload({ value, onChange, userId }: Props) {
+export function PhotoUpload({ value, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -41,24 +41,24 @@ export function PhotoUpload({ value, onChange, userId }: Props) {
     setError('');
     try {
       const blob = await getCroppedBlob(rawSrc, areaPixels, 512);
+      const dataUrl = await readFileAsDataURL(blob);
       const supabase = createClient();
-      const path = `${userId}/avatar.jpg`;
-      const { error: uploadErr } = await supabase.storage
-        .from('mentor-photos')
-        .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-      if (uploadErr) throw uploadErr;
-      const { data } = supabase.storage.from('mentor-photos').getPublicUrl(path);
-      onChange(data.publicUrl + `?t=${Date.now()}`);
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/mentor/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail || 'Upload failed. Please try again.');
+      onChange(json.url + `?t=${Date.now()}`);
       setRawSrc(null);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Upload failed. Please try again.';
-      setError(/bucket not found/i.test(msg)
-        ? 'Photo storage is not set up yet. Please contact support.'
-        : msg);
+      setError(e instanceof Error ? e.message : 'Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
-  }, [rawSrc, areaPixels, userId, onChange]);
+  }, [rawSrc, areaPixels, onChange]);
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -121,7 +121,7 @@ export function PhotoUpload({ value, onChange, userId }: Props) {
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      {/* Crop modal — WhatsApp-style adjust & zoom before upload */}
+      {/* Crop modal: WhatsApp-style adjust and zoom before upload */}
       {rawSrc && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
@@ -151,6 +151,7 @@ export function PhotoUpload({ value, onChange, userId }: Props) {
             </div>
 
             <div className="px-5 py-4 flex flex-col gap-4">
+              <p className="text-xs text-muted text-center">Drag the photo to reposition, use the slider to zoom.</p>
               <div className="flex items-center gap-3">
                 <ZoomIn className="h-4 w-4 text-muted shrink-0" />
                 <input
