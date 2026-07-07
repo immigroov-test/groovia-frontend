@@ -86,6 +86,15 @@ export function CountrySelect({
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (filtered[0]) select(filtered[0].code);
+                } else if (e.key === 'Escape') {
+                  setOpen(false);
+                  setQuery('');
+                }
+              }}
               placeholder="Search country…"
               className="w-full px-2 py-1.5 text-sm rounded-lg bg-brand-50 focus:outline-none placeholder:text-muted"
             />
@@ -105,7 +114,6 @@ export function CountrySelect({
               >
                 <span className="text-base leading-none">{countryFlag(c.code)}</span>
                 <span className="flex-1 text-foreground">{c.name}</span>
-                <span className="text-xs text-muted shrink-0">{c.code}</span>
               </li>
             ))}
           </ul>

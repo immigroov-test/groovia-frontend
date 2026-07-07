@@ -11,12 +11,19 @@ import { PhoneInput } from './ui/PhoneInput';
 import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
 import { CountrySelect } from './ui/CountrySelect';
-import { COUNTRIES } from '../lib/countries';
+import { WeeklyAvailabilityGrid, type AvailabilitySlot } from './WeeklyAvailabilityGrid';
+import { COUNTRIES, countryFlag } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
 
-const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
+const DURATION_OPTIONS = [
+  { minutes: 30, label: '30 min' },
+  { minutes: 60, label: '60 min' },
+  { minutes: 90, label: '90 min' },
+];
+
+const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: countryFlag(c.code) }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
 const DOMAIN_OPTIONS = [
@@ -61,10 +68,15 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
   const [yearsExp, setYearsExp] = useState('');
   const [domains, setDomains] = useState<string[]>([]);
 
+  // — Availability (step 2)
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
+  const [duration, setDuration] = useState(60);
+
   // — Agreement
   const [agreedMentor, setAgreedMentor] = useState(false);
 
-  // — State
+  // — Wizard state
+  const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -74,19 +86,43 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
     if (tz) setTimezone(tz);
   }
 
+  // Validate the detail fields (step 1). Returns an error string, or null when valid.
+  function validateDetails(): string | null {
+    if (!displayName.trim()) return 'Display name is required.';
+    if (!professionalTitle.trim()) return 'Professional title is required.';
+    if (!country) return 'Please select your current country.';
+    if (languages.length === 0) return 'Select at least one language.';
+    if (expertiseCountries.length === 0) return 'Select at least one country of expertise.';
+    if (expertiseCountries.length > 2) return 'You can select a maximum of 2 countries of expertise.';
+    const years = parseInt(yearsExp, 10);
+    if (!yearsExp || isNaN(years) || years < 0) return 'Enter your years of lived experience.';
+    return null;
+  }
+
+  function goToAvailability() {
+    const err = validateDetails();
+    if (err) { setError(err); return; }
+    setError(null);
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function backToDetails() {
+    setError(null);
+    setStep(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!displayName.trim()) { setError('Display name is required.'); return; }
-    if (!professionalTitle.trim()) { setError('Professional title is required.'); return; }
-    if (!country) { setError('Please select your current country.'); return; }
-    if (languages.length === 0) { setError('Select at least one language.'); return; }
-    if (expertiseCountries.length === 0) { setError('Select at least one country of expertise.'); return; }
-    if (expertiseCountries.length > 2) { setError('You can select a maximum of 2 countries of expertise.'); return; }
-    const years = parseInt(yearsExp, 10);
-    if (!yearsExp || isNaN(years) || years < 0) { setError('Enter your years of lived experience.'); return; }
+    // Guard the whole payload — a user could jump straight to submit.
+    const detailErr = validateDetails();
+    if (detailErr) { setError(detailErr); setStep(1); return; }
+    if (slots.length === 0) { setError('Add at least one weekly availability slot before submitting.'); return; }
     if (!agreedMentor) { setError('Please accept the Mentor Agreement to proceed.'); return; }
+    const years = parseInt(yearsExp, 10);
 
     setSubmitting(true);
     try {
@@ -116,6 +152,8 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
           years_lived_experience: years,
           professional_domains: domains,
           agreed_to_mentor_terms: true,
+          session_duration_minutes: duration,
+          availability_slots: slots,
         }),
       });
       const data = await res.json();
@@ -138,6 +176,28 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
+
+      {/* ── Step indicator ──────────────────────────────────────── */}
+      <div className="flex items-center gap-3">
+        {[
+          { n: 1 as const, label: 'Your details' },
+          { n: 2 as const, label: 'Availability' },
+        ].map(({ n, label }, i) => (
+          <div key={n} className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold',
+                step >= n ? 'bg-brand-600 text-white' : 'bg-brand-100 text-brand-600',
+              )}>{n}</span>
+              <span className={cn('text-sm', step === n ? 'font-semibold text-foreground' : 'text-muted')}>{label}</span>
+            </div>
+            {i === 0 && <div className={cn('h-px w-8', step === 2 ? 'bg-brand-500' : 'bg-[--color-border]')} />}
+          </div>
+        ))}
+      </div>
+
+      {/* ══ STEP 1: DETAILS ═════════════════════════════════════════ */}
+      <div className={cn('flex-col gap-6', step === 1 ? 'flex' : 'hidden')}>
 
       {/* ── Section 1: Profile ──────────────────────────────────── */}
       <Card>
@@ -267,7 +327,7 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
             value={languages}
             onChange={setLanguages}
             placeholder={'Type to search (e.g. "Ja" → Japanese)…'}
-            hint="Start typing to filter; select to add."
+            hint="Type and press Enter, or click to add."
           />
         </CardBody>
       </Card>
@@ -301,9 +361,9 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
             options={COUNTRY_OPTIONS}
             value={expertiseCountries}
             onChange={setExpertiseCountries}
-            placeholder="Select up to 2 countries…"
+            placeholder="Type to search, press Enter to add…"
             maxSelected={2}
-            hint="Countries you have direct immigration or career experience in."
+            hint="Countries you have direct immigration or career experience in. Type and press Enter, or click to add."
           />
 
           <Input
@@ -318,12 +378,12 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
           />
 
           <MultiSelect
-            label="Professional Domains"
+            label="Domains of Expertise"
             options={DOMAIN_OPTIONS}
             value={domains}
             onChange={setDomains}
-            placeholder="Select domains…"
-            hint="Industries or roles you can advise on."
+            placeholder="Type to search, press Enter to add…"
+            hint="Industries or roles you can advise on. Type and press Enter, or click to add."
           />
         </CardBody>
       </Card>
@@ -358,34 +418,87 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
         </CardBody>
       </Card>
 
-      {/* ── Section 7: Agreement & Submit ────────────────────────── */}
-      <Card>
-        <CardBody className="pt-6 flex flex-col gap-4">
-          <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5 accent-[--color-brand-500]"
-              checked={agreedMentor}
-              onChange={(e) => setAgreedMentor(e.target.checked)}
-            />
-            <span>
-              I agree to the{' '}
-              <Link href="/mentor-terms" className="underline hover:text-foreground">Mentor Agreement</Link>,
-              Data Processing Agreement, and commission structure. I consent to anonymised session
-              insights being used to improve Groovia.
-            </span>
-          </label>
+      {/* ── Step 1 footer: continue to availability ──────────────── */}
+      {error && step === 1 && <p className="text-sm text-red-600">{error}</p>}
+      <div className="flex justify-end">
+        <Button type="button" variant="accent" onClick={goToAvailability}>
+          Continue to availability →
+        </Button>
+      </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+      </div>{/* end STEP 1 */}
 
-          <Button type="submit" variant="accent" loading={submitting}>
-            Submit application
-          </Button>
-          <p className="text-xs text-muted">
-            Your profile will be reviewed by our team before going live. This usually takes 1–2 business days.
-          </p>
-        </CardBody>
-      </Card>
+      {/* ══ STEP 2: AVAILABILITY ════════════════════════════════════ */}
+      <div className={cn('flex-col gap-6', step === 2 ? 'flex' : 'hidden')}>
+        <Card>
+          <CardBody className="pt-6 flex flex-col gap-6">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Your weekly availability</h2>
+              <p className="text-sm text-muted mt-0.5">
+                Set when you&apos;re usually free. Mentees will only be able to book inside these windows.
+                You can fine-tune this anytime after approval.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-foreground">Session duration</span>
+              <div className="flex gap-2">
+                {DURATION_OPTIONS.map(({ minutes, label }) => (
+                  <button
+                    key={minutes}
+                    type="button"
+                    onClick={() => setDuration(minutes)}
+                    className={cn(
+                      'flex-1 h-10 rounded-lg border text-sm font-medium transition-colors',
+                      duration === minutes
+                        ? 'bg-brand-600 border-brand-600 text-white'
+                        : 'border-[--color-border] text-muted hover:text-foreground hover:border-brand-300',
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <WeeklyAvailabilityGrid value={slots} onChange={setSlots} sessionDurationMinutes={duration} />
+          </CardBody>
+        </Card>
+
+        {/* Agreement & Submit */}
+        <Card>
+          <CardBody className="pt-6 flex flex-col gap-4">
+            <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-[--color-brand-500]"
+                checked={agreedMentor}
+                onChange={(e) => setAgreedMentor(e.target.checked)}
+              />
+              <span>
+                I agree to the{' '}
+                <Link href="/terms" className="underline hover:text-foreground">Mentor Agreement</Link>,
+                Data Processing Agreement, and commission structure. I consent to anonymised session
+                insights being used to improve Groovia.
+              </span>
+            </label>
+
+            {error && step === 2 && <p className="text-sm text-red-600">{error}</p>}
+
+            <div className="flex items-center justify-between gap-3">
+              <Button type="button" variant="ghost" onClick={backToDetails} disabled={submitting}>
+                ← Back to details
+              </Button>
+              <Button type="submit" variant="accent" loading={submitting}>
+                Submit application
+              </Button>
+            </div>
+            <p className="text-xs text-muted">
+              Your details and availability are submitted together. Our team reviews applications within 1–2 business days.
+            </p>
+          </CardBody>
+        </Card>
+      </div>{/* end STEP 2 */}
     </form>
   );
 }

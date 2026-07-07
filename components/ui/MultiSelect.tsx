@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface SelectOption {
   value: string;
   label: string;
+  icon?: ReactNode;   // e.g. a country flag, shown before the label
 }
 
 interface Props {
@@ -68,7 +69,18 @@ export function MultiSelect({
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
 
-  const selectedLabels = value.map((v) => options.find((o) => o.value === v)?.label ?? v);
+  // Enter adds the first available match; Backspace on an empty query removes the last chip.
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const pick = filtered.find((o) => !value.includes(o.value));
+      if (pick && !(maxSelected && value.length >= maxSelected)) toggle(pick.value);
+    } else if (e.key === 'Backspace' && query === '' && value.length > 0) {
+      onChange(value.slice(0, -1));
+    }
+  }
+
+  const selectedOptions = value.map((v) => options.find((o) => o.value === v) ?? { value: v, label: v });
 
   return (
     <div ref={containerRef} className="flex flex-col gap-1.5">
@@ -92,20 +104,21 @@ export function MultiSelect({
           'flex flex-wrap gap-1.5 items-center',
         )}
       >
-        {selectedLabels.length === 0 && !open && (
+        {selectedOptions.length === 0 && !open && (
           <span className="text-muted">{placeholder}</span>
         )}
 
-        {selectedLabels.map((lbl, i) => (
+        {selectedOptions.map((opt) => (
           <span
-            key={value[i]}
+            key={opt.value}
             className="inline-flex items-center gap-1 px-2 h-6 rounded-md bg-brand-50 text-brand-800 text-xs font-medium"
           >
-            {lbl}
+            {opt.icon && <span className="text-sm leading-none">{opt.icon}</span>}
+            {opt.label}
             <button
               type="button"
-              onClick={(e) => remove(value[i], e)}
-              aria-label={`Remove ${lbl}`}
+              onClick={(e) => remove(opt.value, e)}
+              aria-label={`Remove ${opt.label}`}
               className="text-brand-400 hover:text-brand-700"
             >
               <X className="h-3 w-3" />
@@ -122,6 +135,7 @@ export function MultiSelect({
             placeholder="Type to filter…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={onKeyDown}
             onClick={(e) => e.stopPropagation()}
             autoComplete="off"
             autoCorrect="off"
@@ -172,6 +186,7 @@ export function MultiSelect({
                   >
                     {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
                   </span>
+                  {opt.icon && <span className="text-base leading-none">{opt.icon}</span>}
                   {opt.label}
                 </li>
               );
