@@ -11,6 +11,8 @@ import { PhoneInput } from './ui/PhoneInput';
 import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
 import { CountrySelect } from './ui/CountrySelect';
+import { RichTextEditor } from './ui/RichTextEditor';
+import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { WeeklyAvailabilityGrid, type AvailabilitySlot } from './WeeklyAvailabilityGrid';
 import { COUNTRIES, countryFlag } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
@@ -141,7 +143,7 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
           headline: professionalTitle.trim() || undefined,
           photo_url: photoUrl || undefined,
           phone: phone || undefined,
-          bio: bio.trim() || undefined,
+          bio: isRichTextEmpty(bio) ? undefined : bio,
           country,
           city: city.trim() || undefined,
           timezone,
@@ -255,23 +257,12 @@ export function MentorOnboardingForm({ defaultName = '', userId = '' }: Props) {
               Introduce yourself — share your experience, skills, and approach to helping clients.
             </p>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <textarea
-              rows={5}
-              value={bio}
-              onChange={(e) => setBio(e.target.value.slice(0, BIO_MAX))}
-              placeholder="Tell mentees about your immigration journey, your current role, and how you can help them…"
-              className={cn(
-                'px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-y',
-                'placeholder:text-muted',
-                'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-                'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
-              )}
-            />
-            <p className={cn('text-xs text-right', bio.length >= BIO_MAX ? 'text-red-500' : 'text-muted')}>
-              {bio.length}/{BIO_MAX}
-            </p>
-          </div>
+          <RichTextEditor
+            value={bio}
+            onChange={setBio}
+            maxChars={BIO_MAX}
+            placeholder="Tell mentees about your immigration journey, your current role, and how you can help them… Use the toolbar to add bullet points or emphasis."
+          />
         </CardBody>
       </Card>
 

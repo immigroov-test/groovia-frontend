@@ -7,6 +7,8 @@ import { Card, CardBody } from './ui/Card';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { MultiSelect } from './ui/MultiSelect';
+import { RichTextEditor } from './ui/RichTextEditor';
+import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { cn } from '../lib/utils';
@@ -94,7 +96,7 @@ export function MentorProfileEditForm({ mentor }: Props) {
         body: JSON.stringify({
           display_name: displayName.trim(),
           headline: headline.trim() || null,
-          bio: bio.trim() || null,
+          bio: isRichTextEmpty(bio) ? null : bio,
           languages,
           session_duration_minutes: sessionDuration,
           linkedin_url: linkedinUrl.trim() || null,
@@ -168,17 +170,8 @@ export function MentorProfileEditForm({ mentor }: Props) {
             />
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Bio</label>
-              <textarea
-                rows={4}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                className={cn(
-                  'px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-y',
-                  'placeholder:text-muted',
-                  'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-                  'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
-                )}
-              />
+              <RichTextEditor value={bio} onChange={setBio} maxChars={2000}
+                placeholder="Share your experience, skills, and how you help clients…" />
             </div>
             <MultiSelect
               label="Languages you mentor in"

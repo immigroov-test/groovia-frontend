@@ -4,6 +4,7 @@ import { createClient } from '../lib/supabase/client';
 import { Card, CardBody } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { RichText } from './ui/RichText';
 import { UI_CONTENT } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
@@ -214,7 +215,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                       {detail.bio && (
                         <div className="sm:col-span-2">
                           <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Bio</p>
-                          <p className="text-foreground leading-relaxed whitespace-pre-wrap">{detail.bio}</p>
+                          <RichText html={detail.bio} className="text-foreground" />
                         </div>
                       )}
 

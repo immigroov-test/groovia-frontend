@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Card, CardBody } from '../../../../components/ui/Card';
 import { Badge } from '../../../../components/ui/Badge';
+import { RichText } from '../../../../components/ui/RichText';
 import { DirectBookingWidget } from '../../../../components/DirectBookingWidget';
 import type { Mentor } from '../../../../lib/types';
 import { backendBaseUrl } from '../../../../lib/backend';
@@ -95,9 +96,7 @@ export default async function MentorProfilePage({
         </div>
 
         {mentor.bio && (
-          <p className="text-sm text-foreground/80 leading-relaxed max-w-4xl mt-5 mb-8 whitespace-pre-line">
-            {mentor.bio}
-          </p>
+          <RichText html={mentor.bio} className="max-w-4xl mt-5 mb-8" />
         )}
 
         {/* Booking widget — full width */}
@@ -129,7 +128,7 @@ export default async function MentorProfilePage({
         <Card className="mb-6">
           <CardBody className="pt-6">
             <h2 className="text-base font-semibold text-foreground mb-2">About</h2>
-            <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{mentor.bio}</p>
+            <RichText html={mentor.bio} />
           </CardBody>
         </Card>
       )}
