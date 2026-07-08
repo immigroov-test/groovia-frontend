@@ -1,5 +1,6 @@
 'use client';
 import { useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { Card, CardBody } from './ui/Card';
 import { AdminMentorList } from './AdminMentorList';
 import { AdminBookings } from './AdminBookings';
@@ -22,8 +23,18 @@ export function AdminDashboard({ stats, pending, approved, suspended }: {
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">{t.title}</h1>
-      <p className="text-sm text-muted mt-1">{t.subtitle}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-brand-900">{t.title}</h1>
+          <p className="text-sm text-muted mt-1">{t.subtitle}</p>
+        </div>
+        <Link
+          href="/admin/financials"
+          className="shrink-0 h-9 px-4 rounded-full text-sm font-medium bg-brand-50 text-brand-900 hover:bg-brand-100 inline-flex items-center"
+        >
+          Payouts &amp; ledger
+        </Link>
+      </div>
 
       <div className="mt-6 grid grid-cols-3 gap-3">
         <StatCard n={stats.pending_mentor_count} label="Pending review" />
