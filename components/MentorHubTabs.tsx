@@ -49,7 +49,7 @@ export function MentorHubTabs({ mentor }: { mentor: HubMentor }) {
       <StatusBanner mentor={mentor} />
 
       <div>
-        <div className="flex gap-1 border-b border-[--color-border] overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-1 border-b border-[--color-border] overflow-x-auto overflow-y-hidden -mx-1 px-1">
           {tabs.map((t) => (
             <button key={t.id} type="button" onClick={() => setTab(t.id)}
               className={cn('shrink-0 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',

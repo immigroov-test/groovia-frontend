@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { isValidPhoneNumber, type CountryCode } from 'libphonenumber-js';
 import { PHONE_CODES } from '../../lib/phoneCodes';
 import { Flag } from './Flag';
 import { cn } from '../../lib/utils';
@@ -77,6 +78,9 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
     onChange(`${dialCode} ${n}`);
   }
 
+  // Client-side format/length check for the selected country (no SMS, no cost).
+  const invalid = number.replace(/\D/g, '').length > 0 && !isValidPhoneNumber(number, dialIso as CountryCode);
+
   return (
     <div className="flex flex-col gap-1.5" ref={containerRef}>
       {label && (
@@ -115,6 +119,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
             'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
             'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
             'placeholder:text-muted',
+            invalid && 'shadow-[0_0_0_1px_rgba(220,38,38,0.5)] focus:shadow-[0_0_0_2px_rgba(220,38,38,0.35)]',
           )}
         />
 
@@ -153,7 +158,9 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
           </div>
         )}
       </div>
-      {hint && <p className="text-xs text-muted">{hint}</p>}
+      {invalid
+        ? <p className="text-xs text-red-600">Enter a valid phone number for the selected country.</p>
+        : hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
   );
 }

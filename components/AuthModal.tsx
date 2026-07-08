@@ -211,18 +211,18 @@ function AuthModalInner() {
             {stage === 'email' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
-                <p className="text-sm text-muted mt-1 text-center">{t.subheading}</p>
+                <p className="text-base text-muted mt-1 text-center">{t.subheading}</p>
                 <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
                   <Input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel} className={inputBorder} />
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading} className="w-full">{t.continue}</Button>
                 </form>
-                <div className="my-4 flex items-center gap-3 text-xs text-muted">
+                <div className="my-4 flex items-center gap-3 text-sm text-muted">
                   <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
                 </div>
                 <GoogleButton label={t.continueWithGoogle} next={next} />
-                <p className="mt-4 text-[11px] leading-snug text-muted">
+                <p className="mt-4 text-xs leading-snug text-muted">
                   {t.termsNote}{' '}
                   <Link href="/terms" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
                   <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
@@ -233,14 +233,14 @@ function AuthModalInner() {
             {stage === 'login' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.loginHeading}</h2>
-                <p className="text-sm text-muted mt-1 text-center break-all">{email}</p>
+                <p className="text-base text-muted mt-1 text-center break-all">{email}</p>
                 <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-3">
                   <PasswordInput required autoFocus value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder={t.passwordPlaceholder} autoComplete="current-password" aria-label={t.passwordLabel} className={inputBorder} />
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading} className="w-full">{t.signIn}</Button>
                 </form>
-                <div className="mt-4 flex items-center justify-between text-xs">
+                <div className="mt-4 flex items-center justify-between text-sm">
                   <button type="button" onClick={() => { setStage('forgot'); setError(null); }} className="text-brand-700 hover:underline">{t.forgot}</button>
                   <button type="button" onClick={() => { setStage('email'); setPassword(''); setError(null); }} className="text-muted hover:text-foreground">{t.back}</button>
                 </div>
@@ -250,7 +250,7 @@ function AuthModalInner() {
             {stage === 'setup' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.setupHeading}</h2>
-                <p className="text-sm text-muted mt-1 text-center">{t.setupSubheading}</p>
+                <p className="text-base text-muted mt-1 text-center">{t.setupSubheading}</p>
                 <form onSubmit={handleSetup} className="mt-6 flex flex-col gap-3">
                   <Input type="text" required autoFocus value={name} maxLength={80} onChange={(e) => setName(e.target.value)}
                     placeholder={t.namePlaceholder} autoComplete="name" aria-label={t.nameLabel} className={inputBorder} />
@@ -259,7 +259,7 @@ function AuthModalInner() {
                   <PasswordChecklist password={password} />
                   <PasswordInput required value={confirm} onChange={(e) => setConfirm(e.target.value)}
                     placeholder={t.confirmLabel} autoComplete="new-password" aria-label={t.confirmLabel} className={inputBorder} />
-                  <label className="flex items-start gap-2 text-[11px] leading-snug text-muted">
+                  <label className="flex items-start gap-2 text-xs leading-snug text-muted">
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
                     <span>
                       I agree to Immigroov&apos;s{' '}
@@ -278,31 +278,31 @@ function AuthModalInner() {
             {stage === 'forgot' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.forgotHeading}</h2>
-                <p className="text-sm text-muted mt-1 text-center">{t.forgotSubheading}</p>
+                <p className="text-base text-muted mt-1 text-center">{t.forgotSubheading}</p>
                 <form onSubmit={handleForgot} className="mt-6 flex flex-col gap-3">
                   <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder={t.emailPlaceholder} autoComplete="email" aria-label={t.emailLabel} className={inputBorder} />
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading} className="w-full">{t.sendReset}</Button>
                 </form>
-                <button type="button" onClick={() => { setStage('login'); setError(null); }} className="mt-4 text-xs text-muted hover:text-foreground text-center">← Back</button>
+                <button type="button" onClick={() => { setStage('login'); setError(null); }} className="mt-4 text-sm text-muted hover:text-foreground text-center">← Back</button>
               </>
             )}
 
             {stage === 'sent' && (
-              <>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900">{sentType === 'signup' ? t.confirmHeading : t.resetHeading}</h2>
-                <div className="mt-4 h-11 w-11 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
-                  <Mail className="h-5 w-5" />
+              <div className="flex flex-col items-center text-center">
+                <div className="h-16 w-16 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
+                  <Mail className="h-8 w-8" />
                 </div>
-                <p className="text-sm text-muted mt-3 leading-relaxed">
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 mt-5">{sentType === 'signup' ? t.confirmHeading : t.resetHeading}</h2>
+                <p className="text-base text-muted mt-2 leading-relaxed">
                   {sentType === 'signup' ? t.confirmBody(email) : t.resetBody(email)}
                 </p>
-                <div className="mt-6 flex items-center gap-4 text-xs">
+                <div className="mt-6 flex items-center gap-4 text-sm">
                   <button type="button" onClick={resend} className="text-brand-700 hover:underline disabled:opacity-50" disabled={loading}>{t.resend}</button>
                   <button type="button" onClick={() => { setStage('email'); setError(null); }} className="text-muted hover:text-foreground">{t.changeEmail}</button>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
