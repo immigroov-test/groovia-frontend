@@ -34,7 +34,7 @@ export const UI_CONTENT = {
     mentors: 'Mentors',
     account: 'Account',
     mentorPortal: 'Join as Mentor',
-    mentorHub: 'Mentor Hub',
+    mentorHub: 'Mentor Dashboard',
     about: 'About',
     admin: 'Admin',
     history: 'Recent chats',
