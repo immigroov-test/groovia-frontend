@@ -28,6 +28,9 @@ interface Question {
   question_type: string;
 }
 
+// A mentor offers at most one service per duration. These are the only lengths.
+const DURATION_OPTIONS = [15, 30, 45, 60] as const;
+
 async function apiFetch(path: string, method = 'GET', body?: object) {
   const supabase = (await import('../lib/supabase/client')).createClient();
   const { data: { session } } = await supabase.auth.getSession();
@@ -85,10 +88,22 @@ export function ServicesManager() {
     if (!questions[id]) loadQuestions(id);
   }
 
+  // Durations already taken by an existing service (each length is offered once).
+  const usedDurations = new Set(services.map((s) => s.duration));
+  const availableDurations = DURATION_OPTIONS.filter((d) => !usedDurations.has(d));
+
+  function startCreate() {
+    const first = availableDurations[0] ?? 30;
+    setForm({ title: '', description: '', type: 'video', duration: first, category: '', set_price: '', is_ppp: false });
+    setFormError(null);
+    setCreating(true);
+  }
+
   async function createService() {
     if (!form.title.trim()) { setFormError('Title is required.'); return; }
     const duration = parseInt(String(form.duration));
-    if (!duration || duration < 5 || duration > 480) { setFormError('Duration must be 5-480 minutes.'); return; }
+    if (!DURATION_OPTIONS.includes(duration as (typeof DURATION_OPTIONS)[number])) { setFormError('Pick a session length.'); return; }
+    if (usedDurations.has(duration)) { setFormError('You already have a session of this length.'); return; }
     const price = parseFloat(form.set_price) || 0;
     setFormError(null); setSubmitting(true);
     try {
@@ -273,9 +288,16 @@ export function ServicesManager() {
                   <option value="dm">DM / Text</option>
                 </select>
               </div>
-              <Input label="Duration (min) *" type="number" min={5} max={480}
-                value={String(form.duration)}
-                onChange={e => setForm(f => ({ ...f, duration: parseInt(e.target.value) || 30 }))} />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Duration *</label>
+                <select value={String(form.duration)}
+                  onChange={e => setForm(f => ({ ...f, duration: parseInt(e.target.value) }))}
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                  {availableDurations.map(d => (
+                    <option key={d} value={d}>{d} minutes</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input label="Category" value={form.category}
@@ -298,13 +320,15 @@ export function ServicesManager() {
             </div>
           </CardBody>
         </Card>
-      ) : (
+      ) : availableDurations.length > 0 ? (
         <button
-          onClick={() => setCreating(true)}
+          onClick={startCreate}
           className="flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
         >
           <Plus className="h-4 w-4" /> Add session type
         </button>
+      ) : (
+        <p className="text-xs text-muted">You have a session type for every length (15, 30, 45, 60 min).</p>
       )}
     </div>
   );
