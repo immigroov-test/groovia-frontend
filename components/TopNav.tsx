@@ -53,7 +53,7 @@ export function TopNav({ authed, email, role }: Props) {
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
-    ...(role !== 'admin' ? [{ href: '/mentor', label: UI_CONTENT.sidebar.mentorPortal, gated: false }] : []),
+    ...(role !== 'admin' ? [{ href: '/mentor', label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub : UI_CONTENT.sidebar.mentorPortal, gated: false }] : []),
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),
   ];
 
