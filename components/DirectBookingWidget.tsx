@@ -380,6 +380,14 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
 
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
+      // Referral attribution: /r/[slug] drops an `ig_ref` cookie on click.
+      // reserve_booking resolves this into a commission via
+      // resolve_referral_attribution — matching immigroov's own cookie-based
+      // click-to-booking attribution (see app/r/[slug]/route.ts).
+      const referralSessionToken = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith('ig_ref='))
+        ?.split('=')[1];
       const reserveRes = await fetch('/api/payments/reserve', {
         method: 'POST',
         headers: {
@@ -396,6 +404,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           notes:       notes.trim(),
           timezone:    TZ,
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
+          ...(referralSessionToken ? { referral_session_token: referralSessionToken } : {}),
         }),
       });
       const reserved = await reserveRes.json();
