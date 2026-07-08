@@ -14,8 +14,9 @@ import { CountrySelect } from './ui/CountrySelect';
 import { TimezoneSelect } from './ui/TimezoneSelect';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { Flag } from './ui/Flag';
-import { WeeklyHoursEditor, emptyWeek, validateWeeklyHours, weeklyToSlots, type WeeklyHours } from './WeeklyHoursEditor';
+import { WeeklyHoursEditor, WEEK_DAYS, emptyWeek, validateWeeklyHours, weeklyToSlots, type WeeklyHours } from './WeeklyHoursEditor';
 import { ServiceListEditor, activeServiceCount, type DraftService } from './ServiceListEditor';
+import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
@@ -68,6 +69,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   // Step 2 - availability + sessions
   const [weeklyHours, setWeeklyHours] = useState<WeeklyHours>(emptyWeek());
   const [services, setServices] = useState<DraftService[]>([]);
+  const [daysAhead, setDaysAhead] = useState(30);
+  const [minNotice, setMinNotice] = useState(2);
+  const [cancelHours, setCancelHours] = useState(24);
+  const [overrides, setOverrides] = useState<DateOverride[]>([]);
   const [agreedMentor, setAgreedMentor] = useState(false);
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -94,7 +99,14 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
   const availError = validateWeeklyHours(weeklyHours);
   const sessionError = activeServiceCount(services) < 1 ? 'Add and activate at least one session type.' : null;
-  const canSubmit = !availError && !sessionError && agreedMentor;
+  const rulesError = (() => {
+    if (!(daysAhead >= 1 && daysAhead <= 365)) return 'Set how many days ahead mentees can book (1-365).';
+    if (!(minNotice >= 0 && minNotice <= 168)) return 'Set a valid minimum booking notice (0-168 hours).';
+    if (!(cancelHours >= 1 && cancelHours <= 168)) return 'Set a valid cancellation notice (1-168 hours).';
+    return null;
+  })();
+  const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
+  const canSubmit = !availError && !sessionError && !rulesError && agreedMentor;
 
   function goToStep2() {
     const err = validateDetails();
@@ -117,6 +129,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (detailErr) { setError(detailErr); setStep(1); return; }
     if (availError) { setError(availError); return; }
     if (sessionError) { setError(sessionError); return; }
+    if (rulesError) { setError(rulesError); return; }
     if (!agreedMentor) { setError('Please accept the Mentor Agreement to proceed.'); return; }
 
     setSubmitting(true);
@@ -146,6 +159,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           agreed_to_mentor_terms: true,
           weekly_availability: weeklyToSlots(weeklyHours),
           services: services.map((s) => ({ title: s.title, duration: s.duration, is_active: s.active })),
+          booking_rules: { days_ahead: daysAhead, min_notice_hours: minNotice, cancel_hours: cancelHours },
+          date_overrides: overrides,
         }),
       });
       const data = await res.json();
@@ -315,6 +330,52 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
         <Card>
           <CardBody className="pt-6 flex flex-col gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Booking rules *</h2>
+              <p className="text-sm text-muted mt-0.5">
+                How far ahead mentees can book, the minimum warning you need before a session, and how late
+                a session can be cancelled. Example: a minimum notice of 2 means the soonest bookable slot is
+                2 hours from now.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-muted">Book up to (days ahead)</span>
+                <input type="number" min={1} max={365} value={daysAhead}
+                  onChange={(e) => setDaysAhead(parseInt(e.target.value) || 0)}
+                  className="h-11 w-40 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-muted">Minimum booking notice (hrs)</span>
+                <input type="number" min={0} max={168} step={0.5} value={minNotice}
+                  onChange={(e) => setMinNotice(parseFloat(e.target.value) || 0)}
+                  className="h-11 w-44 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-muted">Cancellation notice (hrs)</span>
+                <input type="number" min={1} max={168} value={cancelHours}
+                  onChange={(e) => setCancelHours(parseInt(e.target.value) || 0)}
+                  className="h-11 w-40 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+              </label>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="pt-6 flex flex-col gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Date overrides</h2>
+              <p className="text-sm text-muted mt-0.5">
+                Optional. Block specific dates (holidays) or set different hours for a day. You can also do
+                this anytime from your hub.
+              </p>
+            </div>
+            <DateOverridesEditor value={overrides} onChange={setOverrides} activeWeekdays={activeWeekdays} />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="pt-6 flex flex-col gap-4">
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
               <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentor}
                 onChange={(e) => setAgreedMentor(e.target.checked)} />
@@ -330,6 +391,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               <ul className="text-xs text-muted flex flex-col gap-1">
                 {availError && <li>· {availError}</li>}
                 {sessionError && <li>· {sessionError}</li>}
+                {rulesError && <li>· {rulesError}</li>}
                 {!agreedMentor && <li>· Accept the Mentor Agreement.</li>}
               </ul>
             )}
