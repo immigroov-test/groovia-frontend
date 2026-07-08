@@ -15,7 +15,6 @@ import { MentorBrowser } from '../../components/MentorBrowser';
 import { DirectBookingWidget } from '../../components/DirectBookingWidget';
 import { BookingManager } from '../../components/BookingManager';
 import { MentorLanding } from '../../components/MentorLanding';
-import { MentorRegisterForm } from '../../components/MentorRegisterForm';
 import { MentorOnboardingForm } from '../../components/MentorOnboardingForm';
 import { MentorAvailabilityForm } from '../../components/MentorAvailabilityForm';
 import { ProfileEditor } from '../../components/ProfileEditor';
@@ -219,12 +218,7 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
     ),
   },
   {
-    group: '3 · Become a mentor', title: '② Register', real: true, node: (
-      <div className="mx-auto max-w-md px-4 py-10"><h1 className="text-2xl font-semibold text-brand-900 mb-6 text-center">Join as a mentor</h1><MentorRegisterForm /></div>
-    ),
-  },
-  {
-    group: '3 · Become a mentor', title: '③ Onboarding - details', real: true, node: (
+    group: '3 · Become a mentor', title: '② Onboarding - details', real: true, node: (
       <PageWrap><h1 className="text-2xl font-semibold text-brand-900 mb-6">Set up your mentor profile</h1><MentorOnboardingForm defaultName="Maya Singh" /></PageWrap>
     ),
   },

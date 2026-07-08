@@ -22,7 +22,10 @@ function AuthModalInner() {
 
   const isOpen = params.get('auth') === 'open';
   const mode = params.get('mode');
-  const next = params.get('next') ?? undefined;
+  const role = params.get('role');
+  // Mentor join reuses this whole login flow; it just lands on the mentor onboarding
+  // page afterwards (which itself sends already-approved mentors to their hub).
+  const next = params.get('next') ?? (role === 'mentor' ? '/mentor/onboarding' : undefined);
 
   const [stage, setStage] = useState<Stage>('email');
   const [email, setEmail] = useState('');
@@ -123,7 +126,9 @@ function AuthModalInner() {
       if (msg.includes('invalid login')) { setError(t.badCredentials); return; }
       setError(error.message); return;
     }
-    close(); router.refresh();
+    // Honour `next` (the page they were headed to, or the mentor onboarding form).
+    // Without one, stay on the current page and just refresh to reflect the session.
+    if (next) { router.push(next); } else { close(); router.refresh(); }
   }
 
   // Reached only after the verification link (session exists) → set the password.

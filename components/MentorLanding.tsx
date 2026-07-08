@@ -1,5 +1,5 @@
 'use client';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   BadgeCheck,
   BookOpen,
@@ -75,9 +75,13 @@ const STEPS = [
 
 export function MentorLanding() {
   const router = useRouter();
+  const pathname = usePathname();
 
+  // Opens the same login popup as the rest of the site, in mentor mode: ask for the
+  // email first, then either sign in an existing mentor or send a verification link
+  // to a new one. After auth they land on the mentor onboarding form.
   function openSignup() {
-    router.push('/mentor/register');
+    router.push(`${pathname}?auth=open&role=mentor`);
   }
 
   return (

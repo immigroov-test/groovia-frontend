@@ -10,7 +10,7 @@ export default async function MentorOnboardingPage() {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
-    redirect('/mentor/register');
+    redirect('/mentor?auth=open&role=mentor');
   }
 
   // If they already have a mentor row, send them to the hub.
