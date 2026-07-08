@@ -11,6 +11,7 @@ import { PasswordChecklist, passwordMeetsPolicy } from './ui/PasswordChecklist';
 import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
+import { randomQuote } from '../lib/quotes';
 
 type Stage = 'email' | 'login' | 'setup' | 'forgot' | 'sent';
 
@@ -63,12 +64,9 @@ function AuthModalInner() {
     }
   }, [isOpen, mode]);
 
+  // Pick a fresh quote from the local list each time the popup opens (no API call).
   useEffect(() => {
-    if (!isOpen) return;
-    fetch('/api/quote')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((q) => { if (q?.text) setQuote({ text: q.text, author: q.author ?? '' }); })
-      .catch(() => {});
+    if (isOpen) setQuote(randomQuote());
   }, [isOpen]);
 
   useEffect(() => {
