@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '../lib/supabase/client';
+import { apiFetch } from '../lib/api';
 import { Card, CardBody } from './ui/Card';
 import { Button } from './ui/Button';
 import { WeeklyAvailabilityGrid, type AvailabilitySlot } from './WeeklyAvailabilityGrid';
@@ -33,20 +33,11 @@ export function MentorAvailabilityForm({ initialSlots, initialDuration }: Props)
     setSaved(false);
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) { setError('Session expired. Please log in again.'); return; }
-      const res = await fetch('/api/mentor/availability', {
+      const { ok, data } = await apiFetch<{ detail?: string }>('/api/mentor/availability', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
-          slots,
-          session_duration_minutes: duration,
-          availability_type: 'manual',
-        }),
+        json: { slots, session_duration_minutes: duration, availability_type: 'manual' },
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.detail || 'Save failed.'); return; }
+      if (!ok) { setError(data?.detail || 'Save failed.'); return; }
       setSaved(true);
       router.refresh();
     } catch {

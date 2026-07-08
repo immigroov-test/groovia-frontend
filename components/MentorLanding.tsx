@@ -86,8 +86,9 @@ export function MentorLanding() {
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Left: reasons to join · Right: the vertical journey */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_15rem] gap-8 lg:gap-12 items-start">
+      {/* Left: reasons to join · Right: the vertical journey. items-stretch makes the
+          right timeline span the same height, so both columns start and end level. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_16rem] gap-8 lg:gap-12 items-stretch">
 
         {/* Benefits: stacked one below the other, staggered entrance */}
         <div className="flex flex-col gap-4 reveal-children">
@@ -107,34 +108,40 @@ export function MentorLanding() {
           ))}
         </div>
 
-        {/* How it works: vertical stepper, no box */}
-        <div className="lg:pt-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted mb-4">How it works</p>
-          <ol className="flex flex-col reveal-children">
-            {STEPS.map(({ icon: Icon, label, description }, i) => (
-              <li key={label} className="flex flex-col">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0 ${
-                      i === 0
-                        ? 'bg-brand-700 border-brand-700 text-white'
-                        : 'bg-white border-[--color-border] text-muted'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" />
+        {/* How it works: vertical timeline that stretches to fill the column height so
+            the last step lines up with the bottom of the last benefit card. */}
+        <div className="flex flex-col lg:h-full">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted mb-5">How it works</p>
+          <ol className="flex flex-col lg:flex-1 reveal-children">
+            {STEPS.map(({ icon: Icon, label, description }, i) => {
+              const last = i === STEPS.length - 1;
+              return (
+                <li key={label} className={`flex flex-col ${last ? '' : 'lg:flex-1'}`}>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex items-center justify-center w-11 h-11 rounded-full border-2 shrink-0 ${
+                        i === 0
+                          ? 'bg-brand-700 border-brand-700 text-white'
+                          : 'bg-white border-[--color-border] text-muted'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className={`text-base font-semibold leading-none ${i === 0 ? 'text-brand-700' : 'text-foreground'}`}>
+                        {label}
+                      </p>
+                      <p className="mt-1 text-sm text-muted leading-tight">{description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className={`text-sm font-semibold leading-none ${i === 0 ? 'text-brand-700' : 'text-foreground'}`}>
-                      {label}
-                    </p>
-                    <p className="mt-1 text-xs text-muted leading-tight">{description}</p>
-                  </div>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <ChevronDown className="h-4 w-4 text-muted/50 my-1 ml-3" />
-                )}
-              </li>
-            ))}
+                  {!last && (
+                    <div className="flex items-center py-2 my-1 lg:flex-1 ml-3.5">
+                      <ChevronDown className="h-4 w-4 text-muted/50" />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </div>
       </div>
