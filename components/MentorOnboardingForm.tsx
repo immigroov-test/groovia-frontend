@@ -11,6 +11,7 @@ import { PhoneInput } from './ui/PhoneInput';
 import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
 import { CountrySelect } from './ui/CountrySelect';
+import { TimezoneSelect } from './ui/TimezoneSelect';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { Flag } from './ui/Flag';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
@@ -38,20 +39,6 @@ const DOMAIN_OPTIONS = [
 
 const BIO_MAX = 2000;
 const NOTES_MAX = 500;
-
-// Timezone list with current GMT offset, e.g. "Europe/Amsterdam (GMT+2)".
-function tzOffsetLabel(tz: string): string {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date());
-    return parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT';
-  } catch {
-    return 'GMT';
-  }
-}
-const TZ_OPTIONS = Intl.supportedValuesOf('timeZone').map((tz) => ({
-  tz,
-  label: `${tz.replace(/_/g, ' ')} (${tzOffsetLabel(tz)})`,
-}));
 
 interface Props {
   defaultName?: string;
@@ -228,7 +215,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           <div className="flex flex-col gap-1.5">
             <div className="flex items-baseline gap-2">
               <label className="text-sm font-medium text-foreground">Profile Photo</label>
-              <span className="text-xs text-muted">(Recommended, helps mentees connect with you)</span>
+              <span className="text-xs text-muted">(Recommended)</span>
             </div>
             <PhotoUpload value={photoUrl} onChange={setPhotoUrl} userId={userId} />
           </div>
@@ -304,24 +291,13 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             hint="Optional, shown on your public profile."
           />
 
-          {/* Timezone: auto-filled from country, editable */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">Timezone</label>
-            <select
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className={cn(
-                'h-10 px-3 rounded-lg bg-white text-sm text-foreground',
-                'shadow-[0_0_0_1px_rgba(15,23,42,0.06)]',
-                'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]',
-              )}
-            >
-              {TZ_OPTIONS.map(({ tz, label }) => (
-                <option key={tz} value={tz}>{label}</option>
-              ))}
-            </select>
-            <p className="text-xs text-muted">Auto-selected from your country. You can adjust it.</p>
-          </div>
+          {/* Timezone: auto-filled from country, searchable */}
+          <TimezoneSelect
+            label="Timezone"
+            value={timezone}
+            onChange={setTimezone}
+            hint="Auto-selected from your country. Type a city or GMT offset to change it."
+          />
 
           {/* Languages */}
           <MultiSelect
