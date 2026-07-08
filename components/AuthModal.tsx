@@ -305,9 +305,13 @@ function AuthModalInner() {
             )}
           </div>
 
-          {/* Right - brand panel with points; quote overlaid on the LOWER part of the photo */}
-          <div className="hidden md:flex md:w-1/2 flex-col bg-[#102a4c] text-white">
-            <div className="flex-1 px-8 pt-20 pb-5 flex flex-col">
+          {/* Right - full-height background image (navy overlay for readable text);
+              points at top, quote at the bottom. Falls back to navy if the image is missing. */}
+          <div className="relative hidden md:flex md:w-1/2 flex-col text-white bg-[#102a4c] overflow-hidden">
+            <Image src="/login-bg.jpg" alt="" fill priority className="object-cover object-center" sizes="(max-width: 896px) 50vw, 448px" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#102a4c]/85 via-[#102a4c]/55 to-black/85" />
+
+            <div className="relative flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
               <ul className="mt-5 flex flex-col gap-3">
                 {UI_CONTENT.authPoints.map((point) => (
@@ -320,13 +324,9 @@ function AuthModalInner() {
                 ))}
               </ul>
             </div>
-            <div className="relative w-full aspect-[848/330] shrink-0">
-              <Image src="/tourists-go-up-hill-sunrise.png" alt="" fill className="object-cover object-center" sizes="(max-width: 896px) 50vw, 448px" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 px-8 pb-4">
-                <p className="text-sm text-white leading-snug font-serif">“{quote.text}”</p>
-                {quote.author && <p className="text-[11px] text-white/70 mt-1">{quote.author}</p>}
-              </div>
+            <div className="relative px-8 pb-5">
+              <p className="text-sm text-white leading-snug font-serif">“{quote.text}”</p>
+              {quote.author && <p className="text-[11px] text-white/70 mt-1">{quote.author}</p>}
             </div>
           </div>
         </div>
