@@ -205,8 +205,9 @@ function AuthModalInner() {
               priority className="object-contain" style={{ height: '26px', width: 'auto' }} />
           </div>
 
-          {/* Left - form (fills the taller popup, centered, scrolls if needed) */}
-          <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:h-full md:justify-center overflow-y-auto">
+          {/* Left - form. Top-aligned (pt-20 matches the right panel) so the left and right
+              titles always start on the same line, whatever the stage's content is. */}
+          <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:h-full overflow-y-auto">
             {stage === 'email' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
@@ -315,13 +316,13 @@ function AuthModalInner() {
 
             <div className="relative flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
-              <ul className="mt-5 flex flex-col gap-3">
+              <ul className="mt-6 flex flex-col gap-3.5">
                 {UI_CONTENT.authPoints.map((point) => (
                   <li key={point} className="flex items-start gap-3">
-                    <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/25 flex items-center justify-center">
-                      <Check className="h-3 w-3 text-white" />
+                    <span className="mt-0.5 h-6 w-6 shrink-0 rounded-full bg-accent-500 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-white" strokeWidth={3} />
                     </span>
-                    <span className="text-sm font-medium leading-snug">{point}</span>
+                    <span className="text-base font-medium leading-snug">{point}</span>
                   </li>
                 ))}
               </ul>
