@@ -308,9 +308,10 @@ function AuthModalInner() {
           {/* Right - full-height background image (navy overlay for readable text);
               points at top, quote at the bottom. Falls back to navy if the image is missing. */}
           <div className="relative hidden md:flex md:w-1/2 md:h-full flex-col text-white bg-[#102a4c] overflow-hidden">
-            {/* object-contain: the image resizes to fit the panel at any popup size, never cropped */}
-            <Image src="/login-bg.jpg" alt="" fill priority className="object-contain object-center" sizes="(max-width: 896px) 50vw, 576px" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#102a4c]/70 via-[#102a4c]/35 to-black/75" />
+            {/* object-cover: fills the whole right column at any popup size (industry standard for
+                a side/hero panel), scales responsively, never distorts, crops only the overflow. */}
+            <Image src="/login-bg.jpg" alt="" fill priority className="object-cover object-center" sizes="(max-width: 896px) 50vw, 576px" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#102a4c]/75 via-[#102a4c]/45 to-black/80" />
 
             <div className="relative flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
