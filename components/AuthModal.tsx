@@ -188,7 +188,7 @@ function AuthModalInner() {
         className="flex min-h-full items-center justify-center p-4"
         onClick={(e) => { if (e.target === e.currentTarget && stage !== 'setup') close(); }}
       >
-        <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
+        <div className="relative w-[92vw] max-w-6xl md:h-[90vh] md:max-h-[880px] bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
           {/* No dismiss during 'setup' - a verified user must finish setting a password. */}
           {stage !== 'setup' && (
             <button
@@ -205,8 +205,8 @@ function AuthModalInner() {
               priority className="object-contain" style={{ height: '26px', width: 'auto' }} />
           </div>
 
-          {/* Left - form */}
-          <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:min-h-[440px]">
+          {/* Left - form (fills the taller popup, centered, scrolls if needed) */}
+          <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:h-full md:justify-center overflow-y-auto">
             {stage === 'email' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
@@ -307,9 +307,10 @@ function AuthModalInner() {
 
           {/* Right - full-height background image (navy overlay for readable text);
               points at top, quote at the bottom. Falls back to navy if the image is missing. */}
-          <div className="relative hidden md:flex md:w-1/2 flex-col text-white bg-[#102a4c] overflow-hidden">
-            <Image src="/login-bg.jpg" alt="" fill priority className="object-cover object-center" sizes="(max-width: 896px) 50vw, 448px" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#102a4c]/85 via-[#102a4c]/55 to-black/85" />
+          <div className="relative hidden md:flex md:w-1/2 md:h-full flex-col text-white bg-[#102a4c] overflow-hidden">
+            {/* object-contain: the image resizes to fit the panel at any popup size, never cropped */}
+            <Image src="/login-bg.jpg" alt="" fill priority className="object-contain object-center" sizes="(max-width: 896px) 50vw, 576px" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#102a4c]/70 via-[#102a4c]/35 to-black/75" />
 
             <div className="relative flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
@@ -325,8 +326,8 @@ function AuthModalInner() {
               </ul>
             </div>
             <div className="relative px-8 pb-5">
-              <p className="text-sm text-white leading-snug font-serif">“{quote.text}”</p>
-              {quote.author && <p className="text-[11px] text-white/70 mt-1">{quote.author}</p>}
+              <p className="text-sm text-white/80 leading-snug font-serif font-normal italic">“{quote.text}”</p>
+              {quote.author && <p className="text-[11px] text-white/60 mt-1 not-italic">{quote.author}</p>}
             </div>
           </div>
         </div>
