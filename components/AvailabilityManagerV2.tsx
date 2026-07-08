@@ -195,12 +195,17 @@ export function AvailabilityManagerV2() {
         <Card>
           <CardBody className="pt-5">
             <h3 className="text-base font-semibold text-brand-900">Booking rules</h3>
+            <p className="text-xs text-muted mt-1 max-w-xl">
+              How far ahead mentees can book, how much warning you need before a session, and how late a
+              session can be cancelled. Example: a minimum booking notice of 2 means the soonest bookable
+              slot is 2 hours from now.
+            </p>
             <div className="mt-4 flex flex-wrap items-end gap-4">
-              <RuleField label="Accept up to (days ahead)" value={rulesForm.days_ahead} min={1} max={365}
+              <RuleField label="Book up to (days ahead)" value={rulesForm.days_ahead} min={1} max={365}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, days_ahead: v || 30 } : r)} />
-              <RuleField label="Minimum notice (hours)" value={rulesForm.min_notice_hours} min={0} max={168} step={0.5}
+              <RuleField label="Minimum booking notice (hrs)" value={rulesForm.min_notice_hours} min={0} max={168} step={0.5}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, min_notice_hours: v || 0 } : r)} />
-              <RuleField label="Cancellation notice (hours)" value={rulesForm.cancel_hours} min={1} max={168}
+              <RuleField label="Cancellation notice (hrs)" value={rulesForm.cancel_hours} min={1} max={168}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, cancel_hours: v || 24 } : r)} />
               <Button variant="accent" onClick={saveRules} loading={savingRules} className="h-11">Save rules</Button>
             </div>
