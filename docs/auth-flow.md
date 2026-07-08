@@ -1,7 +1,7 @@
-# Login flow (baseline) — and where custom SMTP fits
+# Login flow (baseline) - and where custom SMTP fits
 
 This is the authoritative login flow after the hardening fixes. **Custom SMTP changes
-only the shaded "email delivery" node — every decision node is unchanged.** Full
+only the shaded "email delivery" node - every decision node is unchanged.** Full
 edge-case matrix: [auth-edge-cases.md](./auth-edge-cases.md).
 
 ```mermaid
@@ -18,7 +18,7 @@ flowchart TD
     SendN --> Deliver
     Deliver["📧 Supabase builds the magic link and SENDS the email<br/>◀━━ CUSTOM SMTP replaces ONLY this transport (Supabase → Resend)"]:::smtp
     Deliver --> Sent[Stage: 'Check your email']
-    Sent --> Click([User clicks link — SAME browser])
+    Sent --> Click([User clicks link - SAME browser])
     Click --> CB[/auth/callback/]
     OAuth --> CB
     CB --> Exchange{exchangeCodeForSession<br/>or verifyOtp}
@@ -33,7 +33,7 @@ flowchart TD
     classDef smtp fill:#fff3cd,stroke:#d39e00,color:#000;
 ```
 
-## Invariants — must stay true so the flow above is preserved
+## Invariants - must stay true so the flow above is preserved
 Custom SMTP does **not** require touching any of these. Do **not** change them while
 setting up SMTP:
 
@@ -45,7 +45,7 @@ setting up SMTP:
    automatic same-email account linking (Google ↔ magic link).
 4. **`emailRedirectTo` / callback / `/auth/sync` / `check-email` untouched.**
 
-## Supabase toggles — what to change vs leave
+## Supabase toggles - what to change vs leave
 | Setting | Action |
 |---|---|
 | SMTP Settings → **Enable Custom SMTP** | ✅ turn ON (this task) |
@@ -65,7 +65,7 @@ setting up SMTP:
 3. **Auth → Rate Limits** → raise the email rate limit (default jumps to ~30/hr with
    custom SMTP; set higher if needed).
 4. (Optional) Paste the branded templates from
-   [supabase-auth-emails.md](./supabase-auth-emails.md) — keep `{{ .ConfirmationURL }}`.
+   [supabase-auth-emails.md](./supabase-auth-emails.md) - keep `{{ .ConfirmationURL }}`.
 5. **Verify the flowchart is intact:** send yourself a link → it now arrives from your
    domain, no hourly cap → click in the same browser → lands on `/chat`. Every node
    behaves exactly as before; only the sender/limits changed.

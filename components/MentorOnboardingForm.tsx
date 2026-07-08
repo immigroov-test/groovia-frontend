@@ -491,7 +491,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               </Button>
             </div>
             <p className="text-xs text-muted">
-              Your details and availability are submitted together. Our team reviews applications within 1–2 business days.
+              Your details and availability are submitted together. Our team reviews applications within 1-2 business days.
             </p>
           </CardBody>
         </Card>

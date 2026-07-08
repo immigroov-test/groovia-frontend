@@ -1,13 +1,13 @@
 # Branded Supabase auth emails
 
 The sign-in / sign-up emails are sent by **Supabase**, not our backend, so they're
-configured in the Supabase dashboard (per project — do it for staging and prod).
+configured in the Supabase dashboard (per project - do it for staging and prod).
 
 ## 1. Templates
 
 Dashboard → **Authentication → Emails → Templates**. Our passwordless flow uses two:
-- **Magic Link** — sent to existing users signing in.
-- **Confirm signup** — sent to brand-new users (the one that currently reads
+- **Magic Link** - sent to existing users signing in.
+- **Confirm signup** - sent to brand-new users (the one that currently reads
   "Confirm your email address … powered by Supabase").
 
 Paste the HTML below into **both** (they share `{{ .ConfirmationURL }}`), and set the
@@ -36,7 +36,7 @@ subject:
           <p style="margin:0 0 24px;font-size:13px;color:#6b7fff;word-break:break-all">{{ .ConfirmationURL }}</p>
           <p style="margin:0;font-size:13px;color:#888;line-height:1.6">If you didn't request this, you can safely ignore this email.</p>
           <hr style="border:none;border-top:1px solid #e8e8e8;margin:32px 0">
-          <p style="margin:0;font-size:12px;color:#999">Immigroov — mentorship for moving and building your career abroad.</p>
+          <p style="margin:0;font-size:12px;color:#999">Immigroov - mentorship for moving and building your career abroad.</p>
         </td></tr>
       </table>
     </td></tr>

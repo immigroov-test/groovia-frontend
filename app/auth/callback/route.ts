@@ -1,6 +1,6 @@
 // OAuth + email-confirmation callback.
 // Handles BOTH:
-//   /auth/callback?code=...                      (PKCE — OAuth & newer email links)
+//   /auth/callback?code=...                      (PKCE - OAuth & newer email links)
 //   /auth/callback?token_hash=...&type=signup    (older email links)
 import { NextResponse, type NextRequest } from 'next/server';
 import { type EmailOtpType, type SupabaseClient } from '@supabase/supabase-js';
@@ -8,7 +8,7 @@ import { createClient } from '../../../lib/supabase/server';
 import { backendBaseUrl } from '../../../lib/backend';
 
 // Right after login, ask the backend to link a pre-approved mentor account (matched
-// by email) so they get mentor access. Best-effort — never blocks the redirect.
+// by email) so they get mentor access. Best-effort - never blocks the redirect.
 async function syncAccount(supabase: SupabaseClient) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -24,7 +24,7 @@ async function syncAccount(supabase: SupabaseClient) {
   }
 }
 
-// Only allow same-origin relative paths — blocks open redirects like //evil.com.
+// Only allow same-origin relative paths - blocks open redirects like //evil.com.
 function safeNext(next: string | null): string {
   if (!next || !next.startsWith('/') || next.startsWith('//')) return '/chat';
   return next;

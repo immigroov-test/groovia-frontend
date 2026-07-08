@@ -54,7 +54,7 @@ export function AdminPendingServices() {
                 <h3 className="text-sm font-semibold text-foreground">{s.title}</h3>
                 <span className="inline-flex items-center gap-1 text-xs text-amber-700"><Clock className="h-3 w-3" /> pending</span>
               </div>
-              <p className="text-xs text-muted mt-0.5">by {s.mentor_name ?? '—'}</p>
+              <p className="text-xs text-muted mt-0.5">by {s.mentor_name ?? '-'}</p>
               {s.description && <p className="text-xs text-muted mt-1 max-w-xl">{s.description}</p>}
               <p className="text-xs text-muted mt-1">
                 {s.type} · {s.duration} min · {s.set_price === 0 ? 'Free' : `${s.set_price} ${s.set_currency}`}

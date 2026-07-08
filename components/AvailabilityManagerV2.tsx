@@ -161,7 +161,7 @@ export function AvailabilityManagerV2() {
                   )}
                   {weeklyByDay[day].map((slot) => (
                     <span key={slot.id} className="inline-flex items-center gap-1 bg-brand-50 text-brand-800 rounded-full pl-2.5 pr-1.5 py-1 text-xs font-medium">
-                      {hhmm(slot.start_time)}–{hhmm(slot.end_time)}
+                      {hhmm(slot.start_time)}-{hhmm(slot.end_time)}
                       <button onClick={() => delWeekly(slot.id)} aria-label="Remove" className="text-brand-400 hover:text-red-500">
                         <X className="h-3 w-3" />
                       </button>
@@ -172,7 +172,7 @@ export function AvailabilityManagerV2() {
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <input type="time" value={addFrom} onChange={(e) => setAddFrom(e.target.value)}
                       className="h-8 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
-                    <span className="text-xs text-muted">–</span>
+                    <span className="text-xs text-muted">-</span>
                     <input type="time" value={addTo} onChange={(e) => setAddTo(e.target.value)}
                       className="h-8 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
                     <Button size="sm" variant="accent" loading={busy} onClick={() => addHours(day)}>Add</Button>
@@ -268,7 +268,7 @@ export function AvailabilityManagerV2() {
                   ) : selStatus ? (
                     <>
                       <p className="text-xs text-muted">
-                        {selStatus.is_blackout ? 'Blocked for the day.' : `Custom hours: ${hhmm(selStatus.start_time)}–${hhmm(selStatus.end_time)}`}
+                        {selStatus.is_blackout ? 'Blocked for the day.' : `Custom hours: ${hhmm(selStatus.start_time)}-${hhmm(selStatus.end_time)}`}
                       </p>
                       <Button size="sm" variant="outline" onClick={() => delSpecific(selStatus.id)}>Remove override</Button>
                     </>
@@ -279,7 +279,7 @@ export function AvailabilityManagerV2() {
                         <div className="flex items-center gap-1.5">
                           <input type="time" value={ovFrom} onChange={(e) => setOvFrom(e.target.value)}
                             className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
-                          <span className="text-xs text-muted">–</span>
+                          <span className="text-xs text-muted">-</span>
                           <input type="time" value={ovTo} onChange={(e) => setOvTo(e.target.value)}
                             className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
                         </div>

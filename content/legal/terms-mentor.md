@@ -96,7 +96,7 @@ Refunds may only be approved under the following conditions:
 Mentor did not attend the scheduled session (no-show).
 Technical failure prevented session delivery and was not resolved.
 Session was cancelled by the Customer within the timeframe set by the Mentor.
-Subject to successful verification and fulfillment of all conditions outlined in our Refund Policy, eligible refunds will be processed within 5–7 business days from the date the refund request is approved
+Subject to successful verification and fulfillment of all conditions outlined in our Refund Policy, eligible refunds will be processed within 5-7 business days from the date the refund request is approved
 3.2 Non-Refundable Fees
 
 Immigroov’s platform fees are strictly non-refundable.

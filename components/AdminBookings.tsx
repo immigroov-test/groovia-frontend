@@ -20,7 +20,7 @@ const TONE: Record<string, 'brand' | 'accent' | 'neutral' | 'success' | 'warning
 };
 
 function fmt(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
@@ -102,8 +102,8 @@ export function AdminBookings() {
                   <tr onClick={() => toggle(b.id)}
                     className="border-b border-[--color-border] last:border-0 hover:bg-brand-50/50 cursor-pointer">
                     <td className="px-4 py-2.5 whitespace-nowrap text-foreground">{fmt(b.slot_time)}</td>
-                    <td className="px-4 py-2.5 text-foreground">{b.mentor_name ?? '—'}</td>
-                    <td className="px-4 py-2.5 min-w-0"><span className="text-foreground">{b.candidate_name ?? '—'}</span><span className="block text-xs text-muted truncate">{b.candidate_email}</span></td>
+                    <td className="px-4 py-2.5 text-foreground">{b.mentor_name ?? '-'}</td>
+                    <td className="px-4 py-2.5 min-w-0"><span className="text-foreground">{b.candidate_name ?? '-'}</span><span className="block text-xs text-muted truncate">{b.candidate_email}</span></td>
                     <td className="px-4 py-2.5">
                       <Badge tone={TONE[b.status] ?? 'neutral'}>{b.status.replace('_', ' ')}</Badge>
                       {b.reschedule_count > 0 && <span className="text-xs text-muted ml-1.5">· resched {b.reschedule_count}×</span>}
@@ -127,7 +127,7 @@ export function AdminBookings() {
                               <div>
                                 <p className="font-medium text-foreground mb-1">Requests</p>
                                 {details[b.id]!.requests!.map((r, i) => (
-                                  <p key={i}>· {r.kind} by {r.initiated_by} — <b className="text-foreground">{r.status}</b> {r.respond_by ? `(respond by ${fmt(r.respond_by)})` : ''}</p>
+                                  <p key={i}>· {r.kind} by {r.initiated_by} - <b className="text-foreground">{r.status}</b> {r.respond_by ? `(respond by ${fmt(r.respond_by)})` : ''}</p>
                                 ))}
                               </div>
                             )}
@@ -135,7 +135,7 @@ export function AdminBookings() {
                               <div>
                                 <p className="font-medium text-foreground mb-1">Reschedule offers</p>
                                 {details[b.id]!.offers!.map((o, i) => (
-                                  <p key={i}>· offer — <b className="text-foreground">{o.status}</b>{o.was_late ? ' (late)' : ''}</p>
+                                  <p key={i}>· offer - <b className="text-foreground">{o.status}</b>{o.was_late ? ' (late)' : ''}</p>
                                 ))}
                               </div>
                             )}

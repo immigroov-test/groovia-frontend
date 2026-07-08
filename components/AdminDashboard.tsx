@@ -48,7 +48,7 @@ export function AdminDashboard({ stats, pending, approved, suspended }: {
       <div className="mt-6">
         {tab === 'approval' && (
           <div className="flex flex-col gap-10">
-            <Section title="Services awaiting approval" subtitle="New services added by approved mentors — review before they go live.">
+            <Section title="Services awaiting approval" subtitle="New services added by approved mentors - review before they go live.">
               <AdminPendingServices />
             </Section>
             <Section title={t.pendingTitle} subtitle={t.pendingSubtitle}>

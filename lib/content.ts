@@ -23,7 +23,7 @@ export const UI_CONTENT = {
     movement:
       "Immigroov isn't just a platform, it's a movement. A global community of people helping people move smarter, together.",
     features: [
-      'Discover 3–5 countries that fit your skills and budget.',
+      'Discover 3-5 countries that fit your skills and budget.',
       "Book meetings with real mentors who've already made the move.",
       'Get instant real-time answers on visas, jobs, housing and daily life.',
     ],
@@ -47,7 +47,7 @@ export const UI_CONTENT = {
     activeTitle: 'Active Mentors',
     activeSubtitle: 'Currently approved and visible to candidates.',
     suspendedTitle: 'Suspended Mentors',
-    suspendedSubtitle: 'Paused profiles — not visible to candidates.',
+    suspendedSubtitle: 'Paused profiles - not visible to candidates.',
     empty: 'None.',
     approve: 'Approve',
     reject: 'Reject',
@@ -92,7 +92,7 @@ export const UI_CONTENT = {
     nameLabel: 'Full name',
     namePlaceholder: 'Your full name',
     detailsHeading: 'Create your account',
-    detailsSubheading: "You're new here — what should we call you?",
+    detailsSubheading: "You're new here - what should we call you?",
     continue: 'Continue',
     back: 'Use a different email',
     // Password auth
@@ -115,8 +115,8 @@ export const UI_CONTENT = {
     resetHeading: 'Check your email',
     resetBody: (email: string) => `If ${email} has an account, a password reset link is on its way.`,
     resendConfirm: 'Resend confirmation',
-    notConfirmed: 'Your email isn’t confirmed yet — check your inbox for the link.',
-    badCredentials: 'Incorrect password. Forgot it — or signed up with Google? Use “Forgot password?” below to set or reset it.',
+    notConfirmed: 'Your email isn’t confirmed yet - check your inbox for the link.',
+    badCredentials: 'Incorrect password. Forgot it - or signed up with Google? Use “Forgot password?” below to set or reset it.',
     // Code-based verification
     verifyHeading: 'Verify your email',
     verifySubheading: (email: string) => `Enter the 6-digit code we sent to ${email}.`,
@@ -129,7 +129,7 @@ export const UI_CONTENT = {
     setupSubheadingGuest: 'Add your name to finish. Set a password to create an account, or continue as a guest.',
     badCode: 'That code is invalid or expired. Try again or resend.',
     guestContinue: 'Continue as guest',
-    guestNote: 'Guests can’t log in or manage this booking afterwards — you’ll only get a confirmation email. Create an account to manage your sessions.',
+    guestNote: 'Guests can’t log in or manage this booking afterwards - you’ll only get a confirmation email. Create an account to manage your sessions.',
     emailLabel: 'Email address',
     emailPlaceholder: 'you@example.com',
     continueWithEmail: 'Continue with email',
@@ -149,7 +149,7 @@ export const UI_CONTENT = {
     text: 'Venture across the oceans and seek prosperity.',
     author: 'Avvaiyar',
   },
-  // Titles shown on the login popup — decoupled from `whyJoin` (used on About) so
+  // Titles shown on the login popup - decoupled from `whyJoin` (used on About) so
   // they can be edited independently.
   authPoints: [
     'Guidance That Fits Your Life',
@@ -159,7 +159,7 @@ export const UI_CONTENT = {
     'Private, Personal Mentorship',
     'You Move Forward Faster',
   ],
-  // Reasons to join — titles surface on the login popup; full text on About.
+  // Reasons to join - titles surface on the login popup; full text on About.
   whyJoin: [
     {
       title: 'Guidance That Fits Your Life',

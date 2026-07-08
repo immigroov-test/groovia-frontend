@@ -4,7 +4,7 @@ import { backendBaseUrl } from '../../../../lib/backend';
 import { MentorProfileEditForm } from '../../../../components/MentorProfileEditForm';
 import type { MentorProfile } from '../../../../components/MentorProfileEditForm';
 
-export const metadata = { title: 'Edit Profile — Immigroov Mentor' };
+export const metadata = { title: 'Edit Profile - Immigroov Mentor' };
 
 export default async function MentorProfilePage() {
   const supabase = await createClient();

@@ -3,7 +3,7 @@ import { type ReactNode, useRef } from 'react';
 import { mockServices, mockSlots, mockBookings, MOCK_QUOTE } from './mockData';
 
 // Patches window.fetch inside the preview frame so that the real, backend-driven
-// components (booking widget, booking manager) render with mock data — no backend,
+// components (booking widget, booking manager) render with mock data - no backend,
 // no login. Only /api/** calls are intercepted; everything else (Supabase auth,
 // Next.js RSC) passes straight through.
 let installed = false;

@@ -2,7 +2,7 @@
 
 Admin = `yokeshmd99@gmail.com` (auto-assigned the admin role on signup). Two tabs: **Approval** and **Activity**.
 
-## Approval tab — mentors + services
+## Approval tab - mentors + services
 ```mermaid
 flowchart TD
   A[Approval tab] --> B[Services awaiting approval]
@@ -18,7 +18,7 @@ flowchart TD
   A --> L[Suspended mentors → Reinstate]
 ```
 
-## Activity tab — booking oversight
+## Activity tab - booking oversight
 ```mermaid
 flowchart TD
   A[Activity tab] --> B[All bookings table<br/>when, mentor, mentee, status]

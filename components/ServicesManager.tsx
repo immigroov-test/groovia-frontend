@@ -88,7 +88,7 @@ export function ServicesManager() {
   async function createService() {
     if (!form.title.trim()) { setFormError('Title is required.'); return; }
     const duration = parseInt(String(form.duration));
-    if (!duration || duration < 5 || duration > 480) { setFormError('Duration must be 5–480 minutes.'); return; }
+    if (!duration || duration < 5 || duration > 480) { setFormError('Duration must be 5-480 minutes.'); return; }
     const price = parseFloat(form.set_price) || 0;
     setFormError(null); setSubmitting(true);
     try {

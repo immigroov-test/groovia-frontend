@@ -60,7 +60,7 @@ export function TopNav({ authed, email, role }: Props) {
   return (
     <header className="fixed top-0 inset-x-0 z-40 h-16 bg-brand-50 border-b border-[--color-border]">
       <div className="relative mx-auto max-w-6xl h-full px-4 sm:px-6 flex items-center justify-between gap-4">
-        {/* Floating logo — no background */}
+        {/* Floating logo - no background */}
         <Link href="/chat" aria-label="Immigroov home" className="shrink-0 inline-flex items-center">
           <Image
             src="/Immigroov_Transparent_Logo.png"

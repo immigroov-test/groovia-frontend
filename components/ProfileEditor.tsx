@@ -45,7 +45,7 @@ export function ProfileEditor({ userId, initialFullName, initialPhone, initialSu
       <CardBody className="pt-6">
         <h2 className="text-base font-semibold text-foreground mb-1">Profile</h2>
         <p className="text-xs text-muted mb-5">
-          Your summary is filled in automatically when Groovia reads your resume — edit it anytime.
+          Your summary is filled in automatically when Groovia reads your resume - edit it anytime.
         </p>
 
         <div className="flex flex-col gap-4">
@@ -71,7 +71,7 @@ export function ProfileEditor({ userId, initialFullName, initialPhone, initialSu
               onChange={(e) => setSummary(e.target.value)}
               rows={5}
               maxLength={2000}
-              placeholder="A short professional summary — your role, experience, skills and goals."
+              placeholder="A short professional summary - your role, experience, skills and goals."
               className="w-full rounded-xl border border-[--color-border] bg-card px-3.5 py-2.5 text-sm leading-relaxed placeholder:text-muted/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 resize-y"
             />
           </label>

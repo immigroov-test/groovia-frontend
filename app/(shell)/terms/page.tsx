@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { LegalDoc } from '../../../components/LegalDoc';
 
-export const metadata = { title: 'Terms of Service — Immigroov' };
+export const metadata = { title: 'Terms of Service - Immigroov' };
 
 function read(name: string): string {
   try {

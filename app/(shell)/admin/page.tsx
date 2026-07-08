@@ -3,7 +3,7 @@ import { createClient } from '../../../lib/supabase/server';
 import { backendBaseUrl } from '../../../lib/backend';
 import { AdminDashboard } from '../../../components/AdminDashboard';
 
-export const metadata = { title: 'Admin — Immigroov' };
+export const metadata = { title: 'Admin - Immigroov' };
 
 export interface AdminMentor {
   id: string;

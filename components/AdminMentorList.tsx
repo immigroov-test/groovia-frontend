@@ -142,7 +142,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                     <p className="text-sm text-muted mt-0.5">{mentor.headline}</p>
                   )}
                   <p className="text-xs text-muted mt-1">
-                    {mentor.email ?? '—'}
+                    {mentor.email ?? '-'}
                     {mentor.full_name ? ` · ${mentor.full_name}` : ''}
                   </p>
                   <p className="text-xs text-muted mt-0.5">
@@ -176,7 +176,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                 </div>
               </div>
 
-              {/* Rejection reason — shown to the mentor + emailed to them */}
+              {/* Rejection reason - shown to the mentor + emailed to them */}
               {rejectingId === mentor.id && (
                 <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[--color-border] bg-brand-50/40 p-3">
                   <label className="text-xs font-medium text-foreground">
@@ -276,7 +276,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                           <div className="flex flex-col gap-1">
                             {detail.availability_slots.map((s, i) => (
                               <p key={i} className="text-foreground text-xs">
-                                {DAYS[s.day_of_week]} · {s.start_time} – {s.end_time}
+                                {DAYS[s.day_of_week]} · {s.start_time} - {s.end_time}
                               </p>
                             ))}
                           </div>

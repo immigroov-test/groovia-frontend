@@ -99,7 +99,7 @@ export default async function MentorProfilePage({
           <RichText html={mentor.bio} className="max-w-4xl mt-5 mb-8" />
         )}
 
-        {/* Booking widget — full width */}
+        {/* Booking widget - full width */}
         <DirectBookingWidget
           mentorTimezone={mentor.timezone ?? undefined}
           mentor={{

@@ -1,6 +1,6 @@
 import DOMPurify from 'isomorphic-dompurify';
 
-// Whitelist for mentor-authored rich text (bio). Keep it tight — only basic
+// Whitelist for mentor-authored rich text (bio). Keep it tight - only basic
 // formatting and safe links. Runs on both server (SSR) and client.
 const CONFIG = {
   ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'h3', 'h4', 'a'],

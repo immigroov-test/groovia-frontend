@@ -87,7 +87,7 @@ function AuthModalInner() {
 
   const cleanEmail = () => email.trim().toLowerCase();
 
-  // Step 1 — email only. Existing account with a password → login. Everyone else →
+  // Step 1 - email only. Existing account with a password → login. Everyone else →
   // email a verification link (they set a password after clicking it).
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -186,7 +186,7 @@ function AuthModalInner() {
         onClick={(e) => { if (e.target === e.currentTarget && stage !== 'setup') close(); }}
       >
         <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
-          {/* No dismiss during 'setup' — a verified user must finish setting a password. */}
+          {/* No dismiss during 'setup' - a verified user must finish setting a password. */}
           {stage !== 'setup' && (
             <button
               type="button" onClick={close} aria-label="Close"
@@ -202,7 +202,7 @@ function AuthModalInner() {
               priority className="object-contain" style={{ height: '26px', width: 'auto' }} />
           </div>
 
-          {/* Left — form */}
+          {/* Left - form */}
           <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:min-h-[440px]">
             {stage === 'email' && (
               <>
@@ -302,7 +302,7 @@ function AuthModalInner() {
             )}
           </div>
 
-          {/* Right — brand panel with points; quote overlaid on the LOWER part of the photo */}
+          {/* Right - brand panel with points; quote overlaid on the LOWER part of the photo */}
           <div className="hidden md:flex md:w-1/2 flex-col bg-[#102a4c] text-white">
             <div className="flex-1 px-8 pt-20 pb-5 flex flex-col">
               <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>

@@ -122,7 +122,7 @@ function StepBar({ step }: { step: Step }) {
 function formatSlotRange(start: string, end: string): string {
   const s = formatSlotTime(start);
   const e = formatSlotTime(end);
-  return `${s} – ${e}`;
+  return `${s} - ${e}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -675,7 +675,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             </Button>
             {!isLoggedIn && (
               <p className="text-xs text-muted">
-                Booking as a guest — if this email already has an account you’ll be asked to log in.
+                Booking as a guest - if this email already has an account you’ll be asked to log in.
                 Guests get a confirmation email but can’t log in or manage the booking later.
               </p>
             )}

@@ -8,8 +8,8 @@ By using the Immigroov platform and clicking 'I Agree' or proceeding with a book
 
 These terms form a legally binding agreement between you (“Customer”) and the applicable Immigroov entity, depending on your location and the associated payment gateway:
 
-Immigroov Consulting India LLP, a limited liability partnership registered under the LLP Act, 2008 in India, with its registered office at A85, Jai Nagar, Thiruverumbur, Trichy, Tamil Nadu, 620013, India — for customers located in India transacting via Razorpay.
-Immigroov Consulting VOF, a Dutch general partnership registered at Hoppad 7, Valkenswaard, 5552EV, Noord Brabant, The Netherlands — for customers located outside India transacting via Stripe.
+Immigroov Consulting India LLP, a limited liability partnership registered under the LLP Act, 2008 in India, with its registered office at A85, Jai Nagar, Thiruverumbur, Trichy, Tamil Nadu, 620013, India - for customers located in India transacting via Razorpay.
+Immigroov Consulting VOF, a Dutch general partnership registered at Hoppad 7, Valkenswaard, 5552EV, Noord Brabant, The Netherlands - for customers located outside India transacting via Stripe.
 1. Customer Terms of Use
 
 Issued By:
@@ -53,7 +53,7 @@ Refunds will be processed only under the following conditions:
 Mentor fails to attend the session (no-show).
 Session was cancelled by the Customer within the timeline set by the Mentor.
 Major technical failure not resolved during the session time.
-Subject to successful verification and fulfillment of all conditions outlined in our Refund Policy, eligible refunds will be processed within 5–7 business days from the date the refund request is approved
+Subject to successful verification and fulfillment of all conditions outlined in our Refund Policy, eligible refunds will be processed within 5-7 business days from the date the refund request is approved
 2.2 Non-Refundable Charges
 
 Immigroov platform service fees are strictly non-refundable.

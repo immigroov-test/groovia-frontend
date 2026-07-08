@@ -7,7 +7,7 @@ import { Card, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { UI_CONTENT } from '../../lib/content';
 import { mockMentor, mockMentors } from './mockData';
-// Real pages/components — rendered with mock data so the gallery stays in sync with
+// Real pages/components - rendered with mock data so the gallery stays in sync with
 // the live app. Backend calls are intercepted by MockFetch in the preview frame.
 import LandingPage from '../(shell)/page';
 import { AboutContent } from '../../components/AboutContent';
@@ -55,7 +55,7 @@ function LoginPopupPreview({ stage }: { stage: PopupStage }) {
           <img src="/Immigroov_Transparent_Logo.png" alt="Immigroov" style={{ height: '26px', width: 'auto' }} className="object-contain" />
         </div>
 
-        {/* Left — form (per stage) */}
+        {/* Left - form (per stage) */}
         <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:min-h-[440px]">
           {stage === 'email' && (
             <>
@@ -126,7 +126,7 @@ function LoginPopupPreview({ stage }: { stage: PopupStage }) {
           )}
         </div>
 
-        {/* Right — brand panel + points; quote overlaid on the lower photo band */}
+        {/* Right - brand panel + points; quote overlaid on the lower photo band */}
         <div className="hidden md:flex md:w-1/2 flex-col bg-[#102a4c] text-white min-h-[440px]">
           <div className="flex-1 px-8 pt-20 pb-5 flex flex-col">
             <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
@@ -196,7 +196,7 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
   { group: '1 · Discover', title: 'Mentor profile + booking', real: true, node: <MentorProfilePreview /> },
   { group: '1 · Discover', title: 'About', real: true, node: <AboutContent /> },
   { group: '1 · Discover', title: 'Privacy policy', node: (
-      <PageWrap><h1 className="text-3xl font-semibold text-brand-900 mb-4">Privacy Policy</h1><p className="text-sm text-muted">Static legal text page. View the real content at <code>/privacy</code> — it renders without auth, so it&apos;s not mocked here.</p></PageWrap>
+      <PageWrap><h1 className="text-3xl font-semibold text-brand-900 mb-4">Privacy Policy</h1><p className="text-sm text-muted">Static legal text page. View the real content at <code>/privacy</code> - it renders without auth, so it&apos;s not mocked here.</p></PageWrap>
     ) },
   { group: '1 · Discover', title: 'Terms', node: (
       <PageWrap><h1 className="text-3xl font-semibold text-brand-900 mb-4">Terms &amp; Conditions</h1><p className="text-sm text-muted">Static legal text page. View the real content at <code>/terms</code>.</p></PageWrap>
@@ -234,18 +234,18 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
     ),
   },
   {
-    group: '3 · Become a mentor', title: '⑤ Hub — pending review', node: (
+    group: '3 · Become a mentor', title: '⑤ Hub - pending review', node: (
       <PageWrap>
         <div><h1 className="text-3xl font-semibold tracking-tight text-brand-900">Mentor Hub</h1><p className="text-sm text-muted mt-1">Welcome back, Maya Singh.</p></div>
         <div className="mt-8 flex flex-col gap-4">
-          <Card><CardBody className="pt-6"><h2 className="text-base font-semibold text-foreground">Application under review</h2><p className="text-sm text-muted mt-1">Thanks for applying. Our team is reviewing your profile — this usually takes 1–2 business days.</p></CardBody></Card>
+          <Card><CardBody className="pt-6"><h2 className="text-base font-semibold text-foreground">Application under review</h2><p className="text-sm text-muted mt-1">Thanks for applying. Our team is reviewing your profile - this usually takes 1-2 business days.</p></CardBody></Card>
           <div className="flex gap-2"><Button>Set availability</Button><Button variant="outline">Edit profile</Button></div>
         </div>
       </PageWrap>
     ),
   },
   {
-    group: '3 · Become a mentor', title: '⑥ Hub — approved', node: (
+    group: '3 · Become a mentor', title: '⑥ Hub - approved', node: (
       <PageWrap>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div><h1 className="text-3xl font-semibold tracking-tight text-brand-900">Mentor Hub</h1><p className="text-sm text-muted mt-1">Welcome back, Maya Singh.</p></div>
@@ -255,7 +255,7 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
           <Card><CardBody className="pt-6"><h2 className="text-base font-semibold text-foreground">Your profile is live</h2><p className="text-sm text-muted mt-1">Mentees can discover you on the platform. <span className="text-brand-700">View public profile →</span></p></CardBody></Card>
           <Card><CardBody className="pt-6 flex flex-col gap-3">
             <h2 className="text-base font-semibold text-foreground">Your sessions</h2>
-            <div className="rounded-lg border border-[--color-border] p-4 flex items-center justify-between"><div><p className="text-sm font-medium text-foreground">Aditya Rao · Visa & PR guidance</p><p className="text-xs text-muted mt-0.5">Tomorrow, 15:00–16:00 (CET)</p></div><Badge tone="success">Confirmed</Badge></div>
+            <div className="rounded-lg border border-[--color-border] p-4 flex items-center justify-between"><div><p className="text-sm font-medium text-foreground">Aditya Rao · Visa & PR guidance</p><p className="text-xs text-muted mt-0.5">Tomorrow, 15:00-16:00 (CET)</p></div><Badge tone="success">Confirmed</Badge></div>
           </CardBody></Card>
         </div>
       </PageWrap>
@@ -264,24 +264,24 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
 
   // 4. CANDIDATE -------------------------------------------------------------
   {
-    group: '4 · Candidate', title: 'Chat — intro', real: true, node: (
+    group: '4 · Candidate', title: 'Chat - intro', real: true, node: (
       <div className="mx-auto max-w-2xl px-4 py-10"><ChatIntro onStart={() => {}} /></div>
     ),
   },
   {
-    group: '4 · Candidate', title: 'Account — profile', real: true, node: (
+    group: '4 · Candidate', title: 'Account - profile', real: true, node: (
       <PageWrap><h1 className="text-2xl font-semibold text-brand-900 mb-6">Your account</h1><ProfileEditor userId="mock" initialFullName="Maya Singh" initialPhone="+31 6 1234 5678" initialSummary="Product manager relocating to the Netherlands." /></PageWrap>
     ),
   },
 
   // 5. MY SESSIONS (real BookingManager) -------------------------------------
   {
-    group: '5 · My sessions', title: 'Mentee — upcoming & past', real: true, node: (
+    group: '5 · My sessions', title: 'Mentee - upcoming & past', real: true, node: (
       <PageWrap><h1 className="text-2xl font-semibold tracking-tight text-brand-900 mb-6">Your sessions</h1><BookingManager role="mentee" /></PageWrap>
     ),
   },
   {
-    group: '5 · My sessions', title: 'Mentor — sessions', real: true, node: (
+    group: '5 · My sessions', title: 'Mentor - sessions', real: true, node: (
       <PageWrap><h1 className="text-2xl font-semibold tracking-tight text-brand-900 mb-6">Mentor sessions</h1><BookingManager role="mentor" /></PageWrap>
     ),
   },
@@ -370,7 +370,7 @@ export function PreviewGallery() {
           </div>
         </div>
         {/* Rendered in an iframe so CSS media queries (sm:/md:/lg:) respond to the
-            frame width — i.e. "Mobile" is a TRUE mobile viewport, not a shrunken box. */}
+            frame width - i.e. "Mobile" is a TRUE mobile viewport, not a shrunken box. */}
         <div className="flex-1 min-h-0 p-6 flex justify-center bg-slate-100">
           <iframe
             key={`${active}-${mobile ? 'm' : 'd'}`}

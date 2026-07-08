@@ -27,7 +27,7 @@ const META = /^(Version|Last Updated|Last update|Effective Date):/i;
 
 // Render one section body with real hierarchy: numbered lines become subheadings,
 // colon lines become labels, "- " lines group into bullet lists, rest are paragraphs.
-// Blank source lines are dropped — spacing comes from uniform margins.
+// Blank source lines are dropped - spacing comes from uniform margins.
 function renderBody(body: string): ReactNode {
   const lines = body.split('\n').map((l) => l.trim()).filter(Boolean);
   const out: ReactNode[] = [];

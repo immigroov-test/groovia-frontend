@@ -15,8 +15,8 @@ export const FEATURES = {
   resumeUpload:          flag('RESUME_UPLOAD'),
   googleOAuth:           flag('GOOGLE_OAUTH'),
   // UI-only flags (no backend equivalent needed)
-  cookieConsent:         flag('COOKIE_CONSENT', false),  // not implemented yet — off
-  analytics:             flag('ANALYTICS',      false),  // not implemented yet — off
+  cookieConsent:         flag('COOKIE_CONSENT', false),  // not implemented yet - off
+  analytics:             flag('ANALYTICS',      false),  // not implemented yet - off
   idleLogout:            flag('IDLE_LOGOUT',    true),   // auto sign-out after inactivity; on by default
 } as const;
 

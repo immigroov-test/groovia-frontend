@@ -8,7 +8,7 @@ import { ServicesManager } from '../../../components/ServicesManager';
 import { AvailabilityManagerV2 } from '../../../components/AvailabilityManagerV2';
 import { BookingManager } from '../../../components/BookingManager';
 
-export const metadata = { title: 'Mentor Hub — Immigroov' };
+export const metadata = { title: 'Mentor Hub - Immigroov' };
 
 interface MentorMe {
   id: string;
@@ -39,7 +39,7 @@ export default async function MentorPage() {
     cache: 'no-store',
   });
 
-  // No mentor row yet — redirect to onboarding.
+  // No mentor row yet - redirect to onboarding.
   if (!res.ok) {
     redirect('/mentor/onboarding');
   }
@@ -78,7 +78,7 @@ export default async function MentorPage() {
               <CardBody className="pt-6">
                 <h2 className="text-base font-semibold text-foreground">Application under review</h2>
                 <p className="text-sm text-muted mt-1">
-                  Thanks for applying. Our team is reviewing your profile — this usually takes 1–2 business days.
+                  Thanks for applying. Our team is reviewing your profile - this usually takes 1-2 business days.
                   Use the time below to set your availability so it&apos;s ready the moment you&apos;re approved.
                 </p>
               </CardBody>
@@ -168,7 +168,7 @@ export default async function MentorPage() {
                 <div>
                   <h2 className="text-base font-semibold text-foreground">Session types</h2>
                   <p className="text-sm text-muted mt-0.5">
-                    Define the sessions mentees can book with you — duration, price, and intake questions.
+                    Define the sessions mentees can book with you - duration, price, and intake questions.
                   </p>
                 </div>
                 <ServicesManager />

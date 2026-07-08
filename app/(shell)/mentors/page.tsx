@@ -14,7 +14,7 @@ async function fetchMentors(): Promise<Mentor[]> {
 }
 
 export const metadata = {
-  title: 'Mentors — Immigroov',
+  title: 'Mentors - Immigroov',
   description: 'Browse mentors who have lived your immigration journey.',
 };
 

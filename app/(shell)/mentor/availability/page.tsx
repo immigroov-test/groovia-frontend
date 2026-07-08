@@ -3,7 +3,7 @@ import { createClient } from '../../../../lib/supabase/server';
 import { backendBaseUrl } from '../../../../lib/backend';
 import { MentorAvailabilityForm } from '../../../../components/MentorAvailabilityForm';
 
-export const metadata = { title: 'Availability — Immigroov Mentor' };
+export const metadata = { title: 'Availability - Immigroov Mentor' };
 
 interface MentorMe {
   id: string;
@@ -55,7 +55,7 @@ export default async function MentorAvailabilityPage() {
       <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Availability</h1>
       <p className="text-sm text-muted mt-1">
         {mentor.status === 'pending_review'
-          ? 'Set your weekly hours now — they\'ll go live once your application is approved.'
+          ? 'Set your weekly hours now - they\'ll go live once your application is approved.'
           : 'Set the times when mentees can book sessions with you.'}
       </p>
       <div className="mt-8">

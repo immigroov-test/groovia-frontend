@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const success = !!data.success && data.action === 'signup' && (data.score ?? 0) >= MIN_SCORE;
     return NextResponse.json({ success }, { status: 200 });
   } catch {
-    // Fail open — don't block signups if Google's verification endpoint is unreachable.
+    // Fail open - don't block signups if Google's verification endpoint is unreachable.
     return NextResponse.json({ success: true }, { status: 200 });
   }
 }

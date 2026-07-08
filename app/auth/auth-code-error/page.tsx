@@ -3,7 +3,7 @@ import { MailWarning } from 'lucide-react';
 import { Card, CardBody } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 
-export const metadata = { title: 'Sign-in link problem — Immigroov' };
+export const metadata = { title: 'Sign-in link problem - Immigroov' };
 
 export default function AuthCodeErrorPage() {
   return (
