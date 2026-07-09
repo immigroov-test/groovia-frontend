@@ -53,14 +53,14 @@ export function TopNav({ authed, email, role }: Props) {
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
-    ...(role !== 'admin' ? [{ href: '/mentor', label: UI_CONTENT.sidebar.mentorPortal, gated: false }] : []),
+    ...(role !== 'admin' ? [{ href: '/mentor', label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub : UI_CONTENT.sidebar.mentorPortal, gated: false }] : []),
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),
   ];
 
   return (
     <header className="fixed top-0 inset-x-0 z-40 h-16 bg-brand-50 border-b border-[--color-border]">
       <div className="relative mx-auto max-w-6xl h-full px-4 sm:px-6 flex items-center justify-between gap-4">
-        {/* Floating logo — no background */}
+        {/* Floating logo - no background */}
         <Link href="/chat" aria-label="Immigroov home" className="shrink-0 inline-flex items-center">
           <Image
             src="/Immigroov_Transparent_Logo.png"

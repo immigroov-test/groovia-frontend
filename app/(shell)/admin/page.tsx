@@ -1,20 +1,23 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '../../../lib/supabase/server';
+import { serverAuth } from '../../../lib/supabase/server';
 import { backendBaseUrl } from '../../../lib/backend';
 import { AdminDashboard } from '../../../components/AdminDashboard';
+import type { AdminRevision } from '../../../components/AdminRevisionList';
 
-export const metadata = { title: 'Admin — Immigroov' };
+export const metadata = { title: 'Admin - Immigroov' };
 
 export interface AdminMentor {
   id: string;
   slug: string;
   display_name: string;
   headline: string | null;
+  photo_url: string | null;
   status: string;
   created_at: string;
   email: string | null;
   full_name: string | null;
   submission_count: number;
+  pending_submitted_at?: string | null;
 }
 
 interface AdminStats {
@@ -23,35 +26,34 @@ interface AdminStats {
   total_bookings: number;
 }
 
-async function fetchMentors(url: string, token: string): Promise<AdminMentor[]> {
+async function fetchJson<T>(url: string, token: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
     if (res.ok) return await res.json();
   } catch { /* render empty */ }
-  return [];
+  return fallback;
 }
 
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { supabase, user, token } = await serverAuth();
 
-  if (!session) redirect('/login?next=/admin');
+  if (!user || !token) redirect('/login?next=/admin');
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .maybeSingle();
 
   if (profile?.role !== 'admin') redirect('/chat');
 
-  const token = session.access_token;
   const base = backendBaseUrl();
 
-  const [pending, approved, suspended, statsRes] = await Promise.all([
-    fetchMentors(`${base}/admin/mentors/pending`, token),
-    fetchMentors(`${base}/admin/mentors/approved`, token),
-    fetchMentors(`${base}/admin/mentors/suspended`, token),
+  const [pending, approved, suspended, revisions, statsRes] = await Promise.all([
+    fetchJson<AdminMentor[]>(`${base}/admin/mentors/pending`, token, []),
+    fetchJson<AdminMentor[]>(`${base}/admin/mentors/approved`, token, []),
+    fetchJson<AdminMentor[]>(`${base}/admin/mentors/suspended`, token, []),
+    fetchJson<AdminRevision[]>(`${base}/admin/mentors/revisions`, token, []),
     fetch(`${base}/admin/stats`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
       .then((r) => r.ok ? r.json() as Promise<AdminStats> : null)
       .catch(() => null),
@@ -63,5 +65,5 @@ export default async function AdminPage() {
     total_bookings: 0,
   };
 
-  return <AdminDashboard stats={stats} pending={pending} approved={approved} suspended={suspended} />;
+  return <AdminDashboard stats={stats} pending={pending} approved={approved} suspended={suspended} revisions={revisions} />;
 }

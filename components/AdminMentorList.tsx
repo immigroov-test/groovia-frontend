@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
+import { User } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Card, CardBody } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { RichText } from './ui/RichText';
 import { UI_CONTENT } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
@@ -11,9 +13,28 @@ import type { AdminMentor } from '../app/(shell)/admin/page';
 
 const COUNTRY_MAP = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.name]));
 const LANGUAGE_MAP = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.name]));
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const SOCIAL_LABELS: Record<string, string> = {
+  linkedin: 'LinkedIn', youtube: 'YouTube', instagram: 'Instagram',
+  twitter: 'X (Twitter)', website: 'Website', github: 'GitHub', facebook: 'Facebook',
+};
 
-type Action = 'approve' | 'reject' | 'suspend' | 'reinstate';
+type Action = 'approve' | 'reject' | 'request-changes' | 'suspend' | 'reinstate';
+
+// Actions that ask the reviewer for a note before firing (shown to the mentor).
+const COMMENT_ACTIONS: Record<string, { title: string; hint: string; placeholder: string; confirm: string }> = {
+  reject: {
+    title: 'Reason for declining',
+    hint: 'shown to the applicant',
+    placeholder: "e.g. We're unable to verify the experience described. You're welcome to re-apply with more detail.",
+    confirm: 'Confirm decline',
+  },
+  'request-changes': {
+    title: 'What should the mentor change?',
+    hint: 'shown in their dashboard',
+    placeholder: 'e.g. Please add specifics on the visa types you have direct experience with, and expand your bio.',
+    confirm: 'Send request',
+  },
+};
 
 interface ActionConfig {
   action: Action;
@@ -22,24 +43,29 @@ interface ActionConfig {
   loadingKey: string;
 }
 
-interface AvailabilitySlot {
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-}
+interface WeeklySlot { id: string; weekday: string; start_time: string; end_time: string; timezone?: string | null }
+interface DateOverride { id: string; slot_date: string; start_time: string | null; end_time: string | null; is_blackout: boolean }
+interface ServiceItem { id: string; title: string; duration: number; is_active: boolean; status: string }
+interface AvailabilityRules { days_ahead?: number; min_notice_hours?: number; cancel_hours?: number; timezone?: string }
+interface SocialLink { type: string; url: string }
 
 interface MentorDetail extends AdminMentor {
   bio?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  country?: string | null;
+  timezone?: string | null;
   expertise_country_codes?: string[];
+  expertise_categories?: string[];
   languages?: string[];
   professional_domains?: string[];
   years_lived_experience?: number | null;
-  linkedin_url?: string | null;
-  youtube_url?: string | null;
-  instagram_url?: string | null;
-  session_duration_minutes?: number;
-  timezone?: string | null;
-  availability_slots?: AvailabilitySlot[];
+  public_notes?: string | null;
+  social_links?: SocialLink[];
+  weekly_availability?: WeeklySlot[];
+  services?: ServiceItem[];
+  availability_rules?: AvailabilityRules | null;
+  date_overrides?: DateOverride[];
 }
 
 interface Props {
@@ -48,6 +74,10 @@ interface Props {
   removeOnAction?: boolean;
 }
 
+const fmtTime = (t?: string | null) => (t ? t.slice(0, 5) : '');
+const fmtDate = (d: string) =>
+  new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
 export function AdminMentorList({ initialMentors, actions, removeOnAction = true }: Props) {
   const [mentors, setMentors] = useState(initialMentors);
   const [pending, setPending] = useState<Record<string, string>>({});
@@ -55,10 +85,10 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [details, setDetails] = useState<Record<string, MentorDetail | null>>({});
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
-  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [commentFor, setCommentFor] = useState<{ id: string; action: Action } | null>(null);
   const [reason, setReason] = useState('');
 
-  async function act(id: string, action: Action, rejectReason?: string) {
+  async function act(id: string, action: Action, note?: string) {
     setPending((p) => ({ ...p, [id]: action }));
     setErrors((e) => { const n = { ...e }; delete n[id]; return n; });
     try {
@@ -67,9 +97,10 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
       const res = await fetch(`/api/admin/mentors/${id}/${action}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session?.access_token ?? ''}`, 'Content-Type': 'application/json' },
-        body: action === 'reject' ? JSON.stringify({ reason: rejectReason ?? '' }) : undefined,
+        body: COMMENT_ACTIONS[action] ? JSON.stringify({ reason: note ?? '' }) : undefined,
       });
       if (res.ok) {
+        setCommentFor(null);
         if (removeOnAction) {
           setMentors((ms) => ms.filter((m) => m.id !== id));
         } else {
@@ -129,27 +160,30 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
             <CardBody className="pt-6">
               {/* Header row */}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-base font-semibold text-foreground">{mentor.display_name}</h2>
-                    <Badge tone="neutral">{mentor.status.replace('_', ' ')}</Badge>
-                    {mentor.submission_count > 1 && (
-                      <Badge tone="warning">Re-submission #{mentor.submission_count}</Badge>
+                <div className="flex items-start gap-3 min-w-0">
+                  <Avatar url={mentor.photo_url} name={mentor.display_name} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-base font-semibold text-foreground">{mentor.display_name}</h2>
+                      <Badge tone="neutral">{mentor.status.replace('_', ' ')}</Badge>
+                      {mentor.submission_count > 1 && (
+                        <Badge tone="warning">Re-submission #{mentor.submission_count}</Badge>
+                      )}
+                    </div>
+                    {mentor.headline && (
+                      <p className="text-sm text-muted mt-0.5">{mentor.headline}</p>
+                    )}
+                    <p className="text-xs text-muted mt-1">
+                      {mentor.email ?? '-'}
+                      {mentor.full_name ? ` · ${mentor.full_name}` : ''}
+                    </p>
+                    <p className="text-xs text-muted mt-0.5">
+                      Applied {new Date(mentor.created_at).toLocaleDateString()}
+                    </p>
+                    {errors[mentor.id] && (
+                      <p className="text-xs text-red-600 mt-1">{errors[mentor.id]}</p>
                     )}
                   </div>
-                  {mentor.headline && (
-                    <p className="text-sm text-muted mt-0.5">{mentor.headline}</p>
-                  )}
-                  <p className="text-xs text-muted mt-1">
-                    {mentor.email ?? '—'}
-                    {mentor.full_name ? ` · ${mentor.full_name}` : ''}
-                  </p>
-                  <p className="text-xs text-muted mt-0.5">
-                    Applied {new Date(mentor.created_at).toLocaleDateString()}
-                  </p>
-                  {errors[mentor.id] && (
-                    <p className="text-xs text-red-600 mt-1">{errors[mentor.id]}</p>
-                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   <button
@@ -165,8 +199,8 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                       size="sm"
                       loading={pending[mentor.id] === loadingKey}
                       disabled={!!pending[mentor.id]}
-                      onClick={() => action === 'reject'
-                        ? (setRejectingId(mentor.id), setReason(''))
+                      onClick={() => COMMENT_ACTIONS[action]
+                        ? (setCommentFor({ id: mentor.id, action }), setReason(''))
                         : act(mentor.id, action)}
                     >
                       {label}
@@ -175,26 +209,29 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                 </div>
               </div>
 
-              {/* Rejection reason — shown to the mentor + emailed to them */}
-              {rejectingId === mentor.id && (
+              {/* Reviewer note (decline / request changes) - stored + shown to the mentor + emailed */}
+              {commentFor?.id === mentor.id && COMMENT_ACTIONS[commentFor.action] && (
                 <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[--color-border] bg-brand-50/40 p-3">
                   <label className="text-xs font-medium text-foreground">
-                    Reason for rejection <span className="text-muted font-normal">(shown to the mentor)</span>
+                    {COMMENT_ACTIONS[commentFor.action].title}{' '}
+                    <span className="text-muted font-normal">({COMMENT_ACTIONS[commentFor.action].hint})</span>
                   </label>
                   <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    rows={2}
+                    rows={3}
                     maxLength={500}
-                    placeholder="e.g. We need more detail on your experience before approving."
+                    placeholder={COMMENT_ACTIONS[commentFor.action].placeholder}
                     className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none"
                   />
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" loading={pending[mentor.id] === 'reject'}
-                      onClick={() => act(mentor.id, 'reject', reason)}>
-                      Confirm rejection
+                    <Button variant="primary" size="sm"
+                      loading={pending[mentor.id] === commentFor.action}
+                      disabled={commentFor.action === 'request-changes' && !reason.trim()}
+                      onClick={() => act(mentor.id, commentFor.action, reason)}>
+                      {COMMENT_ACTIONS[commentFor.action].confirm}
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setRejectingId(null)}>Cancel</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setCommentFor(null)}>Cancel</Button>
                   </div>
                 </div>
               )}
@@ -202,100 +239,173 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
               {/* Detail panel */}
               {isExpanded && (
                 <div className="mt-5 pt-5 border-t border-[--color-border]">
-                  {isDetailLoading && (
-                    <p className="text-sm text-muted">Loading profile…</p>
-                  )}
+                  {isDetailLoading && <p className="text-sm text-muted">Loading profile…</p>}
                   {!isDetailLoading && !detail && (
                     <p className="text-sm text-red-600">Could not load profile details.</p>
                   )}
-                  {!isDetailLoading && detail && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-
-                      {detail.bio && (
-                        <div className="sm:col-span-2">
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Bio</p>
-                          <p className="text-foreground leading-relaxed whitespace-pre-wrap">{detail.bio}</p>
-                        </div>
-                      )}
-
-                      {detail.expertise_country_codes?.length ? (
-                        <div>
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Countries of expertise</p>
-                          <p className="text-foreground">
-                            {detail.expertise_country_codes
-                              .map((c) => COUNTRY_MAP[c] ?? c)
-                              .join(', ')}
-                          </p>
-                        </div>
-                      ) : null}
-
-                      {detail.years_lived_experience != null && (
-                        <div>
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Years lived abroad</p>
-                          <p className="text-foreground">{detail.years_lived_experience} yr{detail.years_lived_experience !== 1 ? 's' : ''}</p>
-                        </div>
-                      )}
-
-                      {detail.languages?.length ? (
-                        <div>
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Languages</p>
-                          <p className="text-foreground">
-                            {detail.languages.map((l) => LANGUAGE_MAP[l] ?? l).join(', ')}
-                          </p>
-                        </div>
-                      ) : null}
-
-                      {detail.professional_domains?.length ? (
-                        <div>
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Professional domains</p>
-                          <p className="text-foreground">{detail.professional_domains.join(', ')}</p>
-                        </div>
-                      ) : null}
-
-                      {detail.session_duration_minutes && (
-                        <div>
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Session duration</p>
-                          <p className="text-foreground">{detail.session_duration_minutes} min</p>
-                        </div>
-                      )}
-
-                      {detail.linkedin_url && (
-                        <div>
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">LinkedIn</p>
-                          <a href={detail.linkedin_url} target="_blank" rel="noopener noreferrer"
-                            className="text-brand-700 hover:underline break-all">
-                            {detail.linkedin_url}
-                          </a>
-                        </div>
-                      )}
-
-                      {detail.availability_slots && detail.availability_slots.length > 0 && (
-                        <div className="sm:col-span-2">
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Availability set</p>
-                          <div className="flex flex-col gap-1">
-                            {detail.availability_slots.map((s, i) => (
-                              <p key={i} className="text-foreground text-xs">
-                                {DAYS[s.day_of_week]} · {s.start_time} – {s.end_time}
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {(!detail.availability_slots || detail.availability_slots.length === 0) && (
-                        <div className="sm:col-span-2">
-                          <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">Availability</p>
-                          <p className="text-muted text-xs">Not set yet</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {!isDetailLoading && detail && <MentorDetailView detail={detail} />}
                 </div>
               )}
             </CardBody>
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+function MentorDetailView({ detail }: { detail: MentorDetail }) {
+  const location = [detail.city, detail.country ? (COUNTRY_MAP[detail.country] ?? detail.country) : null]
+    .filter(Boolean).join(', ');
+  const rules = detail.availability_rules;
+  const weekly = detail.weekly_availability ?? [];
+  const overrides = detail.date_overrides ?? [];
+  const services = detail.services ?? [];
+  const socials = detail.social_links ?? [];
+
+  return (
+    <div className="flex flex-col gap-6 text-sm">
+      {/* Profile details */}
+      <section>
+        <SectionLabel>Profile</SectionLabel>
+        {detail.bio && (
+          <Field label="Bio" full>
+            <RichText html={detail.bio} className="text-foreground" />
+          </Field>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-4">
+          {location && <Field label="Location">{location}</Field>}
+          {detail.phone && <Field label="Phone">{detail.phone}</Field>}
+          {detail.timezone && <Field label="Timezone">{detail.timezone}</Field>}
+          {detail.years_lived_experience != null && (
+            <Field label="Years lived abroad">
+              {detail.years_lived_experience} yr{detail.years_lived_experience !== 1 ? 's' : ''}
+            </Field>
+          )}
+          {detail.expertise_country_codes?.length ? (
+            <Field label="Countries of expertise">
+              {detail.expertise_country_codes.map((c) => COUNTRY_MAP[c] ?? c).join(', ')}
+            </Field>
+          ) : null}
+          {detail.languages?.length ? (
+            <Field label="Languages">{detail.languages.map((l) => LANGUAGE_MAP[l] ?? l).join(', ')}</Field>
+          ) : null}
+          {detail.professional_domains?.length ? (
+            <Field label="Professional domains">{detail.professional_domains.join(', ')}</Field>
+          ) : null}
+          {detail.expertise_categories?.length ? (
+            <Field label="Expertise categories">{detail.expertise_categories.join(', ')}</Field>
+          ) : null}
+        </div>
+        {socials.length > 0 && (
+          <Field label="Social links" full className="mt-4">
+            <div className="flex flex-col gap-1">
+              {socials.map((s, i) => (
+                <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
+                  className="text-brand-700 hover:underline break-all">
+                  <span className="text-muted">{SOCIAL_LABELS[s.type] ?? s.type}:</span> {s.url}
+                </a>
+              ))}
+            </div>
+          </Field>
+        )}
+        {detail.public_notes && (
+          <Field label="Public notes" full className="mt-4">
+            <p className="whitespace-pre-line text-foreground">{detail.public_notes}</p>
+          </Field>
+        )}
+      </section>
+
+      {/* Session types */}
+      <section>
+        <SectionLabel>Session types</SectionLabel>
+        {services.length === 0 ? (
+          <p className="text-muted text-xs">None added.</p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {services.map((s) => (
+              <div key={s.id} className="flex items-center gap-2 flex-wrap">
+                <span className="text-foreground font-medium">{s.title}</span>
+                <span className="text-muted">· {s.duration} min</span>
+                {!s.is_active && <Badge tone="neutral">inactive</Badge>}
+                {s.status && s.status !== 'approved' && <Badge tone="warning">{s.status}</Badge>}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Weekly hours */}
+      <section>
+        <SectionLabel>Weekly hours</SectionLabel>
+        {weekly.length === 0 ? (
+          <p className="text-muted text-xs">Not set yet.</p>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {weekly.map((s) => (
+              <p key={s.id} className="text-foreground text-xs">
+                <span className="inline-block w-24 font-medium">{s.weekday}</span>
+                {fmtTime(s.start_time)} – {fmtTime(s.end_time)}
+              </p>
+            ))}
+            {weekly[0]?.timezone && <p className="text-muted text-xs mt-1">Timezone: {weekly[0].timezone}</p>}
+          </div>
+        )}
+      </section>
+
+      {/* Booking rules */}
+      {rules && (rules.days_ahead != null || rules.min_notice_hours != null) && (
+        <section>
+          <SectionLabel>Booking rules</SectionLabel>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-3">
+            {rules.days_ahead != null && <Field label="Booking window">{rules.days_ahead} days ahead</Field>}
+            {rules.min_notice_hours != null && <Field label="Minimum notice">{rules.min_notice_hours} hr</Field>}
+            {rules.cancel_hours != null && <Field label="Cancellation notice">{rules.cancel_hours} hr</Field>}
+          </div>
+        </section>
+      )}
+
+      {/* Date overrides */}
+      {overrides.length > 0 && (
+        <section>
+          <SectionLabel>Date overrides</SectionLabel>
+          <div className="flex flex-col gap-1">
+            {overrides.map((o) => (
+              <p key={o.id} className="text-foreground text-xs">
+                <span className="inline-block w-32 font-medium">{fmtDate(o.slot_date)}</span>
+                {o.is_blackout
+                  ? <span className="text-red-600">Blocked</span>
+                  : <span>{fmtTime(o.start_time)} – {fmtTime(o.end_time)}</span>}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function Avatar({ url, name }: { url?: string | null; name: string }) {
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt={name} className="h-12 w-12 shrink-0 rounded-full object-cover border border-[--color-border]" />;
+  }
+  return (
+    <div className="h-12 w-12 shrink-0 rounded-full bg-brand-50 border border-[--color-border] flex items-center justify-center text-brand-300">
+      <User className="h-6 w-6" />
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">{children}</p>;
+}
+
+function Field({ label, children, full, className }: { label: string; children: React.ReactNode; full?: boolean; className?: string }) {
+  return (
+    <div className={`${full ? 'sm:col-span-2' : ''} ${className ?? ''}`}>
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">{label}</p>
+      <div className="text-foreground">{children}</div>
     </div>
   );
 }
