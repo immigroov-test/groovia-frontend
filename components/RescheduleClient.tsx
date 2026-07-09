@@ -77,7 +77,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
       if (!res.ok) {
         const msg: string = data.detail || 'Could not reschedule. Please try another time.';
         if (/approval|24 ?h/i.test(msg)) {
-          // Crossed into the <24h window since the page loaded — switch to a request.
+          // Crossed into the <24h window since the page loaded - switch to a request.
           setNeedsApproval(true);
           setError(null);
           return;
@@ -137,7 +137,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
         </p>
       )}
 
-      {/* Under 2h — locked */}
+      {/* Under 2h - locked */}
       {deadline === 'buffer' && (
         <div className="mt-6 rounded-xl border border-[--color-border] bg-brand-50/50 p-4 text-sm text-muted flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
@@ -145,7 +145,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
         </div>
       )}
 
-      {/* 2–24h — needs mentor approval */}
+      {/* 2-24h - needs mentor approval */}
       {deadline === 'late' && (
         <div className="mt-6 flex flex-col gap-3">
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -157,7 +157,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
         </div>
       )}
 
-      {/* Free window — pick a new slot */}
+      {/* Free window - pick a new slot */}
       {(deadline === 'free' || deadline === null) && (
         slots.length === 0 ? (
           <p className="text-sm text-muted mt-8">No open slots in the next 30 days. Please check back later.</p>

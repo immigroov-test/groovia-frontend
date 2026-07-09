@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Video } from 'lucide-react';
 import { Button } from '../../../../components/ui/Button';
 
-export const metadata = { title: 'Video call — Immigroov' };
+export const metadata = { title: 'Video call - Immigroov' };
 
 // Placeholder join page. A real video link (Jitsi/Meet/Daily) will be wired here later;
 // for now the "Join meeting" buttons and emails point at this page.

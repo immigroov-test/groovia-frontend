@@ -23,7 +23,7 @@ export default async function VerifyEmailPage({
           Click it to activate your account.
         </p>
         <p className="text-xs text-muted mt-4">
-          Didn&apos;t arrive? Check spam, or try signing in — Supabase will resend if needed.
+          Didn&apos;t arrive? Check spam, or try signing in - Supabase will resend if needed.
         </p>
         <div className="mt-6">
           <Link href="/login">

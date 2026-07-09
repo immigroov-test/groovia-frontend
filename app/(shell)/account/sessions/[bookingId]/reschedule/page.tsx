@@ -1,6 +1,6 @@
 import { RescheduleClient } from '../../../../../../components/RescheduleClient';
 
-export const metadata = { title: 'Reschedule — Immigroov' };
+export const metadata = { title: 'Reschedule - Immigroov' };
 
 export default async function ReschedulePage({ params }: { params: Promise<{ bookingId: string }> }) {
   const { bookingId } = await params;

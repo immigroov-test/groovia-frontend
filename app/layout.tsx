@@ -8,7 +8,7 @@ const robotoSerif = Roboto_Serif({ variable: '--font-roboto-serif', subsets: ['l
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Immigroov — AI-powered immigration mentorship',
+  title: 'Immigroov - AI-powered immigration mentorship',
   description:
     'Discover countries that fit your story, prepare your CV, and connect with mentors who have lived the move.',
   icons: { icon: '/favicon.ico' },

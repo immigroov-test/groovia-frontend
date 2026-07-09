@@ -2,10 +2,10 @@
 @plugin "@tailwindcss/typography";
 
 /* ============================================================================
- * Immigroov design tokens — navy + warm orange, slate neutrals
+ * Immigroov design tokens - navy + warm orange, slate neutrals
  * ============================================================================ */
 :root {
-  /* Brand — neutral monochrome (Odyssey black/white/gray). Orange is the only accent. */
+  /* Brand - neutral monochrome (Odyssey black/white/gray). Orange is the only accent. */
   --brand-50:  #F6F6F5;
   --brand-100: #ECECEA;
   --brand-200: #DBDBD8;
@@ -15,9 +15,9 @@
   --brand-600: #52524F;
   --brand-700: #383836;
   --brand-800: #232322;
-  --brand-900: #131312;   /* near-black — headings + primary buttons */
+  --brand-900: #131312;   /* near-black - headings + primary buttons */
 
-  /* Accent — warm orange (energy, CTA) */
+  /* Accent - warm orange (energy, CTA) */
   --accent-50:  #FFF7ED;
   --accent-100: #FFEDD5;
   --accent-200: #FED7AA;
@@ -27,7 +27,7 @@
   --accent-600: #D97706;
   --accent-700: #B45309;
 
-  /* Surfaces — neutral (no blue tint) */
+  /* Surfaces - neutral (no blue tint) */
   --background: #FBFBFA;
   --foreground: #171716;
   --muted:      #6B6B67;
@@ -88,7 +88,7 @@ html, body {
 
 body {
   background: var(--background);
-  /* Soft layered gradient — adds depth without visible lines. */
+  /* Soft layered gradient - adds depth without visible lines. */
   background-image:
     radial-gradient(ellipse 1200px 800px at 0% 0%, rgba(0, 0, 0, 0.025), transparent 60%),
     radial-gradient(ellipse 1000px 700px at 100% 100%, rgba(245, 158, 11, 0.035), transparent 60%);
@@ -145,14 +145,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 .animate-arrow-cascade { animation: arrow-cascade 1.4s ease-in-out infinite; }
 
-/* Pretty focus rings — brand navy */
+/* Pretty focus rings - brand navy */
 *:focus-visible {
   outline: 2px solid var(--brand-500);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Markdown chat bubbles — tighter spacing + brand-tinted headers/tables.
+/* Markdown chat bubbles - tighter spacing + brand-tinted headers/tables.
    Used by the `prose-chat` utility on assistant message bubbles. */
 .prose-chat :where(h1, h2, h3, h4) {
   color: var(--brand-900);
@@ -207,7 +207,7 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--border);
 }
 
-/* Hero gradient — subtle navy → orange wash for landing */
+/* Hero gradient - subtle navy → orange wash for landing */
 .hero-gradient {
   background:
     radial-gradient(1200px 600px at 20% 0%, rgba(0, 0, 0, 0.04), transparent 60%),
@@ -216,7 +216,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================================================
- * Chat entry hero ambience — scoped to the /chat start screen only.
+ * Chat entry hero ambience - scoped to the /chat start screen only.
  * Drifting gradient blobs + a faint blueprint grid that fades out radially.
  * ============================================================================ */
 @keyframes blob-drift-a {
@@ -237,3 +237,18 @@ h1, h2, h3, h4, h5, h6 {
   background-size: 44px 44px;
   mask-image: radial-gradient(ellipse 75% 65% at 50% 38%, black 25%, transparent 78%);
 }
+
+/* ── Rich text: mentor bio editor (.rte) + rendered output (.rich-text) ────── */
+.rte:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-muted, #64748b);
+  pointer-events: none;
+}
+.rte ul, .rich-text ul { list-style: disc; padding-left: 1.5rem; margin: 0.4rem 0; }
+.rte ol, .rich-text ol { list-style: decimal; padding-left: 1.5rem; margin: 0.4rem 0; }
+.rte li, .rich-text li { margin: 0.15rem 0; }
+.rte h3, .rich-text h3 { font-size: 1.05rem; font-weight: 600; margin: 0.6rem 0 0.3rem; }
+.rte h4, .rich-text h4 { font-size: 0.95rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
+.rte p, .rich-text p { margin: 0.35rem 0; }
+.rte p:first-child, .rich-text p:first-child { margin-top: 0; }
+.rich-text a, .rte a { color: var(--color-brand-700, #1d4ed8); text-decoration: underline; }

@@ -1,5 +1,5 @@
 'use client';
-// Animates children on route change — pathname is the AnimatePresence key.
+// Animates children on route change - pathname is the AnimatePresence key.
 import { motion, AnimatePresence } from 'motion/react';
 import { usePathname } from 'next/navigation';
 import { type ReactNode } from 'react';

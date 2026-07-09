@@ -70,14 +70,14 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 
 function safeSetMessages(messages: ChatMessage[]): void {
   if (typeof window === 'undefined') return;
-  // Keep the last N. The visible UI still shows the full array — only the cache is trimmed.
+  // Keep the last N. The visible UI still shows the full array - only the cache is trimmed.
   const trimmed = messages.length > MAX_MESSAGES_PERSISTED
     ? messages.slice(-MAX_MESSAGES_PERSISTED)
     : messages;
   try {
     window.localStorage.setItem(LS_KEYS.messages, JSON.stringify(trimmed));
   } catch {
-    // Quota exceeded — drop and continue.
+    // Quota exceeded - drop and continue.
   }
 }
 
@@ -89,7 +89,7 @@ export default function ChatInterface({ authed }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Guests become "gated" after resume upload — input disables, AuthGateRenderer shows the modal.
+  // Guests become "gated" after resume upload - input disables, AuthGateRenderer shows the modal.
   const gated = !authed;
 
   function openGate() {
@@ -117,7 +117,7 @@ export default function ChatInterface({ authed }: Props) {
     const storedResumeUploaded = loadFromStorage<boolean>(LS_KEYS.resumeUploaded, false);
 
     if (isFreshSession && !authed && storedResumeUploaded) {
-      // Guest reopened the browser — clear stale gated state and start fresh.
+      // Guest reopened the browser - clear stale gated state and start fresh.
       clearLocalChat();
       const fresh = uuidv4();
       window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
@@ -293,7 +293,7 @@ export default function ChatInterface({ authed }: Props) {
         ...prev,
         { role: 'assistant', content: data.response || UI_CONTENT.errors.noResponse },
       ]);
-      // First real turn just created/updated the thread row — refresh history so
+      // First real turn just created/updated the thread row - refresh history so
       // the new title or thread shows up in the sidebar.
       if (authed) window.dispatchEvent(new CustomEvent('groovia:history-refresh'));
     } catch {
@@ -305,7 +305,7 @@ export default function ChatInterface({ authed }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Landmarks — fixed to viewport bottom, always visible regardless of chat state.
+      {/* Landmarks - fixed to viewport bottom, always visible regardless of chat state.
           z-index 0 puts it above the body background but below the z-1/z-10 content layers. */}
       <div
         className="fixed bottom-0 left-0 md:left-64 right-0 pointer-events-none select-none"

@@ -50,12 +50,12 @@ export default function LandingPage() {
               {
                 step: '01',
                 title: 'Chat with Groovia',
-                desc: 'Tell our AI about your background and goals. Upload your CV — it extracts the rest.',
+                desc: 'Tell our AI about your background and goals. Upload your CV - it extracts the rest.',
               },
               {
                 step: '02',
                 title: 'Get matched',
-                desc: '3–5 countries that fit your skills, budget, and timeline. Each with a visa pathway and a real mentor.',
+                desc: '3-5 countries that fit your skills, budget, and timeline. Each with a visa pathway and a real mentor.',
               },
               {
                 step: '03',

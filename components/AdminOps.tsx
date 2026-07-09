@@ -45,7 +45,7 @@ export function AdminOps() {
     <div className="flex flex-col gap-4">
       <div className="rounded-xl border border-[--color-border] bg-brand-50/40 p-4 text-xs text-muted leading-relaxed">
         <p className="font-medium text-foreground mb-1">No-show strike ladder</p>
-        Strike 1–2 → warning only. Strike 3+ → 25% mentor-payout penalty per no-show. Counter resets automatically after 90 days.
+        Strike 1-2 → warning only. Strike 3+ → 25% mentor-payout penalty per no-show. Counter resets automatically after 90 days.
         Reset a mentor&apos;s strikes here if a dispute is resolved in their favour.
       </div>
 
@@ -68,7 +68,7 @@ export function AdminOps() {
                     <Badge tone={m.no_show_strikes >= 3 ? 'warning' : 'neutral'}>{m.no_show_strikes} strike{m.no_show_strikes !== 1 ? 's' : ''}</Badge>
                   </div>
                   <p className="text-xs text-muted mt-0.5">
-                    {m.status} · last no-show {m.last_no_show_at ? new Date(m.last_no_show_at).toLocaleDateString() : '—'}
+                    {m.status} · last no-show {m.last_no_show_at ? new Date(m.last_no_show_at).toLocaleDateString() : '-'}
                   </p>
                 </div>
               </div>

@@ -44,7 +44,7 @@ export function ChatIntro({ onStart }: { onStart?: () => void }) {
   const [atTop, setAtTop] = useState(true);
 
   useEffect(() => {
-    // The chat page scrolls an INNER overflow-y-auto div, not #app-scroll — so find the
+    // The chat page scrolls an INNER overflow-y-auto div, not #app-scroll - so find the
     // nearest scrollable ancestor of this section; fall back to #app-scroll.
     let scrollEl: Element | null = sectionRef.current?.parentElement ?? null;
     while (scrollEl) {

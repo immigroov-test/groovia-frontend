@@ -1,14 +1,26 @@
-export const metadata = { title: 'Terms of Service — Immigroov' };
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { LegalDoc } from '../../../components/LegalDoc';
+
+export const metadata = { title: 'Terms of Service - Immigroov' };
+
+function read(name: string): string {
+  try {
+    return readFileSync(join(process.cwd(), 'content', 'legal', name), 'utf8');
+  } catch {
+    return '_Content coming soon._';
+  }
+}
 
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 prose prose-slate">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Terms of Service</h1>
-      <p className="text-sm text-muted mt-2">Last updated: pending legal review</p>
-      <p className="mt-6 text-foreground/80">
-        Placeholder. Final ToS will cover service description, payment terms, mentor commitments,
-        disclaimer that Immigroov is not a law firm, and dispute resolution under Dutch jurisdiction.
-      </p>
-    </div>
+    <LegalDoc
+      title="Terms of Service"
+      updated="Last updated: 01 Aug 2025"
+      groups={[
+        { label: 'For Mentors', content: read('terms-mentor.md') },
+        { label: 'For Customers', content: read('terms-customer.md') },
+      ]}
+    />
   );
 }
