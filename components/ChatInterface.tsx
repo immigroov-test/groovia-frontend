@@ -13,6 +13,11 @@ import { FEATURES } from '../lib/features';
 import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
 import { cn } from '../lib/utils';
 import { ChatIntro } from './ChatIntro';
+import { RateLimitModal } from './RateLimitModal';
+
+// Standalone (not in LS_KEYS): a Groq rate-limit block is server-side reality, so it must
+// survive "clear chat" - which wipes every LS_KEYS entry.
+const RL_KEY = 'groovia.rateLimitedUntil';
 
 interface Props {
   authed: boolean;
@@ -230,9 +235,71 @@ export default function ChatInterface({ authed }: Props) {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
   }, [input]);
 
+  // Groq rate limit: the backend returns 429 + retry_after_seconds when its token/request
+  // budget is exhausted. We block ONLY the chat composer (the rest of the app stays usable),
+  // show a popup with a countdown + riddles, and persist the reset time so the block (and
+  // popup) survive navigation and refresh.
+  const [rateLimitedUntil, setRateLimitedUntil] = useState<number | null>(null);
+  const [rlRemaining, setRlRemaining] = useState(0);
+  const [showRateModal, setShowRateModal] = useState(false);
+
+  // Restore an in-progress block on mount (user navigated away and came back).
+  useEffect(() => {
+    const stored = Number(localStorage.getItem(RL_KEY));
+    if (stored && stored > Date.now()) { setRateLimitedUntil(stored); setShowRateModal(true); }
+    else localStorage.removeItem(RL_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (rateLimitedUntil === null) { setRlRemaining(0); return; }
+    const tick = () => {
+      const r = Math.max(0, Math.ceil((rateLimitedUntil - Date.now()) / 1000));
+      setRlRemaining(r);
+      if (r <= 0) {
+        // Timer done: auto-close the popup and re-enable chat, whatever the riddle is doing.
+        setRateLimitedUntil(null);
+        setShowRateModal(false);
+        localStorage.removeItem(RL_KEY);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [rateLimitedUntil]);
+  const rateLimited = rateLimitedUntil !== null && rlRemaining > 0;
+
+  function triggerRateLimit(seconds: number) {
+    const until = Date.now() + seconds * 1000;
+    setRateLimitedUntil(until);
+    setShowRateModal(true);
+    try { localStorage.setItem(RL_KEY, String(until)); } catch { /* private mode */ }
+  }
+
+  function formatWait(secs: number): string {
+    if (secs >= 3600) { const h = Math.round(secs / 3600); return `about ${h} hour${h === 1 ? '' : 's'}`; }
+    if (secs >= 60) { const m = Math.floor(secs / 60); const s = secs % 60; return s ? `${m}m ${s}s` : `${m} min`; }
+    return `${secs}s`;
+  }
+
+  function applyChatError(e: unknown) {
+    const retry = (e as { retryAfter?: number })?.retryAfter;
+    if (retry) {
+      triggerRateLimit(retry);
+    } else {
+      setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.errors.backendUnreachable }]);
+    }
+  }
+
   async function postChat(formData: FormData) {
     const headers = await authHeaders();
     const res = await fetch('/api/chat', { method: 'POST', headers, body: formData });
+    if (res.status === 429) {
+      const body = await res.json().catch(() => ({}));
+      const secs = Number(body?.detail?.retry_after_seconds) || 60;
+      const err = new Error('rate_limited') as Error & { retryAfter?: number };
+      err.retryAfter = secs;
+      throw err;
+    }
     if (!res.ok) throw new Error(String(res.status));
     return res.json();
   }
@@ -261,8 +328,8 @@ export default function ChatInterface({ authed }: Props) {
 
       // Guests: open the auth gate. Modal won't close until they sign up / sign in.
       if (!authed) openGate();
-    } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.errors.backendUnreachable }]);
+    } catch (e) {
+      applyChatError(e);
     } finally {
       setLoading(false);
     }
@@ -270,7 +337,13 @@ export default function ChatInterface({ authed }: Props) {
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || loading) return;
+
+    // Dev/QA hook: "/ratelimit" or "/ratelimit 45" simulates a Groq rate-limit locally (and
+    // on staging) so we can test the popup without waiting to actually hit the limit.
+    const rl = trimmed.match(/^\/ratelimit(?:\s+(\d+))?$/i);
+    if (rl) { setInput(''); triggerRateLimit(Number(rl[1]) || 30); return; }
+
+    if (!trimmed || loading || rateLimited) return;
 
     // Guests must sign in before sending any message.
     if (gated) {
@@ -296,8 +369,8 @@ export default function ChatInterface({ authed }: Props) {
       // First real turn just created/updated the thread row - refresh history so
       // the new title or thread shows up in the sidebar.
       if (authed) window.dispatchEvent(new CustomEvent('groovia:history-refresh'));
-    } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.errors.backendUnreachable }]);
+    } catch (e) {
+      applyChatError(e);
     } finally {
       setLoading(false);
     }
@@ -418,10 +491,21 @@ export default function ChatInterface({ authed }: Props) {
             </button>
           )}
 
+          {rateLimited && !showRateModal && (
+            <button
+              type="button"
+              onClick={() => setShowRateModal(true)}
+              className="w-full text-center mb-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-medium hover:bg-amber-100"
+            >
+              You can chat again in{' '}
+              <span className="tabular-nums">{formatWait(rlRemaining)}</span>. Tap to pass the time.
+            </button>
+          )}
+
           <div
             className={cn(
               "flex items-end gap-2 rounded-2xl px-2 py-1.5",
-              gated && resumeUploaded && "opacity-60",
+              (gated && resumeUploaded || rateLimited) && "opacity-60",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
@@ -449,14 +533,14 @@ export default function ChatInterface({ authed }: Props) {
                 }
               }}
               placeholder={gated && resumeUploaded ? UI_CONTENT.inputPlaceholderLocked : UI_CONTENT.inputPlaceholder}
-              disabled={gated && resumeUploaded}
+              disabled={(gated && resumeUploaded) || rateLimited}
               className="flex-1 bg-transparent border-none outline-none text-sm leading-relaxed resize-none py-2 max-h-40 disabled:cursor-not-allowed"
             />
 
             <button
               type="button"
               onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim() || (gated && resumeUploaded)}
+              disabled={loading || !input.trim() || (gated && resumeUploaded) || rateLimited}
               className="h-9 w-9 flex items-center justify-center rounded-lg bg-brand-900 text-white hover:bg-brand-800 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               <Send className="h-4 w-4" />
@@ -466,6 +550,10 @@ export default function ChatInterface({ authed }: Props) {
           <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
         </div>
       </div>
+
+      {showRateModal && rateLimitedUntil !== null && (
+        <RateLimitModal until={rateLimitedUntil} onClose={() => setShowRateModal(false)} />
+      )}
     </div>
   );
 }
