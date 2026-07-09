@@ -6,7 +6,7 @@ export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
     <div
       className={cn(
         'rounded-3xl bg-card',
-        // Soft layered shadow instead of a hard border — gives the card lift without boxiness.
+        // Soft layered shadow instead of a hard border - gives the card lift without boxiness.
         'shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.08)]',
         className,
       )}

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { COUNTRIES, countryFlag } from '../../lib/countries';
+import { COUNTRIES } from '../../lib/countries';
+import { Flag } from './Flag';
 import { cn } from '../../lib/utils';
 
 interface Props {
@@ -18,11 +19,13 @@ export function CountrySelect({
   label,
   required,
   hint,
-  placeholder = 'Select country…',
+  placeholder = 'Select country',
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [highlight, setHighlight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const filtered = query
     ? COUNTRIES.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()) || c.code.toLowerCase().includes(query.toLowerCase()))
@@ -41,10 +44,33 @@ export function CountrySelect({
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [open]);
 
+  // Keep the highlighted row in view as you arrow through the list.
+  useEffect(() => {
+    if (!open || !listRef.current) return;
+    const el = listRef.current.children[highlight] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [highlight, open]);
+
   function select(code: string) {
     onChange(code);
     setOpen(false);
     setQuery('');
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filtered[highlight]) select(filtered[highlight].code);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+      setQuery('');
+    }
   }
 
   return (
@@ -57,7 +83,7 @@ export function CountrySelect({
 
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { setOpen((o) => !o); setHighlight(0); }}
         className={cn(
           'flex items-center gap-2 h-10 px-3 rounded-lg bg-white text-sm text-left',
           'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
@@ -67,7 +93,7 @@ export function CountrySelect({
       >
         {selected ? (
           <>
-            <span className="text-base leading-none">{countryFlag(selected.code)}</span>
+            <Flag code={selected.code} />
             <span className="flex-1 text-foreground">{selected.name}</span>
           </>
         ) : (
@@ -85,27 +111,29 @@ export function CountrySelect({
               type="text"
               autoFocus
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search country…"
+              onChange={(e) => { setQuery(e.target.value); setHighlight(0); }}
+              onKeyDown={onKeyDown}
+              placeholder="Search country"
               className="w-full px-2 py-1.5 text-sm rounded-lg bg-brand-50 focus:outline-none placeholder:text-muted"
             />
           </div>
-          <ul className="max-h-56 overflow-y-auto py-1">
+          <ul ref={listRef} className="max-h-56 overflow-y-auto py-1">
             {filtered.length === 0 && (
               <li className="px-3 py-2 text-sm text-muted">No results</li>
             )}
-            {filtered.map((c) => (
+            {filtered.map((c, i) => (
               <li
                 key={c.code}
                 onClick={() => select(c.code)}
+                onMouseEnter={() => setHighlight(i)}
                 className={cn(
-                  'flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer hover:bg-brand-50',
-                  c.code === value && 'bg-brand-50 font-medium text-brand-700',
+                  'flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer',
+                  i === highlight && 'bg-brand-50',
+                  c.code === value && 'font-medium text-brand-700',
                 )}
               >
-                <span className="text-base leading-none">{countryFlag(c.code)}</span>
+                <Flag code={c.code} />
                 <span className="flex-1 text-foreground">{c.name}</span>
-                <span className="text-xs text-muted shrink-0">{c.code}</span>
               </li>
             ))}
           </ul>

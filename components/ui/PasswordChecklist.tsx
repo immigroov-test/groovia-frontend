@@ -14,7 +14,7 @@ export function passwordMeetsPolicy(p: string): boolean {
   return PASSWORD_RULES.every((r) => r.test(p));
 }
 
-// Live checklist — each tick turns from grey to green as the rule is met.
+// Live checklist: each tick turns from grey to green as the rule is met.
 export function PasswordChecklist({ password }: { password: string }) {
   return (
     <ul className="flex flex-col gap-1">
