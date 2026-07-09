@@ -14,6 +14,7 @@ import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
 import { cn } from '../lib/utils';
 import { ChatIntro } from './ChatIntro';
 import { RateLimitModal } from './RateLimitModal';
+import { ThinkingIndicator } from './ThinkingIndicator';
 
 // Standalone (not in LS_KEYS): a Groq rate-limit block is server-side reality, so it must
 // survive "clear chat" - which wipes every LS_KEYS entry.
@@ -444,17 +445,7 @@ export default function ChatInterface({ authed }: Props) {
             </div>
           ))}
 
-          {loading && (
-            // Centered thinking indicator; mix-blend-multiply drops the GIF's white background.
-            <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none bg-background/10 backdrop-blur-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/groovia-loop.gif"
-                alt="Groovia is thinking…"
-                className="h-24 w-auto mix-blend-multiply select-none"
-              />
-            </div>
-          )}
+          {loading && <ThinkingIndicator />}
 
           {resumeUploaded && !intentSelected && !loading && (
             <div className="pt-2 animate-fade-up">
