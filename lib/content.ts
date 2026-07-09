@@ -52,8 +52,6 @@ export const UI_CONTENT = {
     empty: 'None.',
     approve: 'Approve',
     reject: 'Reject',
-    decline: 'Decline',
-    requestChanges: 'Request changes',
     suspend: 'Suspend',
     reinstate: 'Reinstate',
   },
@@ -145,7 +143,7 @@ export const UI_CONTENT = {
     termsNote: 'By continuing you agree to our',
     terms: 'Terms',
     privacy: 'Privacy Policy',
-    whyJoinTitle: 'Why join Immigroov',
+    whyJoinTitle: 'Why join Immigroov?',
   },
   // Default proverb shown if the daily quote API is unreachable.
   quote: {

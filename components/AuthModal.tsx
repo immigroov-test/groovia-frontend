@@ -222,7 +222,7 @@ function AuthModalInner() {
           <div className="relative w-full md:w-1/2 flex flex-col md:h-full overflow-hidden bg-white">
             <Image src="/login_left_bg.png" alt="" fill priority className="object-cover object-bottom" sizes="(max-width: 767px) 92vw, 576px" />
             <div className="absolute inset-0 bg-white/0" />
-            <div className="relative z-10 px-6 sm:px-9 pt-12 md:pt-20 pb-6 flex flex-col md:h-full overflow-y-auto">
+            <div className="relative z-10 px-6 sm:px-9 pt-12 md:pt-20 pb-24 md:pb-6 flex flex-col md:h-full overflow-y-auto">
             {stage === 'email' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">{t.heading}</h2>
@@ -330,9 +330,11 @@ function AuthModalInner() {
             </div>
           </div>
 
-          {/* Mobile only: logo pill at the seam between the stacked form (top) and the
-              why-join panel (bottom). On desktop the top logo straddles the divider instead. */}
-          <div className="md:hidden flex justify-center py-4 relative z-30">
+          {/* Mobile only: logo pill centered exactly on the seam between the stacked form
+              (top) and the why-join panel (bottom) - it straddles the boundary, half over
+              each, mirroring the desktop logo on the vertical divider. h-0 puts the flex line
+              on the seam; items-center centers the pill on it. */}
+          <div className="md:hidden relative z-30 flex h-0 items-center justify-center">
             <div className="bg-white rounded-full px-5 py-2.5 shadow-md">
               <Image src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
                 className="object-contain" style={{ height: '26px', width: 'auto' }} />
