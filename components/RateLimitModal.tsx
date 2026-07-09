@@ -7,7 +7,7 @@ import { shuffledRiddles } from '../lib/riddles';
 // Above this many seconds the wait is a per-day reset (hours) - show a "come back at"
 // time instead of a live ring + riddles (nobody watches a ring for hours).
 const LONG_THRESHOLD_SEC = 5 * 60;
-const WRONG_WAIT_SEC = 10;
+const RIDDLE_SEC = 7;
 
 const ENCOURAGEMENTS = ['Nice - spot on!', 'You got it!', 'Sharp thinking!', 'Exactly right!', 'Correct, nicely done!'];
 
@@ -127,87 +127,93 @@ function Ring({ remaining, total, label }: { remaining: number; total: number; l
   );
 }
 
-type Phase = 'guessing' | 'correct' | 'wrong' | 'revealed';
+type Phase = 'guessing' | 'correct' | 'timeout';
 
 function RiddlePanel() {
   const riddles = useMemo(() => shuffledRiddles(), []);
   const [idx, setIdx] = useState(0);
   const [guess, setGuess] = useState('');
   const [phase, setPhase] = useState<Phase>('guessing');
-  const [encourage] = useState(() => ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)]);
-  const [wrongWait, setWrongWait] = useState(0);
+  const [wrongHint, setWrongHint] = useState(false);
+  const encourage = useMemo(() => ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)], [idx]);
 
   const riddle = riddles[idx] ?? { question: '', answer: '' };
 
-  // A wrong guess costs a 10s pause before "New riddle" unlocks (keeps the pacing gentle).
+  // Every riddle gets the same RIDDLE_SEC think window; when it runs out we reveal the
+  // answer. A wrong guess does NOT end it - they keep trying until they get it or time out.
   useEffect(() => {
-    if (phase !== 'wrong') { setWrongWait(0); return; }
-    setWrongWait(WRONG_WAIT_SEC);
-    const id = setInterval(() => setWrongWait((w) => (w <= 1 ? 0 : w - 1)), 1000);
-    return () => clearInterval(id);
+    if (phase !== 'guessing') return;
+    const t = setTimeout(() => setPhase('timeout'), RIDDLE_SEC * 1000);
+    return () => clearTimeout(t);
   }, [phase, idx]);
 
   function submit() {
     if (phase !== 'guessing' || !guess.trim()) return;
-    setPhase(isCorrect(guess, riddle.answer) ? 'correct' : 'wrong');
+    if (isCorrect(guess, riddle.answer)) setPhase('correct');
+    else setWrongHint(true);
   }
   function next() {
     setIdx((i) => (i + 1) % riddles.length);
     setGuess('');
+    setWrongHint(false);
     setPhase('guessing');
   }
 
-  const answered = phase !== 'guessing';
-  const nextLocked = phase === 'wrong' && wrongWait > 0;
-
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-white/60">While you wait, a riddle</p>
       <p className="text-base font-medium leading-snug min-h-[3rem]">{riddle.question}</p>
 
-      {!answered && (
-        <>
-          <input
-            value={guess}
-            onChange={(e) => setGuess(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-            placeholder="Type your answer…"
-            className="w-full px-3 h-10 rounded-lg bg-white/95 text-sm text-brand-900 placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent-500"
-          />
-          <div className="flex items-center gap-3">
+      {phase === 'guessing' ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <input
+              value={guess}
+              onChange={(e) => { setGuess(e.target.value); if (wrongHint) setWrongHint(false); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+              placeholder="Type your answer…"
+              className="flex-1 min-w-0 px-3 h-10 rounded-lg bg-white/95 text-sm text-brand-900 placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent-500"
+            />
             <button
               type="button" onClick={submit} disabled={!guess.trim()}
-              className="px-4 h-9 rounded-full bg-accent-500 text-white text-sm font-medium hover:bg-accent-600 disabled:opacity-40"
+              className="shrink-0 px-5 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 disabled:opacity-40"
             >
               Submit
             </button>
-            <button type="button" onClick={() => setPhase('revealed')} className="text-xs text-white/60 hover:text-white/90 underline">
-              Show answer
-            </button>
           </div>
-        </>
+          <CountdownBar activeKey={idx} seconds={RIDDLE_SEC} />
+          {wrongHint && <p className="text-xs text-amber-200">Not quite - keep trying.</p>}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {phase === 'correct' ? (
+            <p className="text-sm font-medium text-emerald-300">{encourage} It&apos;s <span className="font-semibold">{riddle.answer}</span></p>
+          ) : (
+            <p className="text-sm text-white/90">Time&apos;s up - the answer is <span className="font-semibold text-emerald-300">{riddle.answer}</span></p>
+          )}
+          <button
+            type="button" onClick={next}
+            className="self-start px-5 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600"
+          >
+            New riddle →
+          </button>
+        </div>
       )}
+    </div>
+  );
+}
 
-      {phase === 'correct' && (
-        <p className="text-sm text-emerald-300 font-medium">
-          {encourage} It&apos;s <span className="font-semibold">{riddle.answer}</span>
-        </p>
-      )}
-      {(phase === 'wrong' || phase === 'revealed') && (
-        <p className="text-sm text-white/90">
-          {phase === 'wrong' ? 'Not quite - the answer is ' : 'The answer is '}
-          <span className="font-semibold text-emerald-300">{riddle.answer}</span>
-        </p>
-      )}
-
-      {answered && (
-        <button
-          type="button" onClick={next} disabled={nextLocked}
-          className="self-start px-4 h-9 rounded-full bg-white/15 text-white text-sm font-medium hover:bg-white/25 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {nextLocked ? `New riddle in ${wrongWait}s` : 'New riddle →'}
-        </button>
-      )}
+function CountdownBar({ activeKey, seconds }: { activeKey: number; seconds: number }) {
+  const [w, setW] = useState(100);
+  useEffect(() => {
+    setW(100);
+    // Two frames so the browser paints 100% before transitioning to 0 over `seconds`.
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setW(0)));
+    return () => cancelAnimationFrame(id);
+  }, [activeKey]);
+  return (
+    <div className="h-1.5 w-full bg-white/15 rounded-full overflow-hidden">
+      <div className="h-full bg-accent-500 rounded-full" style={{ width: `${w}%`, transition: `width ${seconds}s linear` }} />
     </div>
   );
 }
