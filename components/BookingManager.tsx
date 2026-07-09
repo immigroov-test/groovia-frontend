@@ -40,7 +40,7 @@ type Role = 'mentee' | 'mentor';
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 function fmt(iso: string | null): string {
-  if (!iso) return '—';
+  if (!iso) return '-';
   return new Date(iso).toLocaleString(undefined, {
     timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
@@ -296,7 +296,7 @@ function BookingCard({
         <div className="flex flex-col gap-2 border-t border-[--color-border] pt-3">
           {b.deadline_state === 'buffer' && !isPast && (
             <p className="text-xs text-muted">
-              Within 2 hours of the session — changes are locked. Contact the other party directly.
+              Within 2 hours of the session - changes are locked. Contact the other party directly.
             </p>
           )}
 

@@ -3,11 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  CalendarCheck, Check, ChevronLeft, ChevronRight, Clock, DollarSign,
-  Globe, Home, Loader2, MessageSquare, Video,
+  Check, ChevronLeft, ChevronRight, Clock, Loader2, MessageSquare, Star, Video,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { RichText } from './ui/RichText';
+import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { cn } from '../lib/utils';
 
@@ -42,6 +43,8 @@ interface MentorInfo {
   headline: string | null;
   bio: string | null;
   photo_url: string | null;
+  avg_rating?: number | null;
+  review_count?: number | null;
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmed';
@@ -98,7 +101,7 @@ function StepBar({ step }: { step: Step }) {
   ] as const;
   const idx = steps.findIndex((s) => s.key === step);
   return (
-    <div className="flex items-center gap-1 px-6 py-3.5 border-b border-[--color-border] bg-brand-50/40">
+    <div className="flex items-center gap-1 flex-wrap">
       {steps.map((s, i) => {
         const done = i < idx;
         const active = i === idx;
@@ -117,12 +120,6 @@ function StepBar({ step }: { step: Step }) {
       })}
     </div>
   );
-}
-
-function formatSlotRange(start: string, end: string): string {
-  const s = formatSlotTime(start);
-  const e = formatSlotTime(end);
-  return `${s} – ${e}`;
 }
 
 function formatDate(dateStr: string): string {
@@ -447,272 +444,251 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const timeSlotsForDay  = selectedDate ? (slotsByDate.get(selectedDate) ?? []) : [];
   const initials         = mentor.display_name.split(' ').map(p => p[0] ?? '').join('').slice(0, 2).toUpperCase();
 
+  function bookAnotherTime() {
+    setBookingId(null);
+    setSelectedSlot(null);
+    setStep('datetime');
+  }
+
   // ── Confirmed state ──────────────────────────────────────────────────────────
   if (step === 'confirmed') {
     return (
-      <div className="rounded-2xl border border-[--color-border] overflow-hidden">
-        <div className="grid lg:grid-cols-[280px_1fr]">
-          <aside className="p-6 bg-brand-50/40 border-b lg:border-b-0 lg:border-r border-[--color-border] flex flex-col gap-3">
-            <MentorMeta mentor={mentor} initials={initials} />
-            {selectedService && <ServiceSummary svc={selectedService} />}
-          </aside>
-          <div className="p-6 flex flex-col gap-4 justify-center">
-            <div className="flex items-center gap-2">
-              <CalendarCheck className="h-6 w-6 text-emerald-500" />
-              <h3 className="text-lg font-semibold text-brand-900">Booking confirmed!</h3>
-            </div>
-            <p className="text-sm text-muted">
-              You&apos;re all set. A confirmation email has been sent to <strong>{email}</strong>.
-            </p>
-            {selectedSlot && (
-              <div className="rounded-lg border border-brand-100 bg-brand-50 p-4 flex flex-col gap-1">
-                <p className="text-sm font-semibold text-brand-900">
-                  {formatDate(slotDateKey(selectedSlot.slot_start))}
-                </p>
-                <p className="text-sm text-muted">
-                  {formatSlotRange(selectedSlot.slot_start, selectedSlot.slot_end)} · {shortTz(TZ)}
-                </p>
-                {showMentorTz && (
-                  <p className="text-xs text-muted">
-                    Mentor: {formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!)} ({shortTz(mentorTimezone!)})
-                  </p>
-                )}
-                <p className="text-xs text-muted mt-1">Booking ID: <code>{bookingId}</code></p>
-              </div>
-            )}
-            <div className="flex flex-wrap gap-2 mt-1">
-              {bookingId && (
-                <Link href={`/meeting/${bookingId}`}><Button variant="primary"><Video className="h-4 w-4" /> Join meeting</Button></Link>
-              )}
-              <Link href="/account/sessions"><Button variant="outline">View my sessions</Button></Link>
-              <Link href="/mentors"><Button variant="ghost">Book another</Button></Link>
-              <Link href="/"><Button variant="ghost"><Home className="h-4 w-4" /> Home</Button></Link>
-            </div>
-            <p className="text-xs text-muted">
-              Need to reschedule or cancel? You can manage this session anytime under{' '}
-              <Link href="/account/sessions" className="underline hover:text-foreground">My sessions</Link>.
-            </p>
-          </div>
+      <div className="rounded-2xl border border-[--color-border] bg-white text-center px-6 py-12 max-w-lg mx-auto">
+        <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
+          <Check className="h-7 w-7 text-emerald-500" />
         </div>
+        <h2 className="text-xl font-semibold text-brand-900 mt-4">You&apos;re booked!</h2>
+        {selectedService && selectedSlot && (
+          <p className="text-sm font-semibold text-foreground mt-2">
+            {selectedService.title} · {formatDate(slotDateKey(selectedSlot.slot_start))}, {formatSlotTime(selectedSlot.slot_start)}
+          </p>
+        )}
+        <p className="text-xs text-muted mt-2">
+          Your time ({shortTz(TZ)}) · a confirmation has been emailed to {email}.
+          {showMentorTz && selectedSlot && <> Mentor&apos;s time: {formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!)}.</>}
+        </p>
+        <div className="flex flex-wrap gap-2 justify-center mt-6">
+          {bookingId && (
+            <Link href={`/meeting/${bookingId}`}><Button variant="primary"><Video className="h-4 w-4" /> Join meeting</Button></Link>
+          )}
+          <Link href="/account/sessions"><Button variant="outline">View my sessions</Button></Link>
+          <Button variant="ghost" onClick={bookAnotherTime}>Book another time</Button>
+        </div>
+        <p className="text-xs text-muted mt-5">
+          Manage or reschedule anytime under{' '}
+          <Link href="/account/sessions" className="underline hover:text-foreground">My sessions</Link>.
+        </p>
       </div>
     );
   }
 
+  function changeService() {
+    setSelectedService(null);
+    setSelectedDate(null);
+    setSelectedSlot(null);
+    setSlots(null);
+    setStep('service');
+  }
+
   return (
-    <div className="rounded-2xl border border-[--color-border] overflow-hidden">
+    <div className="flex flex-col gap-6">
+      {/* ── Header: identity + rating + timezones ─────────────────── */}
+      <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6 flex flex-wrap items-center gap-4">
+        {mentor.photo_url ? (
+          <img src={mentor.photo_url} alt={mentor.display_name} className="h-16 w-16 rounded-full object-cover shrink-0" />
+        ) : (
+          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-lg font-semibold shrink-0">
+            {initials}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 truncate">{mentor.display_name}</h1>
+          {mentor.headline && <p className="text-sm text-muted mt-0.5 line-clamp-2">{mentor.headline}</p>}
+          {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
+            <p className="text-sm font-medium text-amber-600 mt-1 flex items-center gap-1">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              {mentor.avg_rating.toFixed(1)}
+              <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
+            </p>
+          )}
+        </div>
+        <div className="text-xs text-muted sm:text-right sm:ml-auto shrink-0">
+          <div>Your time <span className="font-semibold text-foreground">{shortTz(TZ)}</span></div>
+          {showMentorTz && <div className="mt-0.5">Mentor <span className="font-semibold text-foreground">{shortTz(mentorTimezone!)}</span></div>}
+        </div>
+      </div>
+
+      {/* ── Bio ───────────────────────────────────────────────────── */}
+      {mentor.bio && !isRichTextEmpty(mentor.bio) && <RichText html={mentor.bio} className="max-w-3xl" />}
+
+      {/* ── Stepper ───────────────────────────────────────────────── */}
       <StepBar step={step} />
-      <div className={cn(
-        'grid',
-        step === 'service'
-          ? 'lg:grid-cols-[280px_1fr]'
-          : step === 'datetime' && selectedDate
-          ? 'lg:grid-cols-[280px_1fr_300px]'
-          : 'lg:grid-cols-[280px_1fr]',
-      )}>
-        {/* ── Left panel ───────────────────────────────────────────── */}
-        <aside className="p-6 bg-brand-50/40 border-b lg:border-b-0 lg:border-r border-[--color-border] flex flex-col gap-4">
-          <MentorMeta mentor={mentor} initials={initials} />
-          {selectedService && <ServiceSummary svc={selectedService} />}
-          {selectedSlot && (
-            <div className="flex items-start gap-2 text-sm text-brand-900 font-medium">
-              <CalendarCheck className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>
-                {formatDate(slotDateKey(selectedSlot.slot_start))}<br />
-                {formatSlotRange(selectedSlot.slot_start, selectedSlot.slot_end)}
-                {showMentorTz && (
-                  <><br /><span className="text-xs text-muted font-normal">
-                    mentor {formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!)} ({shortTz(mentorTimezone!)})
-                  </span></>
-                )}
-              </span>
+
+      {/* ── Booking: content | summary ────────────────────────────── */}
+      <div className="grid lg:grid-cols-[1fr_360px] gap-5 items-start">
+        {/* CONTENT: service list, or calendar + slots once a service is picked */}
+        <div className="min-w-0">
+          {!selectedService ? (
+            <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
+              <h3 className="text-base font-semibold text-brand-900 mb-4">Choose a service</h3>
+              {servicesError ? (
+                <p className="text-sm text-red-600">{servicesError}</p>
+              ) : services === null ? (
+                <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading services…</div>
+              ) : services.length === 0 ? (
+                <p className="text-sm text-muted">{mentor.display_name.split(' ')[0]} hasn&apos;t set up sessions yet. Check back soon.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {services.map(svc => (
+                    <button key={svc.id} type="button" onClick={() => selectService(svc)}
+                      className="text-left rounded-xl border border-[--color-border] p-4 hover:border-brand-400 hover:bg-brand-50/60 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {svc.type === 'video'
+                              ? <Video className="h-4 w-4 text-brand-600 shrink-0" />
+                              : <MessageSquare className="h-4 w-4 text-brand-600 shrink-0" />}
+                            <span className="text-sm font-semibold text-foreground">{svc.title}</span>
+                          </div>
+                          {svc.description && <p className="text-xs text-muted leading-relaxed line-clamp-2">{svc.description}</p>}
+                          <div className="flex items-center gap-2 mt-1 text-xs text-muted">
+                            <Clock className="h-3 w-3" />{svc.duration} min · {svc.type === 'video' ? 'Video call' : 'Direct message'}
+                            {svc.category && <span>· {svc.category}</span>}
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-base font-semibold text-brand-700">{formatPrice(svc.set_price, svc.set_currency)}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h3 className="text-base font-semibold text-brand-900">Pick a date &amp; time</h3>
+                <button type="button" onClick={changeService} className="text-xs font-medium text-brand-700 hover:underline shrink-0">Change service</button>
+              </div>
+              {slotsError ? (
+                <p className="text-sm text-red-600">{slotsError}</p>
+              ) : slotsLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading availability…</div>
+              ) : slots && slots.length === 0 ? (
+                <p className="text-sm text-muted text-center py-8">No open slots in the next 30 days.<br /><span className="text-xs">Check back later.</span></p>
+              ) : slots ? (
+                <div className="grid sm:grid-cols-[minmax(0,280px)_1fr] gap-6 items-start">
+                  <CalendarPanel
+                    availableDates={availableDates}
+                    selectedDate={selectedDate}
+                    onSelect={(d) => { setSelectedDate(d); setSelectedSlot(null); if (step === 'form') setStep('datetime'); }}
+                  />
+                  <div className="min-w-0">
+                    {!selectedDate ? (
+                      <p className="text-sm text-muted pt-1">Select a highlighted date to see open times.</p>
+                    ) : (
+                      <>
+                        <h4 className="text-sm font-semibold text-brand-900">{formatDate(selectedDate)}</h4>
+                        <p className="text-xs text-muted mb-3">{timeSlotsForDay.length} open · your time</p>
+                        <div className="grid grid-cols-2 gap-2 max-h-[360px] overflow-y-auto pr-1">
+                          {timeSlotsForDay.map(slot => {
+                            const sel = selectedSlot?.slot_start === slot.slot_start;
+                            return (
+                              <button key={slot.slot_start} type="button" onClick={() => selectSlot(slot)}
+                                className={cn('flex flex-col gap-0.5 px-3 py-2 rounded-lg border text-left transition-colors',
+                                  sel ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600' : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50')}>
+                                <span className="text-sm font-medium text-foreground">{formatSlotTime(slot.slot_start)}</span>
+                                {showMentorTz && <span className="text-[11px] text-muted">mentor {formatSlotTimeInTz(slot.slot_start, mentorTimezone!)}</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
-          <div className="flex flex-col gap-1 text-sm text-muted">
-            <span className="flex items-center gap-2"><Globe className="h-4 w-4 shrink-0" />Your time · {shortTz(TZ)}</span>
-            {showMentorTz && <span className="ml-6 text-xs">Mentor · {shortTz(mentorTimezone!)}</span>}
-          </div>
-        </aside>
+        </div>
 
-        {/* ── Step 1: Service selection ─────────────────────────────── */}
-        {step === 'service' && (
-          <div className="p-6">
-            <h3 className="text-base font-semibold text-brand-900 mb-4">Choose a session type</h3>
-            {servicesError ? (
-              <p className="text-sm text-red-600">{servicesError}</p>
-            ) : services === null ? (
-              <div className="flex items-center gap-2 text-sm text-muted">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading services…
+        {/* SUMMARY: booking details + confirm form (guest fields only when logged out) */}
+        <aside className="rounded-2xl border border-[--color-border] bg-white p-5 flex flex-col gap-3 lg:sticky lg:top-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Your booking</p>
+          {!selectedService ? (
+            <p className="text-sm text-muted">Pick a service to get started.</p>
+          ) : (
+            <>
+              <div>
+                <p className="font-semibold text-foreground">{selectedService.title}</p>
+                <p className="text-sm text-muted">{selectedService.duration} min · {selectedService.type === 'video' ? 'Video call' : 'Direct message'}</p>
               </div>
-            ) : services.length === 0 ? (
-              <p className="text-sm text-muted">
-                {mentor.display_name.split(' ')[0]} hasn&apos;t set up sessions yet. Check back soon.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {services.map(svc => (
-                  <button
-                    key={svc.id}
-                    type="button"
-                    onClick={() => selectService(svc)}
-                    className="text-left rounded-xl border border-[--color-border] p-4 hover:border-brand-400 hover:bg-brand-50/60 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex flex-col gap-1 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {svc.type === 'video'
-                            ? <Video className="h-4 w-4 text-brand-600 shrink-0" />
-                            : <MessageSquare className="h-4 w-4 text-brand-600 shrink-0" />
-                          }
-                          <span className="text-sm font-semibold text-foreground">{svc.title}</span>
-                        </div>
-                        {svc.description && (
-                          <p className="text-xs text-muted leading-relaxed line-clamp-2">{svc.description}</p>
-                        )}
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />{svc.duration}m
-                          </span>
-                          {svc.category && <span>{svc.category}</span>}
-                        </div>
-                      </div>
-                      <span className="shrink-0 text-sm font-semibold text-brand-700">
-                        {formatPrice(svc.set_price, svc.set_currency)}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+              <div className="border-y border-[--color-border] py-3 flex flex-col gap-1.5">
+                <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start))}, ${formatSlotTime(selectedSlot.slot_start)}` : '—'} />
+                {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!) : '—'} />}
               </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Step 2: Date + time ───────────────────────────────────── */}
-        {step === 'datetime' && (
-          <div className="p-6 border-b lg:border-b-0 lg:border-r border-[--color-border]">
-            <button
-              type="button"
-              onClick={() => { setStep('service'); setSelectedService(null); }}
-              className="text-xs text-muted hover:text-foreground flex items-center gap-1 mb-4"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" /> Change service
-            </button>
-            {slotsError ? (
-              <p className="text-sm text-red-600">{slotsError}</p>
-            ) : slotsLoading ? (
-              <div className="flex items-center gap-2 text-sm text-muted">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading availability…
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted">Total</span>
+                <span className="text-lg font-semibold text-brand-900">{formatPrice(selectedService.set_price, selectedService.set_currency)}</span>
               </div>
-            ) : slots && slots.length === 0 ? (
-              <p className="text-sm text-muted text-center mt-8">
-                No open slots in the next 30 days.<br />
-                <span className="text-xs">Check back later.</span>
-              </p>
-            ) : slots ? (
-              <CalendarPanel
-                availableDates={availableDates}
-                selectedDate={selectedDate}
-                onSelect={setSelectedDate}
-              />
-            ) : null}
-          </div>
-        )}
 
-        {/* ── Step 2b: Time slots ───────────────────────────────────── */}
-        {step === 'datetime' && selectedDate && slots && (
-          <div className="p-6">
-            <h3 className="text-sm font-semibold text-brand-900 mb-1">{formatDate(selectedDate)}</h3>
-            <p className="text-xs text-muted mb-3">{timeSlotsForDay.length} open · your time</p>
-            <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1">
-              {timeSlotsForDay.map(slot => (
-                <button
-                  key={slot.slot_start}
-                  type="button"
-                  onClick={() => selectSlot(slot)}
-                  className="flex flex-col gap-0.5 px-4 py-2 rounded-lg border border-[--color-border] hover:border-brand-500 hover:bg-brand-50 transition-colors text-left"
-                >
-                  <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                    {formatSlotTime(slot.slot_start)}
-                  </span>
-                  {showMentorTz && (
-                    <span className="text-xs text-muted ml-[18px]">
-                      mentor {formatSlotTimeInTz(slot.slot_start, mentorTimezone!)}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Step 3: Booking form ──────────────────────────────────── */}
-        {step === 'form' && (
-          <div className="p-6 flex flex-col gap-4">
-            <button
-              type="button"
-              onClick={() => { setStep('datetime'); setSelectedSlot(null); }}
-              className="text-xs text-muted hover:text-foreground flex items-center gap-1 self-start"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" /> Change time
-            </button>
-            <h3 className="text-base font-semibold text-brand-900">Your details</h3>
-            <Input label="Full name" value={name} onChange={e => setName(e.target.value)}
-              placeholder="Your name" autoComplete="name" />
-            <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com" autoComplete="email" hint="We'll send your confirmation here." />
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-foreground">
-                What should your mentor prepare? <span className="text-muted font-normal">(optional)</span>
-              </label>
-              <textarea
-                rows={3}
-                maxLength={NOTES_MAX}
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Share your goal, current situation, or specific questions so your mentor can prepare."
-                className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
-              />
-              <p className="text-xs text-muted text-right">{notes.length}/{NOTES_MAX}</p>
-            </div>
-            {questions.map(q => (
-              <div key={q.id} className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">
-                  {q.question_text}
-                  {q.is_required && <span className="text-red-500 ml-0.5">*</span>}
-                </label>
-                {q.question_type === 'yes_no' ? (
-                  <div className="flex gap-3">
-                    {['Yes', 'No'].map(opt => (
-                      <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                        <input type="radio" name={q.id} value={opt}
-                          checked={answers[q.id] === opt}
-                          onChange={() => setAnswers(a => ({ ...a, [q.id]: opt }))} />
-                        {opt}
+              {selectedSlot && (
+                <div className="border-t border-[--color-border] pt-3 flex flex-col gap-3">
+                  {questions.map(q => (
+                    <div key={q.id} className="flex flex-col gap-1.5">
+                      <label className="text-sm font-medium text-foreground">
+                        {q.question_text}{q.is_required && <span className="text-red-500 ml-0.5">*</span>}
                       </label>
-                    ))}
+                      {q.question_type === 'yes_no' ? (
+                        <div className="flex gap-3">
+                          {['Yes', 'No'].map(opt => (
+                            <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                              <input type="radio" name={q.id} value={opt} checked={answers[q.id] === opt}
+                                onChange={() => setAnswers(a => ({ ...a, [q.id]: opt }))} />
+                              {opt}
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <textarea rows={2} value={answers[q.id] ?? ''} onChange={e => setAnswers(a => ({ ...a, [q.id]: e.target.value }))}
+                          className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                      )}
+                    </div>
+                  ))}
+
+                  {isLoggedIn ? (
+                    <p className="text-sm text-muted">Booking as <span className="font-medium text-foreground">{email}</span>.</p>
+                  ) : (
+                    <>
+                      <Input label="Your name" value={name} onChange={e => setName(e.target.value)} placeholder="Optional" autoComplete="name" />
+                      <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                        placeholder="you@email.com" autoComplete="email" hint="We'll send your confirmation here." />
+                    </>
+                  )}
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-foreground">
+                      What should your mentor prepare? <span className="text-muted font-normal">(optional)</span>
+                    </label>
+                    <textarea rows={3} maxLength={NOTES_MAX} value={notes} onChange={e => setNotes(e.target.value)}
+                      placeholder="Share your goal or specific questions so your mentor can prepare."
+                      className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
                   </div>
-                ) : (
-                  <textarea
-                    rows={2}
-                    value={answers[q.id] ?? ''}
-                    onChange={e => setAnswers(a => ({ ...a, [q.id]: e.target.value }))}
-                    className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
-                  />
-                )}
-              </div>
-            ))}
-            {formError && <p className="text-sm text-red-600">{formError}</p>}
-            <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook} disabled={!email.trim()}>
-              Confirm booking
-            </Button>
-            {!isLoggedIn && (
-              <p className="text-xs text-muted">
-                Booking as a guest — if this email already has an account you’ll be asked to log in.
-                Guests get a confirmation email but can’t log in or manage the booking later.
-              </p>
-            )}
-          </div>
-        )}
+
+                  {formError && <p className="text-sm text-red-600">{formError}</p>}
+                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook} disabled={!email.trim()}>
+                    Confirm booking
+                  </Button>
+                  {!isLoggedIn && (
+                    <p className="text-[11px] text-muted leading-snug">
+                      Booking as a guest. If this email already has an account you&apos;ll be asked to log in.
+                    </p>
+                  )}
+                  <p className="text-[11px] text-muted text-center">You can cancel anytime · confirmation emailed</p>
+                </div>
+              )}
+            </>
+          )}
+        </aside>
       </div>
     </div>
   );
@@ -720,35 +696,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function MentorMeta({ mentor, initials }: { mentor: MentorInfo; initials: string }) {
+function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex items-center gap-3">
-      {mentor.photo_url ? (
-        <img src={mentor.photo_url} alt={mentor.display_name}
-          className="h-10 w-10 rounded-full object-cover shrink-0" />
-      ) : (
-        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-          {initials}
-        </div>
-      )}
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-foreground truncate">{mentor.display_name}</p>
-        {mentor.headline && <p className="text-xs text-muted truncate">{mentor.headline}</p>}
-      </div>
-    </div>
-  );
-}
-
-function ServiceSummary({ svc }: { svc: Service }) {
-  return (
-    <div className="flex flex-col gap-1 text-sm text-muted">
-      <p className="font-semibold text-foreground text-sm">{svc.title}</p>
-      <div className="flex items-center gap-1.5">
-        <Clock className="h-3.5 w-3.5 shrink-0" />{svc.duration} min
-      </div>
-      <div className="flex items-center gap-1.5">
-        <DollarSign className="h-3.5 w-3.5 shrink-0" />{formatPrice(svc.set_price, svc.set_currency)}
-      </div>
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-muted shrink-0">{k}</span>
+      <span className="font-medium text-foreground text-right">{v}</span>
     </div>
   );
 }
