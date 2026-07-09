@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '../../../../lib/supabase/server';
+import { serverAuth } from '../../../../lib/supabase/server';
 
 export const metadata = { title: 'Become a Mentor - Immigroov' };
 
@@ -7,10 +7,9 @@ export const metadata = { title: 'Become a Mentor - Immigroov' };
 // mode). Keep this route working for old links: logged-in users go straight to the
 // onboarding form; logged-out users open the mentor sign-in popup.
 export default async function MentorRegisterPage() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { user } = await serverAuth();
 
-  if (session) {
+  if (user) {
     redirect('/mentor/onboarding');
   }
   redirect('/mentor?auth=open&role=mentor');

@@ -1,27 +1,27 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '../../../../lib/supabase/server';
-import { backendBaseUrl } from '../../../../lib/backend';
+import { serverAuth } from '../../../../lib/supabase/server';
+import { serverGet } from '../../../../lib/backend';
 import { AvailabilityManagerV2 } from '../../../../components/AvailabilityManagerV2';
+import { PageLoadError } from '../../../../components/PageLoadError';
 
 export const metadata = { title: 'Availability - Immigroov Mentor' };
 
 export default async function MentorAvailabilityPage() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { user, token } = await serverAuth();
 
-  if (!session) {
+  if (!user) {
     redirect(`/?auth=open&role=mentor&next=${encodeURIComponent('/mentor/availability')}`);
   }
 
-  const mentorRes = await fetch(`${backendBaseUrl()}/mentor/me`, {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-    cache: 'no-store',
-  });
-  if (!mentorRes.ok) {
+  const r = await serverGet<{ status: string }>('/mentor/me', token);
+  if (r.status === 404) {
     redirect('/mentor/onboarding');
   }
+  if (!r.ok || !r.data) {
+    return <PageLoadError retryHref="/mentor/availability" />;
+  }
 
-  const mentor: { status: string } = await mentorRes.json();
+  const mentor = r.data;
   if (mentor.status !== 'approved' && mentor.status !== 'pending_review') {
     redirect('/mentor');
   }

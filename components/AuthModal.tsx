@@ -205,9 +205,13 @@ function AuthModalInner() {
               priority className="object-contain" style={{ height: '26px', width: 'auto' }} />
           </div>
 
-          {/* Left - form. Top-aligned (pt-20 matches the right panel) so the left and right
-              titles always start on the same line, whatever the stage's content is. */}
-          <div className="w-full md:w-1/2 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:h-full overflow-y-auto">
+          {/* Left - form over a full-bleed background image. object-cover fills the left
+              half at any popup size (never distorts, crops only overflow); the light wash
+              keeps the dark form text readable. Tune readability with the bg-white/NN below. */}
+          <div className="relative w-full md:w-1/2 flex flex-col md:h-full overflow-hidden">
+            <Image src="/login_left_bg.png" alt="" fill priority className="object-cover object-center" sizes="(max-width: 767px) 92vw, 576px" />
+            <div className="absolute inset-0 bg-white/80" />
+            <div className="relative z-10 px-6 sm:px-9 pt-20 pb-6 flex flex-col md:h-full overflow-y-auto">
             {stage === 'email' && (
               <>
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
@@ -224,8 +228,8 @@ function AuthModalInner() {
                 <GoogleButton label={t.continueWithGoogle} next={next} />
                 <p className="mt-4 text-xs leading-snug text-muted">
                   {t.termsNote}{' '}
-                  <Link href="/terms" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                  <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
+                  <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                  <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
                 </p>
               </>
             )}
@@ -263,8 +267,8 @@ function AuthModalInner() {
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
                     <span>
                       I agree to Immigroov&apos;s{' '}
-                      <Link href="/terms" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                      <Link href="/privacy" className="underline hover:text-foreground">{t.privacy}</Link>.
+                      <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                      <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
                     </span>
                   </label>
                   {error && <p className="text-xs text-red-600">{error}</p>}
@@ -304,6 +308,7 @@ function AuthModalInner() {
                 </div>
               </div>
             )}
+            </div>
           </div>
 
           {/* Right - full-height background image (navy overlay for readable text);

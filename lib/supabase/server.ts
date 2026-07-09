@@ -25,3 +25,18 @@ export async function createClient() {
     },
   );
 }
+
+// Authenticate the request on the server. Uses getUser() (revalidates the token with
+// Supabase Auth) instead of getSession() (reads the cookie unverified - insecure on the
+// server, and the source of the console warning). Also returns the access token, read
+// from getSession() but ONLY for its .access_token (never .user), so no warning fires.
+export async function serverAuth() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  let token: string | null = null;
+  if (user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    token = session?.access_token ?? null;
+  }
+  return { supabase, user, token };
+}

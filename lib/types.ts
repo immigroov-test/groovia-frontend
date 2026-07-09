@@ -13,6 +13,8 @@ export interface Mentor {
   professional_domains: string[];
   years_lived_experience: number | null;
   timezone?: string | null;
+  avg_rating?: number | null;
+  review_count?: number | null;
 }
 
 export interface AvailabilitySlot {

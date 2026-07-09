@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '../lib/supabase/client';
@@ -35,6 +35,12 @@ const DOMAIN_OPTIONS = [
 
 const BIO_MAX = 2000;
 const NOTES_MAX = 800;
+
+const STEPS = [
+  { n: 1, label: 'Your details' },
+  { n: 2, label: 'Availability & sessions' },
+  { n: 3, label: 'Submit for approval' },
+] as const;
 
 // Prefilled into Public Notes; the mentor can edit or remove it.
 const DEFAULT_DISCLAIMER =
@@ -79,6 +85,13 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Jump to the top whenever the step changes. Runs after the DOM swaps step content,
+  // so it lands on the new step's top (a synchronous scroll during the click handler
+  // fires before layout updates and can leave you at the old, now-shorter bottom).
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [step]);
+
   function onCountryChange(code: string) {
     setCountry(code);
     const tz = COUNTRY_TIMEZONES[code];
@@ -113,12 +126,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (err) { setError(err); return; }
     setError(null);
     setStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function backToStep1() {
     setError(null);
     setStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function submit(e: React.FormEvent) {
@@ -178,16 +189,28 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-3">
-        {[{ n: 1 as const, label: 'Your details' }, { n: 2 as const, label: 'Availability & sessions' }].map(({ n, label }, i) => (
+      {/* Step-aware page heading */}
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight text-brand-900">
+          {step === 1 ? 'Create your mentor profile' : 'Provide availability & sessions'}
+        </h1>
+        <p className="text-sm text-muted mt-1">
+          {step === 1
+            ? 'Complete the form below and our team will review your application, usually within 1-2 business days.'
+            : 'Set when you are available and the sessions mentees can book. You can change these anytime.'}
+        </p>
+      </div>
+
+      {/* Step indicator: details -> availability & sessions -> submit for approval */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {STEPS.map(({ n, label }, i) => (
           <div key={n} className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className={cn('flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold',
                 step >= n ? 'bg-brand-600 text-white' : 'bg-brand-100 text-brand-600')}>{n}</span>
               <span className={cn('text-sm', step === n ? 'font-semibold text-foreground' : 'text-muted')}>{label}</span>
             </div>
-            {i === 0 && <div className={cn('h-px w-8', step === 2 ? 'bg-brand-500' : 'bg-[--color-border]')} />}
+            {i < STEPS.length - 1 && <div className={cn('h-px w-8', step > n ? 'bg-brand-500' : 'bg-[--color-border]')} />}
           </div>
         ))}
       </div>
@@ -304,7 +327,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               <h2 className="text-base font-semibold text-foreground">Timezone</h2>
               <p className="text-sm text-muted mt-0.5">Your hours below are interpreted in this timezone.</p>
             </div>
-            <TimezoneSelect value={timezone} onChange={setTimezone} hint="Auto-selected from your country. Type a city or GMT offset to change it." />
+            <TimezoneSelect value={timezone} onChange={setTimezone} />
           </CardBody>
         </Card>
 
@@ -381,8 +404,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 onChange={(e) => setAgreedMentor(e.target.checked)} />
               <span>
                 I agree to the{' '}
-                <Link href="/terms" className="underline hover:text-foreground">Mentor Agreement</Link>,
-                Data Processing Agreement, and commission structure. I consent to anonymised session insights being used to improve Groovia.
+                <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Service</Link>{' '}
+                and{' '}
+                <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link>.
               </span>
             </label>
 

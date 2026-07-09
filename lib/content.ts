@@ -52,6 +52,8 @@ export const UI_CONTENT = {
     empty: 'None.',
     approve: 'Approve',
     reject: 'Reject',
+    decline: 'Decline',
+    requestChanges: 'Request changes',
     suspend: 'Suspend',
     reinstate: 'Reinstate',
   },

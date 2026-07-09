@@ -68,38 +68,14 @@ export default async function MentorProfilePage({
 
   // ── Direct booking (new system) ──────────────────────────────────────────────
   if (hasDirectBooking) {
-    const initials = mentor.display_name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase();
     return (
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
         <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 mb-6">
           ← All mentors
         </Link>
 
-        {/* Compact profile header (full width) */}
-        <div className="flex items-start gap-5 sm:gap-6">
-          {mentor.photo_url ? (
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-24 w-24 sm:h-28 sm:w-28 rounded-full object-cover shrink-0" />
-          ) : (
-            <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-brand-100 flex items-center justify-center text-3xl font-semibold text-brand-700 shrink-0">
-              {initials}
-            </div>
-          )}
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-brand-900">{mentor.display_name}</h1>
-            {mentor.headline && <p className="text-base text-muted mt-1">{mentor.headline}</p>}
-            <div className="flex flex-wrap gap-2 mt-2">
-              {mentor.expertise_country_codes.map((c) => <Badge key={c} tone="brand">{c}</Badge>)}
-              {(mentor.expertise_categories ?? []).map((cat) => <Badge key={cat} tone="neutral">{cat}</Badge>)}
-              {mentor.languages.map((lang) => <Badge key={lang} tone="neutral">{lang.toUpperCase()}</Badge>)}
-            </div>
-          </div>
-        </div>
-
-        {mentor.bio && (
-          <RichText html={mentor.bio} className="max-w-4xl mt-5 mb-8" />
-        )}
-
-        {/* Booking widget - full width */}
+        {/* The widget renders the mentor header (identity, rating, timezones), bio,
+            stepper and the two-column booking layout. */}
         <DirectBookingWidget
           mentorTimezone={mentor.timezone ?? undefined}
           mentor={{
@@ -109,6 +85,8 @@ export default async function MentorProfilePage({
             headline:     mentor.headline ?? null,
             bio:          mentor.bio ?? null,
             photo_url:    mentor.photo_url ?? null,
+            avg_rating:   mentor.avg_rating ?? null,
+            review_count: mentor.review_count ?? null,
           }}
         />
       </div>

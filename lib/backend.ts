@@ -16,6 +16,36 @@ interface ProxyOptions {
   forwardBody?: boolean;  // defaults to true for non-GET/HEAD
 }
 
+export interface ServerGetResult<T = unknown> {
+  ok: boolean;
+  status: number; // 0 = network failure / timeout (backend unreachable), NOT a real HTTP status
+  data: T | null;
+}
+
+// Resilient server-side GET for Server Components. NEVER throws (a thrown fetch in an
+// RSC crashes the whole page to a blank screen), and times out instead of hanging on a
+// cold-starting backend. Callers distinguish 404 (resource absent) from 0 (backend down)
+// so they don't, e.g., redirect an existing mentor to onboarding during a cold start.
+export async function serverGet<T = unknown>(
+  path: string,
+  token: string | null,
+  timeoutMs = 12000,
+): Promise<ServerGetResult<T>> {
+  if (!token) return { ok: false, status: 401, data: null };
+  try {
+    const res = await fetch(`${backendBaseUrl()}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    let data: T | null = null;
+    try { data = (await res.json()) as T; } catch { /* empty/non-JSON body */ }
+    return { ok: res.ok, status: res.status, data };
+  } catch {
+    return { ok: false, status: 0, data: null };
+  }
+}
+
 // Forward a browser request to the FastAPI backend with the caller's bearer token.
 // Every BFF route in app/api/** is the same shape: require an auth header, call the
 // backend with cache:'no-store', pass the JSON + status straight back, and return a

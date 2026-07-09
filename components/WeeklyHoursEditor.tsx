@@ -37,7 +37,7 @@ export function validateWeeklyHours(w: WeeklyHours): string | null {
     const slots = w[day] ?? [];
     if (slots.length) hasAny = true;
     const err = dayError(slots);
-    if (err) return `${day}: ${err}.`;
+    if (err) return `${err.charAt(0).toUpperCase()}${err.slice(1)}.`;
   }
   if (!hasAny) return 'Add availability for at least one day.';
   return null;

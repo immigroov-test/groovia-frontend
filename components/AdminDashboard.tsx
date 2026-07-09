@@ -1,23 +1,27 @@
 'use client';
 import { useState, type ReactNode } from 'react';
+import { Wrench } from 'lucide-react';
 import { Card, CardBody } from './ui/Card';
 import { AdminMentorList } from './AdminMentorList';
+import { AdminRevisionList, type AdminRevision } from './AdminRevisionList';
 import { AdminBookings } from './AdminBookings';
-import { AdminPendingServices } from './AdminPendingServices';
 import { UI_CONTENT } from '../lib/content';
 import type { AdminMentor } from '../app/(shell)/admin/page';
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; total_bookings: number; }
-type Tab = 'approval' | 'activity';
+type Tab = 'review' | 'mentors' | 'bookings' | 'payouts';
 
-export function AdminDashboard({ stats, pending, approved, suspended }: {
-  stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[];
+export function AdminDashboard({ stats, pending, approved, suspended, revisions }: {
+  stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
 }) {
-  const [tab, setTab] = useState<Tab>('approval');
+  const [tab, setTab] = useState<Tab>('review');
   const t = UI_CONTENT.admin;
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'approval', label: `Approval${pending.length ? ` (${pending.length})` : ''}` },
-    { key: 'activity', label: 'Activity' },
+  const reviewCount = pending.length + revisions.length;
+  const tabs: { key: Tab; label: string; count?: number }[] = [
+    { key: 'review', label: 'Review', count: reviewCount || undefined },
+    { key: 'mentors', label: 'Mentors', count: approved.length || undefined },
+    { key: 'bookings', label: 'Bookings' },
+    { key: 'payouts', label: 'Payouts' },
   ];
 
   return (
@@ -31,32 +35,38 @@ export function AdminDashboard({ stats, pending, approved, suspended }: {
         <StatCard n={stats.total_bookings} label="Total bookings" />
       </div>
 
-      <div className="mt-8 flex items-center gap-1 border-b border-[--color-border]">
+      <div className="mt-8 flex items-center gap-1 border-b border-[--color-border] overflow-x-auto overflow-y-hidden">
         {tabs.map((x) => (
           <button
             key={x.key}
             onClick={() => setTab(x.key)}
-            className={`px-4 py-2.5 text-sm font-medium -mb-px border-b-2 transition-colors ${
+            className={`shrink-0 px-4 py-2.5 text-sm font-medium -mb-px border-b-2 transition-colors ${
               tab === x.key ? 'border-brand-900 text-brand-900' : 'border-transparent text-muted hover:text-foreground'
             }`}
           >
-            {x.label}
+            {x.label}{x.count ? ` (${x.count})` : ''}
           </button>
         ))}
       </div>
 
       <div className="mt-6">
-        {tab === 'approval' && (
+        {tab === 'review' && (
           <div className="flex flex-col gap-10">
-            <Section title="Services awaiting approval" subtitle="New services added by approved mentors - review before they go live.">
-              <AdminPendingServices />
-            </Section>
             <Section title={t.pendingTitle} subtitle={t.pendingSubtitle}>
               <AdminMentorList initialMentors={pending} actions={[
-                { action: 'reject', label: t.reject, variant: 'outline', loadingKey: 'reject' },
+                { action: 'request-changes', label: t.requestChanges, variant: 'outline', loadingKey: 'request-changes' },
+                { action: 'reject', label: t.decline, variant: 'outline', loadingKey: 'reject' },
                 { action: 'approve', label: t.approve, variant: 'accent', loadingKey: 'approve' },
               ]} />
             </Section>
+            <Section title="Profile updates" subtitle="Edits from approved mentors. Their live profile stays up until you approve the changes.">
+              <AdminRevisionList initialRevisions={revisions} />
+            </Section>
+          </div>
+        )}
+
+        {tab === 'mentors' && (
+          <div className="flex flex-col gap-10">
             <Section title={t.activeTitle} subtitle={t.activeSubtitle}>
               <AdminMentorList initialMentors={approved} actions={[
                 { action: 'suspend', label: t.suspend, variant: 'outline', loadingKey: 'suspend' },
@@ -71,7 +81,15 @@ export function AdminDashboard({ stats, pending, approved, suspended }: {
             )}
           </div>
         )}
-        {tab === 'activity' && <AdminBookings />}
+
+        {tab === 'bookings' && <AdminBookings />}
+
+        {tab === 'payouts' && (
+          <UnderDevelopment
+            title="Payouts"
+            note="Mentor earnings, payout schedules, and transaction history will live here once payments go live."
+          />
+        )}
       </div>
     </div>
   );
@@ -93,5 +111,20 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
       <p className="text-sm text-muted mt-0.5 mb-4">{subtitle}</p>
       {children}
     </section>
+  );
+}
+
+function UnderDevelopment({ title, note }: { title: string; note: string }) {
+  return (
+    <Card>
+      <CardBody className="pt-10 pb-10 flex flex-col items-center text-center gap-2">
+        <div className="h-11 w-11 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
+          <Wrench className="h-5 w-5" />
+        </div>
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="text-sm text-muted max-w-sm">{note}</p>
+        <span className="mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Under development</span>
+      </CardBody>
+    </Card>
   );
 }

@@ -1,16 +1,16 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '../../../lib/supabase/server';
-import { backendBaseUrl } from '../../../lib/backend';
+import { serverAuth } from '../../../lib/supabase/server';
+import { serverGet } from '../../../lib/backend';
 import { MentorLanding } from '../../../components/MentorLanding';
 import { MentorHubTabs, type HubMentor } from '../../../components/MentorHubTabs';
+import { PageLoadError } from '../../../components/PageLoadError';
 
 export const metadata = { title: 'Mentor Dashboard - Immigroov' };
 
 export default async function MentorPage() {
-  const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { user, token } = await serverAuth();
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
         <div className="text-center mb-12">
@@ -22,17 +22,20 @@ export default async function MentorPage() {
     );
   }
 
-  const res = await fetch(`${backendBaseUrl()}/mentor/me`, {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-    cache: 'no-store',
-  });
+  const r = await serverGet<HubMentor>('/mentor/me', token);
 
   // No mentor row yet -> finish onboarding first.
-  if (!res.ok) {
+  if (r.status === 404) {
     redirect('/mentor/onboarding');
   }
 
-  const mentor: HubMentor = await res.json();
+  // Backend unreachable (e.g. Render cold start) or an unexpected error: show a retry
+  // state instead of crashing the RSC to a blank screen.
+  if (!r.ok || !r.data) {
+    return <PageLoadError retryHref="/mentor" title="We couldn't load your dashboard" />;
+  }
+
+  const mentor = r.data;
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">

@@ -17,8 +17,9 @@ const LANGUAGE_MAP = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.name]));
 export interface HubMentor {
   slug: string;
   display_name: string;
-  status: 'pending_review' | 'approved' | 'rejected' | 'suspended';
+  status: 'pending_review' | 'approved' | 'rejected' | 'suspended' | 'changes_requested';
   rejection_reason?: string | null;
+  pending_submitted_at?: string | null;
   headline?: string | null;
   bio?: string | null;
   photo_url?: string | null;
@@ -95,6 +96,23 @@ function StatusBanner({ mentor }: { mentor: HubMentor }) {
       </CardBody></Card>
     );
   }
+  if (mentor.status === 'changes_requested') {
+    return (
+      <Card><CardBody className="pt-6">
+        <h2 className="text-base font-semibold text-foreground">Changes requested</h2>
+        <p className="text-sm text-muted mt-1">Our reviewer has asked for a few updates before approving your profile.</p>
+        {mentor.rejection_reason && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">What to change</p>
+            <p className="text-sm text-amber-900 mt-1 whitespace-pre-line">{mentor.rejection_reason}</p>
+          </div>
+        )}
+        <p className="text-sm text-muted mt-3">
+          <Link href="/mentor/profile" className="text-brand-700 hover:underline">Edit your profile</Link>, then re-submit for approval.
+        </p>
+      </CardBody></Card>
+    );
+  }
   if (mentor.status === 'rejected') {
     return (
       <Card><CardBody className="pt-6">
@@ -114,6 +132,34 @@ function StatusBanner({ mentor }: { mentor: HubMentor }) {
       <Card><CardBody className="pt-6">
         <h2 className="text-base font-semibold text-foreground">Account suspended</h2>
         <p className="text-sm text-muted mt-1">Your mentor account is currently suspended. Please contact support.</p>
+      </CardBody></Card>
+    );
+  }
+  // Approved + a revision staged for review.
+  if (mentor.pending_submitted_at) {
+    return (
+      <Card><CardBody className="pt-6">
+        <h2 className="text-base font-semibold text-foreground">Profile changes awaiting review</h2>
+        <p className="text-sm text-muted mt-1">
+          Your live profile is unchanged and still bookable. Your submitted edits go live once an admin approves them.{' '}
+          <Link href="/mentor/profile" className="text-brand-700 hover:underline">Review or edit your changes</Link>
+        </p>
+      </CardBody></Card>
+    );
+  }
+  // Approved + a reviewer note = a previous revision was not applied.
+  if (mentor.rejection_reason) {
+    return (
+      <Card><CardBody className="pt-6">
+        <h2 className="text-base font-semibold text-foreground">Your recent changes were not applied</h2>
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Reviewer note</p>
+          <p className="text-sm text-amber-900 mt-1 whitespace-pre-line">{mentor.rejection_reason}</p>
+        </div>
+        <p className="text-sm text-muted mt-3">
+          Your live profile is unchanged.{' '}
+          <Link href="/mentor/profile" className="text-brand-700 hover:underline">Update and re-submit</Link>
+        </p>
       </CardBody></Card>
     );
   }
