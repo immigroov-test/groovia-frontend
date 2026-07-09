@@ -25,6 +25,8 @@ function isCorrect(guess: string, answer: string): boolean {
 // Shown when Groq's rate limit is hit. `until` is the epoch-ms the block lifts (persisted
 // by the parent, so it survives navigation/refresh). Closable - closing only hides this
 // popup; the chat stays disabled until `until` regardless. The parent unmounts us at zero.
+// Symmetry with the login popup: white panel = blue title, blue panel = white title, both
+// titles top-aligned on the same line.
 export function RateLimitModal({ until, onClose }: { until: number; onClose: () => void }) {
   const totalRef = useRef(Math.max(1, Math.ceil((until - Date.now()) / 1000)));
   const [remaining, setRemaining] = useState(totalRef.current);
@@ -67,37 +69,42 @@ export function RateLimitModal({ until, onClose }: { until: number; onClose: () 
           <div className="relative sm:w-1/2 min-h-[300px] overflow-hidden">
             <Image src="/login_left_bg.png" alt="" fill className="object-cover object-bottom" sizes="(max-width: 640px) 92vw, 320px" />
             <div className="absolute inset-0 bg-white/65" />
-            <div className="relative z-10 h-full px-6 py-10 flex flex-col items-center justify-center text-center gap-3">
+            <div className="relative z-10 h-full px-6 pt-10 pb-8 flex flex-col items-center text-center">
+              <h2 className="text-lg font-semibold tracking-tight text-[#102a4c]">Groovia has hit its limit</h2>
               {isLong ? (
                 <>
-                  <h2 className="text-lg font-semibold text-[#102a4c]">You&apos;ve reached today&apos;s limit</h2>
-                  <p className="text-sm text-[#102a4c]/70">Groovia&apos;s daily message limit is used up for now. You can chat again after</p>
-                  <p className="text-4xl font-bold text-[#102a4c] tabular-nums mt-1">{backAt}</p>
-                  <p className="text-xs text-[#102a4c]/70 mt-1">Feel free to keep browsing in the meantime.</p>
+                  <p className="text-sm text-[#102a4c]/70 mt-2">You can chat again after</p>
+                  <div className="flex-1 flex items-center">
+                    <p className="text-4xl font-bold text-[#102a4c] tabular-nums">{backAt}</p>
+                  </div>
+                  <p className="text-xs text-[#102a4c]/70">Feel free to keep browsing in the meantime.</p>
                 </>
               ) : (
                 <>
-                  <h2 className="text-lg font-semibold text-[#102a4c]">Just a quick breather</h2>
-                  <p className="text-sm text-[#102a4c]/70">Groovia has hit its message limit for the moment. Hang tight for:</p>
-                  <Ring remaining={remaining} total={totalRef.current} label={clock} />
-                  <p className="text-xs text-[#102a4c]/70">You can chat again as soon as it runs out.</p>
+                  <p className="text-sm text-[#102a4c]/70 mt-2">Hang tight for:</p>
+                  <div className="flex-1 flex items-center">
+                    <Ring remaining={remaining} total={totalRef.current} label={clock} />
+                  </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* Right - interactive riddle over the navy hero */}
-          <div className="relative sm:w-1/2 px-6 py-9 text-white bg-[#102a4c] overflow-hidden flex flex-col justify-center min-h-[300px]">
+          {/* Right - riddle over the navy hero; white title aligned with the left title */}
+          <div className="relative sm:w-1/2 px-6 pt-10 pb-8 text-white bg-[#102a4c] overflow-hidden flex flex-col min-h-[300px]">
             <Image src="/login-bg.jpg" alt="" fill className="object-cover object-center" sizes="(max-width: 640px) 92vw, 320px" />
             <div className="absolute inset-0 bg-[#0a1e3a]/80" />
-            <div className="relative">
-              {isLong ? (
-                <p className="text-base leading-relaxed text-white/90">
-                  Grab a coffee - we&apos;ll be ready when you get back. Meanwhile, you can explore mentors and your saved sessions.
-                </p>
-              ) : (
-                <RiddlePanel />
-              )}
+            <div className="relative z-10 flex flex-col h-full">
+              <h2 className="text-lg font-semibold tracking-tight text-white">{isLong ? "While you're away" : 'Try a riddle?'}</h2>
+              <div className="flex-1 mt-4">
+                {isLong ? (
+                  <p className="text-sm leading-relaxed text-white/90">
+                    Grab a coffee - we&apos;ll be ready when you get back. Meanwhile, you can explore mentors and your saved sessions.
+                  </p>
+                ) : (
+                  <RiddlePanel />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -161,7 +168,6 @@ function RiddlePanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-white/60">While you wait, a riddle</p>
       <p className="text-base font-medium leading-snug min-h-[3rem]">{riddle.question}</p>
 
       {phase === 'guessing' ? (
@@ -185,17 +191,17 @@ function RiddlePanel() {
           {wrongHint && <p className="text-xs text-amber-200">Not quite - keep trying.</p>}
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col items-center gap-4 text-center">
           {phase === 'correct' ? (
             <p className="text-sm font-medium text-emerald-300">{encourage} It&apos;s <span className="font-semibold">{riddle.answer}</span></p>
           ) : (
-            <p className="text-sm text-white/90">Time&apos;s up - the answer is <span className="font-semibold text-emerald-300">{riddle.answer}</span></p>
+            <p className="text-sm text-white/90">The answer is <span className="font-semibold text-emerald-300">{riddle.answer}</span></p>
           )}
           <button
             type="button" onClick={next}
-            className="self-start px-5 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600"
+            className="px-6 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600"
           >
-            New riddle →
+            New riddle?
           </button>
         </div>
       )}
