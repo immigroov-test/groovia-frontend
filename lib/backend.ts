@@ -46,6 +46,40 @@ export async function serverGet<T = unknown>(
   }
 }
 
+// Public (guest-allowed) forwarder: same as proxyToBackend but does NOT require an
+// auth header. If one is present it's still forwarded (so the backend can link the
+// booking to a signed-in candidate); if absent the request proceeds as a guest.
+// Used by the payments/pricing routes, which must work for guests mid-checkout.
+export async function proxyPublic(
+  req: NextRequest,
+  backendPath: string,
+  opts: ProxyOptions = {},
+): Promise<NextResponse> {
+  const method = opts.method ?? req.method;
+  const sendBody = opts.forwardBody ?? (method !== 'GET' && method !== 'HEAD');
+
+  const authHeader = req.headers.get('authorization');
+  const headers: Record<string, string> = {};
+  if (authHeader) headers.Authorization = authHeader;
+  let body: string | undefined;
+  if (sendBody) {
+    const text = await req.text();
+    if (text) {
+      body = text;
+      headers['Content-Type'] = 'application/json';
+    }
+  }
+
+  try {
+    const res = await fetch(`${backendBaseUrl()}${backendPath}`, {
+      method, headers, body, cache: 'no-store', signal: AbortSignal.timeout(15000),
+    });
+    return NextResponse.json(await res.json().catch(() => ({})), { status: res.status });
+  } catch {
+    return NextResponse.json({ error: 'Failed to reach backend' }, { status: 502 });
+  }
+}
+
 // Forward a browser request to the FastAPI backend with the caller's bearer token.
 // Every BFF route in app/api/** is the same shape: require an auth header, call the
 // backend with cache:'no-store', pass the JSON + status straight back, and return a

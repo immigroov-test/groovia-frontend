@@ -10,9 +10,21 @@ import { Input } from './ui/Input';
 import { RichText } from './ui/RichText';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
+import { openRazorpayCheckout } from '../lib/razorpay';
 import { cn } from '../lib/utils';
 
 const NOTES_MAX = 500;
+
+// Best-effort customer country from the browser locale's region subtag
+// ("en-IN" -> "IN"). Drives PPP + display currency in the price quote; the
+// backend defaults to USD when it's absent/unrecognised.
+function guessCountry(): string | undefined {
+  try {
+    const region = (navigator.language || '').split('-')[1];
+    if (region && region.length === 2) return region.toUpperCase();
+  } catch { /* ignore */ }
+  return undefined;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -255,6 +267,13 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [bookingId, setBookingId]   = useState<string | null>(null);
   const [idemKey, setIdemKey]       = useState('');   // stable per booking attempt → server dedupes retries
 
+  // Payments: when the platform toggle is on and the service is paid, bookings go
+  // through the reserve → Razorpay → verify flow. Otherwise the direct-confirm path
+  // below is used (free sessions, or before payments are switched on).
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+  const [paying, setPaying]         = useState(false);      // Razorpay modal open / verifying
+  const [guestPrompted, setGuestPrompted] = useState(false);
+
   // Load services
   useEffect(() => {
     (async () => {
@@ -299,6 +318,26 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     if (isLoggedIn && pendingBook && selectedSlot) { setPendingBook(false); submitBooking(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, pendingBook]);
+
+  // Is real (Razorpay) checkout on? Falls back to the direct path if unreachable.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/payments/config', { cache: 'no-store' });
+        if (res.ok) { const d = await res.json(); setPaymentsEnabled(!!d.payments_enabled); }
+      } catch { /* leave off → direct-confirm path */ }
+    })();
+  }, []);
+
+  // Guest just booked → insist (not force) they log in to manage the booking. Opens
+  // the same auth popup with a reason banner + their email prefilled.
+  useEffect(() => {
+    if (step === 'confirmed' && !isLoggedIn && bookingId && !guestPrompted) {
+      setGuestPrompted(true);
+      router.push(`${pathname}?auth=open&reason=manage-booking&email=${encodeURIComponent(email.trim())}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, isLoggedIn, bookingId, guestPrompted]);
 
   // Not logged in: an email with an existing account must log in first; any other
   // email books directly as a guest (the confirmation email verifies the address).
@@ -361,23 +400,31 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     } catch { /* questions are optional */ }
   }
 
-  // Submit booking
+  async function sessionAuthHeaders(): Promise<Record<string, string>> {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  }
+
+  // Dispatcher: validate, then pick the paid (Razorpay) or direct-confirm path.
   async function submitBooking() {
     if (!selectedSlot || !selectedService) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
     setFormError(null);
+    if (paymentsEnabled && selectedService.set_price > 0) { void paidBookingFlow(); return; }
+    void directBooking();
+  }
+
+  // Free session, or before payments are switched on: single-shot confirmed booking.
+  async function directBooking() {
+    if (!selectedSlot || !selectedService) return;
     setSubmitting(true);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/booking', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json', ...(await sessionAuthHeaders()) },
         body: JSON.stringify({
           mentor_id:   mentor.id,
           service_id:  selectedService.id,
@@ -396,6 +443,92 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       setStep('confirmed');
     } catch { setFormError('Could not complete the booking. Please try again.'); }
     finally { setSubmitting(false); }
+  }
+
+  // Paid path: quote → reserve (10-min hold) → Razorpay order → Checkout → verify.
+  // Robust to a dropped webhook: /verify finalizes right after Checkout, and the
+  // dispatcher's sweep is the backstop if even that call is lost.
+  async function paidBookingFlow() {
+    if (!selectedSlot || !selectedService) return;
+    setSubmitting(true); setPaying(true);
+    const fail = (msg: string) => { setFormError(msg); setSubmitting(false); setPaying(false); };
+    try {
+      const authHeaders = await sessionAuthHeaders();
+      const answersJson = questions
+        .map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' }))
+        .filter(a => a.answer_text);
+
+      // 1. Binding price quote (customer currency + PPP).
+      const country = guessCountry();
+      const qRes = await fetch(`/api/pricing/quote/${selectedService.id}${country ? `?country=${country}` : ''}`, { cache: 'no-store' });
+      const quote = await qRes.json().catch(() => ({}));
+      if (!qRes.ok || !quote.quote_id) { fail(quote.detail || 'Could not price this session. Please try again.'); return; }
+
+      // 2. Reserve a 10-minute payment hold.
+      const rRes = await fetch('/api/payments/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({
+          quote_id: quote.quote_id,
+          mentor_id: mentor.id,
+          service_id: selectedService.id,
+          slot_time: selectedSlot.slot_start,
+          email: email.trim(),
+          name: name.trim() || null,
+          notes: notes.trim() || null,
+          timezone: TZ,
+          answers: answersJson,
+          specific_availability_id: null,
+        }),
+      });
+      const reserved = await rRes.json().catch(() => ({}));
+      if (!rRes.ok || !reserved.booking_id) { fail(reserved.detail || 'That slot is no longer available. Please pick another time.'); return; }
+      const newBookingId: string = reserved.booking_id;
+
+      // 3. Create the Razorpay order.
+      const oRes = await fetch('/api/payments/razorpay/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ booking_id: newBookingId }),
+      });
+      const order = await oRes.json().catch(() => ({}));
+      if (!oRes.ok || !order.order_id) { fail(order.detail || 'Could not start the payment. Please try again.'); return; }
+
+      // 4. Open Checkout. Outcomes arrive via handler (paid) / ondismiss (cancelled).
+      const opened = await openRazorpayCheckout({
+        key: order.key_id,
+        order_id: order.order_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'Immigroov',
+        description: selectedService.title,
+        prefill: { name: name.trim() || undefined, email: email.trim() },
+        theme: { color: '#102a4c' },
+        handler: async () => {
+          try {
+            // Webhook-independent confirmation. Whether or not this call lands, the
+            // payment is captured and the webhook/sweep will finalize the booking,
+            // so we always advance to the confirmed screen.
+            await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...authHeaders },
+              body: JSON.stringify({ order_id: order.order_id }),
+            }).catch(() => {});
+            setBookingId(newBookingId);
+            setStep('confirmed');
+          } finally { setSubmitting(false); setPaying(false); }
+        },
+        modal: {
+          ondismiss: () => {
+            setSubmitting(false); setPaying(false);
+            setFormError('Payment cancelled. Your slot is held for 10 minutes if you want to try again.');
+          },
+        },
+      });
+      if (!opened) { fail('Could not load the payment window. Please check your connection and try again.'); }
+    } catch {
+      fail('Could not complete the payment. Please try again.');
+    }
   }
 
   // Slot grouping
@@ -643,9 +776,14 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook} disabled={!email.trim()}>
-                    Confirm booking
+                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying} disabled={!email.trim()}>
+                    {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
                   </Button>
+                  {paymentsEnabled && selectedService.set_price > 0 && (
+                    <p className="text-[11px] text-muted leading-snug text-center">
+                      Secure payment via Razorpay. The exact amount is shown at checkout in your local currency.
+                    </p>
+                  )}
                   {!isLoggedIn && (
                     <p className="text-[11px] text-muted leading-snug">
                       Booking as a guest. If this email already has an account you&apos;ll be asked to log in.
