@@ -30,7 +30,7 @@ export const UI_CONTENT = {
     scrollCta: 'Scroll down to start your journey',
   },
   sidebar: {
-    chat: 'Chat',
+    chat: 'Groovia',
     mentors: 'Mentors',
     account: 'Account',
     mentorPortal: 'Join as Mentor',
