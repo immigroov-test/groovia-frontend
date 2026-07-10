@@ -1,10 +1,10 @@
 'use client';
 import { useState, type ReactNode } from 'react';
-import { Wrench } from 'lucide-react';
 import { Card, CardBody } from './ui/Card';
 import { AdminMentorList } from './AdminMentorList';
 import { AdminRevisionList, type AdminRevision } from './AdminRevisionList';
 import { AdminBookings } from './AdminBookings';
+import { AdminPayouts } from './AdminPayouts';
 import { UI_CONTENT } from '../lib/content';
 import type { AdminMentor } from '../app/(shell)/admin/page';
 
@@ -84,12 +84,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
 
         {tab === 'bookings' && <AdminBookings />}
 
-        {tab === 'payouts' && (
-          <UnderDevelopment
-            title="Payouts"
-            note="Mentor earnings, payout schedules, and transaction history will live here once payments go live."
-          />
-        )}
+        {tab === 'payouts' && <AdminPayouts />}
       </div>
     </div>
   );
@@ -114,17 +109,3 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
   );
 }
 
-function UnderDevelopment({ title, note }: { title: string; note: string }) {
-  return (
-    <Card>
-      <CardBody className="pt-10 pb-10 flex flex-col items-center text-center gap-2">
-        <div className="h-11 w-11 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
-          <Wrench className="h-5 w-5" />
-        </div>
-        <p className="text-base font-semibold text-foreground">{title}</p>
-        <p className="text-sm text-muted max-w-sm">{note}</p>
-        <span className="mt-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Under development</span>
-      </CardBody>
-    </Card>
-  );
-}
