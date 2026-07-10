@@ -14,6 +14,51 @@ import { cn } from '../lib/utils';
 
 const NOTES_MAX = 500;
 
+// ── Razorpay Checkout ──────────────────────────────────────────────────────────
+// Loaded lazily (only when a service actually has real payments enabled) rather
+// than on every page load. verify_order (backend) re-fetches the order status
+// directly from Razorpay's API server-side, so the success handler doesn't need
+// to forward razorpay_payment_id/signature — just tell the backend which
+// booking to verify.
+
+interface RazorpayOptions {
+  key: string;
+  order_id: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  prefill?: { name?: string; email?: string };
+  theme?: { color?: string };
+  handler: () => void;
+  modal?: { ondismiss?: () => void };
+}
+interface RazorpayInstance {
+  open: () => void;
+  on: (event: 'payment.failed', handler: (response: { error?: { description?: string } }) => void) => void;
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+let razorpayScriptPromise: Promise<boolean> | null = null;
+function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if (window.Razorpay) return Promise.resolve(true);
+  if (razorpayScriptPromise) return razorpayScriptPromise;
+  razorpayScriptPromise = new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+  return razorpayScriptPromise;
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Service {
@@ -410,9 +455,67 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       const configRes = await fetch('/api/payments/config', { cache: 'no-store' });
       const { payments_enabled } = await configRes.json();
       if (payments_enabled) {
-        // Real Razorpay checkout isn't wired into this widget yet — the hold
-        // still expires in 10 minutes if nothing confirms it.
-        setFormError('Online payment isn’t available for this session yet — please contact the mentor directly to arrange payment.');
+        const orderRes = await fetch('/api/payments/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ booking_id: reserved.booking_id }),
+        });
+        const order = await orderRes.json();
+        if (!orderRes.ok) { setFormError(order.detail || 'Could not start payment. Please try again.'); return; }
+
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded || !window.Razorpay) {
+          setFormError('Could not load the payment form. Please check your connection and try again.');
+          return;
+        }
+
+        // The Razorpay modal is now the active UI — stop the button spinner
+        // and let its own handler/ondismiss callbacks drive submitting state.
+        setSubmitting(false);
+        const rzp = new window.Razorpay({
+          key: order.key_id,
+          order_id: order.order_id,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Immigroov',
+          description: `${selectedService.title} with ${mentor.display_name}`,
+          prefill: { name: name.trim() || undefined, email: email.trim() || undefined },
+          theme: { color: '#1d4ed8' },
+          handler: async () => {
+            setSubmitting(true);
+            try {
+              const verifyRes = await fetch('/api/payments/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ booking_id: reserved.booking_id }),
+              });
+              const result = await verifyRes.json();
+              if (verifyRes.ok && result.confirmed) {
+                setBookingId(reserved.booking_id);
+                setStep('confirmed');
+              } else {
+                // The webhook usually lands within seconds even if this
+                // request-driven check hasn't caught up yet.
+                setFormError('Payment received — confirming now. If this takes more than a minute, check My sessions or contact support.');
+              }
+            } catch {
+              setFormError('Payment received but confirmation failed to load. Check My sessions shortly.');
+            } finally {
+              setSubmitting(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              setSubmitting(false);
+              setFormError('Payment was cancelled. Your slot hold is still active — you can try again.');
+            },
+          },
+        });
+        rzp.on('payment.failed', (resp) => {
+          setSubmitting(false);
+          setFormError(resp.error?.description || 'Payment failed. Please try again.');
+        });
+        rzp.open();
         return;
       }
 
