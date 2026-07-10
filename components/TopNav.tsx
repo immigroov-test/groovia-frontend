@@ -59,9 +59,11 @@ export function TopNav({ authed, email, role }: Props) {
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 h-16 bg-brand-50 border-b border-[--color-border]">
-      <div className="relative mx-auto max-w-6xl h-full px-4 sm:px-6 flex items-center justify-between gap-4">
-        {/* Floating logo - no background */}
+    <header className="fixed top-0 inset-x-0 z-40 h-16 bg-brand-50">
+      <div className="mx-auto max-w-6xl h-full px-4 sm:px-6 flex items-center gap-3">
+        {/* Left section: logo. flex-1 so the left + right sides carry equal weight,
+            which keeps the centered nav truly centered without overlapping either. */}
+        <div className="flex-1 flex items-center min-w-0">
         <Link href="/chat" aria-label="Immigroov home" className="shrink-0 inline-flex items-center">
           <Image
             src="/Immigroov_Transparent_Logo.png"
@@ -73,9 +75,12 @@ export function TopNav({ authed, email, role }: Props) {
             style={{ height: '26px', width: 'auto' }}
           />
         </Link>
+        </div>
 
-        {/* Desktop: centered links pill */}
-        <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5">
+        {/* Center: nav pill, in normal flow (shrink-0) and NOT absolutely positioned.
+            Absolute centering ignored the sibling widths, which is what let the pill
+            slide under the auth widget once the email/admin link made a side wider. */}
+        <nav className="hidden md:flex items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5 shrink-0">
           {nav.map(({ href, label, gated }) => {
             const active = href === '/account' ? pathname.startsWith('/account') : pathname === href;
 
@@ -131,17 +136,21 @@ export function TopNav({ authed, email, role }: Props) {
           })}
         </nav>
 
-        {/* Desktop: auth on the right */}
-        <div className="hidden md:flex items-center gap-2 shrink-0">
+        {/* Right section: auth (desktop) + hamburger (mobile). flex-1 + justify-end
+            mirrors the left section; min-w-0 lets the email truncate instead of
+            pushing into the nav. */}
+        <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
+        {/* Desktop: auth */}
+        <div className="hidden md:flex items-center gap-2 min-w-0">
           {authed ? (
             <>
-              <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)]">
-                <div className="h-6 w-6 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
+              <div className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] min-w-0">
+                <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
                   {(email?.[0] ?? 'U').toUpperCase()}
                 </div>
-                <span className="text-sm text-brand-900 font-medium max-w-[140px] truncate">{email}</span>
+                <span className="text-sm text-brand-900 font-medium truncate">{email}</span>
               </div>
-              <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut} className="bg-card/90 backdrop-blur-md">
+              <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut} className="bg-card/90 backdrop-blur-md shrink-0">
                 <LogOut className="h-4 w-4" /> Sign out
               </Button>
             </>
@@ -161,6 +170,7 @@ export function TopNav({ authed, email, role }: Props) {
         >
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
