@@ -1,6 +1,6 @@
 # Admin flows
 
-Admin = `yokeshmd99@gmail.com` (auto-assigned the admin role on signup). Two tabs: **Approval** and **Activity**.
+Admins = `yokeshmd99@gmail.com` and `immigroovtst@gmail.com` (both auto-assigned the admin role on signup). Multiple admins can hold the role at once. Two tabs: **Approval** and **Activity**.
 
 ## Approval tab - mentors + services
 ```mermaid
