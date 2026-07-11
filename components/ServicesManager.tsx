@@ -315,11 +315,7 @@ export function ServicesManager() {
                 onChange={e => setForm(f => ({ ...f, set_price: e.target.value }))}
                 placeholder="0 = free" />
             </div>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={form.is_ppp}
-                onChange={e => setForm(f => ({ ...f, is_ppp: e.target.checked }))} />
-              Enable purchasing-power parity pricing
-            </label>
+            <p className="text-xs text-muted">Purchasing-power parity is set once for all your sessions with the Smart pricing toggle above.</p>
             {formError && <p className="text-sm text-red-600">{formError}</p>}
             <div className="flex gap-2">
               <Button variant="accent" onClick={createService} loading={submitting}>Save</Button>

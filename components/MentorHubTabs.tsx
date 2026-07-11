@@ -6,6 +6,7 @@ import { Card, CardBody } from './ui/Card';
 import { ServicesManager } from './ServicesManager';
 import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
+import { SmartPricingToggle } from './SmartPricingToggle';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
@@ -30,6 +31,7 @@ export interface HubMentor {
   professional_domains?: string[];
   years_lived_experience?: number | null;
   public_notes?: string | null;
+  smart_pricing?: boolean;
 }
 
 type TabId = 'profile' | 'availability' | 'sessions' | 'payments' | 'webinars';
@@ -64,6 +66,10 @@ export function MentorHubTabs({ mentor }: { mentor: HubMentor }) {
           {tab === 'profile' && <ProfileTab mentor={mentor} />}
           {tab === 'availability' && (
             <div className="flex flex-col gap-8">
+              <section className="flex flex-col gap-4">
+                <h2 className="text-base font-semibold text-foreground">Pricing</h2>
+                <SmartPricingToggle initial={!!mentor.smart_pricing} />
+              </section>
               <section className="flex flex-col gap-4">
                 <h2 className="text-base font-semibold text-foreground">Session types</h2>
                 <ServicesManager />

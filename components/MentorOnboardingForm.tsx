@@ -14,6 +14,7 @@ import { CountrySelect } from './ui/CountrySelect';
 import { TimezoneSelect } from './ui/TimezoneSelect';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { Flag } from './ui/Flag';
+import { Toggle } from './ui/Toggle';
 import { WeeklyHoursEditor, WEEK_DAYS, emptyWeek, validateWeeklyHours, weeklyToSlots, type WeeklyHours } from './WeeklyHoursEditor';
 import { ServiceListEditor, activeServiceCount, type DraftService } from './ServiceListEditor';
 import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
@@ -77,6 +78,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [services, setServices] = useState<DraftService[]>([]);
   const [hourlyRate, setHourlyRate] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const [smartPricing, setSmartPricing] = useState(false);
   const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'NZD', 'SGD', 'AED', 'CHF'];
   const [daysAhead, setDaysAhead] = useState(30);
   const [minNotice, setMinNotice] = useState(2);
@@ -173,6 +175,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           agreed_to_mentor_terms: true,
           hourly_rate: parseFloat(hourlyRate) || null,
           currency,
+          smart_pricing: smartPricing,
           weekly_availability: weeklyToSlots(weeklyHours),
           services: services.map((s) => ({ title: s.title, duration: s.duration, is_active: s.active, set_price: s.price })),
           booking_rules: { days_ahead: daysAhead, min_notice_hours: minNotice, cancel_hours: cancelHours },
@@ -370,6 +373,13 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <p className="text-xs text-muted">
               Immigroov prorates your hourly rate by each session&apos;s length (a 30-min session is half your hourly rate). Each price is prefilled from it and you can fine-tune any session below.
             </p>
+            <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">Smart pricing</p>
+                <p className="text-xs text-muted mt-0.5">Let Immigroov adapt your price to each customer&apos;s country (purchasing-power parity) so it feels fair to them. This usually lifts your booking rate.</p>
+              </div>
+              <Toggle checked={smartPricing} onChange={setSmartPricing} aria-label="Smart pricing" />
+            </label>
             <ServiceListEditor value={services} onChange={setServices} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />
           </CardBody>
         </Card>
