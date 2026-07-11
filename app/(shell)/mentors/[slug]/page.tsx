@@ -13,7 +13,7 @@ interface ServiceItem { id: string; title: string; duration: number; set_price: 
 
 async function fetchMentor(slug: string): Promise<Mentor | null> {
   try {
-    const res = await fetch(`${backendBaseUrl()}/mentors/${slug}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${backendBaseUrl()}/mentors/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
@@ -21,7 +21,7 @@ async function fetchMentor(slug: string): Promise<Mentor | null> {
 
 async function fetchServices(slug: string): Promise<ServiceItem[]> {
   try {
-    const res = await fetch(`${backendBaseUrl()}/mentor/services/public/${slug}`, { next: { revalidate: 60 } });
+    const res = await fetch(`${backendBaseUrl()}/mentor/services/public/${slug}`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.services ?? [];

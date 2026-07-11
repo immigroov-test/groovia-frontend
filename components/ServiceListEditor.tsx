@@ -4,8 +4,15 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
+import { RichTextEditor } from './ui/RichTextEditor';
+import { TagInput } from './ui/TagInput';
+import { SERVICE_CATEGORIES } from '../lib/content';
+import { isRichTextEmpty } from '../lib/sanitizeHtml';
 
-export interface DraftService { title: string; duration: number; active: boolean; price: number }
+export interface DraftService {
+  title: string; duration: number; active: boolean; price: number;
+  description: string; category: string; tags: string[];
+}
 
 const DURATIONS = [15, 30, 45, 60] as const;
 
@@ -34,16 +41,23 @@ export function ServiceListEditor({
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState<number>(available[0] ?? 30);
   const [price, setPrice] = useState<number>(proratePrice(hourlyRate, available[0] ?? 30));
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   function startAdd() {
     const d = available[0] ?? 30;
-    setTitle(''); setDuration(d); setPrice(proratePrice(hourlyRate, d)); setErr(null); setAdding(true);
+    setTitle(''); setDuration(d); setPrice(proratePrice(hourlyRate, d));
+    setDescription(''); setCategory(''); setTags([]); setErr(null); setAdding(true);
   }
   function save() {
     if (!title.trim()) { setErr('Give the session a title.'); return; }
     if (used.has(duration)) { setErr('You already have a session of this length.'); return; }
-    onChange([...value, { title: title.trim(), duration, active: true, price: Math.max(0, price || 0) }]);
+    onChange([...value, {
+      title: title.trim(), duration, active: true, price: Math.max(0, price || 0),
+      description: isRichTextEmpty(description) ? '' : description, category, tags,
+    }]);
     setAdding(false);
   }
   function remove(i: number) { onChange(value.filter((_, idx) => idx !== i)); }
@@ -96,6 +110,23 @@ export function ServiceListEditor({
               <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(parseFloat(e.target.value))}
                 className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
             </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">Category</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)}
+                className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                <option value="">Select a category</option>
+                {SERVICE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Description</label>
+            <RichTextEditor value={description} onChange={setDescription} maxChars={1000}
+              placeholder="e.g. A focused call to review your CV and tailor it for the Dutch job market, with concrete next steps." />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Tags <span className="text-muted font-normal">(keywords for search &amp; matching)</span></label>
+            <TagInput value={tags} onChange={setTags} max={5} placeholder="e.g. CV review, Dutch market, HSM visa" />
           </div>
           {err && <p className="text-xs text-red-600">{err}</p>}
           <div className="flex gap-2">

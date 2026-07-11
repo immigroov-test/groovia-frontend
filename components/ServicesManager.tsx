@@ -4,7 +4,10 @@ import { Loader2, Plus, Trash2, ToggleLeft, ToggleRight, ChevronDown, ChevronUp 
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card, CardBody } from './ui/Card';
+import { RichTextEditor } from './ui/RichTextEditor';
+import { TagInput } from './ui/TagInput';
 import { SERVICE_CATEGORIES } from '../lib/content';
+import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { cn } from '../lib/utils';
 
 interface Service {
@@ -61,7 +64,7 @@ export function ServicesManager() {
 
   const [form, setForm] = useState({
     title: '', description: '', type: 'video', duration: 30,
-    category: '', set_price: '', is_ppp: false,
+    category: '', set_price: '', is_ppp: false, tags: [] as string[],
   });
   const [formError, setFormError]     = useState<string | null>(null);
   const [submitting, setSubmitting]   = useState(false);
@@ -95,7 +98,7 @@ export function ServicesManager() {
 
   function startCreate() {
     const first = availableDurations[0] ?? 30;
-    setForm({ title: '', description: '', type: 'video', duration: first, category: '', set_price: '', is_ppp: false });
+    setForm({ title: '', description: '', type: 'video', duration: first, category: '', set_price: '', is_ppp: false, tags: [] });
     setFormError(null);
     setCreating(true);
   }
@@ -110,16 +113,17 @@ export function ServicesManager() {
     try {
       await apiFetch('/api/mentor/services', 'POST', {
         title:       form.title.trim(),
-        description: form.description.trim() || null,
+        description: isRichTextEmpty(form.description) ? null : form.description,
         type:        form.type,
         duration,
         category:    form.category.trim() || null,
         set_price:   price,
         is_active:   true,
         is_ppp:      form.is_ppp,
+        tags:        form.tags,
       });
       setCreating(false);
-      setForm({ title: '', description: '', type: 'video', duration: 30, category: '', set_price: '', is_ppp: false });
+      setForm({ title: '', description: '', type: 'video', duration: 30, category: '', set_price: '', is_ppp: false, tags: [] });
       await load();
     } catch (e: any) { setFormError(e.message); }
     finally { setSubmitting(false); }
@@ -274,11 +278,9 @@ export function ServicesManager() {
               placeholder="e.g. 30-min Career Q&A" />
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Description</label>
-              <textarea rows={2} value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="What will you cover?"
-                className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
-              />
+              <RichTextEditor value={form.description} onChange={(html) => setForm(f => ({ ...f, description: html }))}
+                maxChars={1000}
+                placeholder="e.g. A focused 30-minute call to review your CV and tailor it for the Dutch job market, with concrete next steps." />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
@@ -314,6 +316,10 @@ export function ServicesManager() {
                 value={form.set_price}
                 onChange={e => setForm(f => ({ ...f, set_price: e.target.value }))}
                 placeholder="0 = free" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">Tags <span className="text-muted font-normal">(keywords that help us match you to the right mentees)</span></label>
+              <TagInput value={form.tags} onChange={(tags) => setForm(f => ({ ...f, tags }))} max={5} placeholder="e.g. CV review, Dutch market, HSM visa" />
             </div>
             <p className="text-xs text-muted">Purchasing-power parity is set once for all your sessions with the Smart pricing toggle above.</p>
             {formError && <p className="text-sm text-red-600">{formError}</p>}

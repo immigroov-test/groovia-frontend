@@ -177,7 +177,11 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           currency,
           smart_pricing: smartPricing,
           weekly_availability: weeklyToSlots(weeklyHours),
-          services: services.map((s) => ({ title: s.title, duration: s.duration, is_active: s.active, set_price: s.price })),
+          services: services.map((s) => ({
+            title: s.title, duration: s.duration, is_active: s.active, set_price: s.price,
+            description: isRichTextEmpty(s.description) ? null : s.description,
+            category: s.category || null, tags: s.tags,
+          })),
           booking_rules: { days_ahead: daysAhead, min_notice_hours: minNotice, cancel_hours: cancelHours },
           date_overrides: overrides,
         }),

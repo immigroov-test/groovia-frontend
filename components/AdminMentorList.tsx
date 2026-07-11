@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { User } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Card, CardBody } from './ui/Card';
@@ -79,6 +80,7 @@ const fmtDate = (d: string) =>
   new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
 export function AdminMentorList({ initialMentors, actions, removeOnAction = true }: Props) {
+  const router = useRouter();
   const [mentors, setMentors] = useState(initialMentors);
   const [pending, setPending] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -108,6 +110,9 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
           const updated = await res.json();
           setMentors((ms) => ms.map((m) => m.id === id ? { ...m, status: updated.status } : m));
         }
+        // Re-fetch server data so the stats cards + other tabs reflect the change
+        // immediately (no manual page refresh needed).
+        router.refresh();
       } else {
         const body = await res.json().catch(() => ({}));
         setErrors((e) => ({ ...e, [id]: body.detail || `Failed to ${action}. Please try again.` }));

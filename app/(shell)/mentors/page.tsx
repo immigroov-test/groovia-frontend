@@ -4,7 +4,7 @@ import { backendBaseUrl } from '../../../lib/backend';
 
 async function fetchMentors(): Promise<Mentor[]> {
   try {
-    const res = await fetch(`${backendBaseUrl()}/mentors`, { next: { revalidate: 60 } });
+    const res = await fetch(`${backendBaseUrl()}/mentors`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.mentors ?? [];
