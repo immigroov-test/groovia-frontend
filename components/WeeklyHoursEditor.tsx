@@ -1,5 +1,6 @@
 'use client';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, Copy } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { cn } from '../lib/utils';
 
@@ -69,6 +70,20 @@ export function WeeklyHoursEditor({ value, onChange }: { value: WeeklyHours; onC
     setDay(day, (value[day] ?? []).filter((_, idx) => idx !== i));
   }
 
+  const [copyFrom, setCopyFrom] = useState<string | null>(null);
+  const [copyTo, setCopyTo] = useState<string[]>([]);
+
+  // Copy one day's time slots onto the chosen target days (deep-copied so later edits
+  // don't bleed across days). One click sets up several days identically.
+  function applyCopy(source: string, targets: string[]) {
+    const src = (value[source] ?? []).map((s) => ({ ...s }));
+    const next = { ...value };
+    targets.forEach((t) => { next[t] = src.map((s) => ({ ...s })); });
+    onChange(next);
+    setCopyFrom(null);
+    setCopyTo([]);
+  }
+
   return (
     <div className="flex flex-col divide-y divide-[--color-border]">
       {WEEK_DAYS.map((day) => {
@@ -105,6 +120,41 @@ export function WeeklyHoursEditor({ value, onChange }: { value: WeeklyHours; onC
                           className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-red-600 hover:bg-red-50 transition-colors">
                           <Trash2 className="h-5 w-5" />
                         </button>
+                      )}
+                      {i === 0 && (
+                        <div className="relative">
+                          <button type="button" onClick={() => { setCopyFrom(copyFrom === day ? null : day); setCopyTo([]); }}
+                            aria-label="Copy times to other days"
+                            className="h-9 px-2 inline-flex items-center gap-1 rounded-lg text-xs font-medium text-brand-700 hover:bg-brand-50 transition-colors">
+                            <Copy className="h-4 w-4" /> Copy to…
+                          </button>
+                          {copyFrom === day && (
+                            <div className="absolute right-0 z-30 mt-1 w-52 rounded-xl bg-white border border-[--color-border] shadow-lg p-2 flex flex-col gap-1">
+                              <div className="flex gap-2 pb-1.5 border-b border-[--color-border]">
+                                <button type="button" onClick={() => setCopyTo(WEEK_DAYS.filter((d) => d !== day))}
+                                  className="text-xs font-medium text-brand-700 hover:underline">All days</button>
+                                <button type="button" onClick={() => setCopyTo(WEEK_DAYS.slice(0, 5).filter((d) => d !== day))}
+                                  className="text-xs font-medium text-brand-700 hover:underline">Weekdays</button>
+                                <button type="button" onClick={() => setCopyTo([])}
+                                  className="text-xs text-muted hover:underline ml-auto">Clear</button>
+                              </div>
+                              {WEEK_DAYS.filter((d) => d !== day).map((d) => (
+                                <label key={d} className="flex items-center gap-2 text-sm px-1 py-0.5 rounded hover:bg-brand-50/60 cursor-pointer">
+                                  <input type="checkbox" checked={copyTo.includes(d)}
+                                    onChange={(e) => setCopyTo(e.target.checked ? [...copyTo, d] : copyTo.filter((x) => x !== d))} />
+                                  {d}
+                                </label>
+                              ))}
+                              <div className="flex gap-2 pt-1.5 border-t border-[--color-border]">
+                                <button type="button" onClick={() => applyCopy(day, copyTo)} disabled={copyTo.length === 0}
+                                  className="flex-1 text-xs font-medium bg-brand-600 text-white rounded-md py-1.5 disabled:opacity-40">
+                                  Apply
+                                </button>
+                                <button type="button" onClick={() => setCopyFrom(null)} className="text-xs text-muted px-2">Cancel</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))}
