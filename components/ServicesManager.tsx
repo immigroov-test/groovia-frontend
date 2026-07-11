@@ -4,6 +4,7 @@ import { Loader2, Plus, Trash2, ToggleLeft, ToggleRight, ChevronDown, ChevronUp 
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card, CardBody } from './ui/Card';
+import { SERVICE_CATEGORIES } from '../lib/content';
 import { cn } from '../lib/utils';
 
 interface Service {
@@ -300,9 +301,15 @@ export function ServicesManager() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Input label="Category" value={form.category}
-                onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                placeholder="e.g. CV Review" />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Category</label>
+                <select value={form.category ?? ''}
+                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                  <option value="">Select a category</option>
+                  {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
               <Input label="Price (USD)" type="number" min={0} step={0.01}
                 value={form.set_price}
                 onChange={e => setForm(f => ({ ...f, set_price: e.target.value }))}

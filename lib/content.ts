@@ -223,6 +223,19 @@ export const UI_CONTENT = {
   },
 } as const;
 
+// Fixed set of session categories, so mentors pick from a consistent list instead
+// of inventing free-text variants (keeps browse/filtering clean).
+export const SERVICE_CATEGORIES = [
+  'Visa & Immigration',
+  'Jobs & Careers',
+  'Housing & Relocation',
+  'Education & Studies',
+  'Finance & Taxes',
+  'Culture & Daily Life',
+  'Business & Startup',
+  'General Guidance',
+] as const;
+
 export const INTENT_OPTIONS = [
   { label: '📊 Generate a Career Report', message: 'I want to generate a career report.' },
   { label: '🤝 Find me a Mentor',         message: 'I want to find a mentor.'           },
