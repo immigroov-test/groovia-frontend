@@ -16,6 +16,8 @@ export interface Mentor {
   avg_rating?: number | null;
   review_count?: number | null;
   smart_pricing?: boolean | null;
+  min_price?: number | null;
+  price_currency?: string | null;
 }
 
 export interface AvailabilitySlot {

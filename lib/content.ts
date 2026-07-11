@@ -223,6 +223,22 @@ export const UI_CONTENT = {
   },
 } as const;
 
+// A mentor's areas of expertise (shown as tags on cards + used as browse filters).
+// Fixed set so it stays consistent across mentors. Value = stored code, label = shown.
+export const EXPERTISE_CATEGORIES = [
+  { value: 'job_career',   label: 'Career' },
+  { value: 'study_abroad', label: 'Study Abroad' },
+  { value: 'visa_pr',      label: 'Visa & PR' },
+  { value: 'life_settling', label: 'Life Abroad' },
+  { value: 'work_visa',    label: 'Work Visa' },
+  { value: 'asylum',       label: 'Asylum & Refugee' },
+  { value: 'family_visa',  label: 'Family Reunification' },
+  { value: 'entrepreneur', label: 'Entrepreneur & Startup' },
+] as const;
+
+export const EXPERTISE_CATEGORY_MAP: Record<string, string> =
+  Object.fromEntries(EXPERTISE_CATEGORIES.map((c) => [c.value, c.label]));
+
 // Fixed set of session categories, so mentors pick from a consistent list instead
 // of inventing free-text variants (keeps browse/filtering clean).
 export const SERVICE_CATEGORIES = [

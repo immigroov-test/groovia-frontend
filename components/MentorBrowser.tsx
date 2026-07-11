@@ -5,14 +5,10 @@ import { MentorCard } from './MentorCard';
 import { MultiSelect } from './ui/MultiSelect';
 import { Flag } from './ui/Flag';
 import { countryLabel } from '../lib/countries';
+import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
 import type { Mentor } from '../lib/types';
 
-const CATEGORY_LABELS: Record<string, string> = {
-  job_career: 'Career',
-  study_abroad: 'Study',
-  visa_pr: 'Visa & PR',
-  life_settling: 'Life abroad',
-};
+const CATEGORY_LABELS = EXPERTISE_CATEGORY_MAP;
 
 export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
   const [q, setQ] = useState('');

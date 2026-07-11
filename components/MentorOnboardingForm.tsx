@@ -19,12 +19,14 @@ import { WeeklyHoursEditor, WEEK_DAYS, emptyWeek, validateWeeklyHours, weeklyToS
 import { ServiceListEditor, activeServiceCount, type DraftService } from './ServiceListEditor';
 import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
+import { EXPERTISE_CATEGORIES } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
 
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }));
+const CATEGORY_OPTIONS = EXPERTISE_CATEGORIES.map((c) => ({ value: c.value, label: c.label }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
 const DOMAIN_OPTIONS = [
@@ -70,6 +72,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [publicNotes, setPublicNotes] = useState(DEFAULT_DISCLAIMER);
   const [expertiseCountries, setExpertiseCountries] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [yearsExp, setYearsExp] = useState('');
   const [domains, setDomains] = useState<string[]>([]);
 
@@ -170,6 +173,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           social_links: socialLinks,
           public_notes: publicNotes.trim() || undefined,
           expertise_country_codes: expertiseCountries,
+          expertise_categories: categories,
           years_lived_experience: parseInt(yearsExp, 10),
           professional_domains: domains,
           agreed_to_mentor_terms: true,
@@ -299,6 +303,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <MultiSelect label="Countries of Expertise * (max 2)" options={COUNTRY_OPTIONS} value={expertiseCountries}
               onChange={setExpertiseCountries} placeholder="Type to search, press Enter to add" maxSelected={2}
               hint="Countries you have direct immigration or career experience in." />
+
+            <MultiSelect label="Areas of Expertise" options={CATEGORY_OPTIONS} value={categories} onChange={setCategories}
+              placeholder="Type to search, press Enter to add"
+              hint="Topics you can advise on. Shown as tags on your card and used to filter the mentor list." />
 
             <Input label="Years of Lived Experience *" type="number" min={0} max={60} value={yearsExp}
               onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5"
