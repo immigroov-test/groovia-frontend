@@ -151,6 +151,18 @@ function AuthModalInner() {
     });
     setLoading(false);
     if (error) { setError(error.message); return; }
+    // Push the name into the profiles row (the signup trigger left it null) and
+    // link any guest bookings this email made before signing up. Non-fatal.
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      if (session?.access_token) {
+        await fetch('/api/auth/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ full_name: fullName }),
+        });
+      }
+    } catch { /* best-effort */ }
     settingUp.current = false;
     close(); router.refresh();
   }

@@ -6,6 +6,8 @@ import { RichText } from '../../../../components/ui/RichText';
 import { DirectBookingWidget } from '../../../../components/DirectBookingWidget';
 import type { Mentor } from '../../../../lib/types';
 import { backendBaseUrl } from '../../../../lib/backend';
+import { countryLabel } from '../../../../lib/countries';
+import { languageLabel } from '../../../../lib/languages';
 
 interface ServiceItem { id: string; title: string; duration: number; set_price: number; set_currency: string; }
 
@@ -52,16 +54,31 @@ export default async function MentorProfilePage({
       {mentor.headline && (
         <p className="text-lg text-muted leading-relaxed">{mentor.headline}</p>
       )}
-      <div className="flex flex-wrap gap-2 mt-2">
-        {mentor.expertise_country_codes.map((c) => (
-          <Badge key={c} tone="brand">{c}</Badge>
-        ))}
-        {(mentor.expertise_categories ?? []).map((cat) => (
-          <Badge key={cat} tone="accent">{cat}</Badge>
-        ))}
-        {mentor.languages.map((lang) => (
-          <Badge key={lang} tone="neutral">{lang.toUpperCase()}</Badge>
-        ))}
+      <div className="flex flex-col gap-2 mt-2">
+        {mentor.expertise_country_codes.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">Guides moves to</span>
+            {mentor.expertise_country_codes.map((c) => (
+              <Badge key={c} tone="brand">{countryLabel(c)}</Badge>
+            ))}
+          </div>
+        )}
+        {(mentor.expertise_categories ?? []).length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">Focus areas</span>
+            {(mentor.expertise_categories ?? []).map((cat) => (
+              <Badge key={cat} tone="accent">{cat}</Badge>
+            ))}
+          </div>
+        )}
+        {mentor.languages.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">Speaks</span>
+            {mentor.languages.map((lang) => (
+              <Badge key={lang} tone="neutral">{languageLabel(lang)}</Badge>
+            ))}
+          </div>
+        )}
       </div>
     </header>
   );

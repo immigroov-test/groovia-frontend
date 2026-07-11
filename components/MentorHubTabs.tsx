@@ -108,7 +108,8 @@ function StatusBanner({ mentor }: { mentor: HubMentor }) {
           </div>
         )}
         <p className="text-sm text-muted mt-3">
-          <Link href="/mentor/profile" className="text-brand-700 hover:underline">Edit your profile</Link>, then re-submit for approval.
+          Update your <Link href="/mentor/profile" className="text-brand-700 hover:underline">profile</Link>,
+          and your session types and schedule in the <span className="font-medium text-foreground">Availability</span> tab below, then re-submit for approval.
         </p>
       </CardBody></Card>
     );
