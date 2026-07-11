@@ -27,6 +27,12 @@ function guessCountry(): string | undefined {
   return undefined;
 }
 
+// Basic client-side email shape check (guests type their own; logged-in users can
+// still edit the prefilled value). Mirrors the backend's own @/. validation.
+function isValidEmail(e: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Service {
@@ -349,6 +355,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   async function handleConfirm() {
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
+    if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
     if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
     setFormError(null); setSubmitting(true);
     try {
@@ -416,6 +423,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   async function submitBooking() {
     if (!selectedSlot || !selectedService) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
+    if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
     if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
@@ -771,7 +779,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                     <>
                       <Input label="Your name" value={name} onChange={e => setName(e.target.value)} placeholder="Optional" autoComplete="name" />
                       <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
-                        placeholder="you@email.com" autoComplete="email" hint="We'll send your confirmation here." />
+                        placeholder="you@email.com" autoComplete="email"
+                        hint={email.trim() && !isValidEmail(email) ? undefined : "We'll send your confirmation here."} />
+                      {email.trim() && !isValidEmail(email) && (
+                        <p className="text-xs text-red-600 -mt-1.5">Please enter a valid email address.</p>
+                      )}
                     </>
                   )}
 
@@ -788,7 +800,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying} disabled={!email.trim() || !phone.trim()}>
+                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying} disabled={!email.trim() || !isValidEmail(email) || !phone.trim()}>
                     {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (

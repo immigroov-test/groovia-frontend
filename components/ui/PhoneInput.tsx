@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { isValidPhoneNumber, type CountryCode } from 'libphonenumber-js';
+import { isValidPhoneNumber, parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js';
 import { PHONE_CODES } from '../../lib/phoneCodes';
 import { Flag } from './Flag';
 import { cn } from '../../lib/utils';
@@ -22,6 +22,30 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
   const [highlight, setHighlight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const initialized = useRef(false);
+
+  // Initialize the picker + number from an incoming value once (e.g. a profile
+  // phone prefilled at booking, or the mentor's saved phone on the edit form).
+  // The stored form is "{dial} {national}"; parse it back into the two controls.
+  useEffect(() => {
+    if (initialized.current || !value) return;
+    initialized.current = true;
+    const parsed = parsePhoneNumberFromString(value);
+    if (parsed) {
+      setDialCode(`+${parsed.countryCallingCode}`);
+      if (parsed.country) setDialIso(parsed.country);
+      setNumber(parsed.nationalNumber);
+      return;
+    }
+    const trimmed = value.trim();
+    if (trimmed.startsWith('+')) {
+      const [d, ...rest] = trimmed.split(' ');
+      setDialCode(d);
+      setNumber(rest.join(' '));
+    } else {
+      setNumber(trimmed);
+    }
+  }, [value]);
 
   const filtered = filterQuery
     ? PHONE_CODES.filter(
