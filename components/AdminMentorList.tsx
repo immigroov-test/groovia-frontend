@@ -87,6 +87,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
   const [commentFor, setCommentFor] = useState<{ id: string; action: Action } | null>(null);
   const [reason, setReason] = useState('');
+  const [query, setQuery] = useState('');
 
   async function act(id: string, action: Action, note?: string) {
     setPending((p) => ({ ...p, [id]: action }));
@@ -148,9 +149,23 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
     return <p className="text-sm text-muted">{t.empty}</p>;
   }
 
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? mentors.filter((m) => `${m.display_name} ${m.headline ?? ''}`.toLowerCase().includes(q))
+    : mentors;
+
   return (
     <div className="flex flex-col gap-4">
-      {mentors.map((mentor) => {
+      {mentors.length > 3 && (
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter by name or headline…"
+          className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none w-full sm:max-w-xs"
+        />
+      )}
+      {visible.length === 0 && <p className="text-sm text-muted">No mentors match your search.</p>}
+      {visible.map((mentor) => {
         const detail = details[mentor.id];
         const isExpanded = expanded[mentor.id];
         const isDetailLoading = detailLoading[mentor.id];
