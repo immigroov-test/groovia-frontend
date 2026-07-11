@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, CalendarClock, Video, AlertTriangle } from 'lucide-react';
+import { Loader2, Video, AlertTriangle } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
@@ -55,6 +55,19 @@ function fmtTimeInTz(iso: string, tz: string): string {
 
 function shortTz(tz: string): string {
   return tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
+}
+
+function monthAbbr(iso: string | null): string {
+  return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, month: 'short' }).toUpperCase() : '—';
+}
+function dayNum(iso: string | null): string {
+  return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, day: 'numeric' }) : '?';
+}
+function timeOnly(iso: string | null): string {
+  return iso ? new Date(iso).toLocaleTimeString(undefined, { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+}
+function dateLong(iso: string | null): string {
+  return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric' }) : 'Time to be set';
 }
 
 const STATUS_TONE: Record<string, 'brand' | 'accent' | 'neutral'> = {
@@ -124,11 +137,22 @@ export function BookingManager({ role }: { role: Role }) {
   const isUpcoming = (b: ManagedBooking) =>
     (b.status === 'confirmed' || b.status === 'rescheduled') &&
     (!b.slot_time || new Date(b.slot_time).getTime() > Date.now());
+  const isCancelled = (b: ManagedBooking) => b.status === 'cancelled';
   const upcoming = bookings.filter(isUpcoming);
-  const past = bookings.filter((b) => !isUpcoming(b));
+  const cancelled = bookings.filter(isCancelled);
+  const past = bookings.filter((b) => !isUpcoming(b) && !isCancelled(b));
 
   const renderCard = (b: ManagedBooking) => (
     <BookingCard key={b.id} b={b} role={role} busy={busyId === b.id} act={act} />
+  );
+
+  const Section = ({ title, count, dim, children }: { title: string; count: number; dim?: boolean; children: React.ReactNode }) => (
+    <section>
+      <h3 className="text-sm font-semibold text-brand-900 mb-3">
+        {title} <span className="text-muted font-normal">· {count}</span>
+      </h3>
+      <div className={cn('flex flex-col gap-4', dim && 'opacity-80')}>{children}</div>
+    </section>
   );
 
   return (
@@ -138,22 +162,9 @@ export function BookingManager({ role }: { role: Role }) {
           <AlertTriangle className="h-4 w-4 shrink-0" /> {actionError}
         </p>
       )}
-      {upcoming.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold text-brand-900 mb-3">
-            Upcoming <span className="text-muted font-normal">· {upcoming.length}</span>
-          </h3>
-          <div className="flex flex-col gap-4">{upcoming.map(renderCard)}</div>
-        </section>
-      )}
-      {past.length > 0 && (
-        <section>
-          <h3 className="text-sm font-semibold text-brand-900 mb-3">
-            Past &amp; cancelled <span className="text-muted font-normal">· {past.length}</span>
-          </h3>
-          <div className="flex flex-col gap-4 opacity-90">{past.map(renderCard)}</div>
-        </section>
-      )}
+      {upcoming.length > 0 && <Section title="Upcoming" count={upcoming.length}>{upcoming.map(renderCard)}</Section>}
+      {past.length > 0 && <Section title="Past &amp; completed" count={past.length} dim>{past.map(renderCard)}</Section>}
+      {cancelled.length > 0 && <Section title="Cancelled" count={cancelled.length} dim>{cancelled.map(renderCard)}</Section>}
     </div>
   );
 }
@@ -182,29 +193,31 @@ function BookingCard({
 
   return (
     <div className="rounded-xl border border-[--color-border] p-4 sm:p-5 flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
+      {/* Header: date badge · details · Join */}
+      <div className="flex items-start gap-4">
+        <div className="shrink-0 w-14 h-14 rounded-xl bg-brand-50 border border-[--color-border] flex flex-col items-center justify-center">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-700">{monthAbbr(b.slot_time)}</span>
+          <span className="text-xl font-bold text-brand-900 leading-none">{dayNum(b.slot_time)}</span>
+        </div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-foreground">
-              {b.service_title ?? 'Session'}
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">{b.service_title ?? 'Session'}</h3>
             <Badge tone={STATUS_TONE[b.status] ?? 'neutral'}>{b.status.replace('_', ' ')}</Badge>
-            {b.reschedule_count > 0 && (
-              <span className="text-xs text-muted">· rescheduled {b.reschedule_count}×</span>
-            )}
+            {b.reschedule_count > 0 && <span className="text-xs text-muted">· rescheduled {b.reschedule_count}×</span>}
           </div>
-          <p className="text-sm text-muted mt-1 flex items-center gap-1.5">
-            <CalendarClock className="h-3.5 w-3.5 shrink-0" /> {fmt(b.slot_time)} · {shortTz(TZ)}
-          </p>
-          {b.slot_time && b.mentor_tz && b.mentor_tz !== TZ && (
-            <p className="text-xs text-muted ml-5">
-              mentor {fmtTimeInTz(b.slot_time, b.mentor_tz)} ({shortTz(b.mentor_tz)})
-            </p>
-          )}
           <p className="text-xs text-muted mt-0.5">
             {role === 'mentee' ? 'with ' : ''}{b.other_name ?? 'your ' + (role === 'mentee' ? 'mentor' : 'mentee')}
           </p>
+          {b.slot_time && (
+            <p className="text-sm text-foreground mt-1.5 font-medium">
+              {timeOnly(b.slot_time)} <span className="text-muted font-normal">· {dateLong(b.slot_time)}</span>
+            </p>
+          )}
+          <p className="text-xs text-muted mt-0.5">
+            Your time ({shortTz(TZ)})
+            {b.slot_time && b.mentor_tz && b.mentor_tz !== TZ && <> · mentor {fmtTimeInTz(b.slot_time, b.mentor_tz)} ({shortTz(b.mentor_tz)})</>}
+          </p>
+          <p className="text-[11px] text-muted mt-1.5">Booking #{b.id.slice(0, 8)}{b.service_duration ? ` · ${b.service_duration} min` : ''}</p>
         </div>
         {active && !isPast && (
           <a href={`/meeting/${b.id}`}
