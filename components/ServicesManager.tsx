@@ -6,7 +6,7 @@ import { Input } from './ui/Input';
 import { Card, CardBody } from './ui/Card';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { TagInput } from './ui/TagInput';
-import { SERVICE_CATEGORIES } from '../lib/content';
+import { SERVICE_CATEGORIES, SERVICE_DESCRIPTION_TEMPLATE } from '../lib/content';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { cn } from '../lib/utils';
 
@@ -98,7 +98,7 @@ export function ServicesManager() {
 
   function startCreate() {
     const first = availableDurations[0] ?? 30;
-    setForm({ title: '', description: '', type: 'video', duration: first, category: '', set_price: '', is_ppp: false, tags: [] });
+    setForm({ title: '', description: SERVICE_DESCRIPTION_TEMPLATE, type: 'video', duration: first, category: '', set_price: '', is_ppp: false, tags: [] });
     setFormError(null);
     setCreating(true);
   }

@@ -236,6 +236,16 @@ export const SERVICE_CATEGORIES = [
   'General Guidance',
 ] as const;
 
+// Starter template pre-filled into a new session's description (rich text). Mentors
+// edit the sections; a fuller "choose a template" picker can build on this later.
+export const SERVICE_DESCRIPTION_TEMPLATE =
+  "<p><strong>What we&rsquo;ll cover</strong></p>" +
+  "<ul><li>First thing you&rsquo;ll help with</li><li>Second thing</li></ul>" +
+  "<p><strong>Who this is for</strong></p>" +
+  "<p>Describe the ideal mentee (e.g. recent grads targeting the Dutch job market).</p>" +
+  "<p><strong>What you&rsquo;ll walk away with</strong></p>" +
+  "<p>The concrete outcome or next steps after the session.</p>";
+
 export const INTENT_OPTIONS = [
   { label: '📊 Generate a Career Report', message: 'I want to generate a career report.' },
   { label: '🤝 Find me a Mentor',         message: 'I want to find a mentor.'           },

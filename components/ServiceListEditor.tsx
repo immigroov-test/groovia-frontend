@@ -6,7 +6,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { TagInput } from './ui/TagInput';
-import { SERVICE_CATEGORIES } from '../lib/content';
+import { SERVICE_CATEGORIES, SERVICE_DESCRIPTION_TEMPLATE } from '../lib/content';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 
 export interface DraftService {
@@ -49,7 +49,7 @@ export function ServiceListEditor({
   function startAdd() {
     const d = available[0] ?? 30;
     setTitle(''); setDuration(d); setPrice(proratePrice(hourlyRate, d));
-    setDescription(''); setCategory(''); setTags([]); setErr(null); setAdding(true);
+    setDescription(SERVICE_DESCRIPTION_TEMPLATE); setCategory(''); setTags([]); setErr(null); setAdding(true);
   }
   function save() {
     if (!title.trim()) { setErr('Give the session a title.'); return; }
