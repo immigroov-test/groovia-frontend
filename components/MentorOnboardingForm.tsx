@@ -75,6 +75,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   // Step 2 - availability + sessions
   const [weeklyHours, setWeeklyHours] = useState<WeeklyHours>(emptyWeek());
   const [services, setServices] = useState<DraftService[]>([]);
+  const [hourlyRate, setHourlyRate] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'NZD', 'SGD', 'AED', 'CHF'];
   const [daysAhead, setDaysAhead] = useState(30);
   const [minNotice, setMinNotice] = useState(2);
   const [cancelHours, setCancelHours] = useState(24);
@@ -168,8 +171,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           years_lived_experience: parseInt(yearsExp, 10),
           professional_domains: domains,
           agreed_to_mentor_terms: true,
+          hourly_rate: parseFloat(hourlyRate) || null,
+          currency,
           weekly_availability: weeklyToSlots(weeklyHours),
-          services: services.map((s) => ({ title: s.title, duration: s.duration, is_active: s.active })),
+          services: services.map((s) => ({ title: s.title, duration: s.duration, is_active: s.active, set_price: s.price })),
           booking_rules: { days_ahead: daysAhead, min_notice_hours: minNotice, cancel_hours: cancelHours },
           date_overrides: overrides,
         }),
@@ -344,10 +349,28 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
         <Card>
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
-              <h2 className="text-base font-semibold text-foreground">Session types *</h2>
-              <p className="text-sm text-muted mt-0.5">Add the sessions mentees can book. One per length (15, 30, 45, 60 min). At least one must be active.</p>
+              <h2 className="text-base font-semibold text-foreground">Pricing &amp; session types *</h2>
+              <p className="text-sm text-muted mt-0.5">Add the sessions mentees can book (one per length: 15, 30, 45, 60 min). At least one must be active.</p>
             </div>
-            <ServiceListEditor value={services} onChange={setServices} />
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Hourly rate</label>
+                <input type="number" min={0} step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)}
+                  placeholder="e.g. 60"
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Currency</label>
+                <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <p className="text-xs text-muted">
+              Immigroov prorates your hourly rate by each session&apos;s length (a 30-min session is half your hourly rate). Each price is prefilled from it and you can fine-tune any session below.
+            </p>
+            <ServiceListEditor value={services} onChange={setServices} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />
           </CardBody>
         </Card>
 

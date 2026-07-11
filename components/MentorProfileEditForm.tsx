@@ -47,7 +47,11 @@ interface EditableFields {
   expertise_country_codes?: string[] | null;
   professional_domains?: string[] | null;
   years_lived_experience?: number | null;
+  hourly_rate?: number | null;
+  currency?: string | null;
 }
+
+const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'NZD', 'SGD', 'AED', 'CHF'];
 
 export interface MentorProfile extends EditableFields {
   id: string;
@@ -89,6 +93,8 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
   const [expertiseCountries, setExpertiseCountries] = useState<string[]>(src.expertise_country_codes ?? []);
   const [yearsExp, setYearsExp] = useState(src.years_lived_experience != null ? String(src.years_lived_experience) : '');
   const [domains, setDomains] = useState<string[]>(src.professional_domains ?? []);
+  const [hourlyRate, setHourlyRate] = useState(src.hourly_rate != null ? String(src.hourly_rate) : '');
+  const [currency, setCurrency] = useState(src.currency ?? 'USD');
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -139,6 +145,8 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
           expertise_country_codes: expertiseCountries,
           years_lived_experience: parseInt(yearsExp, 10),
           professional_domains: domains,
+          hourly_rate: parseFloat(hourlyRate) || null,
+          currency,
         }),
       });
       const data = await res.json();
@@ -245,6 +253,33 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
             hint="Total years you have lived or worked abroad as an immigrant." />
           <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
             placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardBody className="pt-6 flex flex-col gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Pricing</h2>
+            <p className="text-sm text-muted mt-0.5">
+              Immigroov prorates this by each session&apos;s length (a 30-min session is half your hourly rate).
+              You can fine-tune individual session prices under your Availability tab.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">Hourly rate</label>
+              <input type="number" min={0} step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)}
+                placeholder="e.g. 60"
+                className="h-10 px-3 rounded-lg bg-white text-sm border border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-300" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">Currency</label>
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)}
+                className="h-10 px-3 rounded-lg bg-white text-sm border border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-300">
+                {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
         </CardBody>
       </Card>
 

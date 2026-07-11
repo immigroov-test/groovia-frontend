@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import { PhoneInput } from './ui/PhoneInput';
 import { RichText } from './ui/RichText';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
@@ -261,6 +262,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [answers, setAnswers]       = useState<Record<string, string>>({});
   const [name, setName]             = useState('');
   const [email, setEmail]           = useState('');
+  const [phone, setPhone]           = useState('');
   const [notes, setNotes]           = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
@@ -296,6 +298,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         setEmail(user.email ?? '');
         const fn = user.user_metadata?.full_name || user.user_metadata?.name;
         if (typeof fn === 'string') setName(fn);
+        // Prefill the phone from the mentee's profile so returning users don't retype it.
+        const { data: prof } = await supabase.from('profiles').select('phone').eq('id', user.id).maybeSingle();
+        if (prof?.phone) setPhone(prof.phone);
       }
     })();
   }, []);
@@ -344,6 +349,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   async function handleConfirm() {
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
+    if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
     setFormError(null); setSubmitting(true);
     try {
       const res = await fetch('/api/auth/check-email', {
@@ -410,6 +416,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   async function submitBooking() {
     if (!selectedSlot || !selectedService) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
+    if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
     setFormError(null);
@@ -430,6 +437,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           service_id:  selectedService.id,
           slot_time:   selectedSlot.slot_start,
           email:       email.trim(),
+          phone:       phone.trim(),
           name:        name.trim(),
           notes:       notes.trim(),
           timezone:    TZ,
@@ -474,6 +482,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           service_id: selectedService.id,
           slot_time: selectedSlot.slot_start,
           email: email.trim(),
+          phone: phone.trim(),
           name: name.trim() || null,
           notes: notes.trim() || null,
           timezone: TZ,
@@ -766,6 +775,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                     </>
                   )}
 
+                  <PhoneInput label="Phone number *" value={phone} onChange={setPhone}
+                    hint="For session coordination. Include your country code." />
+
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-foreground">
                       What should your mentor prepare? <span className="text-muted font-normal">(optional)</span>
@@ -776,7 +788,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying} disabled={!email.trim()}>
+                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying} disabled={!email.trim() || !phone.trim()}>
                     {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
