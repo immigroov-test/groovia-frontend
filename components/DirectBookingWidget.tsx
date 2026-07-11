@@ -64,6 +64,7 @@ interface MentorInfo {
   photo_url: string | null;
   avg_rating?: number | null;
   review_count?: number | null;
+  smart_pricing?: boolean | null;
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmed';
@@ -633,6 +634,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         <div className="text-xs text-muted sm:text-right sm:ml-auto shrink-0">
           <div>Your time <span className="font-semibold text-foreground">{shortTz(TZ)}</span></div>
           {showMentorTz && <div className="mt-0.5">Mentor <span className="font-semibold text-foreground">{shortTz(mentorTimezone!)}</span></div>}
+          {mentor.smart_pricing && (
+            <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 font-medium">
+              Fair pricing for your country
+            </div>
+          )}
         </div>
       </div>
 

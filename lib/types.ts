@@ -15,6 +15,7 @@ export interface Mentor {
   timezone?: string | null;
   avg_rating?: number | null;
   review_count?: number | null;
+  smart_pricing?: boolean | null;
 }
 
 export interface AvailabilitySlot {

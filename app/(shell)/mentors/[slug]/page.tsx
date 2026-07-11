@@ -104,6 +104,7 @@ export default async function MentorProfilePage({
             photo_url:    mentor.photo_url ?? null,
             avg_rating:   mentor.avg_rating ?? null,
             review_count: mentor.review_count ?? null,
+            smart_pricing: mentor.smart_pricing ?? false,
           }}
         />
       </div>
