@@ -217,6 +217,17 @@ export default function ChatInterface({ authed }: Props) {
 
   function handleNewChat() {
     didAutoResumeRef.current = true;   // block auto-resume from re-restoring the cleared thread
+    // Clearing must stick across sign-ins: archive the current thread server-side so
+    // auto-resume can't bring the cleared conversation back next login (issue #4).
+    const old = threadId;
+    if (authed && old) {
+      (async () => {
+        const headers = await authHeaders();
+        if (Object.keys(headers).length) {
+          fetch(`/api/chat/threads/${old}/archive`, { method: 'POST', headers }).catch(() => {});
+        }
+      })();
+    }
     clearLocalChat();
     const fresh = uuidv4();
     window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
@@ -241,9 +252,6 @@ export default function ChatInterface({ authed }: Props) {
   // spotlight in the Groovia section.
   const [atSection1, setAtSection1] = useState(true);
   const [atSection2, setAtSection2] = useState(false);
-  // Latches true the first time the Groovia section is in view, so its entrance
-  // transitions play on view (not on mount, while off-screen) and stay played.
-  const [grooviaSeen, setGrooviaSeen] = useState(false);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -255,10 +263,7 @@ export default function ChatInterface({ authed }: Props) {
         for (const e of entries) {
           const active = e.isIntersecting && e.intersectionRatio >= 0.5;
           if (e.target === s1) setAtSection1(active);
-          if (e.target === s2) {
-            setAtSection2(active);
-            if (active) setGrooviaSeen(true);
-          }
+          if (e.target === s2) setAtSection2(active);
         }
       },
       { root, threshold: [0, 0.5, 1] },
@@ -490,9 +495,10 @@ export default function ChatInterface({ authed }: Props) {
         style={{ zIndex: 1 }}
       >
         {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both stay mounted so the
-            user can scroll back up to the brand story at any time (issue #2). */}
-        <ImmigroovIntro ref={section1Ref} />
-        <ChatIntro ref={section2Ref} active={grooviaSeen} />
+            user can scroll back up to the brand story at any time. scrollParent lets their
+            entrance transitions replay each time they scroll into view. */}
+        <ImmigroovIntro ref={section1Ref} scrollParent={scrollRef} />
+        <ChatIntro ref={section2Ref} scrollParent={scrollRef} />
 
         <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-8 pb-44 space-y-6">
           {messages.map((m, i) => (
@@ -544,6 +550,24 @@ export default function ChatInterface({ authed }: Props) {
         </div>
       </div>
 
+      {/* Landing scroll cue: the original cascading-arrow cue, floating in the gap above
+          the composer (not glued to it). Always visible on the Immigroov section on any
+          screen; taps down to Groovia. */}
+      {atSection1 && (
+        <button
+          type="button"
+          onClick={scrollToGroovia}
+          className="absolute bottom-40 sm:bottom-36 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-900 animate-fade-up"
+        >
+          {UI_CONTENT.brandIntro.scrollCta}
+          <span className="flex flex-col items-center -space-y-2.5">
+            {[0, 1, 2].map((i) => (
+              <ChevronDown key={i} className="h-5 w-5 animate-arrow-cascade" style={{ animationDelay: `${i * 0.25}s` }} />
+            ))}
+          </span>
+        </button>
+      )}
+
       {/* z-index: 10 keeps the input bar above both the scroll area (z-1) and landmarks (z-0). */}
       <div className="bg-transparent relative" style={{ zIndex: 10 }}>
         <div className="mx-auto max-w-3xl px-4 py-4">
@@ -566,25 +590,6 @@ export default function ChatInterface({ authed }: Props) {
               You can chat again in{' '}
               <span className="tabular-nums">{formatWait(rlRemaining)}</span>. Tap to pass the time.
             </button>
-          )}
-
-          {/* Landing scroll cue (#8): always visible above the composer while on the
-              Immigroov section, whatever the screen height. Taps down to Groovia. */}
-          {atSection1 && (
-            <button
-              type="button"
-              onClick={scrollToGroovia}
-              className="mx-auto mb-2 flex items-center gap-1.5 text-xs font-medium text-brand-700 hover:text-brand-900 animate-fade-up"
-            >
-              {UI_CONTENT.brandIntro.scrollCta}
-              <ChevronDown className="h-3.5 w-3.5 animate-bounce" />
-            </button>
-          )}
-
-          {atSection2 && !(gated && resumeUploaded) && !rateLimited && (
-            <p className="text-center text-xs font-medium text-brand-700 mb-2 animate-fade-up">
-              {UI_CONTENT.hero.spotlightHint}
-            </p>
           )}
 
           <div

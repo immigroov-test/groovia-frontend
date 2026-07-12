@@ -20,9 +20,9 @@ export const UI_CONTENT = {
     headline: 'Peer-to-Peer Personalized Immigration Mentoring Platform',
     // Three carded lines, mirroring the Groovia feature cards (icon + text).
     cards: [
-      'Connect with trusted mentors, expats and locals who have already made the move to your dream destination.',
-      'Honest, peer-to-peer guidance from people who have lived it, not commission-driven agents.',
-      "Immigroov isn't just a platform, it's a movement. A global community of people helping people move smarter, together.",
+      'Trusted mentors, expats and locals who have already made the move.',
+      'Honest, peer-to-peer guidance, never commission-driven agents.',
+      'Not just a platform, a movement of people helping people move smarter.',
     ],
     scrollCta: 'Scroll down for assistance',
   },
@@ -39,7 +39,6 @@ export const UI_CONTENT = {
       'Get instant real-time answers on visas, jobs, housing and daily life.',
     ],
     scrollCta: 'Scroll down to start your journey',
-    spotlightHint: 'Ask Groovia anything to get started',
   },
   sidebar: {
     chat: 'Home',
