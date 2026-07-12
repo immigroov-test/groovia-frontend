@@ -259,7 +259,7 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
   // 4. CANDIDATE -------------------------------------------------------------
   {
     group: '4 · Candidate', title: 'Chat - intro', real: true, node: (
-      <div className="mx-auto max-w-2xl px-4 py-10"><ChatIntro onStart={() => {}} /></div>
+      <div className="mx-auto max-w-2xl px-4 py-10"><ChatIntro /></div>
     ),
   },
   {

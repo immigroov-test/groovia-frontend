@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Paperclip, Send, Sparkles, Lock, SquarePen } from 'lucide-react';
+import { Paperclip, Send, Sparkles, Lock, SquarePen, ChevronUp } from 'lucide-react';
 import { UI_CONTENT, INTENT_OPTIONS } from '../lib/content';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
 import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
 import { cn } from '../lib/utils';
 import { ChatIntro } from './ChatIntro';
+import { ImmigroovIntro } from './ImmigroovIntro';
 import { RateLimitModal } from './RateLimitModal';
 import { ThinkingIndicator } from './ThinkingIndicator';
 
@@ -112,6 +113,9 @@ export default function ChatInterface({ authed }: Props) {
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  // Auto-resume must run at most once per mount, and never after an explicit New chat -
+  // otherwise clearing the chat immediately re-restores the just-cleared thread.
+  const didAutoResumeRef = useRef(false);
 
   // One-time client hydration from localStorage. A fresh tab (no sessionStorage flag)
   // with a stale "resume uploaded" guest state is treated as a new visit and reset.
@@ -181,7 +185,9 @@ export default function ChatInterface({ authed }: Props) {
   // Auto-resume the user's most recent thread on sign-in, only if the local chat is empty.
   useEffect(() => {
     if (!hydrated || !authed || !FEATURES.chatPersist) return;
+    if (didAutoResumeRef.current) return;
     if (resumeUploaded || messages.length > 1) return;
+    didAutoResumeRef.current = true;   // claim the one-shot before the async restore
     (async () => {
       const headers = await authHeaders();
       if (!Object.keys(headers).length) return;
@@ -201,13 +207,16 @@ export default function ChatInterface({ authed }: Props) {
 
       setThreadId(last.id);
       setMessages(restored);
-      setResumeUploaded(true);
+      // Reflect the thread's real resume state (from the backend) rather than assuming
+      // true - otherwise a restored no-resume thread falsely shows "resume uploaded".
+      setResumeUploaded(Boolean(mData.resume_uploaded));
       setIntentSelected(true);
       window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(last.id));
     })();
   }, [hydrated, authed, resumeUploaded, messages.length, threadId]);
 
   function handleNewChat() {
+    didAutoResumeRef.current = true;   // block auto-resume from re-restoring the cleared thread
     clearLocalChat();
     const fresh = uuidv4();
     window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
@@ -215,15 +224,50 @@ export default function ChatInterface({ authed }: Props) {
     setMessages([{ role: 'assistant', content: UI_CONTENT.welcomeMessage }]);
     setResumeUploaded(false);
     setIntentSelected(false);
+    // A fresh start lands on the Groovia section with the composer ready.
+    requestAnimationFrame(() => section2Ref.current?.scrollIntoView({ behavior: 'smooth' }));
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatStartRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const section1Ref = useRef<HTMLElement>(null);   // Section 1: Immigroov intro
+  const section2Ref = useRef<HTMLElement>(null);   // Section 2: Groovia intro
+
+  // Which of the two full-height intro sections is currently in view. Drives the scroll
+  // cue (#3), the sticky back-to-top + New chat toolbar (#1, #2), and the composer
+  // spotlight in the Groovia section.
+  const [atSection1, setAtSection1] = useState(true);
+  const [atSection2, setAtSection2] = useState(false);
 
   useEffect(() => {
-    // Stay at the top while the entry hero is showing.
+    const root = scrollRef.current;
+    const s1 = section1Ref.current;
+    const s2 = section2Ref.current;
+    if (!root || !s1 || !s2) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const active = e.isIntersecting && e.intersectionRatio >= 0.5;
+          if (e.target === s1) setAtSection1(active);
+          if (e.target === s2) setAtSection2(active);
+        }
+      },
+      { root, threshold: [0, 0.5, 1] },
+    );
+    io.observe(s1);
+    io.observe(s2);
+    return () => io.disconnect();
+  }, [hydrated]);
+
+  const scrollToTop = () => section1Ref.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToGroovia = () => section2Ref.current?.scrollIntoView({ behavior: 'smooth' });
+
+  useEffect(() => {
+    // Stay at the intro while only the welcome message exists; once a real conversation
+    // is active (or restored), follow it to the latest message.
     if (!resumeUploaded && messages.length <= 1) return;
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, resumeUploaded]);
@@ -378,7 +422,7 @@ export default function ChatInterface({ authed }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Landmarks - fixed to viewport bottom, always visible regardless of chat state.
           z-index 0 puts it above the body background but below the z-1/z-10 content layers. */}
       <div
@@ -398,26 +442,42 @@ export default function ChatInterface({ authed }: Props) {
         disabled={resumeUploaded}
       />
 
-      {/* z-index: 1 creates a stacking context above the fixed landmarks (z-0),
-          so message bubbles and the ChatIntro render on top of the image. */}
-      <div className="flex-1 overflow-y-auto relative" style={{ zIndex: 1 }}>
-        {/* Hero shown only before the conversation starts. */}
-        {!resumeUploaded && messages.length <= 1 && (
-          <ChatIntro onStart={() => chatStartRef.current?.scrollIntoView({ behavior: 'smooth' })} />
+      {/* Sticky toolbar: back-to-top (#2) + New chat (#1). Hidden while the Immigroov
+          section is in view; fades in once the user scrolls into Groovia / the chat. */}
+      <div
+        className={cn(
+          'absolute top-0 inset-x-0 z-20 flex items-center justify-between gap-2 px-4 py-2.5',
+          'transition-opacity duration-300',
+          atSection1 ? 'opacity-0 pointer-events-none' : 'opacity-100',
         )}
-
+      >
+        <button
+          onClick={scrollToTop}
+          title="Back to the top"
+          className="flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white"
+        >
+          <ChevronUp className="h-3.5 w-3.5" />
+          Top
+        </button>
         {messages.length > 1 && (
-          <div className="flex justify-end px-4 pt-3 max-w-3xl mx-auto">
-            <button
-              onClick={handleNewChat}
-              className="flex items-center gap-1.5 text-xs text-muted hover:text-foreground transition-colors"
-              title="Start a new chat"
-            >
-              <SquarePen className="h-3.5 w-3.5" />
-              New chat
-            </button>
-          </div>
+          <button
+            onClick={handleNewChat}
+            title="Start a new chat"
+            className="flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white"
+          >
+            <SquarePen className="h-3.5 w-3.5" />
+            New chat
+          </button>
         )}
+      </div>
+
+      {/* z-index: 1 creates a stacking context above the fixed landmarks (z-0),
+          so message bubbles and the intros render on top of the image. */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto relative" style={{ zIndex: 1 }}>
+        {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both stay mounted so the
+            user can scroll back up to the brand story at any time (issue #2). */}
+        <ImmigroovIntro ref={section1Ref} showCue={atSection1} onMeetGroovia={scrollToGroovia} />
+        <ChatIntro ref={section2Ref} />
 
         <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-8 pb-44 space-y-6">
           {messages.map((m, i) => (
@@ -493,10 +553,17 @@ export default function ChatInterface({ authed }: Props) {
             </button>
           )}
 
+          {atSection2 && !(gated && resumeUploaded) && !rateLimited && (
+            <p className="text-center text-xs font-medium text-brand-700 mb-2 animate-fade-up">
+              {UI_CONTENT.hero.spotlightHint}
+            </p>
+          )}
+
           <div
             className={cn(
-              "flex items-end gap-2 rounded-2xl px-2 py-1.5",
+              "flex items-end gap-2 rounded-2xl px-2 py-1.5 transition-shadow duration-300",
               (gated && resumeUploaded || rateLimited) && "opacity-60",
+              atSection2 && "ring-2 ring-accent-400/70 shadow-[0_0_22px_-2px_rgba(245,158,11,0.45)]",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >

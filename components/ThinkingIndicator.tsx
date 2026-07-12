@@ -1,20 +1,22 @@
-import { Sparkles } from 'lucide-react';
-
-// Lightweight, dependency-free "thinking" indicator (replaces the old GIF). A centered
-// pill with a pulsing spark and three staggered bouncing dots. pointer-events-none so it
-// never blocks the UI beneath it.
+// In-chat "thinking" indicator: the small Groovia loop mark sits in the assistant's
+// message slot (left-aligned) between the user's question and the response, the way chat
+// assistants like Gemini show a glyph while generating. Replaced by the reply when ready.
 export function ThinkingIndicator() {
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-      <div className="flex items-center gap-2.5 rounded-full bg-white/90 backdrop-blur px-5 py-2.5 shadow-lg border border-[--color-border]">
-        <Sparkles className="h-4 w-4 text-brand-600 animate-pulse" />
-        <span className="text-sm font-medium text-brand-900">Groovia is thinking</span>
-        <span className="flex items-end gap-1 pb-0.5">
-          <Dot delay="-0.32s" />
-          <Dot delay="-0.16s" />
-          <Dot delay="0s" />
-        </span>
-      </div>
+    <div className="flex items-center gap-2.5 justify-start animate-fade-up">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/groovia-loop.gif"
+        alt=""
+        aria-hidden
+        className="h-9 w-9 shrink-0 object-contain"
+      />
+      <span className="sr-only">Groovia is thinking</span>
+      <span className="flex items-end gap-1 pb-0.5" aria-hidden>
+        <Dot delay="-0.32s" />
+        <Dot delay="-0.16s" />
+        <Dot delay="0s" />
+      </span>
     </div>
   );
 }

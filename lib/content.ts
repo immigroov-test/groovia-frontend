@@ -15,6 +15,17 @@ export const UI_CONTENT = {
     attachResume: 'Attach resume (PDF or DOCX)',
     resumeAlreadyUploaded: 'Resume already uploaded',
   },
+  // ── Section 1: Immigroov brand intro (shown first, above the Groovia hero) ──
+  brandIntro: {
+    headline: 'Peer-to-Peer Personalized Immigration Mentoring Platform',
+    emphasis: 'Personalized',            // this word is highlighted within the headline
+    subheading:
+      'Connect with trusted mentors, expats and locals who have already made the move to your dream destination.',
+    differentiator:
+      'Honest, peer-to-peer guidance from people who have lived it. Not commission-driven agents.',
+    findMentor: 'Find a Mentor',
+    scrollCta: 'Meet Groovia, your AI guide',
+  },
   hero: {
     title: "Hi, I'm Groovia.",
     tagline: 'The AI assistant of Immigroov.',
@@ -28,6 +39,7 @@ export const UI_CONTENT = {
       'Get instant real-time answers on visas, jobs, housing and daily life.',
     ],
     scrollCta: 'Scroll down to start your journey',
+    spotlightHint: 'Ask Groovia anything to get started',
   },
   sidebar: {
     chat: 'Groovia',

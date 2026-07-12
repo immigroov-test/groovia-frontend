@@ -1,9 +1,8 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { ChevronDown, Compass, Users, Zap } from 'lucide-react';
+import { Compass, Users, Zap } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
-import { cn } from '../lib/utils';
 
 const FEATURE_ICONS = [Compass, Users, Zap];
 
@@ -38,31 +37,13 @@ const fadeUp = (delay: number) => ({
   transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
 });
 
-export function ChatIntro({ onStart }: { onStart?: () => void }) {
+// Section 2 of the landing: Groovia introduces itself and its advantages. Scroll cues
+// and section detection are handled by the parent (ChatInterface).
+export const ChatIntro = forwardRef<HTMLElement>(function ChatIntro(_props, ref) {
   const hero = UI_CONTENT.hero;
-  const sectionRef = useRef<HTMLElement>(null);
-  const [atTop, setAtTop] = useState(true);
-
-  useEffect(() => {
-    // The chat page scrolls an INNER overflow-y-auto div, not #app-scroll - so find the
-    // nearest scrollable ancestor of this section; fall back to #app-scroll.
-    let scrollEl: Element | null = sectionRef.current?.parentElement ?? null;
-    while (scrollEl) {
-      const { overflowY } = window.getComputedStyle(scrollEl);
-      if (overflowY === 'auto' || overflowY === 'scroll') break;
-      scrollEl = scrollEl.parentElement;
-    }
-    scrollEl = scrollEl ?? document.getElementById('app-scroll');
-    if (!scrollEl) return;
-    const node = scrollEl;
-    const onScroll = () => setAtTop(node.scrollTop < 8);
-    onScroll();
-    node.addEventListener('scroll', onScroll, { passive: true });
-    return () => node.removeEventListener('scroll', onScroll);
-  }, []);
 
   return (
-    <section ref={sectionRef} className="relative min-h-full overflow-hidden flex flex-col">
+    <section ref={ref} className="relative min-h-full overflow-hidden flex flex-col">
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
         <motion.h1
           {...fadeUp(0)}
@@ -71,17 +52,11 @@ export function ChatIntro({ onStart }: { onStart?: () => void }) {
           <TypeText text={hero.title} />
         </motion.h1>
 
-        <motion.p
-          {...fadeUp(0.75)}
-          className="mt-3 text-lg sm:text-xl font-semibold text-brand-700"
-        >
+        <motion.p {...fadeUp(0.75)} className="mt-3 text-lg sm:text-xl font-semibold text-brand-700">
           {hero.tagline}
         </motion.p>
 
-        <motion.p
-          {...fadeUp(1.1)}
-          className="mt-7 max-w-2xl text-sm sm:text-base font-semibold text-brand-800"
-        >
+        <motion.p {...fadeUp(1.1)} className="mt-7 max-w-2xl text-sm sm:text-base font-semibold text-brand-800">
           {hero.movement}
         </motion.p>
 
@@ -104,28 +79,6 @@ export function ChatIntro({ onStart }: { onStart?: () => void }) {
           })}
         </div>
       </div>
-
-      <motion.button
-        {...fadeUp(1.75)}
-        onClick={onStart}
-        aria-hidden={!atTop}
-        className={cn(
-          "relative z-10 mx-auto mb-7 flex flex-col items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900",
-          "transition-opacity duration-300",
-          atTop ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none",
-        )}
-      >
-        {hero.scrollCta}
-        <span className="flex flex-col items-center -space-y-2.5">
-          {[0, 1, 2].map((i) => (
-            <ChevronDown
-              key={i}
-              className="h-5 w-5 animate-arrow-cascade"
-              style={{ animationDelay: `${i * 0.25}s` }}
-            />
-          ))}
-        </span>
-      </motion.button>
     </section>
   );
-}
+});
