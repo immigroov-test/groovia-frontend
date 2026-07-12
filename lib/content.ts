@@ -125,7 +125,7 @@ export const UI_CONTENT = {
   // they can be edited independently.
   authPoints: [
     'Guidance That Fits Your Life',
-    'AI-Powered Guidance, Anytime',
+    'Agentic AI Assistance, Not Just a Chatbot',
     'Handpicked Mentors, Not Just Volunteers',
     'Honest Answers, Not Just Encouragement',
     'Private, Personal Mentorship',
