@@ -125,7 +125,7 @@ export const UI_CONTENT = {
   // they can be edited independently.
   authPoints: [
     'Guidance That Fits Your Life',
-    'Agentic AI Assistance, Not Just a Chatbot',
+    'Real-Time Agentic AI Assistance',
     'Handpicked Mentors, Not Just Volunteers',
     'Honest Answers, Not Just Encouragement',
     'Private, Personal Mentorship',
@@ -167,7 +167,6 @@ export const UI_CONTENT = {
     ],
     band: [
       'Maybe, once you are settled, you will become a mentor too, sharing your journey, earning, and giving back.',
-      'Immigroov is not just a platform, it is a movement.',
     ],
     imageCaption: 'A global community of people helping people move smarter, together.',
     badgeSince: { title: 'Since 2021', sub: 'Building the Movement' },

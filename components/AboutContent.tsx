@@ -18,49 +18,45 @@ export function AboutContent() {
 
   return (
     <div className="pb-20">
-      {/* ── What we do ─────────────────────────────────────────────── */}
+      {/* ── Intro: copy left, image right ──────────────────────────── */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-14">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
-          {/* Image, top-aligned with the copy, with two badges + a caption inside it */}
-          <div className="relative">
-            <Image
-              src="/tourists-go-up-hill-sunrise.jpg"
-              alt="Two travellers helping each other up a hill at sunrise"
-              width={1600} height={1067} priority
-              className="w-full h-auto rounded-2xl object-cover shadow-sm"
-            />
-            <div className="absolute inset-x-0 bottom-0 h-2/5 rounded-b-2xl bg-gradient-to-t from-black/75 to-transparent" />
-
-            {/* Since 2021 - top left */}
-            <div className="absolute top-4 left-4 flex items-center gap-2.5 rounded-xl bg-white/95 px-3 py-2 shadow-lg">
-              <span className="h-8 w-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600">
-                <CalendarCheck className="h-4 w-4" />
-              </span>
-              <span>
-                <span className="block text-sm font-semibold text-brand-900 leading-tight">{a.badgeSince.title}</span>
-                <span className="block text-xs text-muted leading-tight">{a.badgeSince.sub}</span>
-              </span>
-            </div>
-
-            {/* Countries covered - bottom right */}
-            <div className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 shadow-lg">
-              <Globe className="h-4 w-4 text-brand-600" />
-              <span className="text-xs font-semibold text-brand-900">{a.badgeCountries}</span>
-            </div>
-
-            {/* Caption inside the image - bottom left, above the badge row */}
-            <p className="absolute bottom-16 left-4 right-4 text-white font-semibold text-sm sm:text-base leading-snug">
-              {a.imageCaption}
-            </p>
-          </div>
-
-          {/* Copy */}
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+          {/* Copy - left */}
           <div>
-            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-brand-900">{a.whatWeDoTitle}</h1>
-            <p className="mt-4 text-xl font-semibold text-brand-900 leading-snug">{a.subheading}</p>
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-brand-900 leading-tight">{a.subheading}</h1>
             <div className="mt-5 flex flex-col gap-4 text-base text-muted leading-relaxed">
               {a.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
             </div>
+          </div>
+
+          {/* Image - right, with both badges aligned along the bottom + caption below */}
+          <div>
+            <div className="relative">
+              <Image
+                src="/tourists-go-up-hill-sunrise.jpg"
+                alt="Two travellers helping each other up a hill at sunrise"
+                width={1600} height={1067} priority
+                className="w-full h-auto rounded-2xl object-cover shadow-sm"
+              />
+              {/* Both badges pinned to the bottom of the image, aligned (items-end) */}
+              <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-2">
+                <div className="flex items-center gap-2.5 rounded-xl bg-white/95 px-3 py-2 shadow-lg">
+                  <span className="h-8 w-8 rounded-lg bg-brand-50 flex items-center justify-center text-brand-600">
+                    <CalendarCheck className="h-4 w-4" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-semibold text-brand-900 leading-tight">{a.badgeSince.title}</span>
+                    <span className="block text-xs text-muted leading-tight">{a.badgeSince.sub}</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 shadow-lg">
+                  <Globe className="h-4 w-4 text-brand-600" />
+                  <span className="text-xs font-semibold text-brand-900">{a.badgeCountries}</span>
+                </div>
+              </div>
+            </div>
+            {/* Caption directly below the image */}
+            <p className="mt-3 text-sm text-muted text-center leading-snug">{a.imageCaption}</p>
           </div>
         </div>
 
@@ -74,12 +70,14 @@ export function AboutContent() {
 
       {/* ── Why us ─────────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-20">
-        <div className="text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+        <div className="text-center">
+          {/* max-w-5xl (was 2xl) so the headline sits on one line on wide screens
+              instead of being forced to wrap by a narrow container. */}
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight max-w-5xl mx-auto">
             <span className="text-brand-900">{a.whyHeadlineA}</span>
             <span className="text-brand-700">{a.whyHeadlineB}</span>
           </h2>
-          <p className="mt-4 text-base text-muted leading-relaxed">{a.whyIntro}</p>
+          <p className="mt-4 text-base text-muted leading-relaxed max-w-2xl mx-auto">{a.whyIntro}</p>
         </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 reveal-children">
