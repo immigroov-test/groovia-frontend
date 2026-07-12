@@ -18,13 +18,13 @@ export const UI_CONTENT = {
   // ── Section 1: Immigroov brand intro (shown first, above the Groovia hero) ──
   brandIntro: {
     headline: 'Peer-to-Peer Personalized Immigration Mentoring Platform',
-    emphasis: 'Personalized',            // this word is highlighted within the headline
-    subheading:
+    // Three carded lines, mirroring the Groovia feature cards (icon + text).
+    cards: [
       'Connect with trusted mentors, expats and locals who have already made the move to your dream destination.',
-    differentiator:
-      'Honest, peer-to-peer guidance from people who have lived it. Not commission-driven agents.',
-    findMentor: 'Find a Mentor',
-    scrollCta: 'Meet Groovia, your AI guide',
+      'Honest, peer-to-peer guidance from people who have lived it, not commission-driven agents.',
+      "Immigroov isn't just a platform, it's a movement. A global community of people helping people move smarter, together.",
+    ],
+    scrollCta: 'Scroll down for assistance',
   },
   hero: {
     title: "Hi, I'm Groovia.",
@@ -42,7 +42,7 @@ export const UI_CONTENT = {
     spotlightHint: 'Ask Groovia anything to get started',
   },
   sidebar: {
-    chat: 'Groovia',
+    chat: 'Home',
     mentors: 'Mentors',
     account: 'Account',
     mentorPortal: 'Join as Mentor',

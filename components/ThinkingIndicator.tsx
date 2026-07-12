@@ -1,22 +1,24 @@
-// In-chat "thinking" indicator: the small Groovia loop mark sits in the assistant's
-// message slot (left-aligned) between the user's question and the response, the way chat
-// assistants like Gemini show a glyph while generating. Replaced by the reply when ready.
+import { Sparkles } from 'lucide-react';
+
+// In-chat "thinking" state: a normal assistant row (avatar + bubble), with the small
+// Groovia loop gif living INSIDE the bubble (the AI's chat box), not in the avatar slot.
+// Replaced by the real reply when it arrives.
 export function ThinkingIndicator() {
   return (
-    <div className="flex items-center gap-2.5 justify-start animate-fade-up">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/groovia-loop.gif"
-        alt=""
-        aria-hidden
-        className="h-9 w-9 shrink-0 object-contain"
-      />
-      <span className="sr-only">Groovia is thinking</span>
-      <span className="flex items-end gap-1 pb-0.5" aria-hidden>
-        <Dot delay="-0.32s" />
-        <Dot delay="-0.16s" />
-        <Dot delay="0s" />
-      </span>
+    <div className="flex gap-3 justify-start animate-fade-up">
+      <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white">
+        <Sparkles className="h-3.5 w-3.5" />
+      </div>
+      <div className="rounded-2xl rounded-bl-sm bg-brand-50/60 px-4 py-2.5 flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/groovia-loop.gif" alt="" aria-hidden className="h-6 w-6 object-contain" />
+        <span className="flex items-end gap-1 pb-0.5" aria-hidden>
+          <Dot delay="-0.32s" />
+          <Dot delay="-0.16s" />
+          <Dot delay="0s" />
+        </span>
+        <span className="sr-only">Groovia is thinking</span>
+      </div>
     </div>
   );
 }

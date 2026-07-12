@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Paperclip, Send, Sparkles, Lock, SquarePen, ChevronUp } from 'lucide-react';
+import { Paperclip, Send, Sparkles, Lock, SquarePen, ChevronUp, ChevronDown } from 'lucide-react';
 import { UI_CONTENT, INTENT_OPTIONS } from '../lib/content';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
@@ -241,6 +241,9 @@ export default function ChatInterface({ authed }: Props) {
   // spotlight in the Groovia section.
   const [atSection1, setAtSection1] = useState(true);
   const [atSection2, setAtSection2] = useState(false);
+  // Latches true the first time the Groovia section is in view, so its entrance
+  // transitions play on view (not on mount, while off-screen) and stay played.
+  const [grooviaSeen, setGrooviaSeen] = useState(false);
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -252,7 +255,10 @@ export default function ChatInterface({ authed }: Props) {
         for (const e of entries) {
           const active = e.isIntersecting && e.intersectionRatio >= 0.5;
           if (e.target === s1) setAtSection1(active);
-          if (e.target === s2) setAtSection2(active);
+          if (e.target === s2) {
+            setAtSection2(active);
+            if (active) setGrooviaSeen(true);
+          }
         }
       },
       { root, threshold: [0, 0.5, 1] },
@@ -370,6 +376,9 @@ export default function ChatInterface({ authed }: Props) {
         { role: 'assistant', content: data.response || UI_CONTENT.errors.noResponse },
       ]);
       setResumeUploaded(true);
+      // A fresh resume upload starts the intent-selection step, so re-arm the option
+      // buttons even if an earlier message (e.g. "hi") had set intentSelected.
+      setIntentSelected(false);
 
       // Guests: open the auth gate. Modal won't close until they sign up / sign in.
       if (!authed) openGate();
@@ -442,42 +451,48 @@ export default function ChatInterface({ authed }: Props) {
         disabled={resumeUploaded}
       />
 
-      {/* Sticky toolbar: back-to-top (#2) + New chat (#1). Hidden while the Immigroov
-          section is in view; fades in once the user scrolls into Groovia / the chat. */}
+      {/* Sticky controls: a centered back-to-top arrow (#10) and Clear chat (#11).
+          Hidden while the Immigroov section is in view; fade in once scrolled into
+          Groovia / the chat. */}
       <div
         className={cn(
-          'absolute top-0 inset-x-0 z-20 flex items-center justify-between gap-2 px-4 py-2.5',
-          'transition-opacity duration-300',
+          'absolute top-0 inset-x-0 z-20 h-12 transition-opacity duration-300',
           atSection1 ? 'opacity-0 pointer-events-none' : 'opacity-100',
         )}
       >
         <button
           onClick={scrollToTop}
+          aria-label="Back to the top"
           title="Back to the top"
-          className="flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white"
+          className="absolute top-2 left-1/2 -translate-x-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur text-brand-800 shadow-sm hover:bg-white"
         >
-          <ChevronUp className="h-3.5 w-3.5" />
-          Top
+          <ChevronUp className="h-4 w-4" />
         </button>
         {messages.length > 1 && (
           <button
             onClick={handleNewChat}
-            title="Start a new chat"
-            className="flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white"
+            title="Clear chat"
+            className="absolute top-2 right-4 sm:right-auto sm:left-[63%] flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white"
           >
             <SquarePen className="h-3.5 w-3.5" />
-            New chat
+            Clear chat
           </button>
         )}
       </div>
 
-      {/* z-index: 1 creates a stacking context above the fixed landmarks (z-0),
-          so message bubbles and the intros render on top of the image. */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto relative" style={{ zIndex: 1 }}>
+      {/* z-index: 1 creates a stacking context above the fixed landmarks (z-0), so the
+          intros and message bubbles render on top of the image. snap-mandatory on the
+          fresh landing (only the welcome message) so a small scroll down snaps to the
+          Groovia section (#9); removed once a conversation is active so it scrolls freely. */}
+      <div
+        ref={scrollRef}
+        className={cn('flex-1 overflow-y-auto relative', messages.length <= 1 && 'snap-y snap-mandatory')}
+        style={{ zIndex: 1 }}
+      >
         {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both stay mounted so the
             user can scroll back up to the brand story at any time (issue #2). */}
-        <ImmigroovIntro ref={section1Ref} showCue={atSection1} onMeetGroovia={scrollToGroovia} />
-        <ChatIntro ref={section2Ref} />
+        <ImmigroovIntro ref={section1Ref} />
+        <ChatIntro ref={section2Ref} active={grooviaSeen} />
 
         <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-8 pb-44 space-y-6">
           {messages.map((m, i) => (
@@ -550,6 +565,19 @@ export default function ChatInterface({ authed }: Props) {
             >
               You can chat again in{' '}
               <span className="tabular-nums">{formatWait(rlRemaining)}</span>. Tap to pass the time.
+            </button>
+          )}
+
+          {/* Landing scroll cue (#8): always visible above the composer while on the
+              Immigroov section, whatever the screen height. Taps down to Groovia. */}
+          {atSection1 && (
+            <button
+              type="button"
+              onClick={scrollToGroovia}
+              className="mx-auto mb-2 flex items-center gap-1.5 text-xs font-medium text-brand-700 hover:text-brand-900 animate-fade-up"
+            >
+              {UI_CONTENT.brandIntro.scrollCta}
+              <ChevronDown className="h-3.5 w-3.5 animate-bounce" />
             </button>
           )}
 
