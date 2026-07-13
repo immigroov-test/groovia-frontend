@@ -100,7 +100,12 @@ export function TopNav({ authed, email, role }: Props) {
                   </button>
                   {acctOpen && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2">
-                      <div className="w-44 rounded-xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] p-1.5 flex flex-col">
+                      <div className="w-56 rounded-xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] p-1.5 flex flex-col">
+                        {email && (
+                          <p className="px-3 pt-1.5 pb-2 text-xs text-muted break-all border-b border-[--color-border] mb-1">
+                            {email}
+                          </p>
+                        )}
                         {accountSub.map((s) => (
                           <Link
                             key={s.href}
@@ -148,7 +153,7 @@ export function TopNav({ authed, email, role }: Props) {
                 <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
                   {(email?.[0] ?? 'U').toUpperCase()}
                 </div>
-                <span className="text-sm text-brand-900 font-medium truncate max-w-[110px] lg:max-w-[220px]">{email}</span>
+                <span className="text-sm text-brand-900 font-medium truncate max-w-[140px] lg:max-w-[220px]">{email}</span>
               </div>
               <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut} className="bg-card/90 backdrop-blur-md shrink-0">
                 <LogOut className="h-4 w-4" /> Sign out
@@ -182,6 +187,7 @@ export function TopNav({ authed, email, role }: Props) {
               return (
                 <div key={href} className="flex flex-col">
                   <span className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</span>
+                  {email && <p className="px-3 pb-1.5 text-xs text-muted break-all">{email}</p>}
                   {accountSub.map((s) => (
                     <Link
                       key={s.href}

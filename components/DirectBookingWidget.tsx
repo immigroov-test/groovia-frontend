@@ -281,7 +281,6 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // below is used (free sessions, or before payments are switched on).
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [paying, setPaying]         = useState(false);      // Razorpay modal open / verifying
-  const [guestPrompted, setGuestPrompted] = useState(false);
 
   // Load services
   useEffect(() => {
@@ -341,37 +340,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     })();
   }, []);
 
-  // Guest just booked → insist (not force) they log in to manage the booking. Opens
-  // the same auth popup with a reason banner + their email prefilled.
-  useEffect(() => {
-    if (step === 'confirmed' && !isLoggedIn && bookingId && !guestPrompted) {
-      setGuestPrompted(true);
-      router.push(`${pathname}?auth=open&reason=manage-booking&email=${encodeURIComponent(email.trim())}`);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, isLoggedIn, bookingId, guestPrompted]);
-
-  // Not logged in: an email with an existing account must log in first; any other
-  // email books directly as a guest (the confirmation email verifies the address).
-  async function handleConfirm() {
+  // BUG-025: bookings now require an account. Not logged in → open the auth popup
+  // (it does its own has_password check and routes to login or signup accordingly)
+  // with the email/booking intent prefilled; the booking only fires once a real
+  // session exists, via the pendingBook effect above - never before.
+  function handleConfirm() {
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
     if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
-    setFormError(null); setSubmitting(true);
-    try {
-      const res = await fetch('/api/auth/check-email', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
-      const data = await res.json().catch(() => ({}));
-      setSubmitting(false);
-      if (data.has_password) { setPendingBook(true); router.push(`${pathname}?auth=open`); }
-      else submitBooking();               // new email → guest booking
-    } catch {
-      setSubmitting(false);
-      submitBooking();
-    }
+    setFormError(null);
+    setPendingBook(true);
+    router.push(`${pathname}?auth=open&reason=confirm-booking&email=${encodeURIComponent(email.trim())}`);
   }
 
   // Load slots when a service is selected
@@ -816,7 +796,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   )}
                   {!isLoggedIn && (
                     <p className="text-[11px] text-muted leading-snug">
-                      Booking as a guest. If this email already has an account you&apos;ll be asked to log in.
+                      You&apos;ll be asked to log in or create a free account to complete your booking.
                     </p>
                   )}
                   <p className="text-[11px] text-muted text-center">You can cancel anytime · confirmation emailed</p>
