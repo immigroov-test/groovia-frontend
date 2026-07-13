@@ -94,7 +94,7 @@ export function HistoryList({ open }: Props) {
       window.localStorage.setItem(LS_KEYS.resumeUploaded, JSON.stringify(messages.length > 1));
       window.localStorage.setItem(LS_KEYS.intentSelected, JSON.stringify(messages.length > 2));
 
-      router.push(`/chat?t=${threadId}`);
+      router.push(`/home?t=${threadId}`);
     } catch {
       // silent
     }

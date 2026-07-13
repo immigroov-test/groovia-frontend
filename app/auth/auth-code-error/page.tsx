@@ -20,8 +20,8 @@ export default function AuthCodeErrorPage() {
             in the same browser.
           </p>
           <div className="flex flex-col gap-2 mt-3">
-            <Link href="/chat?auth=open"><Button className="w-full">Request a new link</Button></Link>
-            <Link href="/chat"><Button variant="ghost" className="w-full">Back to home</Button></Link>
+            <Link href="/home?auth=open"><Button className="w-full">Request a new link</Button></Link>
+            <Link href="/home"><Button variant="ghost" className="w-full">Back to home</Button></Link>
           </div>
         </CardBody>
       </Card>

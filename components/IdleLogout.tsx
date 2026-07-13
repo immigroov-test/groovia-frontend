@@ -28,7 +28,7 @@ export function IdleLogout({ authed }: { authed: boolean }) {
       const supabase = createClient();
       await supabase.auth.signOut();
       clearLocalChat();
-      window.location.href = '/chat?auth=open&mode=login';
+      window.location.href = '/home?auth=open&mode=login';
     }, CHECK_INTERVAL_MS);
 
     return () => {

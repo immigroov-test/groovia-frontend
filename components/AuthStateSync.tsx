@@ -16,7 +16,7 @@ export function AuthStateSync() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         syncedFor.current = null;
-        router.replace('/chat');
+        router.replace('/home');
         router.refresh();
         return;
       }

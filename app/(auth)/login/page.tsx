@@ -12,7 +12,7 @@ function LoginRedirect() {
     p.set('mode', 'login');
     const next = params.get('next');
     if (next) p.set('next', next);
-    router.replace(`/chat?${p.toString()}`);
+    router.replace(`/home?${p.toString()}`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

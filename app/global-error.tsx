@@ -26,7 +26,7 @@ export default function GlobalError({
           </p>
           <div className="mt-6 flex items-center justify-center gap-2">
             <Button onClick={reset}>Try again</Button>
-            <a href="/chat">
+            <a href="/home">
               <Button variant="outline">Back to chat</Button>
             </a>
           </div>

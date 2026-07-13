@@ -42,7 +42,7 @@ export function TopNav({ authed, email, role }: Props) {
     const supabase = createClient();
     await supabase.auth.signOut();
     clearLocalChat();
-    window.location.href = '/chat';
+    window.location.href = '/home';
   }
 
   function openSignIn() {
@@ -50,7 +50,7 @@ export function TopNav({ authed, email, role }: Props) {
   }
 
   const nav = [
-    { href: '/chat', label: UI_CONTENT.sidebar.chat, gated: false },
+    { href: '/home', label: UI_CONTENT.sidebar.chat, gated: false },
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
@@ -65,7 +65,7 @@ export function TopNav({ authed, email, role }: Props) {
         {/* Left section: logo. flex-1 so the left + right sides carry equal weight,
             which keeps the centered nav truly centered without overlapping either. */}
         <div className="flex-1 flex items-center min-w-0">
-        <Link href="/chat" aria-label="Immigroov home" className="shrink-0 inline-flex items-center">
+        <Link href="/home" aria-label="Immigroov home" className="shrink-0 inline-flex items-center">
           <Image
             src="/Immigroov_Transparent_Logo.png"
             alt="Immigroov"

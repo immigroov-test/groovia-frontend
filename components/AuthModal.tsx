@@ -165,7 +165,7 @@ function AuthModalInner() {
   }
 
   function signupSetupRedirect(): string {
-    const dest = next ?? '/chat';
+    const dest = next ?? '/home';
     const setupNext = dest + (dest.includes('?') ? '&' : '?') + 'auth=open&mode=setpw';
     return `${window.location.origin}/auth/callback?next=${encodeURIComponent(setupNext)}`;
   }

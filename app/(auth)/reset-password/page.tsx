@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
       setError(error.message);
       return;
     }
-    router.push('/chat');
+    router.push('/home');
     router.refresh();
   }
 

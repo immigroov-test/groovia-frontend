@@ -104,7 +104,7 @@ export function AboutContent() {
         <p className="mt-4 text-base text-muted leading-relaxed">{a.ctaIntro}</p>
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/chat"
+            href="/home"
             className="inline-flex items-center justify-center h-12 px-7 rounded-full bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 transition-colors"
           >
             {a.ctaChat}

@@ -263,7 +263,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ============================================================================
- * Chat entry hero ambience - scoped to the /chat start screen only.
+ * Chat entry hero ambience - scoped to the /home start screen only.
  * Drifting gradient blobs + a faint blueprint grid that fades out radially.
  * ============================================================================ */
 @keyframes blob-drift-a {

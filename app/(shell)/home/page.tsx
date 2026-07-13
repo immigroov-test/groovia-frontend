@@ -1,9 +1,9 @@
 import ChatInterface from '../../../components/ChatInterface';
 import { createClient } from '../../../lib/supabase/server';
 
-export const metadata = { title: 'Chat - Immigroov' };
+export const metadata = { title: 'Immigroov' };
 
-export default async function ChatPage({
+export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ t?: string }>;

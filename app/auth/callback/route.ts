@@ -26,7 +26,7 @@ async function syncAccount(supabase: SupabaseClient) {
 
 // Only allow same-origin relative paths - blocks open redirects like //evil.com.
 function safeNext(next: string | null): string {
-  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/chat';
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/home';
   return next;
 }
 

@@ -48,10 +48,10 @@ async function refreshSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // Everyone - including guests - lands on /chat. / redirects there.
+  // Everyone - including guests - lands on /home. / redirects there.
   if (path === '/') {
     const url = request.nextUrl.clone();
-    url.pathname = '/chat';
+    url.pathname = '/home';
     return NextResponse.redirect(url);
   }
 
@@ -67,7 +67,7 @@ async function refreshSession(request: NextRequest) {
   const guestOnlyPaths = ['/login', '/signup', '/forgot-password'];
   if (user && guestOnlyPaths.includes(path)) {
     const url = request.nextUrl.clone();
-    url.pathname = '/chat';
+    url.pathname = '/home';
     return NextResponse.redirect(url);
   }
 

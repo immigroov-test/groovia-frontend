@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <main className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="relative w-full max-w-md animate-fade-up">
           <Link
-            href="/chat"
+            href="/home"
             aria-label="Close"
             className="absolute -top-2 -right-2 p-1.5 rounded-full text-muted hover:text-foreground hover:bg-black/5 transition-colors"
           >

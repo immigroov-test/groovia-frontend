@@ -45,7 +45,7 @@ export default async function AdminPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'admin') redirect('/chat');
+  if (profile?.role !== 'admin') redirect('/home');
 
   const base = backendBaseUrl();
 

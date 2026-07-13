@@ -13,7 +13,7 @@ function SignupRedirect() {
     if (next) p.set('next', next);
     const role = params.get('role');
     if (role === 'mentor') p.set('role', 'mentor');
-    router.replace(`/chat?${p.toString()}`);
+    router.replace(`/home?${p.toString()}`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
