@@ -548,8 +548,15 @@ export default function ChatInterface({ authed }: Props) {
       // buttons even if an earlier message (e.g. "hi") had set intentSelected.
       setIntentSelected(false);
 
-      // Guests: open the auth gate. Modal won't close until they sign up / sign in.
-      if (!authed) openGate();
+      // Guests: tell them why first, then open the auth gate a beat later so the popup
+      // doesn't appear out of nowhere.
+      if (!authed) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'Your resume is in. Please log in or sign up to access the chat and get your personalised guidance.' },
+        ]);
+        window.setTimeout(() => openGate(), 1500);
+      }
     } catch (e) {
       applyChatError(e);
     } finally {
@@ -577,10 +584,11 @@ export default function ChatInterface({ authed }: Props) {
   }
   function pickMentorCountry(code: string) {
     setMentorStep('');
-    sendMessage(`I'm looking for a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.`);
+    // After the mentor results come back, re-offer the three intent options as a follow-up.
+    sendMessage(`I'm looking for a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.`, true);
   }
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, reOfferIntents = false) {
     const trimmed = text.trim();
 
     // Dev/QA hook: "/ratelimit" or "/ratelimit 45" simulates a Groq rate-limit locally (and
@@ -611,6 +619,9 @@ export default function ChatInterface({ authed }: Props) {
         ...prev,
         { role: 'assistant', content: data.response || UI_CONTENT.errors.noResponse },
       ]);
+      // e.g. after the mentor results, re-arm the intent buttons so the user can pick a
+      // next step (another pathway, another mentor, or a question).
+      if (reOfferIntents) setIntentSelected(false);
       // First real turn just created/updated the thread row - refresh history so
       // the new title or thread shows up in the sidebar.
       if (authed) window.dispatchEvent(new CustomEvent('groovia:history-refresh'));
@@ -863,7 +874,7 @@ export default function ChatInterface({ authed }: Props) {
                 }
               }}
               placeholder={
-                !resumeUploaded ? UI_CONTENT.inputPlaceholderNoResume
+                !resumeUploaded ? ''
                 : gated ? UI_CONTENT.inputPlaceholderLocked
                 : UI_CONTENT.inputPlaceholder
               }
