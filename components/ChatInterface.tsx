@@ -697,13 +697,14 @@ export default function ChatInterface({ authed }: Props) {
           intros and message bubbles render on top of the image. */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto relative"
+        className="flex-1 overflow-y-auto relative snap-y snap-proximity"
         style={{ zIndex: 1 }}
       >
-        {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both stay mounted so the
-            user can scroll back up to the brand story at any time. `active` (this section
-            is in view) drives the entrance animation - typing + boxes dropping in - so it
-            plays when the user lands on the section and replays on the next scroll to it. */}
+        {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both full-height and
+            snap-aligned, so once Groovia (Section 2) is scrolled to it fills the screen and
+            Section 1 is off-screen above - reachable again only by scrolling up or the
+            top-arrow button. `snap-proximity` (not mandatory) keeps the chat free-scrolling.
+            Both stay mounted; `seen` drives the once-only entrance animation. */}
         <ImmigroovIntro ref={section1Ref} seen={seenSection1} />
         <ChatIntro ref={section2Ref} seen={seenSection2} highlight={!resumeUploaded} />
 

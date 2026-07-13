@@ -1,11 +1,12 @@
 'use client';
 import { forwardRef, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Users, ShieldCheck, Globe } from 'lucide-react';
+import { Users, Globe, Sparkles } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
 import { TypeText } from './TypeText';
 
-const CARD_ICONS = [Users, ShieldCheck, Globe];
+// Trusted mentors, the movement, and Groovia AI.
+const CARD_ICONS = [Users, Globe, Sparkles];
 const EASE = [0.22, 1, 0.36, 1] as const;
 const TYPE_SPEED = 42;   // slow, deliberate typing so the message lands
 

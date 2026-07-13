@@ -22,13 +22,13 @@ export const UI_CONTENT = {
     // Three carded lines, mirroring the Groovia feature cards (icon + text).
     cards: [
       'Trusted mentors, expats and locals who have already made the move.',
-      "We're not salespeople chasing targets. We're mentors giving honest advice you can trust.",
       'Not just a platform, a movement of people helping people move smarter.',
+      'Powered by Groovia (Agentic) AI.',
     ],
     scrollCta: 'Scroll down for assistance',
   },
   hero: {
-    title: "Hi, I'm Groovia.",
+    title: 'Chat with Groovia',
     tagline: 'The AI assistant of Immigroov.',
     intro:
       "Tell me where you want to go, and I'll plan the route and connect you with people who've already made the move.",
