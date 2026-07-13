@@ -79,9 +79,10 @@ export function TopNav({ authed, email, role }: Props) {
         </div>
 
         {/* Center: nav pill, in normal flow (shrink-0) and NOT absolutely positioned.
-            Absolute centering ignored the sibling widths, which is what let the pill
-            slide under the auth widget once the email/admin link made a side wider. */}
-        <nav className="hidden md:flex items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5 shrink-0">
+            Only shown at lg+ where there's room for logo + full pill + auth. Between md
+            and lg the pill was wide enough to squeeze the logo out of its column and slide
+            under it, so below lg everything folds into the hamburger instead. */}
+        <nav className="hidden lg:flex items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5 shrink-0">
           {nav.map(({ href, label, gated }) => {
             const active = href === '/account' ? pathname.startsWith('/account') : pathname === href;
 
@@ -146,8 +147,8 @@ export function TopNav({ authed, email, role }: Props) {
             mirrors the left section; min-w-0 lets the email truncate instead of
             pushing into the nav. */}
         <div className="flex-1 flex items-center justify-end gap-2 min-w-0">
-        {/* Desktop: auth */}
-        <div className="hidden md:flex items-center gap-2 min-w-0">
+        {/* Desktop (lg+): auth pill. Below lg it lives in the hamburger menu. */}
+        <div className="hidden lg:flex items-center gap-2 min-w-0">
           {authed ? (
             // Single pill: avatar + email + chevron. Click reveals Sign out. Merging the
             // two buttons frees up room to show more of the email (desktop only).
@@ -192,10 +193,10 @@ export function TopNav({ authed, email, role }: Props) {
           )}
         </div>
 
-        {/* Mobile: hamburger */}
+        {/* Below lg: hamburger (holds nav + auth) */}
         <button
           type="button"
-          className="md:hidden p-2 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_14px_-4px_rgba(15,23,42,0.25)] text-brand-900"
+          className="lg:hidden p-2 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_14px_-4px_rgba(15,23,42,0.25)] text-brand-900"
           aria-label="Menu"
           onClick={() => setMenuOpen((v) => !v)}
         >
@@ -204,9 +205,9 @@ export function TopNav({ authed, email, role }: Props) {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Menu (below lg) */}
       {menuOpen && (
-        <div className="md:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
+        <div className="lg:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
           {nav.map(({ href, label, gated }) => {
             // Account → expandable group (Profile / Sessions) when signed in.
             if (href === '/account' && authed) {

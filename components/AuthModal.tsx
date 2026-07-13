@@ -12,6 +12,7 @@ import { Button } from './ui/Button';
 import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
 import { randomQuote } from '../lib/quotes';
+import { TypeText } from './TypeText';
 
 type Stage = 'email' | 'login' | 'setup' | 'forgot' | 'sent';
 
@@ -67,9 +68,12 @@ function AuthModalInner() {
     }
   }, [isOpen, mode, emailParam]);
 
-  // Pick a fresh quote from the local list each time the popup opens (no API call).
+  // A fresh random quote each time the popup opens, then rotate every 10s while open.
   useEffect(() => {
-    if (isOpen) setQuote(randomQuote());
+    if (!isOpen) return;
+    setQuote(randomQuote());
+    const id = setInterval(() => setQuote(randomQuote()), 10000);
+    return () => clearInterval(id);
   }, [isOpen]);
 
   useEffect(() => {
@@ -381,7 +385,9 @@ function AuthModalInner() {
               </ul>
             </div>
             <div className="relative px-8 pb-5">
-              <p className="text-sm text-white/80 leading-snug font-serif font-normal italic">“{quote.text}”</p>
+              <p className="text-xs text-white/80 leading-snug font-serif font-normal italic min-h-[2.4em]">
+                “<TypeText key={quote.text} text={quote.text} active={isOpen} speed={38} />”
+              </p>
               {quote.author && <p className="text-[11px] text-white/60 mt-1 not-italic">{quote.author}</p>}
             </div>
           </div>

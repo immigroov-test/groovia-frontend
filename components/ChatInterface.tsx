@@ -272,7 +272,6 @@ export default function ChatInterface({ authed }: Props) {
   const revealedS1Ref = useRef(false);
   const revealedS2Ref = useRef(false);
   const revealTimerRef = useRef<number | null>(null);
-  const revealCancelRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     landingRef.current = !resumeUploaded && messages.length <= 1;
@@ -284,36 +283,13 @@ export default function ChatInterface({ authed }: Props) {
   function autoReveal(sec: HTMLElement | null) {
     const root = scrollRef.current;
     if (!root || !sec || !landingRef.current) return;
-    revealCancelRef.current?.();
     // Reveal down to this section's own bottom (its last box / its initial message).
     const target = Math.min(sec.offsetTop + sec.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
-    const start = root.scrollTop;
-    const distance = target - start;
-    if (distance <= 24) return;   // already fits / bottom shown
-    let cancelled = false;
-    let raf = 0;
-    const cancel = () => {
-      cancelled = true;
-      cancelAnimationFrame(raf);
-      root.removeEventListener('wheel', cancel);
-      root.removeEventListener('touchmove', cancel);
-      revealCancelRef.current = null;
-    };
-    revealCancelRef.current = cancel;
-    // Cancel only on a real scroll gesture (wheel / drag), NOT a bare touch, so resting a
-    // finger on the screen doesn't kill it the instant it starts.
-    root.addEventListener('wheel', cancel, { passive: true });
-    root.addEventListener('touchmove', cancel, { passive: true });
-    let t0 = 0;
-    const step = (now: number) => {
-      if (cancelled) return;
-      if (!t0) t0 = now;
-      const t = Math.min(1, (now - t0) / 1600);
-      root.scrollTop = start + distance * (1 - Math.pow(1 - t, 3));   // easeOutCubic
-      if (t < 1) raf = requestAnimationFrame(step);
-      else cancel();
-    };
-    raf = requestAnimationFrame(step);
+    if (target - root.scrollTop <= 24) return;   // already fits / bottom already shown
+    // Native smooth scroll. Reliable on mobile and the browser yields to the user the
+    // moment they scroll, unlike the old rAF tween that momentum-scroll (touchmove) killed
+    // the instant it started - which is why the auto-reveal never ran on phones.
+    root.scrollTo({ top: target, behavior: 'smooth' });
   }
 
   function scheduleReveal(sec: HTMLElement | null) {
@@ -355,7 +331,6 @@ export default function ChatInterface({ authed }: Props) {
     return () => {
       io.disconnect();
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-      revealCancelRef.current?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
