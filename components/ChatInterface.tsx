@@ -152,7 +152,9 @@ export default function ChatInterface({ authed }: Props) {
       setThreadId(fresh);
     }
     const storedMessages = loadFromStorage<ChatMessage[] | null>(LS_KEYS.messages, null);
-    if (storedMessages) setMessages(storedMessages);
+    // Drop the old standalone welcome bubble if it was persisted before (it's now shown as
+    // the hint above the composer, not a far-below chat bubble). Real messages are kept.
+    if (storedMessages) setMessages(storedMessages.filter((m) => m.content !== UI_CONTENT.welcomeMessage));
     setResumeUploaded(storedResumeUploaded);
     setIntentSelected(loadFromStorage<boolean>(LS_KEYS.intentSelected, false));
     setHydrated(true);
@@ -737,7 +739,8 @@ export default function ChatInterface({ authed }: Props) {
             className={cn(
               "flex items-end gap-2 rounded-2xl px-2 py-1.5",
               (gated && resumeUploaded || rateLimited) && "opacity-60",
-              atSection2 && "composer-glow",   // translucent tint circling the text box
+              // Highlight the chat box from the start (until a resume is uploaded).
+              !resumeUploaded && !rateLimited && "composer-glow",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
