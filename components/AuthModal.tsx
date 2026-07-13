@@ -251,6 +251,15 @@ function AuthModalInner() {
                     </p>
                   </div>
                 )}
+                {reason === 'confirm-booking' && (
+                  <div className="mb-5 rounded-xl border border-brand-200 bg-brand-50/80 px-4 py-3">
+                    <p className="text-sm font-semibold text-brand-900">One more step</p>
+                    <p className="text-xs text-brand-800 mt-0.5 leading-snug">
+                      Log in or create a free account to confirm your booking - this lets you reschedule,
+                      cancel, or join the meeting later.
+                    </p>
+                  </div>
+                )}
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">{t.heading}</h2>
                 <p className="text-base text-muted mt-1 text-center">{t.subheading}</p>
                 <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
