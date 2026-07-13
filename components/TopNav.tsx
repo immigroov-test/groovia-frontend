@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, LogOut, LogIn, ChevronDown } from 'lucide-react';
+import { Menu, X, LogOut, LogIn, ChevronDown, Camera, SquarePen } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UI_CONTENT } from '../lib/content';
 import { clearLocalChat } from '../lib/chatStorage';
@@ -14,11 +14,13 @@ interface Props {
   authed: boolean;
   email?: string | null;
   role?: string | null;
+  name?: string | null;
+  photoUrl?: string | null;
 }
 
 // Fixed top nav: floating logo (no background) on the left, a centered links pill,
 // and auth on the right. Always visible. Mobile uses a hamburger menu.
-export function TopNav({ authed, email, role }: Props) {
+export function TopNav({ authed, email, role, name, photoUrl }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -76,8 +78,8 @@ export function TopNav({ authed, email, role }: Props) {
 
   const nav = [
     { href: '/home', label: UI_CONTENT.sidebar.chat, gated: false },
-    { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
+    { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
     ...(role !== 'admin' ? [{ href: '/mentor', label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub : UI_CONTENT.sidebar.mentorPortal, gated: false }] : []),
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),
@@ -191,10 +193,15 @@ export function TopNav({ authed, email, role }: Props) {
                 aria-expanded={userMenuOpen}
                 className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] min-w-0"
               >
-                <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
-                  {(email?.[0] ?? 'U').toUpperCase()}
-                </div>
-                <span className="text-sm text-brand-900 font-medium truncate max-w-[200px] lg:max-w-[320px]">{email}</span>
+                {photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
+                    {(name?.[0] ?? email?.[0] ?? 'U').toUpperCase()}
+                  </div>
+                )}
+                <span className="text-sm text-brand-900 font-medium truncate max-w-[200px] lg:max-w-[320px]">{name || email}</span>
                 <ChevronDown className={cn('h-3.5 w-3.5 text-muted shrink-0 transition-transform', userMenuOpen && 'rotate-180')} />
               </button>
               {userMenuOpen && (
@@ -238,13 +245,45 @@ export function TopNav({ authed, email, role }: Props) {
       {/* Menu (below lg) */}
       {menuOpen && (
         <div ref={menuPanelRef} className="lg:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
+          {/* Signed-in profile header: photo (or an "upload photo" placeholder), name, email.
+              The whole row and the placeholder lead to the account page. */}
+          {authed && (
+            <Link
+              href="/account"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-3 px-2 py-2 mb-1 rounded-xl hover:bg-brand-50/60"
+            >
+              {photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoUrl} alt="" className="h-11 w-11 rounded-full object-cover shrink-0" />
+              ) : (
+                <span className="h-11 w-11 rounded-full shrink-0 bg-brand-50 border border-dashed border-brand-300 flex items-center justify-center text-brand-600">
+                  <Camera className="h-4 w-4" />
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-brand-900 truncate">{name || 'Your profile'}</p>
+                {email && <p className="text-xs text-muted truncate">{email}</p>}
+                {!photoUrl && <p className="text-[11px] font-medium text-accent-600 mt-0.5">Upload photo</p>}
+              </div>
+            </Link>
+          )}
+          {/* New chat: reachable here on mobile, where the floating button is easy to miss. */}
+          {pathname === '/home' && (
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); window.dispatchEvent(new CustomEvent('groovia:new-chat')); }}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-brand-800 hover:bg-brand-50/60"
+            >
+              <SquarePen className="h-4 w-4" /> New chat
+            </button>
+          )}
           {nav.map(({ href, label, gated }) => {
             // Account → expandable group (Profile / Sessions) when signed in.
             if (href === '/account' && authed) {
               return (
                 <div key={href} className="flex flex-col">
                   <span className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</span>
-                  {email && <p className="px-3 pb-1.5 text-xs text-muted break-all">{email}</p>}
                   {accountSub.map((s) => (
                     <Link
                       key={s.href}

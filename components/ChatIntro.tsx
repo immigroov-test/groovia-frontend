@@ -19,9 +19,12 @@ const rise = (seen: boolean, delay: number) => ({
 
 interface Props {
   seen: boolean;
+  // Glow the "attach your resume" message while the composer is still locked, so the eye
+  // goes to the message + paperclip, not the disabled input.
+  highlight?: boolean;
 }
 
-export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ seen }, ref) {
+export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ seen, highlight }, ref) {
   const hero = UI_CONTENT.hero;
 
   return (
@@ -61,7 +64,7 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ see
             avatar so it reads as a message from the AI. */}
         <motion.div {...rise(seen, 2.3)} className="mt-6 w-full max-w-3xl flex items-start gap-2.5 justify-start">
           <AiAvatar />
-          <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white border border-[--color-border] shadow-sm px-4 py-3 text-sm leading-relaxed text-foreground text-left">
+          <div className={`max-w-[85%] rounded-2xl rounded-tl-sm bg-white border border-[--color-border] shadow-sm px-4 py-3 text-sm leading-relaxed text-foreground text-left${highlight ? ' composer-glow' : ''}`}>
             {UI_CONTENT.welcomeMessage}
           </div>
         </motion.div>

@@ -4,6 +4,7 @@ export const UI_CONTENT = {
   intentPrompt: 'What would you like to do next?',
   inputPlaceholder: 'Ask about your career...',
   inputPlaceholderLocked: 'Login to continue…',
+  inputPlaceholderNoResume: 'Attach your resume above to start chatting…',
   disclaimer:
     'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions.',
   signInToContinue: 'Login to continue the conversation',

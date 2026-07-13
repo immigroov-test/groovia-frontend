@@ -138,18 +138,20 @@ export default function ChatInterface({ authed }: Props) {
   // otherwise clearing the chat immediately re-restores the just-cleared thread.
   const didAutoResumeRef = useRef(false);
 
-  // One-time client hydration from localStorage. A fresh tab (no sessionStorage flag)
-  // with a stale "resume uploaded" guest state is treated as a new visit and reset.
+  // One-time client hydration from localStorage.
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const isFreshSession = !window.sessionStorage.getItem('groovia.sessionStarted');
     window.sessionStorage.setItem('groovia.sessionStarted', '1');
 
-    const storedResumeUploaded = loadFromStorage<boolean>(LS_KEYS.resumeUploaded, false);
-
-    if (isFreshSession && !authed && storedResumeUploaded) {
-      // Guest reopened the browser - clear stale gated state and start fresh.
+    if (isFreshSession) {
+      // Every new browser session (including a fresh login) starts a clean chat and
+      // re-asks for the resume. The previous resume/summary stays server-side for our
+      // internal reference only; the user uploads again (replacing the old one). This also
+      // blocks auto-resume so an old thread isn't silently restored. A same-session refresh
+      // (the branch below) still keeps the in-progress chat so a reload never loses work.
       clearLocalChat();
+      window.sessionStorage.setItem('groovia.autoResumed', '1');
       const fresh = uuidv4();
       window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
       setThreadId(fresh);
@@ -167,7 +169,7 @@ export default function ChatInterface({ authed }: Props) {
     }
     const storedMessages = loadFromStorage<ChatMessage[] | null>(LS_KEYS.messages, null);
     if (storedMessages) setMessages(storedMessages);
-    setResumeUploaded(storedResumeUploaded);
+    setResumeUploaded(loadFromStorage<boolean>(LS_KEYS.resumeUploaded, false));
     setIntentSelected(loadFromStorage<boolean>(LS_KEYS.intentSelected, false));
     setHydrated(true);
   }, [authed]);
@@ -265,6 +267,15 @@ export default function ChatInterface({ authed }: Props) {
     // A fresh start lands on the Groovia section with the composer ready.
     requestAnimationFrame(() => section2Ref.current?.scrollIntoView({ behavior: 'smooth' }));
   }
+
+  // Let the nav menu trigger "New chat" too, so it's reachable on mobile where the floating
+  // button is easy to miss. No dep array: re-bind each render so it always calls the latest
+  // handler (fresh threadId), which is fine for a single window listener.
+  useEffect(() => {
+    const onNewChat = () => handleNewChat();
+    window.addEventListener('groovia:new-chat', onNewChat);
+    return () => window.removeEventListener('groovia:new-chat', onNewChat);
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -638,7 +649,7 @@ export default function ChatInterface({ authed }: Props) {
             is in view) drives the entrance animation - typing + boxes dropping in - so it
             plays when the user lands on the section and replays on the next scroll to it. */}
         <ImmigroovIntro ref={section1Ref} seen={seenSection1} />
-        <ChatIntro ref={section2Ref} seen={seenSection2} />
+        <ChatIntro ref={section2Ref} seen={seenSection2} highlight={!resumeUploaded} />
 
         <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-8 pb-44 space-y-6">
           {messages.map((m, i) => (
@@ -774,8 +785,10 @@ export default function ChatInterface({ authed }: Props) {
             className={cn(
               "flex items-end gap-2 rounded-2xl px-2 py-1.5",
               (gated && resumeUploaded || rateLimited) && "opacity-60",
-              // Highlight the chat box from the start (until a resume is uploaded).
-              !resumeUploaded && !rateLimited && "composer-glow",
+              // The glow only lands on the composer once it's actually usable (logged in +
+              // resume attached). Before that it lives on the "attach your resume" message
+              // and the paperclip, so the user is guided to the clip, not the locked input.
+              authed && resumeUploaded && !rateLimited && "composer-glow",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
@@ -806,15 +819,21 @@ export default function ChatInterface({ authed }: Props) {
                   sendMessage(input);
                 }
               }}
-              placeholder={gated && resumeUploaded ? UI_CONTENT.inputPlaceholderLocked : UI_CONTENT.inputPlaceholder}
-              disabled={(gated && resumeUploaded) || rateLimited}
+              placeholder={
+                !resumeUploaded ? UI_CONTENT.inputPlaceholderNoResume
+                : gated ? UI_CONTENT.inputPlaceholderLocked
+                : UI_CONTENT.inputPlaceholder
+              }
+              // Chat is locked until the user is logged in AND has attached a resume, so they
+              // can't type before the flow is ready (avoids stray messages we then handle).
+              disabled={!authed || !resumeUploaded || rateLimited}
               className="flex-1 bg-transparent border-none outline-none text-sm leading-relaxed resize-none py-2 max-h-40 disabled:cursor-not-allowed"
             />
 
             <button
               type="button"
               onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim() || (gated && resumeUploaded) || rateLimited}
+              disabled={loading || !input.trim() || !authed || !resumeUploaded || rateLimited}
               className="h-9 w-9 flex items-center justify-center rounded-lg bg-brand-900 text-white hover:bg-brand-800 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               <Send className="h-4 w-4" />
