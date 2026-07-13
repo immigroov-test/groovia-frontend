@@ -93,6 +93,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [saveWarnings, setSaveWarnings] = useState<string[] | null>(null);
 
   // Jump to the top whenever the step changes. Runs after the DOM swaps step content,
   // so it lands on the new step's top (a synchronous scroll during the click handler
@@ -196,6 +197,12 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
       const data = await res.json();
       if (!res.ok) { setError(data.detail || 'Something went wrong. Please try again.'); return; }
       if (!data.id) { setError('Unexpected response from server. Please try again.'); return; }
+      if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+        // BUG-012: some items failed to save during signup. Don't silently redirect
+        // as if everything succeeded - show what needs to be re-added.
+        setSaveWarnings(data.warnings);
+        return;
+      }
       router.push('/mentor');
       router.refresh();
     } catch {
@@ -203,6 +210,29 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (saveWarnings) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Profile submitted</h1>
+          <p className="text-sm text-muted mt-1">
+            Your application was received, but a few items didn&apos;t save. You can re-add them from your dashboard.
+          </p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex flex-col gap-2">
+          {saveWarnings.map((w, i) => (
+            <p key={i} className="text-sm text-amber-900">{w}</p>
+          ))}
+        </div>
+        <div>
+          <Button type="button" onClick={() => { router.push('/mentor'); router.refresh(); }}>
+            Go to dashboard
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
