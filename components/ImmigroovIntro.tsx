@@ -43,8 +43,9 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
             transition={{ duration: 0.6, ease: EASE }}
             className="mx-auto sm:mx-0 shrink-0"
           >
+            {/* Optimized from the 13 MB source GIF to a ~2.8 MB animated WebP (300 frames). */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/Globe_landingPage_GIF.gif" alt="" aria-hidden className="w-32 h-32 sm:w-52 sm:h-52 object-contain" />
+            <img src="/globe-landing.webp" alt="" aria-hidden className="w-28 h-28 sm:w-40 sm:h-40 object-contain" />
           </motion.div>
 
           {/* min-h reserves the headline space so typing doesn't shift the layout. Gradient
