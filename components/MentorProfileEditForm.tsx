@@ -20,6 +20,7 @@ import { EXPERTISE_CATEGORIES } from '../lib/content';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
+import { validateCityName } from '../lib/validators';
 
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
@@ -118,6 +119,8 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
     if (expertiseCountries.length > 2) return 'You can select a maximum of 2 countries of expertise.';
     const years = parseInt(yearsExp, 10);
     if (!yearsExp || isNaN(years) || years < 0) return 'Enter your years of lived experience.';
+    const cityErr = validateCityName(city);
+    if (cityErr) return cityErr;
     return null;
   }
 

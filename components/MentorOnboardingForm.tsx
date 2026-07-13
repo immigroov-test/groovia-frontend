@@ -18,6 +18,7 @@ import { Toggle } from './ui/Toggle';
 import { WeeklyHoursEditor, WEEK_DAYS, emptyWeek, validateWeeklyHours, weeklyToSlots, type WeeklyHours } from './WeeklyHoursEditor';
 import { ServiceListEditor, activeServiceCount, type DraftService } from './ServiceListEditor';
 import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
+import { validateCityName } from '../lib/validators';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { EXPERTISE_CATEGORIES } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
@@ -115,6 +116,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (expertiseCountries.length > 2) return 'You can select a maximum of 2 countries of expertise.';
     const years = parseInt(yearsExp, 10);
     if (!yearsExp || isNaN(years) || years < 0) return 'Enter your years of lived experience.';
+    const cityErr = validateCityName(city);
+    if (cityErr) return cityErr;
     return null;
   }
 
