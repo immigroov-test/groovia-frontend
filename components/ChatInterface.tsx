@@ -8,7 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Paperclip, Send, Lock, SquarePen, ChevronUp, ChevronDown } from 'lucide-react';
 import { UI_CONTENT, INTENT_OPTIONS } from '../lib/content';
-import { countryLabel } from '../lib/countries';
+import { countryLabel, flagEmoji } from '../lib/countries';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
 import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
@@ -117,7 +117,6 @@ export default function ChatInterface({ authed }: Props) {
   const [hydrated, setHydrated] = useState(false);
   // Find-a-mentor country dropdown: the supported countries come from the backend so the
   // list only shows countries we actually have mentors in.
-  const [mentorPickerOpen, setMentorPickerOpen] = useState(false);
   const [supportedCountries, setSupportedCountries] = useState<string[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
   // Auto-resume must run at most once per mount, and never after an explicit New chat -
@@ -379,6 +378,13 @@ export default function ChatInterface({ authed }: Props) {
       setCountriesLoading(false);
     }
   }
+
+  // Preload the supported countries as soon as the intent options appear, so the mentor
+  // select is populated before the user opens it.
+  useEffect(() => {
+    if (resumeUploaded && !intentSelected) loadSupportedCountries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeUploaded, intentSelected]);
 
   useEffect(() => {
     // Stay at the intro while only the welcome message exists; once a real conversation
@@ -645,39 +651,27 @@ export default function ChatInterface({ authed }: Props) {
                       </button>
                     );
                   }
-                  // Find a Mentor: open a dropdown of countries we actually support.
+                  // Find a Mentor: a native <select> so it works well on mobile (OS picker,
+                  // no accidental taps, proper scroll) and via keyboard, with flag emojis.
+                  // Populated only with countries we actually have mentors in.
                   return (
-                    <div key={opt.label} className="relative">
-                      <button
-                        onClick={() => { setMentorPickerOpen((o) => !o); loadSupportedCountries(); }}
-                        disabled={loading}
-                        className="inline-flex items-center gap-1 px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {opt.label}
-                        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', mentorPickerOpen && 'rotate-180')} />
-                      </button>
-                      {mentorPickerOpen && (
-                        <div className="absolute z-30 mt-1 w-56 max-h-60 overflow-y-auto rounded-xl border border-[--color-border] bg-card shadow-lg p-1">
-                          <p className="px-3 pt-1.5 pb-1 text-xs text-muted">Which country?</p>
-                          {countriesLoading && <div className="px-3 py-2 text-sm text-muted">Loading…</div>}
-                          {!countriesLoading && supportedCountries.length === 0 && (
-                            <div className="px-3 py-2 text-sm text-muted">No mentor countries yet.</div>
-                          )}
-                          {supportedCountries.map((code) => (
-                            <button
-                              key={code}
-                              onClick={() => {
-                                setMentorPickerOpen(false);
-                                sendMessage(`I want to find a mentor in ${countryLabel(code)}.`);
-                              }}
-                              className="block w-full text-left px-3 py-2 text-sm rounded-lg text-brand-900 hover:bg-brand-50"
-                            >
-                              {countryLabel(code)}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <select
+                      key={opt.label}
+                      value=""
+                      disabled={loading}
+                      aria-label="Find a mentor by country"
+                      onChange={(e) => {
+                        const code = e.target.value;
+                        if (code) sendMessage(`I want to find a mentor in ${countryLabel(code)}.`);
+                      }}
+                      className="max-w-[15rem] px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <option value="">{opt.label}</option>
+                      {countriesLoading && <option value="" disabled>Loading countries…</option>}
+                      {supportedCountries.map((code) => (
+                        <option key={code} value={code}>{flagEmoji(code)} {countryLabel(code)}</option>
+                      ))}
+                    </select>
                   );
                 })}
               </div>

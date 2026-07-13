@@ -23,6 +23,7 @@ export function TopNav({ authed, email, role }: Props) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [acctOpen, setAcctOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);   // desktop email pill -> sign out
   const [signingOut, setSigningOut] = useState(false);
 
   // Account sub-pages (Profile, Sessions; payments/subscriptions land here later).
@@ -148,17 +149,42 @@ export function TopNav({ authed, email, role }: Props) {
         {/* Desktop: auth */}
         <div className="hidden md:flex items-center gap-2 min-w-0">
           {authed ? (
-            <>
-              <div title={email ?? undefined} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] min-w-0">
+            // Single pill: avatar + email + chevron. Click reveals Sign out. Merging the
+            // two buttons frees up room to show more of the email (desktop only).
+            <div
+              className="relative min-w-0"
+              onMouseEnter={() => setUserMenuOpen(true)}
+              onMouseLeave={() => setUserMenuOpen(false)}
+            >
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen((v) => !v)}
+                title={email ?? undefined}
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] min-w-0"
+              >
                 <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
                   {(email?.[0] ?? 'U').toUpperCase()}
                 </div>
-                <span className="text-sm text-brand-900 font-medium truncate max-w-[140px] lg:max-w-[220px]">{email}</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleSignOut} loading={signingOut} className="bg-card/90 backdrop-blur-md shrink-0">
-                <LogOut className="h-4 w-4" /> Sign out
-              </Button>
-            </>
+                <span className="text-sm text-brand-900 font-medium truncate max-w-[200px] lg:max-w-[320px]">{email}</span>
+                <ChevronDown className={cn('h-3.5 w-3.5 text-muted shrink-0 transition-transform', userMenuOpen && 'rotate-180')} />
+              </button>
+              {userMenuOpen && (
+                <div className="absolute top-full right-0 pt-2">
+                  <div className="w-44 rounded-xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] p-1.5">
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      disabled={signingOut}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted hover:bg-brand-50/60 hover:text-brand-900 disabled:opacity-60"
+                    >
+                      <LogOut className="h-4 w-4" /> {signingOut ? 'Signing out…' : 'Sign out'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <Button size="sm" onClick={openSignIn}>
               <LogIn className="h-4 w-4" /> Login

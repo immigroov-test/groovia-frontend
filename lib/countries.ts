@@ -181,3 +181,11 @@ export const COUNTRY_MAP = new Map(COUNTRIES.map((c) => [c.code, c.name]));
 export function countryLabel(code: string): string {
   return COUNTRY_MAP.get(code) ?? code;
 }
+
+// ISO-2 code -> flag emoji (regional indicator letters). Renders on mobile/macOS; Windows
+// desktop shows the letters, which is a fine fallback.
+export function flagEmoji(code: string): string {
+  const cc = (code || '').toUpperCase();
+  if (cc.length !== 2 || !/^[A-Z]{2}$/.test(cc)) return '';
+  return String.fromCodePoint(...[...cc].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+}

@@ -35,8 +35,8 @@ export const UI_CONTENT = {
       "Immigroov isn't just a platform, it's a movement. A global community of people helping people move smarter, together.",
     features: [
       'Discover 3-5 countries that fit your skills and budget.',
-      "Book meetings with real mentors who've already made the move.",
-      'Get instant real-time answers on visas, jobs, housing and daily life.',
+      "Get matched with mentors who've already made the move.",
+      'Instant and accurate answers on visas, jobs, housing etc.',
     ],
     scrollCta: 'Scroll down to start your journey',
   },
