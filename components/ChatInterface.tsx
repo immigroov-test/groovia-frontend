@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Paperclip, Send, Lock, SquarePen, ChevronUp } from 'lucide-react';
+import { Paperclip, Send, Lock, SquarePen, ChevronUp, ChevronDown } from 'lucide-react';
 import { UI_CONTENT, INTENT_OPTIONS } from '../lib/content';
+import { countryLabel } from '../lib/countries';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
 import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
@@ -114,6 +115,11 @@ export default function ChatInterface({ authed }: Props) {
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  // Find-a-mentor country dropdown: the supported countries come from the backend so the
+  // list only shows countries we actually have mentors in.
+  const [mentorPickerOpen, setMentorPickerOpen] = useState(false);
+  const [supportedCountries, setSupportedCountries] = useState<string[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(false);
   // Auto-resume must run at most once per mount, and never after an explicit New chat -
   // otherwise clearing the chat immediately re-restores the just-cleared thread.
   const didAutoResumeRef = useRef(false);
@@ -357,6 +363,20 @@ export default function ChatInterface({ authed }: Props) {
 
   const scrollToTop = () => section1Ref.current?.scrollIntoView({ behavior: 'smooth' });
   const scrollToGroovia = () => section2Ref.current?.scrollIntoView({ behavior: 'smooth' });
+
+  async function loadSupportedCountries() {
+    if (supportedCountries.length || countriesLoading) return;
+    setCountriesLoading(true);
+    try {
+      const res = await fetch('/api/mentors/countries', { cache: 'no-store' });
+      const data = res.ok ? await res.json() : null;
+      setSupportedCountries(Array.isArray(data?.countries) ? data.countries : []);
+    } catch {
+      setSupportedCountries([]);
+    } finally {
+      setCountriesLoading(false);
+    }
+  }
 
   useEffect(() => {
     // Stay at the intro while only the welcome message exists; once a real conversation
@@ -609,16 +629,55 @@ export default function ChatInterface({ authed }: Props) {
             <div className="pt-2 animate-fade-up">
               <p className="text-sm font-medium text-foreground mb-3">{UI_CONTENT.intentPrompt}</p>
               <div className="flex flex-wrap gap-2">
-                {INTENT_OPTIONS.map(({ label, message }) => (
-                  <button
-                    key={label}
-                    onClick={() => sendMessage(message)}
-                    disabled={loading}
-                    className="px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {label}
-                  </button>
-                ))}
+                {INTENT_OPTIONS.map((opt) => {
+                  const isMentor = 'mentor' in opt && opt.mentor;
+                  if (!isMentor) {
+                    return (
+                      <button
+                        key={opt.label}
+                        onClick={() => sendMessage(opt.message)}
+                        disabled={loading}
+                        className="px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  }
+                  // Find a Mentor: open a dropdown of countries we actually support.
+                  return (
+                    <div key={opt.label} className="relative">
+                      <button
+                        onClick={() => { setMentorPickerOpen((o) => !o); loadSupportedCountries(); }}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1 px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {opt.label}
+                        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', mentorPickerOpen && 'rotate-180')} />
+                      </button>
+                      {mentorPickerOpen && (
+                        <div className="absolute z-30 mt-1 w-56 max-h-60 overflow-y-auto rounded-xl border border-[--color-border] bg-card shadow-lg p-1">
+                          <p className="px-3 pt-1.5 pb-1 text-xs text-muted">Which country?</p>
+                          {countriesLoading && <div className="px-3 py-2 text-sm text-muted">Loading…</div>}
+                          {!countriesLoading && supportedCountries.length === 0 && (
+                            <div className="px-3 py-2 text-sm text-muted">No mentor countries yet.</div>
+                          )}
+                          {supportedCountries.map((code) => (
+                            <button
+                              key={code}
+                              onClick={() => {
+                                setMentorPickerOpen(false);
+                                sendMessage(`I want to find a mentor in ${countryLabel(code)}.`);
+                              }}
+                              className="block w-full text-left px-3 py-2 text-sm rounded-lg text-brand-900 hover:bg-brand-50"
+                            >
+                              {countryLabel(code)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

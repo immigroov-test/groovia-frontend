@@ -274,6 +274,6 @@ export const SERVICE_DESCRIPTION_TEMPLATE =
 
 export const INTENT_OPTIONS = [
   { label: '📊 Generate a Career Report', message: 'I want to generate a career report.' },
-  { label: '🤝 Find me a Mentor',         message: 'I want to find a mentor.'           },
+  { label: '🤝 Find me a Mentor',         message: 'I want to find a mentor.', mentor: true },
   { label: '💬 Ask a Question',           message: 'I just want to ask some questions.' },
 ] as const;
