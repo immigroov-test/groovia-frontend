@@ -9,7 +9,6 @@ import { UI_CONTENT } from '../../lib/content';
 import { mockMentor, mockMentors } from './mockData';
 // Real pages/components - rendered with mock data so the gallery stays in sync with
 // the live app. Backend calls are intercepted by MockFetch in the preview frame.
-import LandingPage from '../(shell)/page';
 import { AboutContent } from '../../components/AboutContent';
 import { MentorBrowser } from '../../components/MentorBrowser';
 import { DirectBookingWidget } from '../../components/DirectBookingWidget';
@@ -183,7 +182,6 @@ function MentorProfilePreview() {
 // ── Previews, organized by user flow ─────────────────────────────────────────
 export const PREVIEWS: { group: string; title: string; real?: boolean; node: ReactNode }[] = [
   // 1. DISCOVER (public) -----------------------------------------------------
-  { group: '1 · Discover', title: 'Landing page', real: true, node: <LandingPage /> },
   {
     group: '1 · Discover', title: 'Browse mentors', real: true, node: (
       <PageWrap>
