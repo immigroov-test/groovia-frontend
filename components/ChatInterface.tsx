@@ -107,9 +107,10 @@ export default function ChatInterface({ authed }: Props) {
 
   // SSR-safe defaults; hydrated from localStorage in a single effect after mount.
   const [threadId, setThreadId] = useState<string>('');
-  // Starts empty: the "attach your resume" welcome is shown as a pinned hint above the
-  // composer (not a far-below chat bubble), so there's no gap on the landing.
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // The "attach your resume" welcome is Groovia's initial chat message (a bubble).
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: UI_CONTENT.welcomeMessage },
+  ]);
   const [input, setInput] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [resumeUploaded, setResumeUploaded] = useState(false);
@@ -151,9 +152,7 @@ export default function ChatInterface({ authed }: Props) {
       setThreadId(fresh);
     }
     const storedMessages = loadFromStorage<ChatMessage[] | null>(LS_KEYS.messages, null);
-    // Drop the old standalone welcome bubble if it was persisted before (it's now shown as
-    // the hint above the composer, not a far-below chat bubble). Real messages are kept.
-    if (storedMessages) setMessages(storedMessages.filter((m) => m.content !== UI_CONTENT.welcomeMessage));
+    if (storedMessages) setMessages(storedMessages);
     setResumeUploaded(storedResumeUploaded);
     setIntentSelected(loadFromStorage<boolean>(LS_KEYS.intentSelected, false));
     setHydrated(true);
@@ -240,7 +239,7 @@ export default function ChatInterface({ authed }: Props) {
     const fresh = uuidv4();
     window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
     setThreadId(fresh);
-    setMessages([]);
+    setMessages([{ role: 'assistant', content: UI_CONTENT.welcomeMessage }]);
     setResumeUploaded(false);
     setIntentSelected(false);
     // A fresh start lands on the Groovia section with the composer ready.
@@ -283,11 +282,15 @@ export default function ChatInterface({ authed }: Props) {
   // Automatically scroll to reveal the rest of an overflowing section (e.g. all three
   // boxes on mobile), then stop. Cancels the instant the user scrolls, so it never fights
   // them (#3).
-  function autoReveal(sec: HTMLElement | null) {
+  function autoReveal(sec: HTMLElement | null, toEnd: boolean) {
     const root = scrollRef.current;
     if (!root || !sec || !landingRef.current) return;
     revealCancelRef.current?.();
-    const target = Math.min(sec.offsetTop + sec.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
+    // Section 1 -> reveal to its own bottom (the third box). Groovia section -> reveal all
+    // the way down so the boxes AND Groovia's first message ("attach your resume") show.
+    const target = toEnd
+      ? root.scrollHeight - root.clientHeight
+      : Math.min(sec.offsetTop + sec.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
     const start = root.scrollTop;
     const distance = target - start;
     if (distance <= 24) return;   // already fits / bottom shown
@@ -297,17 +300,19 @@ export default function ChatInterface({ authed }: Props) {
       cancelled = true;
       cancelAnimationFrame(raf);
       root.removeEventListener('wheel', cancel);
-      root.removeEventListener('touchstart', cancel);
+      root.removeEventListener('touchmove', cancel);
       revealCancelRef.current = null;
     };
     revealCancelRef.current = cancel;
+    // Cancel only on a real scroll gesture (wheel / drag), NOT a bare touch, so resting a
+    // finger on the screen doesn't kill it the instant it starts.
     root.addEventListener('wheel', cancel, { passive: true });
-    root.addEventListener('touchstart', cancel, { passive: true });
+    root.addEventListener('touchmove', cancel, { passive: true });
     let t0 = 0;
     const step = (now: number) => {
       if (cancelled) return;
       if (!t0) t0 = now;
-      const t = Math.min(1, (now - t0) / 2000);
+      const t = Math.min(1, (now - t0) / 1600);
       root.scrollTop = start + distance * (1 - Math.pow(1 - t, 3));   // easeOutCubic
       if (t < 1) raf = requestAnimationFrame(step);
       else cancel();
@@ -315,9 +320,9 @@ export default function ChatInterface({ authed }: Props) {
     raf = requestAnimationFrame(step);
   }
 
-  function scheduleReveal(sec: HTMLElement | null) {
+  function scheduleReveal(sec: HTMLElement | null, toEnd: boolean) {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    revealTimerRef.current = window.setTimeout(() => autoReveal(sec), 2200);   // after the entry animation has played
+    revealTimerRef.current = window.setTimeout(() => autoReveal(sec, toEnd), 1800);   // after the entry animation has played
   }
 
   useEffect(() => {
@@ -332,7 +337,7 @@ export default function ChatInterface({ authed }: Props) {
           if (e.target === s1) {
             if (active && !atS1Ref.current) {
               setSeenSection1(true);
-              if (!revealedS1Ref.current) { revealedS1Ref.current = true; scheduleReveal(s1); }
+              if (!revealedS1Ref.current) { revealedS1Ref.current = true; scheduleReveal(s1, false); }
             }
             atS1Ref.current = active;
             setAtSection1(active);
@@ -340,7 +345,7 @@ export default function ChatInterface({ authed }: Props) {
           if (e.target === s2) {
             if (active && !atS2Ref.current) {
               setSeenSection2(true);
-              if (!revealedS2Ref.current) { revealedS2Ref.current = true; scheduleReveal(s2); }
+              if (!revealedS2Ref.current) { revealedS2Ref.current = true; scheduleReveal(s2, true); }
             }
             atS2Ref.current = active;
             setAtSection2(active);
@@ -720,21 +725,13 @@ export default function ChatInterface({ authed }: Props) {
 
           <div
             className={cn(
-              "rounded-2xl px-2 py-1.5 flex flex-col",
+              "flex items-end gap-2 rounded-2xl px-2 py-1.5",
               (gated && resumeUploaded || rateLimited) && "opacity-60",
               // Highlight the chat box from the start (until a resume is uploaded).
               !resumeUploaded && !rateLimited && "composer-glow",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
-            {/* "Attach your resume" nudge - inside the chat box, at the top (#2). */}
-            {!resumeUploaded && !rateLimited && (
-              <p className="text-center text-[11px] font-medium text-brand-700 pt-0.5 pb-1.5 px-2">
-                {UI_CONTENT.welcomeMessage}
-              </p>
-            )}
-
-            <div className="flex items-end gap-2">
             {FEATURES.resumeUpload && (
               <button
                 type="button"
@@ -775,7 +772,6 @@ export default function ChatInterface({ authed }: Props) {
             >
               <Send className="h-4 w-4" />
             </button>
-            </div>
           </div>
 
           <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
