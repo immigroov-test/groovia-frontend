@@ -27,10 +27,7 @@ function AuthModalInner() {
   // Mentor join reuses this whole login flow; it just lands on the mentor onboarding
   // page afterwards (which itself sends already-approved mentors to their hub).
   const next = params.get('next') ?? (role === 'mentor' ? '/mentor/onboarding' : undefined);
-  // Guest-booking login-insist: after a guest books, we open this popup with a
-  // reason banner + their email prefilled so they can create an account to manage
-  // the booking. Not forced — they can still dismiss it.
-  const reason = params.get('reason');
+  // Booking flow prefills the email so the guest just sets a password after verifying.
   const emailParam = params.get('email');
 
   const [stage, setStage] = useState<Stage>('email');
@@ -242,24 +239,6 @@ function AuthModalInner() {
             <div className="relative z-10 px-6 sm:px-9 pt-12 md:pt-20 pb-24 md:pb-6 flex flex-col md:h-full overflow-y-auto">
             {stage === 'email' && (
               <>
-                {reason === 'manage-booking' && (
-                  <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3">
-                    <p className="text-sm font-semibold text-emerald-800">Your session is booked!</p>
-                    <p className="text-xs text-emerald-700 mt-0.5 leading-snug">
-                      Create your account to manage this booking: reschedule, cancel, or join the meeting.
-                      As a guest you can&apos;t manage it later.
-                    </p>
-                  </div>
-                )}
-                {reason === 'confirm-booking' && (
-                  <div className="mb-5 rounded-xl border border-brand-200 bg-brand-50/80 px-4 py-3">
-                    <p className="text-sm font-semibold text-brand-900">One more step</p>
-                    <p className="text-xs text-brand-800 mt-0.5 leading-snug">
-                      Log in or create a free account to confirm your booking - this lets you reschedule,
-                      cancel, or join the meeting later.
-                    </p>
-                  </div>
-                )}
                 <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">{t.heading}</h2>
                 <p className="text-base text-muted mt-1 text-center">{t.subheading}</p>
                 <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">

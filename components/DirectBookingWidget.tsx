@@ -12,6 +12,7 @@ import { RichText } from './ui/RichText';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { openRazorpayCheckout } from '../lib/razorpay';
+import { BookingAccountPrompt } from './BookingAccountPrompt';
 import { cn } from '../lib/utils';
 
 const NOTES_MAX = 500;
@@ -254,6 +255,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const showMentorTz = !!mentorTimezone && mentorTimezone !== TZ;
   const [isLoggedIn, setIsLoggedIn]       = useState(false);
   const [pendingBook, setPendingBook]     = useState(false);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);   // guest "create account to book" popup
   const [step, setStep]                   = useState<Step>('service');
   const [services, setServices]           = useState<Service[] | null>(null);
   const [servicesError, setServicesError] = useState<string | null>(null);
@@ -340,18 +342,24 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     })();
   }, []);
 
-  // BUG-025: bookings now require an account. Not logged in → open the auth popup
-  // (it does its own has_password check and routes to login or signup accordingly)
-  // with the email/booking intent prefilled; the booking only fires once a real
-  // session exists, via the pendingBook effect above - never before.
+  // BUG-025: bookings require an account. A guest first sees the account prompt; only
+  // "Log in or sign up" opens the normal auth popup (which resumes this booking after
+  // sign-in via the pendingBook effect above). "Not now" just closes - no guest booking.
   function handleConfirm() {
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
     if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
     setFormError(null);
+    setShowAccountPrompt(true);
+  }
+
+  // Guest chose to log in: open the normal auth popup (no banner) with the email prefilled;
+  // the booking resumes on the same page after sign-in, right where they left off.
+  function proceedToLogin() {
+    setShowAccountPrompt(false);
     setPendingBook(true);
-    router.push(`${pathname}?auth=open&reason=confirm-booking&email=${encodeURIComponent(email.trim())}`);
+    router.push(`${pathname}?auth=open&email=${encodeURIComponent(email.trim())}`);
   }
 
   // Load slots when a service is selected
@@ -806,6 +814,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           )}
         </aside>
       </div>
+
+      {showAccountPrompt && (
+        <BookingAccountPrompt onProceed={proceedToLogin} onDismiss={() => setShowAccountPrompt(false)} />
+      )}
     </div>
   );
 }
