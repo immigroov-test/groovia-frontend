@@ -42,6 +42,9 @@ function AuthModalInner() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState<{ text: string; author: string }>({ ...UI_CONTENT.quote });
+  // The author line only appears once the quote has finished typing.
+  const [quoteDone, setQuoteDone] = useState(false);
+  useEffect(() => { setQuoteDone(false); }, [quote.text]);
 
   // Suppresses the auto-close listener while a user is mid-setup (they're already
   // signed in from the verification link, but must still set a password).
@@ -386,9 +389,11 @@ function AuthModalInner() {
             </div>
             <div className="relative px-8 pb-5">
               <p className="text-xs text-white/80 leading-snug font-serif font-normal italic min-h-[2.4em]">
-                “<TypeText key={quote.text} text={quote.text} active={isOpen} speed={38} />”
+                “<TypeText key={quote.text} text={quote.text} active={isOpen} speed={38} onDone={() => setQuoteDone(true)} />”
               </p>
-              {quote.author && <p className="text-[11px] text-white/60 mt-1 not-italic">{quote.author}</p>}
+              {quote.author && quoteDone && (
+                <p className="text-[11px] text-white/60 mt-1 not-italic animate-fade-up">{quote.author}</p>
+              )}
             </div>
           </div>
         </div>
