@@ -33,8 +33,8 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
   const boxStart = (b.headline.length * TYPE_SPEED) / 1000 + 0.3;   // boxes after the headline finishes typing
 
   return (
-    <section ref={ref} className="relative min-h-full overflow-hidden flex flex-col snap-start">
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
+    <section ref={ref} className="relative min-h-full flex flex-col snap-start">
+      <div className="relative z-10 my-auto w-full flex flex-col items-center text-center px-5 sm:px-8 py-12">
         {/* Two columns: GIF (square) on the left, headline on the right. Stacks on mobile. */}
         <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-[auto_1fr] items-center gap-4 sm:gap-8">
           <motion.div

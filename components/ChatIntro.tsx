@@ -25,8 +25,8 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ see
   const hero = UI_CONTENT.hero;
 
   return (
-    <section ref={ref} className="relative min-h-full overflow-hidden flex flex-col snap-start">
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-10">
+    <section ref={ref} className="relative min-h-full flex flex-col snap-start">
+      <div className="relative z-10 my-auto w-full flex flex-col items-center text-center px-5 sm:px-8 py-10">
         <motion.h1
           {...rise(seen, 0)}
           className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent"
@@ -57,10 +57,11 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ see
           })}
         </div>
 
-        {/* Groovia's initial message, directly after the boxes (no gap). */}
-        <motion.div {...rise(seen, 1.6)} className="mt-6 w-full max-w-3xl flex gap-3 justify-start">
+        {/* Groovia's initial message, directly after the boxes (no gap). Clear bubble +
+            avatar so it reads as a message from the AI. */}
+        <motion.div {...rise(seen, 1.6)} className="mt-6 w-full max-w-3xl flex items-start gap-2.5 justify-start">
           <AiAvatar />
-          <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-brand-50/60 px-4 py-3 text-sm leading-relaxed text-foreground text-left">
+          <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white border border-[--color-border] shadow-sm px-4 py-3 text-sm leading-relaxed text-foreground text-left">
             {UI_CONTENT.welcomeMessage}
           </div>
         </motion.div>
