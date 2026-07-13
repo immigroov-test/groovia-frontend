@@ -107,10 +107,9 @@ export default function ChatInterface({ authed }: Props) {
 
   // SSR-safe defaults; hydrated from localStorage in a single effect after mount.
   const [threadId, setThreadId] = useState<string>('');
-  // The "attach your resume" welcome is Groovia's initial chat message (a bubble).
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: UI_CONTENT.welcomeMessage },
-  ]);
+  // Empty on the landing: Groovia's "attach your resume" greeting is rendered inside the
+  // Groovia section (ChatIntro), so the messages area only holds the real conversation.
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [resumeUploaded, setResumeUploaded] = useState(false);
@@ -239,7 +238,7 @@ export default function ChatInterface({ authed }: Props) {
     const fresh = uuidv4();
     window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
     setThreadId(fresh);
-    setMessages([{ role: 'assistant', content: UI_CONTENT.welcomeMessage }]);
+    setMessages([]);
     setResumeUploaded(false);
     setIntentSelected(false);
     // A fresh start lands on the Groovia section with the composer ready.
@@ -282,15 +281,12 @@ export default function ChatInterface({ authed }: Props) {
   // Automatically scroll to reveal the rest of an overflowing section (e.g. all three
   // boxes on mobile), then stop. Cancels the instant the user scrolls, so it never fights
   // them (#3).
-  function autoReveal(sec: HTMLElement | null, toEnd: boolean) {
+  function autoReveal(sec: HTMLElement | null) {
     const root = scrollRef.current;
     if (!root || !sec || !landingRef.current) return;
     revealCancelRef.current?.();
-    // Section 1 -> reveal to its own bottom (the third box). Groovia section -> reveal all
-    // the way down so the boxes AND Groovia's first message ("attach your resume") show.
-    const target = toEnd
-      ? root.scrollHeight - root.clientHeight
-      : Math.min(sec.offsetTop + sec.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
+    // Reveal down to this section's own bottom (its last box / its initial message).
+    const target = Math.min(sec.offsetTop + sec.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
     const start = root.scrollTop;
     const distance = target - start;
     if (distance <= 24) return;   // already fits / bottom shown
@@ -320,9 +316,9 @@ export default function ChatInterface({ authed }: Props) {
     raf = requestAnimationFrame(step);
   }
 
-  function scheduleReveal(sec: HTMLElement | null, toEnd: boolean) {
+  function scheduleReveal(sec: HTMLElement | null) {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    revealTimerRef.current = window.setTimeout(() => autoReveal(sec, toEnd), 1800);   // after the entry animation has played
+    revealTimerRef.current = window.setTimeout(() => autoReveal(sec), 1400);   // after the entry animation has played
   }
 
   useEffect(() => {
@@ -337,7 +333,7 @@ export default function ChatInterface({ authed }: Props) {
           if (e.target === s1) {
             if (active && !atS1Ref.current) {
               setSeenSection1(true);
-              if (!revealedS1Ref.current) { revealedS1Ref.current = true; scheduleReveal(s1, false); }
+              if (!revealedS1Ref.current) { revealedS1Ref.current = true; scheduleReveal(s1); }
             }
             atS1Ref.current = active;
             setAtSection1(active);
@@ -345,7 +341,7 @@ export default function ChatInterface({ authed }: Props) {
           if (e.target === s2) {
             if (active && !atS2Ref.current) {
               setSeenSection2(true);
-              if (!revealedS2Ref.current) { revealedS2Ref.current = true; scheduleReveal(s2, true); }
+              if (!revealedS2Ref.current) { revealedS2Ref.current = true; scheduleReveal(s2); }
             }
             atS2Ref.current = active;
             setAtSection2(active);

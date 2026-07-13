@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Compass, Users, Zap } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
 import { TypeText } from './TypeText';
+import { AiAvatar } from './AiAvatar';
 
 const FEATURE_ICONS = [Compass, Users, Zap];
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -25,7 +26,7 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ see
 
   return (
     <section ref={ref} className="relative min-h-full overflow-hidden flex flex-col snap-start">
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-10">
         <motion.h1
           {...rise(seen, 0)}
           className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent"
@@ -37,7 +38,7 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ see
           {hero.tagline}
         </motion.p>
 
-        <div className="mt-9 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl w-full">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl w-full">
           {hero.features.map((text, i) => {
             const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length];
             return (
@@ -55,6 +56,14 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ see
             );
           })}
         </div>
+
+        {/* Groovia's initial message, directly after the boxes (no gap). */}
+        <motion.div {...rise(seen, 1.6)} className="mt-6 w-full max-w-3xl flex gap-3 justify-start">
+          <AiAvatar />
+          <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-brand-50/60 px-4 py-3 text-sm leading-relaxed text-foreground text-left">
+            {UI_CONTENT.welcomeMessage}
+          </div>
+        </motion.div>
       </div>
     </section>
   );
