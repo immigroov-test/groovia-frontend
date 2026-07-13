@@ -1,5 +1,5 @@
 'use client';
-import { forwardRef, useEffect, useState, type RefObject } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Compass, Users, Zap } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
@@ -7,17 +7,14 @@ import { UI_CONTENT } from '../lib/content';
 const FEATURE_ICONS = [Compass, Users, Zap];
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-// Headline types itself out while `active` (the section is in view); resets when it
-// leaves so it re-types the next time the user scrolls back to it.
-function TypeText({ text, speed = 45, active, className }: { text: string; speed?: number; active: boolean; className?: string }) {
+// Headline types itself out while `active` (section in view); resets when it leaves so
+// it re-types the next time the user scrolls back to it.
+function TypeText({ text, speed = 55, active, className }: { text: string; speed?: number; active: boolean; className?: string }) {
   const [shown, setShown] = useState(0);
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (!active) {
-      setShown(0);
-      return;
-    }
     setShown(0);
+    if (!active) return;
     const id = setInterval(() => {
       setShown((n) => {
         if (n >= text.length) {
@@ -40,37 +37,32 @@ function TypeText({ text, speed = 45, active, className }: { text: string; speed
   );
 }
 
+// Entry animation (slide up + fade) gated on `active`, so the boxes drop in when the
+// section comes into view and re-play each time the user scrolls back to it.
+const rise = (active: boolean, delay: number) => ({
+  initial: { opacity: 0, y: 22 },
+  animate: active ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 },
+  transition: { duration: 0.5, delay, ease: EASE },
+});
+
 interface Props {
-  scrollParent?: RefObject<HTMLDivElement | null>;
+  active: boolean;
 }
 
-// Section 2 of the landing: Groovia introduces itself and its advantages.
-export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ scrollParent }, ref) {
+export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ active }, ref) {
   const hero = UI_CONTENT.hero;
-  const [typing, setTyping] = useState(false);
-  const viewport = { root: scrollParent, amount: 0.4, once: false } as const;
-  const rise = { initial: { opacity: 0, y: 22 }, whileInView: { opacity: 1, y: 0 } };
 
   return (
     <section ref={ref} className="relative min-h-full overflow-hidden flex flex-col snap-start">
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
         <motion.h1
-          {...rise}
-          viewport={viewport}
-          onViewportEnter={() => setTyping(true)}
-          onViewportLeave={() => setTyping(false)}
-          transition={{ duration: 0.5, ease: EASE }}
+          {...rise(active, 0)}
           className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent"
         >
-          <TypeText text={hero.title} active={typing} />
+          <TypeText text={hero.title} active={active} />
         </motion.h1>
 
-        <motion.p
-          {...rise}
-          viewport={viewport}
-          transition={{ duration: 0.5, delay: 0.5, ease: EASE }}
-          className="mt-3 text-lg sm:text-xl font-semibold text-brand-700"
-        >
+        <motion.p {...rise(active, 0.9)} className="mt-3 text-lg sm:text-xl font-semibold text-brand-700">
           {hero.tagline}
         </motion.p>
 
@@ -78,12 +70,7 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ scr
           {hero.features.map((text, i) => {
             const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length];
             return (
-              <motion.div
-                key={text}
-                {...rise}
-                viewport={viewport}
-                transition={{ duration: 0.5, delay: 0.7 + i * 0.12, ease: EASE }}
-              >
+              <motion.div key={text} {...rise(active, 1.1 + i * 0.14)}>
                 {/* Gradient-border glass card, icon centered on top (issue #3) */}
                 <div className="group h-full rounded-2xl p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
                   <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-5 flex flex-col items-center text-center gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">

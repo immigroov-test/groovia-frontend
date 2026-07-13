@@ -1,5 +1,5 @@
 'use client';
-import { forwardRef, type RefObject } from 'react';
+import { forwardRef } from 'react';
 import { motion } from 'motion/react';
 import { Users, ShieldCheck, Globe } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
@@ -7,26 +7,27 @@ import { UI_CONTENT } from '../lib/content';
 const CARD_ICONS = [Users, ShieldCheck, Globe];
 const EASE = [0.22, 1, 0.36, 1] as const;
 
+// Entry animation (slide up + fade) gated on `active` - true while the section is in
+// view - so the headline and boxes drop in when the user lands on the section, and
+// re-play the next time they scroll back to it.
+const rise = (active: boolean, delay: number) => ({
+  initial: { opacity: 0, y: 22 },
+  animate: active ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 },
+  transition: { duration: 0.5, delay, ease: EASE },
+});
+
 interface Props {
-  // The scroll container the section lives in, so the entrance transitions observe the
-  // right root and replay each time the section scrolls into view.
-  scrollParent: RefObject<HTMLDivElement | null>;
+  active: boolean;
 }
 
-// Section 1 of the landing: what Immigroov is, headline in the Immigroov blue-to-orange
-// gradient, three carded points (icon on top). Groovia is revealed on scroll.
-export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovIntro({ scrollParent }, ref) {
+export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovIntro({ active }, ref) {
   const b = UI_CONTENT.brandIntro;
-  const viewport = { root: scrollParent, amount: 0.3, once: false } as const;
-  const rise = { initial: { opacity: 0, y: 22 }, whileInView: { opacity: 1, y: 0 } };
 
   return (
     <section ref={ref} className="relative min-h-full overflow-hidden flex flex-col snap-start">
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
         <motion.h1
-          {...rise}
-          viewport={viewport}
-          transition={{ duration: 0.5, ease: EASE }}
+          {...rise(active, 0)}
           className="max-w-4xl text-4xl sm:text-6xl font-bold tracking-tight leading-[1.12] bg-gradient-to-r from-blue-700 via-blue-500 to-accent-500 bg-clip-text text-transparent"
         >
           {b.headline}
@@ -36,12 +37,7 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
           {b.cards.map((text, i) => {
             const Icon = CARD_ICONS[i % CARD_ICONS.length];
             return (
-              <motion.div
-                key={text}
-                {...rise}
-                viewport={viewport}
-                transition={{ duration: 0.5, delay: 0.15 + i * 0.12, ease: EASE }}
-              >
+              <motion.div key={text} {...rise(active, 0.2 + i * 0.14)}>
                 {/* Gradient-border glass card, icon centered on top (issue #3) */}
                 <div className="group h-full rounded-2xl p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
                   <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-5 flex flex-col items-center text-center gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">

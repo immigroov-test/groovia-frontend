@@ -495,10 +495,11 @@ export default function ChatInterface({ authed }: Props) {
         style={{ zIndex: 1 }}
       >
         {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both stay mounted so the
-            user can scroll back up to the brand story at any time. scrollParent lets their
-            entrance transitions replay each time they scroll into view. */}
-        <ImmigroovIntro ref={section1Ref} scrollParent={scrollRef} />
-        <ChatIntro ref={section2Ref} scrollParent={scrollRef} />
+            user can scroll back up to the brand story at any time. `active` (this section
+            is in view) drives the entrance animation - typing + boxes dropping in - so it
+            plays when the user lands on the section and replays on the next scroll to it. */}
+        <ImmigroovIntro ref={section1Ref} active={atSection1} />
+        <ChatIntro ref={section2Ref} active={atSection2} />
 
         <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-8 pb-44 space-y-6">
           {messages.map((m, i) => (
