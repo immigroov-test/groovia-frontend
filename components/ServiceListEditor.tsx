@@ -97,7 +97,7 @@ export function ServiceListEditor({
       {adding ? (
         <div className="rounded-xl border border-[--color-border] p-4 flex flex-col gap-3">
           <Input label="Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Quick career chat" autoFocus />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Duration *</label>
               <select value={String(duration)} onChange={(e) => { const d = parseInt(e.target.value); setDuration(d); setPrice(proratePrice(hourlyRate, d)); }}

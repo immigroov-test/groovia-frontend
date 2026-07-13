@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Paperclip, Send, Lock, SquarePen, ChevronUp, ChevronDown } from 'lucide-react';
-import { UI_CONTENT, INTENT_OPTIONS } from '../lib/content';
+import { UI_CONTENT, INTENT_OPTIONS, EXPERTISE_CATEGORY_MAP } from '../lib/content';
 import { countryLabel, flagEmoji } from '../lib/countries';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
@@ -30,6 +30,19 @@ interface Props {
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+// Find-a-mentor facets from the backend (DB-driven, so they auto-expand as mentors join).
+interface MentorFacets {
+  categories: string[];
+  countries: string[];
+  by_category: Record<string, string[]>;
+}
+
+// A topic code -> human label, falling back to a Title Case of the code for any future
+// category the backend returns that the label map doesn't know yet.
+function topicLabel(code: string): string {
+  return EXPERTISE_CATEGORY_MAP[code] ?? code.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const LINK_CLASS = '!text-brand-700 !underline !underline-offset-4 hover:!text-brand-900 font-medium';
@@ -115,10 +128,12 @@ export default function ChatInterface({ authed }: Props) {
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  // Find-a-mentor country dropdown: the supported countries come from the backend so the
-  // list only shows countries we actually have mentors in.
-  const [supportedCountries, setSupportedCountries] = useState<string[]>([]);
-  const [countriesLoading, setCountriesLoading] = useState(false);
+  // Find-a-mentor dropdowns are DB-driven facets so they only show topics/countries we
+  // actually have mentors for, and auto-expand as mentors join. The two are dependent:
+  // pick a topic, then the country list narrows to that topic (faceted filtering).
+  const [facets, setFacets] = useState<MentorFacets>({ categories: [], countries: [], by_category: {} });
+  const [facetsLoading, setFacetsLoading] = useState(false);
+  const [mentorTopic, setMentorTopic] = useState('');
   // Auto-resume must run at most once per mount, and never after an explicit New chat -
   // otherwise clearing the chat immediately re-restores the just-cleared thread.
   const didAutoResumeRef = useRef(false);
@@ -189,11 +204,15 @@ export default function ChatInterface({ authed }: Props) {
   }, [hydrated, authed, threadId]);
 
   // Auto-resume the user's most recent thread on sign-in, only if the local chat is empty.
+  // Gated to once per browser session (sessionStorage), NOT once per mount: otherwise a
+  // plain page refresh after "New chat" re-fetches the next non-archived thread and drops
+  // the user back into an older conversation (bug: clear chat -> refresh -> old chat).
   useEffect(() => {
     if (!hydrated || !authed || !FEATURES.chatPersist) return;
-    if (didAutoResumeRef.current) return;
+    if (didAutoResumeRef.current || window.sessionStorage.getItem('groovia.autoResumed')) return;
     if (resumeUploaded || messages.length > 1) return;
     didAutoResumeRef.current = true;   // claim the one-shot before the async restore
+    window.sessionStorage.setItem('groovia.autoResumed', '1');
     (async () => {
       const headers = await authHeaders();
       if (!Object.keys(headers).length) return;
@@ -223,6 +242,7 @@ export default function ChatInterface({ authed }: Props) {
 
   function handleNewChat() {
     didAutoResumeRef.current = true;   // block auto-resume from re-restoring the cleared thread
+    window.sessionStorage.setItem('groovia.autoResumed', '1');   // ...and keep it blocked across refreshes this session
     // Clearing must stick across sign-ins: archive the current thread server-side so
     // auto-resume can't bring the cleared conversation back next login (issue #4).
     const old = threadId;
@@ -241,6 +261,7 @@ export default function ChatInterface({ authed }: Props) {
     setMessages([]);
     setResumeUploaded(false);
     setIntentSelected(false);
+    setMentorTopic('');
     // A fresh start lands on the Groovia section with the composer ready.
     requestAnimationFrame(() => section2Ref.current?.scrollIntoView({ behavior: 'smooth' }));
   }
@@ -264,39 +285,19 @@ export default function ChatInterface({ authed }: Props) {
   const [seenSection2, setSeenSection2] = useState(false);
 
   // Refs so the IntersectionObserver (set up once) always reads current values. atS1Ref
-  // starts false so the very first "Section 1 in view" counts as a rising edge. revealed*
-  // make the auto-scroll fire once per section.
+  // starts false so the very first "Section 1 in view" counts as a rising edge.
   const landingRef = useRef(true);   // true while on the landing (no real conversation yet)
   const atS1Ref = useRef(false);
   const atS2Ref = useRef(false);
-  const revealedS1Ref = useRef(false);
-  const revealedS2Ref = useRef(false);
-  const revealTimerRef = useRef<number | null>(null);
+  const tourTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
     landingRef.current = !resumeUploaded && messages.length <= 1;
   }, [resumeUploaded, messages.length]);
 
-  // Automatically scroll to reveal the rest of an overflowing section (e.g. all three
-  // boxes on mobile), then stop. Cancels the instant the user scrolls, so it never fights
-  // them (#3).
-  function autoReveal(sec: HTMLElement | null) {
-    const root = scrollRef.current;
-    if (!root || !sec || !landingRef.current) return;
-    // Reveal down to this section's own bottom (its last box / its initial message).
-    const target = Math.min(sec.offsetTop + sec.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
-    if (target - root.scrollTop <= 24) return;   // already fits / bottom already shown
-    // Native smooth scroll. Reliable on mobile and the browser yields to the user the
-    // moment they scroll, unlike the old rAF tween that momentum-scroll (touchmove) killed
-    // the instant it started - which is why the auto-reveal never ran on phones.
-    root.scrollTo({ top: target, behavior: 'smooth' });
-  }
-
-  function scheduleReveal(sec: HTMLElement | null) {
-    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    revealTimerRef.current = window.setTimeout(() => autoReveal(sec), 1400);   // after the entry animation has played
-  }
-
+  // IntersectionObserver: latch which intro section is in view. Drives the once-only entry
+  // animations (seenSection*) and the UI cues (atSection*). The scrolling itself is done by
+  // the guided tour below.
   useEffect(() => {
     const root = scrollRef.current;
     const s1 = section1Ref.current;
@@ -307,18 +308,12 @@ export default function ChatInterface({ authed }: Props) {
         for (const e of entries) {
           const active = e.isIntersecting && e.intersectionRatio >= 0.5;
           if (e.target === s1) {
-            if (active && !atS1Ref.current) {
-              setSeenSection1(true);
-              if (!revealedS1Ref.current) { revealedS1Ref.current = true; scheduleReveal(s1); }
-            }
+            if (active && !atS1Ref.current) setSeenSection1(true);
             atS1Ref.current = active;
             setAtSection1(active);
           }
           if (e.target === s2) {
-            if (active && !atS2Ref.current) {
-              setSeenSection2(true);
-              if (!revealedS2Ref.current) { revealedS2Ref.current = true; scheduleReveal(s2); }
-            }
+            if (active && !atS2Ref.current) setSeenSection2(true);
             atS2Ref.current = active;
             setAtSection2(active);
           }
@@ -328,9 +323,64 @@ export default function ChatInterface({ authed }: Props) {
     );
     io.observe(s1);
     io.observe(s2);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
+  // Guided intro auto-scroll. On the landing, gently walk down through Section 1
+  // (peer-to-peer) and Section 2 (Groovia), ending on Groovia's welcome message, so the
+  // story reads itself and BOTH sections visibly scroll (the earlier version only revealed
+  // a section's own overflow, so Section 1 - which fits - never moved). Native smooth
+  // scroll is reliable on mobile; runs once per browser session and bows out the instant
+  // the user takes over.
+  useEffect(() => {
+    if (!hydrated) return;
+    const root = scrollRef.current;
+    const s1 = section1Ref.current;
+    const s2 = section2Ref.current;
+    if (!root || !s1 || !s2 || !landingRef.current) return;
+    if (window.sessionStorage.getItem('groovia.tourDone')) return;
+
+    let done = false;
+    const bottomOf = (el: HTMLElement) =>
+      Math.min(el.offsetTop + el.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
+    const glideTo = (top: number) => {
+      if (!done && landingRef.current) root.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', ' ', 'Home', 'End'].includes(e.key)) stop();
+    };
+    function stop() {
+      if (done) return;
+      done = true;
+      window.sessionStorage.setItem('groovia.tourDone', '1');
+      tourTimersRef.current.forEach(clearTimeout);
+      tourTimersRef.current = [];
+      root!.removeEventListener('wheel', stop);
+      root!.removeEventListener('touchmove', stop);
+      window.removeEventListener('keydown', onKey);
+    }
+    // The user taking over (scroll / key) cancels the rest of the tour for good.
+    root.addEventListener('wheel', stop, { passive: true });
+    root.addEventListener('touchmove', stop, { passive: true });
+    window.addEventListener('keydown', onKey);
+
+    // Step 1: reveal Section 1's peer-to-peer boxes. Step 2: advance to Groovia. Step 3:
+    // reveal Groovia's welcome message. Each fires just after that section's entry animation
+    // settles (kept slow on purpose so the story lands - see the intro components).
+    tourTimersRef.current = [
+      window.setTimeout(() => glideTo(bottomOf(s1)), 3600),
+      window.setTimeout(() => glideTo(s2.offsetTop), 6000),
+      window.setTimeout(() => glideTo(bottomOf(s2)), 9600),
+      window.setTimeout(stop, 11000),
+    ];
+
     return () => {
-      io.disconnect();
-      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      tourTimersRef.current.forEach(clearTimeout);
+      tourTimersRef.current = [];
+      root.removeEventListener('wheel', stop);
+      root.removeEventListener('touchmove', stop);
+      window.removeEventListener('keydown', onKey);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -338,26 +388,34 @@ export default function ChatInterface({ authed }: Props) {
   const scrollToTop = () => section1Ref.current?.scrollIntoView({ behavior: 'smooth' });
   const scrollToGroovia = () => section2Ref.current?.scrollIntoView({ behavior: 'smooth' });
 
-  async function loadSupportedCountries() {
-    if (supportedCountries.length || countriesLoading) return;
-    setCountriesLoading(true);
+  async function loadFacets() {
+    if (facets.categories.length || facetsLoading) return;
+    setFacetsLoading(true);
     try {
-      const res = await fetch('/api/mentors/countries', { cache: 'no-store' });
+      const res = await fetch('/api/mentors/facets', { cache: 'no-store' });
       const data = res.ok ? await res.json() : null;
-      setSupportedCountries(Array.isArray(data?.countries) ? data.countries : []);
+      setFacets({
+        categories: Array.isArray(data?.categories) ? data.categories : [],
+        countries: Array.isArray(data?.countries) ? data.countries : [],
+        by_category: data?.by_category && typeof data.by_category === 'object' ? data.by_category : {},
+      });
     } catch {
-      setSupportedCountries([]);
+      setFacets({ categories: [], countries: [], by_category: {} });
     } finally {
-      setCountriesLoading(false);
+      setFacetsLoading(false);
     }
   }
 
-  // Preload the supported countries as soon as the intent options appear, so the mentor
-  // select is populated before the user opens it.
+  // Preload the facets as soon as the intent options appear, so both selects are populated
+  // before the user opens them.
   useEffect(() => {
-    if (resumeUploaded && !intentSelected) loadSupportedCountries();
+    if (resumeUploaded && !intentSelected) loadFacets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeUploaded, intentSelected]);
+
+  // Countries shown depend on the chosen topic (only those with a mentor in it); before a
+  // topic is picked, show every country we cover.
+  const mentorCountries = mentorTopic ? (facets.by_category[mentorTopic] ?? []) : facets.countries;
 
   useEffect(() => {
     // Stay at the intro while only the welcome message exists; once a real conversation
@@ -624,27 +682,45 @@ export default function ChatInterface({ authed }: Props) {
                       </button>
                     );
                   }
-                  // Find a Mentor: a native <select> so it works well on mobile (OS picker,
-                  // no accidental taps, proper scroll) and via keyboard, with flag emojis.
-                  // Populated only with countries we actually have mentors in.
+                  // Find a Mentor becomes two dependent, DB-driven dropdowns (faceted, the way
+                  // a marketplace filters): pick a topic, then the country list narrows to
+                  // that topic. Native <select> so mobile gets the OS picker + keyboard support.
+                  const pill =
+                    'w-full sm:w-auto sm:max-w-[15rem] px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40 disabled:cursor-not-allowed';
                   return (
-                    <select
-                      key={opt.label}
-                      value=""
-                      disabled={loading}
-                      aria-label="Find a mentor by country"
-                      onChange={(e) => {
-                        const code = e.target.value;
-                        if (code) sendMessage(`I want to find a mentor in ${countryLabel(code)}.`);
-                      }}
-                      className="max-w-[15rem] px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <option value="">{opt.label}</option>
-                      {countriesLoading && <option value="" disabled>Loading countries…</option>}
-                      {supportedCountries.map((code) => (
-                        <option key={code} value={code}>{flagEmoji(code)} {countryLabel(code)}</option>
-                      ))}
-                    </select>
+                    <div key={opt.label} className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      <select
+                        value={mentorTopic}
+                        disabled={loading}
+                        aria-label="What do you need guidance on?"
+                        onChange={(e) => setMentorTopic(e.target.value)}
+                        className={pill}
+                      >
+                        <option value="">🤝 What do you need help with?</option>
+                        {facetsLoading && <option value="" disabled>Loading…</option>}
+                        {facets.categories.map((c) => (
+                          <option key={c} value={c}>{topicLabel(c)}</option>
+                        ))}
+                      </select>
+                      {mentorTopic && (
+                        <select
+                          value=""
+                          disabled={loading}
+                          aria-label="Which country?"
+                          onChange={(e) => {
+                            const code = e.target.value;
+                            if (code) sendMessage(`I'm looking for a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.`);
+                          }}
+                          className={pill}
+                        >
+                          <option value="">🌍 Which country?</option>
+                          {mentorCountries.length === 0 && <option value="" disabled>No countries yet</option>}
+                          {mentorCountries.map((code) => (
+                            <option key={code} value={code}>{flagEmoji(code)} {countryLabel(code)}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                   );
                 })}
               </div>

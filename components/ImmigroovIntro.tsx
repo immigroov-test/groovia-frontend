@@ -7,14 +7,14 @@ import { TypeText } from './TypeText';
 
 const CARD_ICONS = [Users, ShieldCheck, Globe];
 const EASE = [0.22, 1, 0.36, 1] as const;
-const TYPE_SPEED = 28;
+const TYPE_SPEED = 42;   // slow, deliberate typing so the message lands
 
 // Entry animation gated on `seen` (latched true on first view), so it plays once and the
 // content then stays put - no fade-out / blank pages when scrolling back.
 const rise = (on: boolean, delay: number) => ({
   initial: { opacity: 0, y: 22 },
   animate: on ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 },
-  transition: { duration: 0.5, delay, ease: EASE },
+  transition: { duration: 0.75, delay, ease: EASE },
 });
 
 interface Props {
@@ -27,7 +27,7 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
   const [headlineOn, setHeadlineOn] = useState(false);
   useEffect(() => {
     if (!seen) return;
-    const t = setTimeout(() => setHeadlineOn(true), 750);
+    const t = setTimeout(() => setHeadlineOn(true), 1000);
     return () => clearTimeout(t);
   }, [seen]);
   const boxStart = (b.headline.length * TYPE_SPEED) / 1000 + 0.3;   // boxes after the headline finishes typing
@@ -40,7 +40,7 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={seen ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.6, ease: EASE }}
+            transition={{ duration: 0.85, ease: EASE }}
             className="mx-auto sm:mx-0 shrink-0"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

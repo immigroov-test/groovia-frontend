@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -25,6 +25,31 @@ export function TopNav({ authed, email, role }: Props) {
   const [acctOpen, setAcctOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);   // desktop email pill -> sign out
   const [signingOut, setSigningOut] = useState(false);
+
+  // Refs so a click anywhere outside an open dropdown closes it (standard menu behaviour).
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
+  const acctRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen && !acctOpen && !userMenuOpen) return;
+    function onPointerDown(e: MouseEvent) {
+      const t = e.target as Node;
+      if (menuOpen && !menuBtnRef.current?.contains(t) && !menuPanelRef.current?.contains(t)) setMenuOpen(false);
+      if (acctOpen && !acctRef.current?.contains(t)) setAcctOpen(false);
+      if (userMenuOpen && !userMenuRef.current?.contains(t)) setUserMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setMenuOpen(false); setAcctOpen(false); setUserMenuOpen(false); }
+    }
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen, acctOpen, userMenuOpen]);
 
   // Account sub-pages (Profile, Sessions; payments/subscriptions land here later).
   const accountSub = [
@@ -89,7 +114,7 @@ export function TopNav({ authed, email, role }: Props) {
             // Account → dropdown (Profile / Sessions) when signed in.
             if (href === '/account' && authed) {
               return (
-                <div key={href} className="relative" onMouseEnter={() => setAcctOpen(true)} onMouseLeave={() => setAcctOpen(false)}>
+                <div key={href} ref={acctRef} className="relative" onMouseEnter={() => setAcctOpen(true)} onMouseLeave={() => setAcctOpen(false)}>
                   <button
                     type="button"
                     onClick={() => setAcctOpen((v) => !v)}
@@ -153,6 +178,7 @@ export function TopNav({ authed, email, role }: Props) {
             // Single pill: avatar + email + chevron. Click reveals Sign out. Merging the
             // two buttons frees up room to show more of the email (desktop only).
             <div
+              ref={userMenuRef}
               className="relative min-w-0"
               onMouseEnter={() => setUserMenuOpen(true)}
               onMouseLeave={() => setUserMenuOpen(false)}
@@ -193,21 +219,25 @@ export function TopNav({ authed, email, role }: Props) {
           )}
         </div>
 
-        {/* Below lg: hamburger (holds nav + auth) */}
+        {/* Below lg: hamburger (holds nav + auth). Labelled + bordered so it reads as the
+            primary menu affordance on tablet/desktop widths, not a tiny icon. */}
         <button
+          ref={menuBtnRef}
           type="button"
-          className="lg:hidden p-2 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_14px_-4px_rgba(15,23,42,0.25)] text-brand-900"
+          className="lg:hidden inline-flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-card border border-brand-200 shadow-[0_4px_14px_-4px_rgba(15,23,42,0.25)] text-brand-900 hover:bg-brand-50 transition-colors"
           aria-label="Menu"
+          aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
         >
           {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <span className="hidden sm:inline text-sm font-medium">Menu</span>
         </button>
         </div>
       </div>
 
       {/* Menu (below lg) */}
       {menuOpen && (
-        <div className="lg:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
+        <div ref={menuPanelRef} className="lg:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
           {nav.map(({ href, label, gated }) => {
             // Account → expandable group (Profile / Sessions) when signed in.
             if (href === '/account' && authed) {
@@ -245,7 +275,7 @@ export function TopNav({ authed, email, role }: Props) {
               </Link>
             );
           })}
-          <div className="mt-1 pt-2 border-t border-[--color-border]">
+          <div className="mt-1">
             {authed ? (
               <button
                 onClick={handleSignOut}

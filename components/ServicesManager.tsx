@@ -282,7 +282,7 @@ export function ServicesManager() {
                 maxChars={1000}
                 placeholder="e.g. A focused 30-minute call to review your CV and tailor it for the Dutch job market, with concrete next steps." />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Type</label>
                 <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
@@ -302,7 +302,7 @@ export function ServicesManager() {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Category</label>
                 <select value={form.category ?? ''}
