@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Paperclip, Send, Sparkles, Lock, SquarePen, ChevronUp, ChevronDown } from 'lucide-react';
+import { Paperclip, Send, Lock, SquarePen, ChevronUp } from 'lucide-react';
 import { UI_CONTENT, INTENT_OPTIONS } from '../lib/content';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
@@ -16,6 +16,7 @@ import { ChatIntro } from './ChatIntro';
 import { ImmigroovIntro } from './ImmigroovIntro';
 import { RateLimitModal } from './RateLimitModal';
 import { ThinkingIndicator } from './ThinkingIndicator';
+import { AiAvatar } from './AiAvatar';
 
 // Standalone (not in LS_KEYS): a Groq rate-limit block is server-side reality, so it must
 // survive "clear chat" - which wipes every LS_KEYS entry.
@@ -105,9 +106,9 @@ export default function ChatInterface({ authed }: Props) {
 
   // SSR-safe defaults; hydrated from localStorage in a single effect after mount.
   const [threadId, setThreadId] = useState<string>('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: UI_CONTENT.welcomeMessage },
-  ]);
+  // Starts empty: the "attach your resume" welcome is shown as a pinned hint above the
+  // composer (not a far-below chat bubble), so there's no gap on the landing.
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [resumeUploaded, setResumeUploaded] = useState(false);
@@ -232,7 +233,7 @@ export default function ChatInterface({ authed }: Props) {
     const fresh = uuidv4();
     window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
     setThreadId(fresh);
-    setMessages([{ role: 'assistant', content: UI_CONTENT.welcomeMessage }]);
+    setMessages([]);
     setResumeUploaded(false);
     setIntentSelected(false);
     // A fresh start lands on the Groovia section with the composer ready.
@@ -252,13 +253,19 @@ export default function ChatInterface({ authed }: Props) {
   // spotlight in the Groovia section.
   const [atSection1, setAtSection1] = useState(true);
   const [atSection2, setAtSection2] = useState(false);
+  // Latched true on first view of each section: drives the once-only entry animation, so
+  // the content stays put afterwards (no fade-out / blank pages when scrolling).
+  const [seenSection1, setSeenSection1] = useState(false);
+  const [seenSection2, setSeenSection2] = useState(false);
 
   // Auto-reveal bookkeeping. Refs so the IntersectionObserver (set up once) always reads
   // current values. atS1Ref starts false so the very first "Section 1 in view" counts as
-  // a rising edge and reveals it on load.
+  // a rising edge and reveals it on load. revealed* make the auto-scroll happen once each.
   const landingRef = useRef(true);   // true while on the landing (no real conversation yet)
   const atS1Ref = useRef(false);
   const atS2Ref = useRef(false);
+  const revealedS1Ref = useRef(false);
+  const revealedS2Ref = useRef(false);
   const revealTimeoutRef = useRef<number | null>(null);
   const revealCancelRef = useRef<(() => void) | null>(null);
 
@@ -319,12 +326,18 @@ export default function ChatInterface({ authed }: Props) {
         for (const e of entries) {
           const active = e.isIntersecting && e.intersectionRatio >= 0.5;
           if (e.target === s1) {
-            if (active && !atS1Ref.current) scheduleReveal(s1);   // just landed on Section 1
+            if (active && !atS1Ref.current) {   // just landed on Section 1
+              setSeenSection1(true);
+              if (!revealedS1Ref.current) { revealedS1Ref.current = true; scheduleReveal(s1); }
+            }
             atS1Ref.current = active;
             setAtSection1(active);
           }
           if (e.target === s2) {
-            if (active && !atS2Ref.current) scheduleReveal(s2);   // just landed on Section 2
+            if (active && !atS2Ref.current) {   // just landed on Section 2
+              setSeenSection2(true);
+              if (!revealedS2Ref.current) { revealedS2Ref.current = true; scheduleReveal(s2); }
+            }
             atS2Ref.current = active;
             setAtSection2(active);
           }
@@ -565,8 +578,8 @@ export default function ChatInterface({ authed }: Props) {
             user can scroll back up to the brand story at any time. `active` (this section
             is in view) drives the entrance animation - typing + boxes dropping in - so it
             plays when the user lands on the section and replays on the next scroll to it. */}
-        <ImmigroovIntro ref={section1Ref} active={atSection1} />
-        <ChatIntro ref={section2Ref} active={atSection2} />
+        <ImmigroovIntro ref={section1Ref} seen={seenSection1} />
+        <ChatIntro ref={section2Ref} seen={seenSection2} />
 
         <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-8 pb-44 space-y-6">
           {messages.map((m, i) => (
@@ -574,11 +587,7 @@ export default function ChatInterface({ authed }: Props) {
               key={i}
               className={cn('flex gap-3 animate-fade-up', m.role === 'user' ? 'justify-end' : 'justify-start')}
             >
-              {m.role === 'assistant' && (
-                <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-xs font-semibold">
-                  <Sparkles className="h-3.5 w-3.5" />
-                </div>
-              )}
+              {m.role === 'assistant' && <AiAvatar />}
               <div
                 className={cn(
                   'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
@@ -618,19 +627,21 @@ export default function ChatInterface({ authed }: Props) {
         </div>
       </div>
 
-      {/* Landing scroll cue: just the round-robin arrows (no text - they speak for
-          themselves), floating in the gap above the composer. Semi-transparent via the
-          arrow-cascade animation so they never hide content. Taps down to Groovia. */}
+      {/* Landing scroll cue: the falling-chevron animation (pure CSS), floating in the gap
+          above the composer. currentColor + the animation keep it dark but semi-transparent
+          so it never hides content. Taps down to Groovia. */}
       {atSection1 && (
         <button
           type="button"
           onClick={scrollToGroovia}
           aria-label="Scroll down to Groovia"
-          className="absolute bottom-40 sm:bottom-36 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center -space-y-2.5 text-brand-700 animate-fade-up"
+          className="absolute bottom-40 sm:bottom-36 left-1/2 -translate-x-1/2 z-20 text-brand-800 animate-fade-up"
         >
-          {[0, 1, 2].map((i) => (
-            <ChevronDown key={i} className="h-6 w-6 animate-arrow-cascade" style={{ animationDelay: `${i * 0.25}s` }} />
-          ))}
+          <span className="scroll-arrows block">
+            <span className="scroll-arrow" />
+            <span className="scroll-arrow" />
+            <span className="scroll-arrow" />
+          </span>
         </button>
       )}
 

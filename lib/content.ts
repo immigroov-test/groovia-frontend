@@ -21,7 +21,7 @@ export const UI_CONTENT = {
     // Three carded lines, mirroring the Groovia feature cards (icon + text).
     cards: [
       'Trusted mentors, expats and locals who have already made the move.',
-      'Honest, peer-to-peer guidance, never commission-driven agents.',
+      'No commissions, no sales targets, just honest advice you can trust.',
       'Not just a platform, a movement of people helping people move smarter.',
     ],
     scrollCta: 'Scroll down for assistance',

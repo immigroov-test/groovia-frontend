@@ -380,7 +380,7 @@ function AuthModalInner() {
             <div className="absolute inset-0 bg-gradient-to-b from-[#0a1e3a]/50 via-[#0a1e3a]/10 to-[#0a1e3a]/70" />
 
             <div className="relative flex-1 px-8 pt-8 md:pt-20 pb-5 flex flex-col">
-              <h3 className="text-2xl font-semibold">{t.whyJoinTitle}</h3>
+              <h3 className="text-xl sm:text-2xl font-semibold text-center">{t.whyJoinTitle}</h3>
               <ul className="mt-6 flex flex-col gap-3.5">
                 {UI_CONTENT.authPoints.map((point) => (
                   <li key={point} className="flex items-start gap-3">

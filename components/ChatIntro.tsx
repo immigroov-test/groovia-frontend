@@ -1,68 +1,39 @@
 'use client';
-import { forwardRef, useEffect, useState } from 'react';
+import { forwardRef } from 'react';
 import { motion } from 'motion/react';
 import { Compass, Users, Zap } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
+import { TypeText } from './TypeText';
 
 const FEATURE_ICONS = [Compass, Users, Zap];
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-// Headline types itself out while `active` (section in view); resets when it leaves so
-// it re-types the next time the user scrolls back to it.
-function TypeText({ text, speed = 55, active, className }: { text: string; speed?: number; active: boolean; className?: string }) {
-  const [shown, setShown] = useState(0);
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    setShown(0);
-    if (!active) return;
-    const id = setInterval(() => {
-      setShown((n) => {
-        if (n >= text.length) {
-          clearInterval(id);
-          return n;
-        }
-        return n + 1;
-      });
-    }, speed);
-    return () => clearInterval(id);
-  }, [text, speed, active]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const done = shown >= text.length;
-  return (
-    <span className={className}>
-      {text.slice(0, shown)}
-      {!done && active && <span className="text-accent-500 animate-pulse">▍</span>}
-    </span>
-  );
-}
-
-// Entry animation (slide up + fade) gated on `active`, so the boxes drop in when the
-// section comes into view and re-play each time the user scrolls back to it.
-const rise = (active: boolean, delay: number) => ({
+// Entry animation gated on `seen` (latched true on first view): plays once, then the
+// content stays put so scrolling back never shows a blank.
+const rise = (seen: boolean, delay: number) => ({
   initial: { opacity: 0, y: 22 },
-  animate: active ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 },
+  animate: seen ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 },
   transition: { duration: 0.5, delay, ease: EASE },
 });
 
 interface Props {
-  active: boolean;
+  seen: boolean;
 }
 
-export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ active }, ref) {
+export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ seen }, ref) {
   const hero = UI_CONTENT.hero;
 
   return (
     <section ref={ref} className="relative min-h-full overflow-hidden flex flex-col snap-start">
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-12">
         <motion.h1
-          {...rise(active, 0)}
+          {...rise(seen, 0)}
           className="text-4xl sm:text-6xl font-bold tracking-tight min-h-[1.2em] bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent"
         >
-          <TypeText text={hero.title} active={active} />
+          <TypeText text={hero.title} active={seen} speed={55} />
         </motion.h1>
 
-        <motion.p {...rise(active, 0.9)} className="mt-3 text-lg sm:text-xl font-semibold text-brand-700">
+        <motion.p {...rise(seen, 0.9)} className="mt-3 text-lg sm:text-xl font-semibold text-brand-700">
           {hero.tagline}
         </motion.p>
 
@@ -70,7 +41,7 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ act
           {hero.features.map((text, i) => {
             const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length];
             return (
-              <motion.div key={text} {...rise(active, 1.1 + i * 0.14)}>
+              <motion.div key={text} {...rise(seen, 1.1 + i * 0.14)}>
                 {/* Icon left-of-text on mobile (compact), centered on top on desktop */}
                 <div className="group h-full rounded-2xl p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
                   <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-4 sm:py-5 flex flex-row sm:flex-col items-center text-left sm:text-center gap-3 sm:gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">

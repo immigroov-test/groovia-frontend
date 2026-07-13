@@ -138,13 +138,40 @@ h1, h2, h3, h4, h5, h6 {
   .reveal-children > * { animation: none; }
 }
 
-/* Triple-arrow scroll indicator: the highlight travels down the three arrows in a
-   round-robin wave. Kept semi-transparent (never fully opaque) so it doesn't hide content. */
-@keyframes arrow-cascade {
-  0%, 60%, 100% { opacity: 0.1; transform: translateY(-3px); }
-  30% { opacity: 0.5; transform: translateY(3px); }
+/* Falling-chevron scroll indicator (ported from the shared pure-CSS snippet): three
+   arrows drop and fade in sequence. Colour comes from `currentColor`; kept semi-
+   transparent (max ~0.5) so it never hides content. */
+@keyframes move-arrow {
+  25%   { opacity: 0.5; }
+  33.3% { opacity: 0.5; transform: translateY(0.5rem); }
+  66.6% { opacity: 0.5; transform: translateY(0.72rem); }
+  100%  { opacity: 0; transform: translateY(1.15rem) scale(0.5); }
 }
-.animate-arrow-cascade { animation: arrow-cascade 1.4s ease-in-out infinite; }
+.scroll-arrows { position: relative; width: 1.7rem; height: 1.6rem; }
+.scroll-arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.7rem;
+  height: 0.42rem;
+  opacity: 0;
+  transform: scale(0.3);
+  animation: move-arrow 3s ease-out infinite;
+}
+.scroll-arrow:first-child  { animation-delay: 1s; }
+.scroll-arrow:nth-child(2) { animation-delay: 2s; }
+.scroll-arrow::before,
+.scroll-arrow::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 51%;
+  background: currentColor;
+  border-radius: 2px;
+}
+.scroll-arrow::before { left: 0;  transform: skewY(30deg); }
+.scroll-arrow::after  { right: 0; transform: skewY(-30deg); }
 
 /* Attach-resume nudge: a soft amber ring pulses around the clip button until a resume
    is attached, so first-time users notice where to upload. */
@@ -154,8 +181,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 .animate-attach-pulse { animation: attach-pulse 1.8s ease-in-out infinite; }
 
-/* Composer "circling tint": a translucent amber-to-blue glow that travels around the
-   text box border (Immigroov colors), instead of a static ring. */
+/* Composer "circling tint": a bright amber-to-blue glow that travels around the text
+   box border (Immigroov colors), instead of a static ring. Prominent border + a soft
+   outer halo, but only on the border so it never covers the text. */
 @property --composer-angle {
   syntax: '<angle>';
   initial-value: 0deg;
@@ -166,25 +194,27 @@ h1, h2, h3, h4, h5, h6 {
 .composer-glow::before {
   content: '';
   position: absolute;
-  inset: -1.5px;
+  inset: -2.5px;
   border-radius: inherit;
-  padding: 1.5px;
+  padding: 2.5px;
   background: conic-gradient(
     from var(--composer-angle),
     rgba(245, 158, 11, 0) 0deg,
-    rgba(245, 158, 11, 0.65) 55deg,
-    rgba(37, 99, 235, 0.5) 130deg,
-    rgba(245, 158, 11, 0) 200deg,
+    rgba(245, 158, 11, 0.95) 45deg,
+    rgba(37, 99, 235, 0.85) 120deg,
+    rgba(245, 158, 11, 0.95) 195deg,
+    rgba(245, 158, 11, 0) 270deg,
     rgba(245, 158, 11, 0) 360deg
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
+  filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.45));
   pointer-events: none;
-  animation: composer-glow-spin 4s linear infinite;
+  animation: composer-glow-spin 3.5s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .animate-arrow-cascade,
+  .scroll-arrow,
   .animate-attach-pulse,
   .composer-glow::before { animation: none; }
 }
