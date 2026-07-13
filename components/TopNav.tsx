@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, LogOut, LogIn, ChevronDown, Camera, SquarePen } from 'lucide-react';
+import { Menu, X, LogOut, LogIn, ChevronDown, Camera } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UI_CONTENT } from '../lib/content';
 import { clearLocalChat } from '../lib/chatStorage';
@@ -267,16 +267,6 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
                 {!photoUrl && <p className="text-[11px] font-medium text-accent-600 mt-0.5">Upload photo</p>}
               </div>
             </Link>
-          )}
-          {/* New chat: reachable here on mobile, where the floating button is easy to miss. */}
-          {pathname === '/home' && (
-            <button
-              type="button"
-              onClick={() => { setMenuOpen(false); window.dispatchEvent(new CustomEvent('groovia:new-chat')); }}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-brand-800 hover:bg-brand-50/60"
-            >
-              <SquarePen className="h-4 w-4" /> New chat
-            </button>
           )}
           {nav.map(({ href, label, gated }) => {
             // Account → expandable group (Profile / Sessions) when signed in.

@@ -22,7 +22,7 @@ export const UI_CONTENT = {
     // Three carded lines, mirroring the Groovia feature cards (icon + text).
     cards: [
       'Trusted mentors, expats and locals who have already made the move.',
-      'No commissions, no sales targets, just honest advice you can trust.',
+      "We're not salespeople chasing targets. We're mentors giving honest advice you can trust.",
       'Not just a platform, a movement of people helping people move smarter.',
     ],
     scrollCta: 'Scroll down for assistance',
@@ -274,7 +274,7 @@ export const SERVICE_DESCRIPTION_TEMPLATE =
   "<p>The concrete outcome or next steps after the session.</p>";
 
 export const INTENT_OPTIONS = [
-  { label: '📊 Generate a Career Report', message: 'I want to generate a career report.' },
-  { label: '🤝 Find me a Mentor',         message: 'I want to find a mentor.', mentor: true },
-  { label: '💬 Ask a Question',           message: 'I just want to ask some questions.' },
+  { label: '📊 Generate a career pathway', message: 'I want to generate a career pathway.' },
+  { label: '🤝 Find me a Mentor',          message: 'I want to find a mentor.', mentor: true },
+  { label: '💬 Ask a Question',            message: 'I just want to ask some questions.' },
 ] as const;

@@ -47,6 +47,10 @@ function topicLabel(code: string): string {
 
 const LINK_CLASS = '!text-brand-700 !underline !underline-offset-4 hover:!text-brand-900 font-medium';
 
+// Native-select "pill" used by the find-a-mentor topic/country steps.
+const MENTOR_PILL =
+  'w-full sm:w-auto sm:max-w-[16rem] px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40 disabled:cursor-not-allowed';
+
 const MD_COMPONENTS: React.ComponentProps<typeof ReactMarkdown>['components'] = {
   a: ({ href, children, node: _node, ...rest }) => {
     const isInternal = (() => {
@@ -134,6 +138,10 @@ export default function ChatInterface({ authed }: Props) {
   const [facets, setFacets] = useState<MentorFacets>({ categories: [], countries: [], by_category: {} });
   const [facetsLoading, setFacetsLoading] = useState(false);
   const [mentorTopic, setMentorTopic] = useState('');
+  // Find-a-mentor is a mimicked mini-conversation: '' = pick an intent, 'topic' = asked
+  // what they need help with, 'country' = asked which country. The real backend call only
+  // fires once the country is chosen.
+  const [mentorStep, setMentorStep] = useState<'' | 'topic' | 'country'>('');
   // Auto-resume must run at most once per mount, and never after an explicit New chat -
   // otherwise clearing the chat immediately re-restores the just-cleared thread.
   const didAutoResumeRef = useRef(false);
@@ -264,18 +272,10 @@ export default function ChatInterface({ authed }: Props) {
     setResumeUploaded(false);
     setIntentSelected(false);
     setMentorTopic('');
+    setMentorStep('');
     // A fresh start lands on the Groovia section with the composer ready.
     requestAnimationFrame(() => section2Ref.current?.scrollIntoView({ behavior: 'smooth' }));
   }
-
-  // Let the nav menu trigger "New chat" too, so it's reachable on mobile where the floating
-  // button is easy to miss. No dep array: re-bind each render so it always calls the latest
-  // handler (fresh threadId), which is fine for a single window listener.
-  useEffect(() => {
-    const onNewChat = () => handleNewChat();
-    window.addEventListener('groovia:new-chat', onNewChat);
-    return () => window.removeEventListener('groovia:new-chat', onNewChat);
-  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -290,6 +290,8 @@ export default function ChatInterface({ authed }: Props) {
   // spotlight in the Groovia section.
   const [atSection1, setAtSection1] = useState(true);
   const [atSection2, setAtSection2] = useState(false);
+  // True while the guided intro tour is auto-scrolling; drives the "Skip intro" button.
+  const [tourActive, setTourActive] = useState(false);
   // Latched true on first view of each section: drives the once-only entry animation, so
   // the content stays put afterwards (no fade-out / blank pages when scrolling).
   const [seenSection1, setSeenSection1] = useState(false);
@@ -301,6 +303,8 @@ export default function ChatInterface({ authed }: Props) {
   const atS1Ref = useRef(false);
   const atS2Ref = useRef(false);
   const tourTimersRef = useRef<number[]>([]);
+  const tourSkipRef = useRef<(() => void) | null>(null);   // lets the Skip button end the tour
+  const skipTour = () => tourSkipRef.current?.();
 
   useEffect(() => {
     landingRef.current = !resumeUploaded && messages.length <= 1;
@@ -350,9 +354,11 @@ export default function ChatInterface({ authed }: Props) {
     const s1 = section1Ref.current;
     const s2 = section2Ref.current;
     if (!root || !s1 || !s2 || !landingRef.current) return;
-    if (window.sessionStorage.getItem('groovia.tourDone')) return;
+    // Once per browser (not per session): a returning visitor doesn't sit through it again.
+    if (window.localStorage.getItem('groovia.tourSeen')) return;
 
     let done = false;
+    setTourActive(true);
     const bottomOf = (el: HTMLElement) =>
       Math.min(el.offsetTop + el.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
     const glideTo = (top: number) => {
@@ -364,13 +370,17 @@ export default function ChatInterface({ authed }: Props) {
     function stop() {
       if (done) return;
       done = true;
-      window.sessionStorage.setItem('groovia.tourDone', '1');
+      window.localStorage.setItem('groovia.tourSeen', '1');
+      setTourActive(false);
+      tourSkipRef.current = null;
       tourTimersRef.current.forEach(clearTimeout);
       tourTimersRef.current = [];
       root!.removeEventListener('wheel', stop);
       root!.removeEventListener('touchmove', stop);
       window.removeEventListener('keydown', onKey);
     }
+    // The Skip button jumps to Groovia's welcome (the composer) and ends the tour.
+    tourSkipRef.current = () => { root!.scrollTo({ top: bottomOf(s2), behavior: 'smooth' }); stop(); };
     // The user taking over (scroll / key) cancels the rest of the tour for good.
     root.addEventListener('wheel', stop, { passive: true });
     root.addEventListener('touchmove', stop, { passive: true });
@@ -387,6 +397,7 @@ export default function ChatInterface({ authed }: Props) {
     ];
 
     return () => {
+      tourSkipRef.current = null;
       tourTimersRef.current.forEach(clearTimeout);
       tourTimersRef.current = [];
       root.removeEventListener('wheel', stop);
@@ -546,6 +557,29 @@ export default function ChatInterface({ authed }: Props) {
     }
   }
 
+  // Find-a-mentor mimicked flow. Clicking the intent asks the topic; picking a topic asks
+  // the country; picking the country makes the one real backend call (with both).
+  function startMentorFlow() {
+    loadFacets();
+    setMessages((prev) => [
+      ...prev,
+      { role: 'assistant', content: 'Happy to help you find a mentor. What do you need guidance on?' },
+    ]);
+    setMentorStep('topic');
+  }
+  function pickMentorTopic(code: string) {
+    setMentorTopic(code);
+    setMessages((prev) => [
+      ...prev,
+      { role: 'assistant', content: `Great. Which country are you looking at for ${topicLabel(code)}?` },
+    ]);
+    setMentorStep('country');
+  }
+  function pickMentorCountry(code: string) {
+    setMentorStep('');
+    sendMessage(`I'm looking for a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.`);
+  }
+
   async function sendMessage(text: string) {
     const trimmed = text.trim();
 
@@ -607,6 +641,17 @@ export default function ChatInterface({ authed }: Props) {
         className="hidden"
         disabled={resumeUploaded}
       />
+
+      {/* Skip intro: ends the guided tour and jumps to the composer. Only while it runs. */}
+      {tourActive && (
+        <button
+          type="button"
+          onClick={skipTour}
+          className="absolute top-3 right-3 sm:right-5 z-30 flex items-center gap-1 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white animate-fade-up"
+        >
+          Skip intro →
+        </button>
+      )}
 
       {/* Sticky controls: a centered back-to-top arrow (#10) and Clear chat (#11).
           Hidden while the Immigroov section is in view; fade in once scrolled into
@@ -677,64 +722,62 @@ export default function ChatInterface({ authed }: Props) {
 
           {resumeUploaded && !intentSelected && !loading && (
             <div className="pt-2 animate-fade-up">
-              <p className="text-sm font-medium text-foreground mb-3">{UI_CONTENT.intentPrompt}</p>
-              <div className="flex flex-wrap gap-2">
-                {INTENT_OPTIONS.map((opt) => {
-                  const isMentor = 'mentor' in opt && opt.mentor;
-                  if (!isMentor) {
-                    return (
-                      <button
-                        key={opt.label}
-                        onClick={() => sendMessage(opt.message)}
-                        disabled={loading}
-                        className="px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  }
-                  // Find a Mentor becomes two dependent, DB-driven dropdowns (faceted, the way
-                  // a marketplace filters): pick a topic, then the country list narrows to
-                  // that topic. Native <select> so mobile gets the OS picker + keyboard support.
-                  const pill =
-                    'w-full sm:w-auto sm:max-w-[15rem] px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40 disabled:cursor-not-allowed';
-                  return (
-                    <div key={opt.label} className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                      <select
-                        value={mentorTopic}
-                        disabled={loading}
-                        aria-label="What do you need guidance on?"
-                        onChange={(e) => setMentorTopic(e.target.value)}
-                        className={pill}
-                      >
-                        <option value="">🤝 What do you need help with?</option>
-                        {facetsLoading && <option value="" disabled>Loading…</option>}
-                        {facets.categories.map((c) => (
-                          <option key={c} value={c}>{topicLabel(c)}</option>
-                        ))}
-                      </select>
-                      {mentorTopic && (
-                        <select
-                          value=""
+              {/* Step 0: pick an intent. "Find me a Mentor" starts the mimicked mini-chat. */}
+              {mentorStep === '' && (
+                <>
+                  <p className="text-sm font-medium text-foreground mb-3">{UI_CONTENT.intentPrompt}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {INTENT_OPTIONS.map((opt) => {
+                      const isMentor = 'mentor' in opt && opt.mentor;
+                      return (
+                        <button
+                          key={opt.label}
+                          onClick={() => (isMentor ? startMentorFlow() : sendMessage(opt.message))}
                           disabled={loading}
-                          aria-label="Which country?"
-                          onChange={(e) => {
-                            const code = e.target.value;
-                            if (code) sendMessage(`I'm looking for a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.`);
-                          }}
-                          className={pill}
+                          className="px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          <option value="">🌍 Which country?</option>
-                          {mentorCountries.length === 0 && <option value="" disabled>No countries yet</option>}
-                          {mentorCountries.map((code) => (
-                            <option key={code} value={code}>{flagEmoji(code)} {countryLabel(code)}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* Step 1: answer "what do you need help with?" (DB-driven topics). */}
+              {mentorStep === 'topic' && (
+                <select
+                  value={mentorTopic}
+                  disabled={loading}
+                  aria-label="What do you need guidance on?"
+                  onChange={(e) => { if (e.target.value) pickMentorTopic(e.target.value); }}
+                  className={MENTOR_PILL}
+                >
+                  <option value="">🤝 What do you need help with?</option>
+                  {facetsLoading && <option value="" disabled>Loading…</option>}
+                  {facets.categories.map((c) => (
+                    <option key={c} value={c}>{topicLabel(c)}</option>
+                  ))}
+                </select>
+              )}
+
+              {/* Step 2: answer "which country?" (narrowed to the chosen topic). Picking one
+                  makes the single real backend call. */}
+              {mentorStep === 'country' && (
+                <select
+                  value=""
+                  disabled={loading}
+                  aria-label="Which country?"
+                  onChange={(e) => { if (e.target.value) pickMentorCountry(e.target.value); }}
+                  className={MENTOR_PILL}
+                >
+                  <option value="">🌍 Which country?</option>
+                  {mentorCountries.length === 0 && <option value="" disabled>No countries yet</option>}
+                  {mentorCountries.map((code) => (
+                    <option key={code} value={code}>{flagEmoji(code)} {countryLabel(code)}</option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 
