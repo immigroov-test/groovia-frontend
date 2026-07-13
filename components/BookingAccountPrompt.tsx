@@ -34,10 +34,9 @@ export function BookingAccountPrompt({ onProceed, onDismiss }: { onProceed: () =
           />
         </div>
 
-        <h2 className="mt-5 text-lg font-semibold text-brand-900">Create a free account to book</h2>
+        <h2 className="mt-5 text-lg font-semibold text-brand-900">Log in or sign up to book</h2>
         <p className="mt-2 text-sm text-muted leading-relaxed">
-          Log in or create a free account to confirm your booking and manage it later - reschedule,
-          cancel, or join the meeting - and get the most out of Immigroov.
+          Log in or create a free account to manage it later and get the most out of Immigroov.
         </p>
 
         <div className="mt-6 flex flex-col gap-2.5">
