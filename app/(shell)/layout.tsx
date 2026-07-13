@@ -4,6 +4,7 @@ import { AuthModal } from '../../components/AuthModal';
 import { PageTransition } from '../../components/PageTransition';
 import { IdleLogout } from '../../components/IdleLogout';
 import { AuthStateSync } from '../../components/AuthStateSync';
+import { IntroSplash } from '../../components/IntroSplash';
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -29,6 +30,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
       <AuthModal />
       <IdleLogout authed={!!user} />
       <AuthStateSync />
+      <IntroSplash />
     </div>
   );
 }
