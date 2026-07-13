@@ -253,6 +253,62 @@ export default function ChatInterface({ authed }: Props) {
   const [atSection1, setAtSection1] = useState(true);
   const [atSection2, setAtSection2] = useState(false);
 
+  // Auto-reveal bookkeeping. Refs so the IntersectionObserver (set up once) always reads
+  // current values. atS1Ref starts false so the very first "Section 1 in view" counts as
+  // a rising edge and reveals it on load.
+  const landingRef = useRef(true);   // true while on the landing (no real conversation yet)
+  const atS1Ref = useRef(false);
+  const atS2Ref = useRef(false);
+  const revealTimeoutRef = useRef<number | null>(null);
+  const revealCancelRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    landingRef.current = !resumeUploaded && messages.length <= 1;
+  }, [resumeUploaded, messages.length]);
+
+  // Gently scroll to bring the rest of an overflowing section into view, then stop, so
+  // the user can read the whole section (e.g. all three boxes on mobile) before deciding
+  // to continue. Cancels the instant the user scrolls, so it never fights them.
+  function autoReveal(sec: HTMLElement | null) {
+    const root = scrollRef.current;
+    if (!root || !sec || !landingRef.current) return;
+    revealCancelRef.current?.();
+    const target = Math.min(
+      sec.offsetTop + sec.offsetHeight - root.clientHeight,
+      root.scrollHeight - root.clientHeight,
+    );
+    const startScroll = root.scrollTop;
+    const distance = target - startScroll;
+    if (distance <= 24) return;   // section already fits / bottom already shown
+    let cancelled = false;
+    let raf = 0;
+    const cancel = () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      root.removeEventListener('wheel', cancel);
+      root.removeEventListener('touchstart', cancel);
+      revealCancelRef.current = null;
+    };
+    revealCancelRef.current = cancel;
+    root.addEventListener('wheel', cancel, { passive: true });
+    root.addEventListener('touchstart', cancel, { passive: true });
+    let startTime = 0;
+    const step = (now: number) => {
+      if (cancelled) return;
+      if (!startTime) startTime = now;
+      const t = Math.min(1, (now - startTime) / 2000);
+      root.scrollTop = startScroll + distance * (1 - Math.pow(1 - t, 3));   // easeOutCubic
+      if (t < 1) raf = requestAnimationFrame(step);
+      else cancel();
+    };
+    raf = requestAnimationFrame(step);
+  }
+
+  function scheduleReveal(sec: HTMLElement | null) {
+    if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
+    revealTimeoutRef.current = window.setTimeout(() => autoReveal(sec), 1000);   // let the entry animation play first
+  }
+
   useEffect(() => {
     const root = scrollRef.current;
     const s1 = section1Ref.current;
@@ -262,15 +318,28 @@ export default function ChatInterface({ authed }: Props) {
       (entries) => {
         for (const e of entries) {
           const active = e.isIntersecting && e.intersectionRatio >= 0.5;
-          if (e.target === s1) setAtSection1(active);
-          if (e.target === s2) setAtSection2(active);
+          if (e.target === s1) {
+            if (active && !atS1Ref.current) scheduleReveal(s1);   // just landed on Section 1
+            atS1Ref.current = active;
+            setAtSection1(active);
+          }
+          if (e.target === s2) {
+            if (active && !atS2Ref.current) scheduleReveal(s2);   // just landed on Section 2
+            atS2Ref.current = active;
+            setAtSection2(active);
+          }
         }
       },
       { root, threshold: [0, 0.5, 1] },
     );
     io.observe(s1);
     io.observe(s2);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
+      revealCancelRef.current?.();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
   const scrollToTop = () => section1Ref.current?.scrollIntoView({ behavior: 'smooth' });
@@ -486,12 +555,10 @@ export default function ChatInterface({ authed }: Props) {
       </div>
 
       {/* z-index: 1 creates a stacking context above the fixed landmarks (z-0), so the
-          intros and message bubbles render on top of the image. snap-mandatory on the
-          fresh landing (only the welcome message) so a small scroll down snaps to the
-          Groovia section (#9); removed once a conversation is active so it scrolls freely. */}
+          intros and message bubbles render on top of the image. */}
       <div
         ref={scrollRef}
-        className={cn('flex-1 overflow-y-auto relative', messages.length <= 1 && 'snap-y snap-mandatory')}
+        className="flex-1 overflow-y-auto relative"
         style={{ zIndex: 1 }}
       >
         {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both stay mounted so the
@@ -551,21 +618,19 @@ export default function ChatInterface({ authed }: Props) {
         </div>
       </div>
 
-      {/* Landing scroll cue: the original cascading-arrow cue, floating in the gap above
-          the composer (not glued to it). Always visible on the Immigroov section on any
-          screen; taps down to Groovia. */}
+      {/* Landing scroll cue: just the round-robin arrows (no text - they speak for
+          themselves), floating in the gap above the composer. Semi-transparent via the
+          arrow-cascade animation so they never hide content. Taps down to Groovia. */}
       {atSection1 && (
         <button
           type="button"
           onClick={scrollToGroovia}
-          className="absolute bottom-40 sm:bottom-36 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-900 animate-fade-up"
+          aria-label="Scroll down to Groovia"
+          className="absolute bottom-40 sm:bottom-36 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center -space-y-2.5 text-brand-700 animate-fade-up"
         >
-          {UI_CONTENT.brandIntro.scrollCta}
-          <span className="flex flex-col items-center -space-y-2.5">
-            {[0, 1, 2].map((i) => (
-              <ChevronDown key={i} className="h-5 w-5 animate-arrow-cascade" style={{ animationDelay: `${i * 0.25}s` }} />
-            ))}
-          </span>
+          {[0, 1, 2].map((i) => (
+            <ChevronDown key={i} className="h-6 w-6 animate-arrow-cascade" style={{ animationDelay: `${i * 0.25}s` }} />
+          ))}
         </button>
       )}
 
@@ -593,11 +658,19 @@ export default function ChatInterface({ authed }: Props) {
             </button>
           )}
 
+          {/* Resume nudge (#2): the "attach your resume" instruction, visible above the
+              composer on the Groovia section until a resume is attached. */}
+          {atSection2 && !resumeUploaded && !rateLimited && (
+            <p className="text-center text-xs font-medium text-brand-700 mb-2 animate-fade-up">
+              {UI_CONTENT.welcomeMessage}
+            </p>
+          )}
+
           <div
             className={cn(
-              "flex items-end gap-2 rounded-2xl px-2 py-1.5 transition-shadow duration-300",
+              "flex items-end gap-2 rounded-2xl px-2 py-1.5",
               (gated && resumeUploaded || rateLimited) && "opacity-60",
-              atSection2 && "ring-2 ring-accent-400/70 shadow-[0_0_22px_-2px_rgba(245,158,11,0.45)]",
+              atSection2 && "composer-glow",   // translucent tint circling the text box
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
@@ -607,7 +680,11 @@ export default function ChatInterface({ authed }: Props) {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading || resumeUploaded}
                 title={resumeUploaded ? UI_CONTENT.tooltips.resumeAlreadyUploaded : UI_CONTENT.tooltips.attachResume}
-                className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-brand-50/40 disabled:opacity-30 disabled:cursor-not-allowed"
+                className={cn(
+                  "h-9 w-9 flex items-center justify-center rounded-lg hover:bg-brand-50/40 disabled:opacity-30 disabled:cursor-not-allowed",
+                  // Nudge first-time users to the clip until a resume is attached.
+                  !resumeUploaded && !loading ? "text-accent-600 animate-attach-pulse" : "text-muted hover:text-foreground",
+                )}
               >
                 <Paperclip className="h-4 w-4" />
               </button>

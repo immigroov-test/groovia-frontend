@@ -1,5 +1,5 @@
 export const UI_CONTENT = {
-  welcomeMessage: "Hi, I'm Groovia. Attach your resume below and we'll get started.",
+  welcomeMessage: "Attach your resume or profile below and we'll get started.",
   uploadIndicator: '📎 Resume uploaded',
   intentPrompt: 'What would you like to do next?',
   inputPlaceholder: 'Ask about your career...',

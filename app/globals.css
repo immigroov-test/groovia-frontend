@@ -138,12 +138,56 @@ h1, h2, h3, h4, h5, h6 {
   .reveal-children > * { animation: none; }
 }
 
-/* Triple-arrow scroll indicator: each arrow fades in/down with a stagger */
+/* Triple-arrow scroll indicator: the highlight travels down the three arrows in a
+   round-robin wave. Kept semi-transparent (never fully opaque) so it doesn't hide content. */
 @keyframes arrow-cascade {
-  0%, 60%, 100% { opacity: 0.15; transform: translateY(-4px); }
-  30% { opacity: 1; transform: translateY(4px); }
+  0%, 60%, 100% { opacity: 0.1; transform: translateY(-3px); }
+  30% { opacity: 0.5; transform: translateY(3px); }
 }
 .animate-arrow-cascade { animation: arrow-cascade 1.4s ease-in-out infinite; }
+
+/* Attach-resume nudge: a soft amber ring pulses around the clip button until a resume
+   is attached, so first-time users notice where to upload. */
+@keyframes attach-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  50%      { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.22); }
+}
+.animate-attach-pulse { animation: attach-pulse 1.8s ease-in-out infinite; }
+
+/* Composer "circling tint": a translucent amber-to-blue glow that travels around the
+   text box border (Immigroov colors), instead of a static ring. */
+@property --composer-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes composer-glow-spin { to { --composer-angle: 360deg; } }
+.composer-glow { position: relative; }
+.composer-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--composer-angle),
+    rgba(245, 158, 11, 0) 0deg,
+    rgba(245, 158, 11, 0.65) 55deg,
+    rgba(37, 99, 235, 0.5) 130deg,
+    rgba(245, 158, 11, 0) 200deg,
+    rgba(245, 158, 11, 0) 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  animation: composer-glow-spin 4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-arrow-cascade,
+  .animate-attach-pulse,
+  .composer-glow::before { animation: none; }
+}
 
 /* Pretty focus rings - brand navy */
 *:focus-visible {

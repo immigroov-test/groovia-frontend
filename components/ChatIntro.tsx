@@ -71,9 +71,9 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro({ act
             const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length];
             return (
               <motion.div key={text} {...rise(active, 1.1 + i * 0.14)}>
-                {/* Gradient-border glass card, icon centered on top (issue #3) */}
+                {/* Icon left-of-text on mobile (compact), centered on top on desktop */}
                 <div className="group h-full rounded-2xl p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
-                  <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-5 flex flex-col items-center text-center gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">
+                  <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-4 sm:py-5 flex flex-row sm:flex-col items-center text-left sm:text-center gap-3 sm:gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">
                     <span className="h-9 w-9 shrink-0 rounded-lg bg-gradient-to-br from-brand-700 to-accent-500 text-white flex items-center justify-center shadow-[0_4px_14px_-4px_rgba(245,158,11,0.5)]">
                       <Icon className="h-4 w-4" />
                     </span>
