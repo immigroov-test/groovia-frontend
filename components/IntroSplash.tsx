@@ -1,20 +1,16 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 
 const FLAG = 'groovia.introSeen';
 
-// First-visit-only intro: a blank screen with the Immigroov logo revealed in the centre,
-// which then flies to the TopNav's logo spot (top-left) and fades, handing off to the
-// real app. Measures the actual nav logo so it lands on it. Shown once per browser.
+// First-visit-only intro: a blank screen where the Immigroov logo reveals in the centre,
+// holds, then plays the reveal in reverse to hide, handing off to the app. Once per browser.
 export function IntroSplash() {
   const [show, setShow] = useState(false);
-  const [flying, setFlying] = useState(false);
-  const [target, setTarget] = useState<{ x: number; y: number; scale: number } | null>(null);
-  const logoRef = useRef<HTMLDivElement>(null);
+  const [hiding, setHiding] = useState(false);
 
-  // Decide on mount, before paint where possible, to avoid a flash of the app.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!localStorage.getItem(FLAG)) setShow(true);
@@ -22,23 +18,9 @@ export function IntroSplash() {
 
   useEffect(() => {
     if (!show) return;
-    // Measure the nav logo so the splash logo can fly exactly onto it.
-    const navImg = document.querySelector('[aria-label="Immigroov home"] img') as HTMLElement | null;
-    const logoEl = logoRef.current;
-    if (navImg && logoEl) {
-      const nav = navImg.getBoundingClientRect();
-      const cur = logoEl.getBoundingClientRect();
-      if (nav.height && cur.height) {
-        setTarget({
-          x: (nav.left + nav.width / 2) - (cur.left + cur.width / 2),
-          y: (nav.top + nav.height / 2) - (cur.top + cur.height / 2),
-          scale: nav.height / cur.height,
-        });
-      }
-    }
-    const flyAt = window.setTimeout(() => setFlying(true), 1200);   // reveal + brief hold, then fly
-    const endAt = window.setTimeout(() => { localStorage.setItem(FLAG, '1'); setShow(false); }, 2250);
-    return () => { clearTimeout(flyAt); clearTimeout(endAt); };
+    const hideAt = window.setTimeout(() => setHiding(true), 1300);   // reveal + hold, then reverse
+    const endAt = window.setTimeout(() => { localStorage.setItem(FLAG, '1'); setShow(false); }, 2100);
+    return () => { clearTimeout(hideAt); clearTimeout(endAt); };
   }, [show]);
 
   if (!show) return null;
@@ -46,19 +28,14 @@ export function IntroSplash() {
   return (
     <motion.div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-brand-50"
-      animate={{ opacity: flying ? 0 : 1 }}
-      transition={{ duration: 0.9, ease: 'easeInOut' }}
+      animate={{ opacity: hiding ? 0 : 1 }}
+      transition={{ duration: 0.7, ease: 'easeInOut' }}
       aria-hidden
     >
       <motion.div
-        ref={logoRef}
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={
-          flying && target
-            ? { opacity: 1, scale: target.scale, x: target.x, y: target.y }
-            : { opacity: 1, scale: 1, x: 0, y: 0 }
-        }
-        transition={{ duration: flying ? 0.9 : 0.7, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={hiding ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
       >
         <Image
           src="/Immigroov_Transparent_Logo.png"

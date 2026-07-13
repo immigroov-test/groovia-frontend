@@ -266,14 +266,59 @@ export default function ChatInterface({ authed }: Props) {
   const [seenSection2, setSeenSection2] = useState(false);
 
   // Refs so the IntersectionObserver (set up once) always reads current values. atS1Ref
-  // starts false so the very first "Section 1 in view" counts as a rising edge.
+  // starts false so the very first "Section 1 in view" counts as a rising edge. revealed*
+  // make the auto-scroll fire once per section.
   const landingRef = useRef(true);   // true while on the landing (no real conversation yet)
   const atS1Ref = useRef(false);
   const atS2Ref = useRef(false);
+  const revealedS1Ref = useRef(false);
+  const revealedS2Ref = useRef(false);
+  const revealTimerRef = useRef<number | null>(null);
+  const revealCancelRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     landingRef.current = !resumeUploaded && messages.length <= 1;
   }, [resumeUploaded, messages.length]);
+
+  // Automatically scroll to reveal the rest of an overflowing section (e.g. all three
+  // boxes on mobile), then stop. Cancels the instant the user scrolls, so it never fights
+  // them (#3).
+  function autoReveal(sec: HTMLElement | null) {
+    const root = scrollRef.current;
+    if (!root || !sec || !landingRef.current) return;
+    revealCancelRef.current?.();
+    const target = Math.min(sec.offsetTop + sec.offsetHeight - root.clientHeight, root.scrollHeight - root.clientHeight);
+    const start = root.scrollTop;
+    const distance = target - start;
+    if (distance <= 24) return;   // already fits / bottom shown
+    let cancelled = false;
+    let raf = 0;
+    const cancel = () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      root.removeEventListener('wheel', cancel);
+      root.removeEventListener('touchstart', cancel);
+      revealCancelRef.current = null;
+    };
+    revealCancelRef.current = cancel;
+    root.addEventListener('wheel', cancel, { passive: true });
+    root.addEventListener('touchstart', cancel, { passive: true });
+    let t0 = 0;
+    const step = (now: number) => {
+      if (cancelled) return;
+      if (!t0) t0 = now;
+      const t = Math.min(1, (now - t0) / 2000);
+      root.scrollTop = start + distance * (1 - Math.pow(1 - t, 3));   // easeOutCubic
+      if (t < 1) raf = requestAnimationFrame(step);
+      else cancel();
+    };
+    raf = requestAnimationFrame(step);
+  }
+
+  function scheduleReveal(sec: HTMLElement | null) {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    revealTimerRef.current = window.setTimeout(() => autoReveal(sec), 2200);   // after the entry animation has played
+  }
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -285,12 +330,18 @@ export default function ChatInterface({ authed }: Props) {
         for (const e of entries) {
           const active = e.isIntersecting && e.intersectionRatio >= 0.5;
           if (e.target === s1) {
-            if (active && !atS1Ref.current) setSeenSection1(true);   // latch the entry animation on first view
+            if (active && !atS1Ref.current) {
+              setSeenSection1(true);
+              if (!revealedS1Ref.current) { revealedS1Ref.current = true; scheduleReveal(s1); }
+            }
             atS1Ref.current = active;
             setAtSection1(active);
           }
           if (e.target === s2) {
-            if (active && !atS2Ref.current) setSeenSection2(true);
+            if (active && !atS2Ref.current) {
+              setSeenSection2(true);
+              if (!revealedS2Ref.current) { revealedS2Ref.current = true; scheduleReveal(s2); }
+            }
             atS2Ref.current = active;
             setAtSection2(active);
           }
@@ -300,67 +351,13 @@ export default function ChatInterface({ authed }: Props) {
     );
     io.observe(s1);
     io.observe(s2);
-    return () => io.disconnect();
-  }, [hydrated]);
-
-  // Full-page-style scroll on the landing (#3): a scroll gesture reveals the rest of an
-  // overflowing section (e.g. all three boxes on mobile), then the next gesture jumps to
-  // the following section. Smooth + debounced; disabled once a real conversation is on
-  // screen so the chat scrolls normally.
-  useEffect(() => {
-    const root = scrollRef.current;
-    if (!root) return;
-    let lock = false;
-    const sections = () => [section1Ref.current, section2Ref.current].filter(Boolean) as HTMLElement[];
-
-    function go(dir: 1 | -1) {
-      if (lock || !landingRef.current || !root) return;
-      const list = sections();
-      if (list.length < 2) return;
-      const vh = root.clientHeight;
-      const y = root.scrollTop;
-      let i = 0;
-      for (let k = 0; k < list.length; k++) if (y + vh / 2 >= list[k].offsetTop) i = k;
-      const sec = list[i];
-      const secBottom = sec.offsetTop + sec.offsetHeight;
-      let target: number | null = null;
-      if (dir === 1) {
-        if (y + vh < secBottom - 8) target = Math.min(secBottom - vh, root.scrollHeight - vh);   // reveal rest of this section
-        else if (i < list.length - 1) target = list[i + 1].offsetTop;                            // jump to next section
-      } else {
-        if (y > sec.offsetTop + 8) target = sec.offsetTop;    // back to this section's top
-        else if (i > 0) target = list[i - 1].offsetTop;       // jump to previous section
-      }
-      if (target == null) return;
-      lock = true;
-      root.scrollTo({ top: target, behavior: 'smooth' });
-      window.setTimeout(() => { lock = false; }, 600);
-    }
-
-    function onWheel(e: WheelEvent) {
-      if (!landingRef.current) return;
-      if (Math.abs(e.deltaY) < 4) return;
-      e.preventDefault();
-      go(e.deltaY > 0 ? 1 : -1);
-    }
-    let touchY = 0;
-    function onTouchStart(e: TouchEvent) { touchY = e.touches[0]?.clientY ?? 0; }
-    function onTouchEnd(e: TouchEvent) {
-      if (!landingRef.current) return;
-      const dy = touchY - (e.changedTouches[0]?.clientY ?? touchY);
-      if (Math.abs(dy) < 36) return;
-      go(dy > 0 ? 1 : -1);
-    }
-
-    root.addEventListener('wheel', onWheel, { passive: false });
-    root.addEventListener('touchstart', onTouchStart, { passive: true });
-    root.addEventListener('touchend', onTouchEnd, { passive: true });
     return () => {
-      root.removeEventListener('wheel', onWheel);
-      root.removeEventListener('touchstart', onTouchStart);
-      root.removeEventListener('touchend', onTouchEnd);
+      io.disconnect();
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      revealCancelRef.current?.();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   const scrollToTop = () => section1Ref.current?.scrollIntoView({ behavior: 'smooth' });
   const scrollToGroovia = () => section2Ref.current?.scrollIntoView({ behavior: 'smooth' });
@@ -721,23 +718,23 @@ export default function ChatInterface({ authed }: Props) {
             </button>
           )}
 
-          {/* Resume nudge (#2): the "attach your resume" instruction, visible above the
-              composer on the Groovia section until a resume is attached. */}
-          {atSection2 && !resumeUploaded && !rateLimited && (
-            <p className="text-center text-xs font-medium text-brand-700 mb-2 animate-fade-up">
-              {UI_CONTENT.welcomeMessage}
-            </p>
-          )}
-
           <div
             className={cn(
-              "flex items-end gap-2 rounded-2xl px-2 py-1.5",
+              "rounded-2xl px-2 py-1.5 flex flex-col",
               (gated && resumeUploaded || rateLimited) && "opacity-60",
               // Highlight the chat box from the start (until a resume is uploaded).
               !resumeUploaded && !rateLimited && "composer-glow",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
+            {/* "Attach your resume" nudge - inside the chat box, at the top (#2). */}
+            {!resumeUploaded && !rateLimited && (
+              <p className="text-center text-[11px] font-medium text-brand-700 pt-0.5 pb-1.5 px-2">
+                {UI_CONTENT.welcomeMessage}
+              </p>
+            )}
+
+            <div className="flex items-end gap-2">
             {FEATURES.resumeUpload && (
               <button
                 type="button"
@@ -778,6 +775,7 @@ export default function ChatInterface({ authed }: Props) {
             >
               <Send className="h-4 w-4" />
             </button>
+            </div>
           </div>
 
           <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
