@@ -24,26 +24,23 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [acctOpen, setAcctOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);   // desktop email pill -> sign out
   const [signingOut, setSigningOut] = useState(false);
 
   // Refs so a click anywhere outside an open dropdown closes it (standard menu behaviour).
   const menuBtnRef = useRef<HTMLButtonElement>(null);
   const menuPanelRef = useRef<HTMLDivElement>(null);
-  const acctRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!menuOpen && !acctOpen && !userMenuOpen) return;
+    if (!menuOpen && !userMenuOpen) return;
     function onPointerDown(e: MouseEvent) {
       const t = e.target as Node;
       if (menuOpen && !menuBtnRef.current?.contains(t) && !menuPanelRef.current?.contains(t)) setMenuOpen(false);
-      if (acctOpen && !acctRef.current?.contains(t)) setAcctOpen(false);
       if (userMenuOpen && !userMenuRef.current?.contains(t)) setUserMenuOpen(false);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { setMenuOpen(false); setAcctOpen(false); setUserMenuOpen(false); }
+      if (e.key === 'Escape') { setMenuOpen(false); setUserMenuOpen(false); }
     }
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKey);
@@ -51,13 +48,7 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [menuOpen, acctOpen, userMenuOpen]);
-
-  // Account sub-pages (Profile, Sessions; payments/subscriptions land here later).
-  const accountSub = [
-    { href: '/account', label: 'Profile' },
-    { href: '/account/sessions', label: 'Sessions' },
-  ];
+  }, [menuOpen, userMenuOpen]);
 
   function hrefFor(realHref: string, gated: boolean): string {
     if (!gated || authed) return realHref;
@@ -112,49 +103,6 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
         <nav className="hidden lg:flex items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5 shrink-0">
           {nav.map(({ href, label, gated }) => {
             const active = href === '/account' ? pathname.startsWith('/account') : pathname === href;
-
-            // Account → dropdown (Profile / Sessions) when signed in.
-            if (href === '/account' && authed) {
-              return (
-                <div key={href} ref={acctRef} className="relative" onMouseEnter={() => setAcctOpen(true)} onMouseLeave={() => setAcctOpen(false)}>
-                  <button
-                    type="button"
-                    onClick={() => setAcctOpen((v) => !v)}
-                    className={cn(
-                      'px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors inline-flex items-center gap-1',
-                      active ? 'text-brand-900 bg-brand-50' : 'text-muted hover:text-brand-900 hover:bg-brand-50/60',
-                    )}
-                  >
-                    {label} <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                  {acctOpen && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2">
-                      <div className="w-56 rounded-xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] p-1.5 flex flex-col">
-                        {email && (
-                          <p className="px-3 pt-1.5 pb-2 text-xs text-muted break-all border-b border-[--color-border] mb-1">
-                            {email}
-                          </p>
-                        )}
-                        {accountSub.map((s) => (
-                          <Link
-                            key={s.href}
-                            href={s.href}
-                            onClick={() => setAcctOpen(false)}
-                            className={cn(
-                              'px-3 py-2 rounded-lg text-sm',
-                              pathname === s.href ? 'bg-brand-50 text-brand-900 font-medium' : 'text-muted hover:bg-brand-50/60 hover:text-brand-900',
-                            )}
-                          >
-                            {s.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            }
-
             return (
               <Link
                 key={href}
@@ -268,42 +216,21 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
               </div>
             </Link>
           )}
-          {nav.map(({ href, label, gated }) => {
-            // Account → expandable group (Profile / Sessions) when signed in.
-            if (href === '/account' && authed) {
-              return (
-                <div key={href} className="flex flex-col">
-                  <span className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</span>
-                  {accountSub.map((s) => (
-                    <Link
-                      key={s.href}
-                      href={s.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={cn(
-                        'ml-2 px-3 py-2.5 rounded-xl text-sm font-medium',
-                        pathname === s.href ? 'bg-brand-50 text-brand-900' : 'text-muted hover:bg-brand-50/60',
-                      )}
-                    >
-                      {s.label}
-                    </Link>
-                  ))}
-                </div>
-              );
-            }
-            return (
-              <Link
-                key={href}
-                href={hrefFor(href, gated)}
-                onClick={() => setMenuOpen(false)}
-                className={cn(
-                  'px-3 py-2.5 rounded-xl text-sm font-medium',
-                  pathname === href ? 'bg-brand-50 text-brand-900' : 'text-muted hover:bg-brand-50/60',
-                )}
-              >
-                {label}
-              </Link>
-            );
-          })}
+          {nav.map(({ href, label, gated }) => (
+            <Link
+              key={href}
+              href={hrefFor(href, gated)}
+              onClick={() => setMenuOpen(false)}
+              className={cn(
+                'px-3 py-2.5 rounded-xl text-sm font-medium',
+                (href === '/account' ? pathname.startsWith('/account') : pathname === href)
+                  ? 'bg-brand-50 text-brand-900'
+                  : 'text-muted hover:bg-brand-50/60',
+              )}
+            >
+              {label}
+            </Link>
+          ))}
           <div className="mt-1">
             {authed ? (
               <button
