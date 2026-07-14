@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Paperclip, Send, Lock, SquarePen, ChevronUp, ChevronDown } from 'lucide-react';
+import { Paperclip, Send, Lock, SquarePen, ChevronUp } from 'lucide-react';
 import { UI_CONTENT, INTENT_OPTIONS, EXPERTISE_CATEGORY_MAP } from '../lib/content';
 import { countryLabel, flagEmoji } from '../lib/countries';
 import { createClient } from '../lib/supabase/client';
@@ -273,6 +273,7 @@ export default function ChatInterface({ authed }: Props) {
     setIntentSelected(false);
     setMentorTopic('');
     setMentorStep('');
+    setWelcomeRevealed(false);
     // A fresh start lands on the Groovia section with the composer ready.
     requestAnimationFrame(() => section2Ref.current?.scrollIntoView({ behavior: 'smooth' }));
   }
@@ -280,7 +281,6 @@ export default function ChatInterface({ authed }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatStartRef = useRef<HTMLDivElement>(null);
-  const welcomeRef = useRef<HTMLDivElement>(null);   // Groovia's first message (revealed on scroll/arrow)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const section1Ref = useRef<HTMLElement>(null);   // Section 1: Immigroov intro
@@ -293,6 +293,11 @@ export default function ChatInterface({ authed }: Props) {
   const [atSection2, setAtSection2] = useState(false);
   // True while the guided intro tour is auto-scrolling; drives the "Skip intro" button.
   const [tourActive, setTourActive] = useState(false);
+  // The Groovia section's first message is revealed (via the arrows or a scroll).
+  const [welcomeRevealed, setWelcomeRevealed] = useState(false);
+  // Mobile-only: drop the rotating globe after the first real scroll (kept on desktop).
+  const [isMobile, setIsMobile] = useState(false);
+  const [scrolledOnce, setScrolledOnce] = useState(false);
   // Latched true on first view of each section: drives the once-only entry animation, so
   // the content stays put afterwards (no fade-out / blank pages when scrolling).
   const [seenSection1, setSeenSection1] = useState(false);
@@ -310,6 +315,32 @@ export default function ChatInterface({ authed }: Props) {
   useEffect(() => {
     landingRef.current = !resumeUploaded && messages.length <= 1;
   }, [resumeUploaded, messages.length]);
+
+  // Track "is this a phone" (for dropping the globe) via a media query.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  // First real user scroll (not the auto-tour): mark it, and reveal the Groovia first
+  // message if they scroll while on the Groovia section.
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const onUserScroll = () => {
+      setScrolledOnce(true);
+      if (atS2Ref.current) setWelcomeRevealed(true);
+    };
+    root.addEventListener('wheel', onUserScroll, { passive: true });
+    root.addEventListener('touchmove', onUserScroll, { passive: true });
+    return () => {
+      root.removeEventListener('wheel', onUserScroll);
+      root.removeEventListener('touchmove', onUserScroll);
+    };
+  }, [hydrated]);
 
   // IntersectionObserver: latch which intro section is in view. Drives the once-only entry
   // animations (seenSection*) and the UI cues (atSection*). The scrolling itself is done by
@@ -408,9 +439,6 @@ export default function ChatInterface({ authed }: Props) {
 
   const scrollToTop = () => section1Ref.current?.scrollIntoView({ behavior: 'smooth' });
   const scrollToGroovia = () => section2Ref.current?.scrollIntoView({ behavior: 'smooth' });
-  // Scroll the first message to the top (Section 2 goes off-screen above), so there's no
-  // empty band between the Groovia lines and the message.
-  const scrollToWelcome = () => welcomeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   async function loadFacets() {
     if (facets.categories.length || facetsLoading) return;
@@ -702,25 +730,20 @@ export default function ChatInterface({ authed }: Props) {
         className="flex-1 overflow-y-auto relative snap-y snap-proximity"
         style={{ zIndex: 1 }}
       >
-        {/* Section 1: Immigroov intro. Section 2: Groovia intro. Both full-height and
-            snap-aligned, so once Groovia (Section 2) is scrolled to it fills the screen and
-            Section 1 is off-screen above - reachable again only by scrolling up or the
-            top-arrow button. `snap-proximity` (not mandatory) keeps the chat free-scrolling.
-            Both stay mounted; `seen` drives the once-only entrance animation. */}
-        <ImmigroovIntro ref={section1Ref} seen={seenSection1} />
-        <ChatIntro ref={section2Ref} seen={seenSection2} />
+        {/* Section 1 (Immigroov) fills the first screen with the boxes at its bottom; Section 2
+            (Groovia) is a chat screen with its header at the top - so the two meet with no
+            void. Section 2 holds its own first-message + arrows. `snap-proximity` keeps the
+            chat free-scrolling. Both stay mounted; `seen` drives the once-only animation. */}
+        <ImmigroovIntro ref={section1Ref} seen={seenSection1} hideGif={isMobile && scrolledOnce} />
+        <ChatIntro
+          ref={section2Ref}
+          seen={seenSection2}
+          showArrows={seenSection2 && !welcomeRevealed && !resumeUploaded}
+          showWelcome={welcomeRevealed && !resumeUploaded}
+          onReveal={() => setWelcomeRevealed(true)}
+        />
 
         <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-6 pb-44 space-y-6">
-          {/* Groovia's first message, revealed below the Groovia section when the user
-              scrolls down or taps the arrows. Glows until a resume is attached. */}
-          {!resumeUploaded && messages.length === 0 && (
-            <div ref={welcomeRef} className="flex items-start gap-2.5 justify-start scroll-mt-8">
-              <AiAvatar />
-              <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white border border-[--color-border] shadow-sm px-4 py-3 text-sm leading-relaxed text-foreground text-left composer-glow">
-                {UI_CONTENT.welcomeMessage}
-              </div>
-            </div>
-          )}
           {messages.map((m, i) => (
             <div
               key={i}
@@ -808,21 +831,6 @@ export default function ChatInterface({ authed }: Props) {
           <div ref={chatEndRef} />
         </div>
       </div>
-
-      {/* Cascading down-arrows: shown once the auto-scroll has revealed Groovia (Section 2).
-          Tapping them (or scrolling) reveals the first message. Landing only, before a resume. */}
-      {atSection2 && !resumeUploaded && (
-        <button
-          type="button"
-          onClick={scrollToWelcome}
-          aria-label="Reveal the first message"
-          className="absolute bottom-40 sm:bottom-36 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center -space-y-2.5 text-brand-700 animate-fade-up"
-        >
-          {[0, 1, 2].map((i) => (
-            <ChevronDown key={i} className="h-6 w-6 animate-arrow-cascade" style={{ animationDelay: `${i * 0.25}s` }} />
-          ))}
-        </button>
-      )}
 
       {/* z-index: 10 keeps the input bar above both the scroll area (z-1) and landmarks (z-0). */}
       <div className="bg-transparent relative" style={{ zIndex: 10 }}>
