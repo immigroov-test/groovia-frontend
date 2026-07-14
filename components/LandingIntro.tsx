@@ -104,26 +104,22 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
         })}
       </div>
 
-      {/* Beat 3: "Chat with Groovia?" is itself the button that reveals the first message.
-          Same gradient text, but it invites a tap: a gentle breathing scale until clicked,
-          plus a hover lift and pointer cursor. */}
+      {/* Beat 3: "Chat with Groovia?" is a button (subtle box) that reveals the first
+          message. Same gradient text; a gentle breathing until clicked signals it's tappable. */}
       <motion.div ref={grooviaRef} {...rise(beat >= 3)} className="mt-10 w-full flex flex-col items-center">
         <motion.button
           type="button"
           onClick={onReveal}
           aria-label="Reveal the first message"
-          animate={beat >= 3 && !showWelcome ? { scale: [1, 1.04, 1] } : { scale: 1 }}
-          transition={{ duration: 1.9, repeat: showWelcome ? 0 : Infinity, ease: 'easeInOut' }}
-          className="cursor-pointer select-none transition-[filter] hover:brightness-110 focus:outline-none"
+          animate={beat >= 3 && !showWelcome ? { scale: [1, 1.035, 1] } : { scale: 1 }}
+          transition={{ duration: 2, repeat: showWelcome ? 0 : Infinity, ease: 'easeInOut' }}
+          className="cursor-pointer select-none rounded-2xl border border-brand-200 bg-card/70 px-5 py-2.5 shadow-sm hover:bg-card hover:border-brand-300 hover:shadow transition-colors focus:outline-none focus:ring-2 focus:ring-brand-300"
         >
           <span className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent">
             <TypeText text={hero.title} active={beat >= 3} speed={60} />
           </span>
         </motion.button>
-        {!showWelcome && beat >= 3 && (
-          <span className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted animate-pulse">Tap to start</span>
-        )}
-        <div className="mt-3 w-full">
+        <div className="mt-4 w-full">
           <CyclingText lines={hero.features} active={beat >= 3} className="h-8 sm:h-9" />
         </div>
       </motion.div>
