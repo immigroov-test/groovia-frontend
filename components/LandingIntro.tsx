@@ -31,6 +31,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
 
   // beat: 0 nothing, 1 headline+globe, 2 boxes, 3 "Chat with Groovia?" + ticker.
   const [beat, setBeat] = useState(0);
+  const boxesRef = useRef<HTMLDivElement>(null);
   const grooviaRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
 
@@ -41,19 +42,20 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
     const base = splashPending ? 2300 : 300;
     const timers = [
       window.setTimeout(() => setBeat(1), base),          // headline + globe
-      window.setTimeout(() => setBeat(2), base + 2200),   // boxes
-      window.setTimeout(() => setBeat(3), base + 3000),   // Chat with Groovia? + ticker
+      window.setTimeout(() => setBeat(2), base + 2400),   // boxes
+      window.setTimeout(() => setBeat(3), base + 4400),   // Chat with Groovia? + ticker
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Follow a beat / the message onto the screen, but only when it's below the fold - so on a
-  // big screen where the column already fits, nothing scrolls.
+  // Bring the newest element up as it appears, stopping right at it (no overshoot into blank
+  // space). Only scrolls when the element is below the fold, so a big screen never moves.
   const followIfBelow = (el: HTMLElement | null) => {
     if (el && el.getBoundingClientRect().bottom > window.innerHeight - 8) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   };
+  useEffect(() => { if (beat === 2) followIfBelow(boxesRef.current); }, [beat]);
   useEffect(() => { if (beat === 3) followIfBelow(grooviaRef.current); }, [beat]);
   useEffect(() => { if (showWelcome) followIfBelow(messageRef.current); }, [showWelcome]);
 
@@ -79,14 +81,14 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
               <img src="/Globe_landingPage_GIF.gif" alt="" aria-hidden className="w-28 h-28 sm:w-44 sm:h-44 object-contain" />
             </motion.div>
           )}
-          <h1 className="min-h-[3.5rem] sm:min-h-[6rem] text-2xl sm:text-4xl font-bold tracking-tight leading-[1.12] text-center sm:text-left bg-gradient-to-r from-[#00377d] via-[#0a4fa0] to-[#fe9d1c] bg-clip-text text-transparent">
+          <h1 className="min-h-[3rem] sm:min-h-[6rem] text-lg sm:text-4xl font-bold tracking-tight leading-[1.15] text-center sm:text-left bg-gradient-to-r from-[#00377d] via-[#0a4fa0] to-[#fe9d1c] bg-clip-text text-transparent">
             <TypeText text={b.headline} active={beat >= 1} speed={HEAD_SPEED} />
           </h1>
         </div>
       </motion.div>
 
       {/* Beat 2: the three boxes. */}
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
+      <div ref={boxesRef} className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
         {b.cards.map((text, i) => {
           const Icon = CARD_ICONS[i % CARD_ICONS.length];
           return (
@@ -104,28 +106,27 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
         })}
       </div>
 
-      {/* Beat 3: "Chat with Groovia?" is a button (subtle box) that reveals the first
-          message. Same gradient text; a gentle breathing until clicked signals it's tappable. */}
+      {/* Beat 3: "Chat with Groovia?" is a button that reveals the first message. No hard
+          border - the same rotating orange/blue glow as the chat box signals it's tappable. */}
       <motion.div ref={grooviaRef} {...rise(beat >= 3)} className="mt-10 w-full flex flex-col items-center">
-        <motion.button
+        <button
           type="button"
           onClick={onReveal}
           aria-label="Reveal the first message"
-          animate={beat >= 3 && !showWelcome ? { scale: [1, 1.035, 1] } : { scale: 1 }}
-          transition={{ duration: 2, repeat: showWelcome ? 0 : Infinity, ease: 'easeInOut' }}
-          className="cursor-pointer select-none rounded-2xl border border-brand-200 bg-card/70 px-5 py-2.5 shadow-sm hover:bg-card hover:border-brand-300 hover:shadow transition-colors focus:outline-none focus:ring-2 focus:ring-brand-300"
+          className="composer-glow cursor-pointer select-none rounded-2xl bg-card/85 px-5 py-2.5 hover:bg-card transition-colors focus:outline-none"
         >
-          <span className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent">
+          <span className="text-xl sm:text-3xl font-bold tracking-tight leading-tight bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent">
             <TypeText text={hero.title} active={beat >= 3} speed={60} />
           </span>
-        </motion.button>
+        </button>
         <div className="mt-4 w-full">
           <CyclingText lines={hero.features} active={beat >= 3} className="h-8 sm:h-9" />
         </div>
       </motion.div>
 
-      {/* The first message, revealed when the heading is tapped. */}
-      <div ref={messageRef} className="mt-6 mb-8 w-full flex flex-col items-center min-h-[4.5rem]">
+      {/* The first message, revealed when the heading is tapped. No reserved height, so
+          nothing sits as blank space before it's shown. */}
+      <div ref={messageRef} className="mt-4 mb-8 w-full flex flex-col items-center">
         {showWelcome && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
