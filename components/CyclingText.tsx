@@ -1,43 +1,35 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useState } from 'react';
+import { motion } from 'motion/react';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
-
-// Shows one line at a time: it fades/slides in, holds, slides out, and the next takes its
-// place. No box. Cycles while `active`.
+// News-ticker: each line enters from the right, runs across, and exits to the left; then
+// the next line follows. Continuous right-to-left motion, like a TV news bar.
 export function CyclingText({
   lines,
   active,
-  interval = 2800,
+  duration = 11,
   className = '',
 }: {
   lines: readonly string[];
   active: boolean;
-  interval?: number;
+  duration?: number;
   className?: string;
 }) {
   const [i, setI] = useState(0);
-  useEffect(() => {
-    if (!active || lines.length <= 1) return;
-    const id = setInterval(() => setI((n) => (n + 1) % lines.length), interval);
-    return () => clearInterval(id);
-  }, [active, lines.length, interval]);
-
   return (
-    <div className={`relative flex items-center justify-center overflow-hidden ${className}`}>
-      <AnimatePresence mode="wait">
+    <div className={`relative w-full overflow-hidden ${className}`}>
+      {active && lines.length > 0 && (
         <motion.p
           key={i}
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -14 }}
-          transition={{ duration: 0.5, ease: EASE }}
-          className="text-center text-base sm:text-lg text-foreground/70 px-4"
+          initial={{ x: '100%' }}
+          animate={{ x: '-100%' }}
+          transition={{ duration, ease: 'linear' }}
+          onAnimationComplete={() => setI((n) => (n + 1) % lines.length)}
+          className="absolute inset-0 flex items-center justify-center whitespace-nowrap text-sm sm:text-base text-foreground/70"
         >
           {lines[i]}
         </motion.p>
-      </AnimatePresence>
+      )}
     </div>
   );
 }

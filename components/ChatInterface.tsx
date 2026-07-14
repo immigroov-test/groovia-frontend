@@ -408,7 +408,9 @@ export default function ChatInterface({ authed }: Props) {
 
   const scrollToTop = () => section1Ref.current?.scrollIntoView({ behavior: 'smooth' });
   const scrollToGroovia = () => section2Ref.current?.scrollIntoView({ behavior: 'smooth' });
-  const scrollToWelcome = () => welcomeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Scroll the first message to the top (Section 2 goes off-screen above), so there's no
+  // empty band between the Groovia lines and the message.
+  const scrollToWelcome = () => welcomeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   async function loadFacets() {
     if (facets.categories.length || facetsLoading) return;
@@ -708,11 +710,11 @@ export default function ChatInterface({ authed }: Props) {
         <ImmigroovIntro ref={section1Ref} seen={seenSection1} />
         <ChatIntro ref={section2Ref} seen={seenSection2} />
 
-        <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-8 pb-44 space-y-6">
+        <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-6 pb-44 space-y-6">
           {/* Groovia's first message, revealed below the Groovia section when the user
               scrolls down or taps the arrows. Glows until a resume is attached. */}
           {!resumeUploaded && messages.length === 0 && (
-            <div ref={welcomeRef} className="flex items-start gap-2.5 justify-start scroll-mt-24">
+            <div ref={welcomeRef} className="flex items-start gap-2.5 justify-start scroll-mt-8">
               <AiAvatar />
               <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white border border-[--color-border] shadow-sm px-4 py-3 text-sm leading-relaxed text-foreground text-left composer-glow">
                 {UI_CONTENT.welcomeMessage}
@@ -807,13 +809,13 @@ export default function ChatInterface({ authed }: Props) {
         </div>
       </div>
 
-      {/* Cascading down-arrows: on Section 1 they lead to Groovia; on Section 2 (Chat with
-          Groovia) they reveal the first message. Only on the landing, before a resume. */}
-      {(atSection1 || atSection2) && !resumeUploaded && (
+      {/* Cascading down-arrows: shown once the auto-scroll has revealed Groovia (Section 2).
+          Tapping them (or scrolling) reveals the first message. Landing only, before a resume. */}
+      {atSection2 && !resumeUploaded && (
         <button
           type="button"
-          onClick={atSection2 ? scrollToWelcome : scrollToGroovia}
-          aria-label={atSection2 ? 'Reveal the first message' : 'Scroll down to Groovia'}
+          onClick={scrollToWelcome}
+          aria-label="Reveal the first message"
           className="absolute bottom-40 sm:bottom-36 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center -space-y-2.5 text-brand-700 animate-fade-up"
         >
           {[0, 1, 2].map((i) => (
