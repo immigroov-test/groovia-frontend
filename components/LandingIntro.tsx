@@ -1,7 +1,7 @@
 'use client';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Users, Globe, Sparkles, ChevronDown } from 'lucide-react';
+import { Users, Globe, Sparkles } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
 import { TypeText } from './TypeText';
 import { CyclingText } from './CyclingText';
@@ -12,14 +12,14 @@ const CARD_ICONS = [Users, Globe, Sparkles];
 const HEAD_SPEED = 34;
 
 // The whole landing as one tight, choreographed column (no full-height section voids):
-//   1 headline fades in centered  ->  2 rises to the top  ->  3 boxes drop in  ->
-//   4 "Chat with Groovia?" + running ticker  ->  5 down-arrows  ->  (tap) first message.
-// Each beat is close to the last; on short screens the column scrolls itself to follow the
-// newest beat, so it fits and flows on any screen size.
+//   1 headline + globe (at the top)  ->  2 the three boxes  ->  3 "Chat with Groovia?"
+//   (a clickable heading) + running ticker  ->  (tap the heading) first message.
+// Beats sit close together; on short screens the column scrolls itself to follow the newest
+// beat only when it's below the fold, so it fits and flows on any screen size.
 interface Props {
   hideGif: boolean;         // mobile: drop the globe after first scroll
   showWelcome: boolean;     // reveal the first message (driven by the parent)
-  onReveal: () => void;     // user tapped the arrows
+  onReveal: () => void;     // user tapped the "Chat with Groovia?" heading
 }
 
 export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIntro(
@@ -29,36 +29,33 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
   const b = UI_CONTENT.brandIntro;
   const hero = UI_CONTENT.hero;
 
-  // beat: 0 nothing, 1 headline centered, 2 headline at top, 3 boxes, 4 Groovia+ticker, 5 arrows.
+  // beat: 0 nothing, 1 headline+globe, 2 boxes, 3 "Chat with Groovia?" + ticker.
   const [beat, setBeat] = useState(0);
   const grooviaRef = useRef<HTMLDivElement>(null);
-  const arrowsRef = useRef<HTMLDivElement>(null);
+  const messageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Wait out the one-time logo splash on a first visit so the headline doesn't start
     // underneath it.
     const splashPending = !window.localStorage.getItem('groovia.introSeen');
     const base = splashPending ? 2300 : 300;
-    const at = (ms: number, fn: () => void) => window.setTimeout(fn, base + ms);
     const timers = [
-      at(0, () => setBeat(1)),        // headline in, centered
-      at(2600, () => setBeat(2)),     // headline rises to the top
-      at(3300, () => setBeat(3)),     // boxes
-      at(4600, () => setBeat(4)),     // Chat with Groovia? + ticker
-      at(6000, () => setBeat(5)),     // arrows
+      window.setTimeout(() => setBeat(1), base),          // headline + globe
+      window.setTimeout(() => setBeat(2), base + 2200),   // boxes
+      window.setTimeout(() => setBeat(3), base + 3000),   // Chat with Groovia? + ticker
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Follow the newest beat, but only if it's below the fold - so on a big screen where the
-  // whole column already fits, nothing scrolls.
-  useEffect(() => {
-    const el = beat === 4 ? grooviaRef.current : beat === 5 ? arrowsRef.current : null;
-    if (!el) return;
-    if (el.getBoundingClientRect().bottom > window.innerHeight - 8) {
+  // Follow a beat / the message onto the screen, but only when it's below the fold - so on a
+  // big screen where the column already fits, nothing scrolls.
+  const followIfBelow = (el: HTMLElement | null) => {
+    if (el && el.getBoundingClientRect().bottom > window.innerHeight - 8) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, [beat]);
+  };
+  useEffect(() => { if (beat === 3) followIfBelow(grooviaRef.current); }, [beat]);
+  useEffect(() => { if (showWelcome) followIfBelow(messageRef.current); }, [showWelcome]);
 
   const rise = (on: boolean, delay = 0) => ({
     initial: { opacity: 0, y: 22 },
@@ -67,14 +64,9 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
   });
 
   return (
-    <div ref={ref} className="relative z-10 w-full max-w-4xl mx-auto px-5 sm:px-8 flex flex-col items-center text-center">
-      {/* Beat 1-2: headline + globe fade in centered, then rise to the top. */}
-      <motion.div
-        initial={{ opacity: 0, y: '32svh' }}
-        animate={{ opacity: beat >= 1 ? 1 : 0, y: beat >= 2 ? 0 : '32svh' }}
-        transition={{ duration: 0.9, ease: EASE }}
-        className="w-full pt-[8svh]"
-      >
+    <div ref={ref} className="relative z-10 w-full max-w-4xl mx-auto px-5 sm:px-8 pt-6 sm:pt-10 flex flex-col items-center text-center">
+      {/* Beat 1: headline + globe, at the top. */}
+      <motion.div {...rise(beat >= 1)} className="w-full">
         <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] items-center gap-4 sm:gap-8">
           {!hideGif && (
             <motion.div
@@ -93,12 +85,12 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
         </div>
       </motion.div>
 
-      {/* Beat 3: the three boxes, right under the headline. */}
+      {/* Beat 2: the three boxes. */}
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
         {b.cards.map((text, i) => {
           const Icon = CARD_ICONS[i % CARD_ICONS.length];
           return (
-            <motion.div key={text} {...rise(beat >= 3, 0.1 + i * 0.12)}>
+            <motion.div key={text} {...rise(beat >= 2, 0.1 + i * 0.12)}>
               <div className="group h-full rounded-2xl p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
                 <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-4 sm:py-5 flex flex-row sm:flex-col items-center text-left sm:text-center gap-3 sm:gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">
                   <span className="h-9 w-9 shrink-0 rounded-lg bg-gradient-to-br from-brand-700 to-accent-500 text-white flex items-center justify-center shadow-[0_4px_14px_-4px_rgba(245,158,11,0.5)]">
@@ -112,19 +104,33 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
         })}
       </div>
 
-      {/* Beat 4: Chat with Groovia? + the running ticker. */}
-      <motion.div ref={grooviaRef} {...rise(beat >= 4)} className="mt-10 w-full flex flex-col items-center">
-        <h2 className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent">
-          <TypeText text={hero.title} active={beat >= 4} speed={60} />
-        </h2>
+      {/* Beat 3: "Chat with Groovia?" is itself the button that reveals the first message.
+          Same gradient text, but it invites a tap: a gentle breathing scale until clicked,
+          plus a hover lift and pointer cursor. */}
+      <motion.div ref={grooviaRef} {...rise(beat >= 3)} className="mt-10 w-full flex flex-col items-center">
+        <motion.button
+          type="button"
+          onClick={onReveal}
+          aria-label="Reveal the first message"
+          animate={beat >= 3 && !showWelcome ? { scale: [1, 1.04, 1] } : { scale: 1 }}
+          transition={{ duration: 1.9, repeat: showWelcome ? 0 : Infinity, ease: 'easeInOut' }}
+          className="cursor-pointer select-none transition-[filter] hover:brightness-110 focus:outline-none"
+        >
+          <span className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight bg-gradient-to-r from-brand-900 to-accent-500 bg-clip-text text-transparent">
+            <TypeText text={hero.title} active={beat >= 3} speed={60} />
+          </span>
+        </motion.button>
+        {!showWelcome && beat >= 3 && (
+          <span className="mt-1 text-[11px] font-medium uppercase tracking-wide text-muted animate-pulse">Tap to start</span>
+        )}
         <div className="mt-3 w-full">
-          <CyclingText lines={hero.features} active={beat >= 4} className="h-8 sm:h-9" />
+          <CyclingText lines={hero.features} active={beat >= 3} className="h-8 sm:h-9" />
         </div>
       </motion.div>
 
-      {/* Beat 5 -> tap: arrows, then the first message with its glow. */}
-      <div ref={arrowsRef} className="mt-6 mb-8 w-full flex flex-col items-center min-h-[5rem]">
-        {showWelcome ? (
+      {/* The first message, revealed when the heading is tapped. */}
+      <div ref={messageRef} className="mt-6 mb-8 w-full flex flex-col items-center min-h-[4.5rem]">
+        {showWelcome && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -136,19 +142,6 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
               {UI_CONTENT.welcomeMessage}
             </div>
           </motion.div>
-        ) : (
-          beat >= 5 && (
-            <button
-              type="button"
-              onClick={onReveal}
-              aria-label="Reveal the first message"
-              className="flex flex-col items-center -space-y-2.5 text-brand-700 animate-fade-up"
-            >
-              {[0, 1, 2].map((i) => (
-                <ChevronDown key={i} className="h-6 w-6 animate-arrow-cascade" style={{ animationDelay: `${i * 0.25}s` }} />
-              ))}
-            </button>
-          )
         )}
       </div>
     </div>
