@@ -1,43 +1,49 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { TypeText } from './TypeText';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-// One line at a time, running right-to-left: it slides in from the right, holds centered so
-// it's readable, then slides out to the left and the next follows. Visible immediately (no
-// long off-screen run-up).
+// One line at a time, typewriter style: the line types itself in, holds so it's readable,
+// then shrinks away, and the next line types in. Loops.
 export function CyclingText({
   lines,
   active,
-  interval = 3200,
+  hold = 1400,
+  speed = 42,
   className = '',
 }: {
   lines: readonly string[];
   active: boolean;
-  interval?: number;
+  hold?: number;
+  speed?: number;
   className?: string;
 }) {
   const [i, setI] = useState(0);
-  useEffect(() => {
-    if (!active || lines.length <= 1) return;
-    const id = setInterval(() => setI((n) => (n + 1) % lines.length), interval);
-    return () => clearInterval(id);
-  }, [active, lines.length, interval]);
+  const timer = useRef<number | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  // After a line finishes typing, hold, then advance - the key change makes the current
+  // line shrink out and the next type in.
+  const onTyped = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setI((n) => (n + 1) % lines.length), hold);
+  };
 
   return (
     <div className={`relative w-full overflow-hidden ${className}`}>
       <AnimatePresence mode="wait">
-        {active && (
+        {active && lines.length > 0 && (
           <motion.p
             key={i}
-            initial={{ x: '55%', opacity: 0 }}
-            animate={{ x: '0%', opacity: 1 }}
-            exit={{ x: '-55%', opacity: 0 }}
-            transition={{ duration: 0.55, ease: EASE }}
+            initial={{ opacity: 1, scale: 1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.4 }}
+            transition={{ duration: 0.35, ease: EASE }}
             className="absolute inset-0 flex items-center justify-center whitespace-nowrap text-sm sm:text-base text-foreground/70"
           >
-            {lines[i]}
+            <TypeText key={i} text={lines[i]} active={active} speed={speed} onDone={onTyped} />
           </motion.p>
         )}
       </AnimatePresence>

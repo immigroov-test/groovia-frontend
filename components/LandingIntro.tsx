@@ -84,7 +84,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
               <img src="/Globe_landingPage_GIF.gif" alt="" aria-hidden className="w-28 h-28 sm:w-44 sm:h-44 object-contain" />
             </motion.div>
           )}
-          <h1 className="min-h-[3rem] sm:min-h-[6rem] text-lg sm:text-4xl font-bold tracking-tight leading-[1.15] text-center sm:text-left bg-gradient-to-r from-[#00377d] from-42% to-[#fe9d1c] to-64% bg-clip-text text-transparent">
+          <h1 className="min-h-[3rem] sm:min-h-[6rem] text-lg sm:text-4xl font-bold tracking-tight leading-[1.15] text-center sm:text-left gradient-flow bg-clip-text text-transparent">
             <TypeText text={b.headline} active={step >= 1} speed={HEAD_SPEED} />
           </h1>
         </div>
@@ -122,7 +122,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
             type="button"
             onClick={onReveal}
             aria-label="Reveal the first message"
-            className="relative rounded-full bg-gradient-to-r from-[#00377d] from-40% to-[#fe9d1c] to-62% px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-white/60"
+            className="relative rounded-full gradient-flow px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-white/60"
           >
             <TypeText text={hero.title} active={step >= 5} speed={60} />
           </button>
