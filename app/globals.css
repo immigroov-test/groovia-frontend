@@ -196,13 +196,31 @@ h1, h2, h3, h4, h5, h6 {
     #00377d 0%, #00377d 8%, #fe9d1c 25%, #00377d 42%,
     #00377d 58%, #fe9d1c 75%, #00377d 92%, #00377d 100%);
   background-size: 200% auto;
-  animation: gradient-flow 5s linear infinite;
+  animation: gradient-flow 9s linear infinite;   /* slow, gentle drift */
+}
+
+/* Modular button "shine": a soft light streak sweeps across every few seconds. Drop
+   `btn-shine` on any button (it clips the streak to the button's shape). */
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%);
+  transform: translateX(-130%);
+  animation: btn-shine 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes btn-shine {
+  0%        { transform: translateX(-130%); }
+  22%, 100% { transform: translateX(130%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-arrow-cascade,
   .animate-attach-pulse,
   .gradient-flow,
+  .btn-shine::after,
   .composer-glow::before { animation: none; }
 }
 

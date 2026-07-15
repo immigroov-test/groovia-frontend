@@ -122,7 +122,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
             type="button"
             onClick={onReveal}
             aria-label="Reveal the first message"
-            className="relative rounded-full gradient-flow px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-bold text-white shadow-lg cursor-pointer hover:brightness-110 transition focus:outline-none focus:ring-2 focus:ring-white/60"
+            className="btn-shine rounded-full bg-gradient-to-r from-[#00377d] from-38% to-[#fe9d1c] to-62% px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-bold text-white shadow-lg cursor-pointer hover:brightness-110 active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-white/60"
           >
             <TypeText text={hero.title} active={step >= 5} speed={60} />
           </button>
