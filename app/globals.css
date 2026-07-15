@@ -146,13 +146,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 .animate-arrow-cascade { animation: arrow-cascade 1.4s ease-in-out infinite; }
 
-/* Attach-resume nudge: a soft amber ring pulses around the clip button until a resume
-   is attached, so first-time users notice where to upload. */
+/* Attach-resume nudge: an amber ripple expands and fades out of the clip button while it
+   bounces, so first-time users can't miss where to upload. */
 @keyframes attach-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-  50%      { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.22); }
+  0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65); transform: scale(1); }
+  70%  { box-shadow: 0 0 0 13px rgba(245, 158, 11, 0); transform: scale(1.18); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); transform: scale(1); }
 }
-.animate-attach-pulse { animation: attach-pulse 1.8s ease-in-out infinite; }
+.animate-attach-pulse { animation: attach-pulse 1.3s ease-out infinite; }
 
 /* Composer "circling tint": a bright amber-to-blue glow that travels around the text
    box border (Immigroov colors), instead of a static ring. Prominent border + a soft
