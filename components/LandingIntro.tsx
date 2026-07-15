@@ -109,24 +109,17 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
         })}
       </div>
 
-      {/* Step 5: "Chat with Groovia?" as a glowing blue+orange oval button that reveals the
-          first message. */}
+      {/* Step 5: "Try Groovia?" - a clean black (odyssey) pill with the shine sweep, that
+          reveals the first message. */}
       <motion.div ref={grooviaRef} {...rise(step >= 5)} className="mt-10 w-full flex flex-col items-center">
-        <div className="relative">
-          {/* Soft blue -> orange glow behind the pill (breathing). */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -inset-2 rounded-full bg-gradient-to-r from-blue-600 via-sky-400 to-orange-400 blur-xl opacity-60 animate-pulse"
-          />
-          <button
-            type="button"
-            onClick={onReveal}
-            aria-label="Reveal the first message"
-            className="btn-shine rounded-full bg-gradient-to-r from-[#00377d] from-38% to-[#fe9d1c] to-62% px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-bold text-white shadow-lg cursor-pointer hover:brightness-110 active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-white/60"
-          >
-            <TypeText text={hero.title} active={step >= 5} speed={60} />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onReveal}
+          aria-label="Reveal the first message"
+          className="btn-shine rounded-full bg-black hover:bg-neutral-800 px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-bold text-white shadow-lg cursor-pointer active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-brand-500"
+        >
+          <TypeText text={hero.title} active={step >= 5} speed={60} />
+        </button>
         <div className="mt-4 w-full">
           <CyclingText lines={hero.features} active={step >= 5} className="h-8 sm:h-9" />
         </div>

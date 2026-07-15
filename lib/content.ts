@@ -28,7 +28,7 @@ export const UI_CONTENT = {
     scrollCta: 'Scroll down for assistance',
   },
   hero: {
-    title: 'Chat with Groovia?',
+    title: 'Try Groovia?',
     tagline: 'The AI assistant of Immigroov.',
     intro:
       "Tell me where you want to go, and I'll plan the route and connect you with people who've already made the move.",
