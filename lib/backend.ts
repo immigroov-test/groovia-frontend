@@ -14,6 +14,7 @@ export function backendBaseUrl(): string {
 interface ProxyOptions {
   method?: string;        // defaults to the incoming request's method
   forwardBody?: boolean;  // defaults to true for non-GET/HEAD
+  headers?: Record<string, string>;  // extra headers to add on the backend call (e.g. edge geo)
 }
 
 export interface ServerGetResult<T = unknown> {
@@ -59,7 +60,7 @@ export async function proxyPublic(
   const sendBody = opts.forwardBody ?? (method !== 'GET' && method !== 'HEAD');
 
   const authHeader = req.headers.get('authorization');
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...(opts.headers ?? {}) };
   if (authHeader) headers.Authorization = authHeader;
   let body: string | undefined;
   if (sendBody) {

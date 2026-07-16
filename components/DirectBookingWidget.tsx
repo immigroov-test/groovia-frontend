@@ -12,21 +12,15 @@ import { RichText } from './ui/RichText';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { openRazorpayCheckout } from '../lib/razorpay';
+import { detectCountry } from '../lib/geo';
 import { BookingAccountPrompt } from './BookingAccountPrompt';
 import { cn } from '../lib/utils';
 
 const NOTES_MAX = 500;
 
-// Best-effort customer country from the browser locale's region subtag
-// ("en-IN" -> "IN"). Drives PPP + display currency in the price quote; the
-// backend defaults to USD when it's absent/unrecognised.
-function guessCountry(): string | undefined {
-  try {
-    const region = (navigator.language || '').split('-')[1];
-    if (region && region.length === 2) return region.toUpperCase();
-  } catch { /* ignore */ }
-  return undefined;
-}
+// Customer country comes from detectCountry() (IP geo with a timezone fallback),
+// which drives PPP + display currency in the price quote; the backend defaults to
+// USD when it's absent/unrecognised.
 
 // Basic client-side email shape check (guests type their own; logged-in users can
 // still edit the prefilled value). Mirrors the backend's own @/. validation.
@@ -45,6 +39,17 @@ interface Service {
   category: string | null;
   set_price: number;
   set_currency: string;
+  is_ppp: boolean;
+}
+
+// Localized display price for a service: original (pre-PPP) + discounted (post-PPP),
+// both in the customer's currency. fxOk=false means FX was unavailable and the
+// figures fell back to the mentor's currency.
+interface DisplayPrice {
+  original: number;
+  discounted: number;
+  currency: string;
+  fxOk: boolean;
 }
 
 interface Slot { slot_start: string; slot_end: string; }
@@ -153,6 +158,25 @@ function formatDate(dateStr: string): string {
 function formatPrice(price: number, currency: string): string {
   if (price === 0) return 'Free';
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(price);
+}
+
+// Price in the customer's currency. When a fair-price (PPP) discount applies, the
+// original is shown struck through beside the discounted amount. Falls back to the
+// mentor-currency base price until the localized figure is available.
+function PriceLabel({
+  service, price, className,
+}: { service: Service; price?: DisplayPrice; className?: string }) {
+  if (service.set_price === 0) return <span className={className}>Free</span>;
+  if (!price) return <span className={className}>{formatPrice(service.set_price, service.set_currency)}</span>;
+  const discounted = price.discounted < price.original;
+  return (
+    <span className={cn('inline-flex items-baseline gap-1.5', className)}>
+      {discounted && (
+        <span className="text-muted font-normal line-through">{formatPrice(price.original, price.currency)}</span>
+      )}
+      <span>{formatPrice(price.discounted, price.currency)}</span>
+    </span>
+  );
 }
 
 // ── Calendar panel ─────────────────────────────────────────────────────────────
@@ -284,6 +308,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
   const [paying, setPaying]         = useState(false);      // Razorpay modal open / verifying
 
+  // Localized display price per service id (customer currency + PPP discount), shown
+  // before the Razorpay popup so the amount is never a surprise. The discounted value
+  // equals what Razorpay actually charges.
+  const [priceMap, setPriceMap]     = useState<Record<string, DisplayPrice>>({});
+
   // Load services
   useEffect(() => {
     (async () => {
@@ -295,6 +324,37 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       } catch { setServicesError('Could not load services.'); }
     })();
   }, [mentor.slug]);
+
+  // Convert all paid services to the customer's currency (with PPP) once loaded, so
+  // each price and the summary show the localized original/discounted amount up front.
+  // Best-effort: on any failure the UI falls back to the mentor-currency base price.
+  useEffect(() => {
+    const paid = (services ?? []).filter(s => s.set_price > 0);
+    if (paid.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const country = await detectCountry();
+        if (cancelled) return;
+        const res = await fetch('/api/pricing/convert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            country: country ?? null,
+            items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: s.is_ppp })),
+          }),
+        });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const map: Record<string, DisplayPrice> = {};
+        for (const p of (data.prices ?? [])) {
+          map[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency, fxOk: !!p.fx_ok };
+        }
+        if (!cancelled) setPriceMap(map);
+      } catch { /* keep base-price fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [services]);
 
   // Pre-fill name/email from session + track auth state.
   useEffect(() => {
@@ -464,7 +524,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         .filter(a => a.answer_text);
 
       // 1. Binding price quote (customer currency + PPP).
-      const country = guessCountry();
+      const country = await detectCountry();
       const qRes = await fetch(`/api/pricing/quote/${selectedService.id}${country ? `?country=${country}` : ''}`, { cache: 'no-store' });
       const quote = await qRes.json().catch(() => ({}));
       if (!qRes.ok || !quote.quote_id) { fail(quote.detail || 'Could not price this session. Please try again.'); return; }
@@ -668,7 +728,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                             {svc.category && <span>· {svc.category}</span>}
                           </div>
                         </div>
-                        <span className="shrink-0 text-base font-semibold text-brand-700">{formatPrice(svc.set_price, svc.set_currency)}</span>
+                        <PriceLabel service={svc} price={priceMap[svc.id]} className="shrink-0 text-base font-semibold text-brand-700" />
                       </div>
                     </button>
                   ))}
@@ -740,8 +800,17 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted">Total</span>
-                <span className="text-lg font-semibold text-brand-900">{formatPrice(selectedService.set_price, selectedService.set_currency)}</span>
+                <PriceLabel service={selectedService} price={priceMap[selectedService.id]} className="text-lg font-semibold text-brand-900" />
               </div>
+              {(() => {
+                const p = priceMap[selectedService.id];
+                if (!p || p.discounted >= p.original) return null;
+                return (
+                  <p className="-mt-1.5 text-[11px] font-medium text-amber-700 text-right">
+                    Fair-price discount applied for your country
+                  </p>
+                );
+              })()}
 
               {selectedSlot && (
                 <div className="border-t border-[--color-border] pt-3 flex flex-col gap-3">
@@ -799,7 +868,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
                     <p className="text-[11px] text-muted leading-snug text-center">
-                      Secure payment via Razorpay. The exact amount is shown at checkout in your local currency.
+                      Secure payment via Razorpay, charged in your local currency.
                     </p>
                   )}
                   {!isLoggedIn && (
