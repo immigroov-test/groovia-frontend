@@ -58,7 +58,7 @@ function shortTz(tz: string): string {
 }
 
 function monthAbbr(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, month: 'short' }).toUpperCase() : '—';
+  return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, month: 'short' }).toUpperCase() : '';
 }
 function dayNum(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, day: 'numeric' }) : '?';

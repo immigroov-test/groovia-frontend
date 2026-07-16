@@ -13,7 +13,7 @@ import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { openRazorpayCheckout } from '../lib/razorpay';
 import { detectCountry } from '../lib/geo';
-import { tzShort, tzCity } from '../lib/timezone';
+import { tzShort, tzCity, tzOffset, userDisplayTz, mentorDisplayTz } from '../lib/timezone';
 import { countryLabel } from '../lib/countries';
 import { BookingAccountPrompt } from './BookingAccountPrompt';
 import { cn } from '../lib/utils';
@@ -276,7 +276,6 @@ interface Props {
 export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const showMentorTz = !!mentorTimezone && mentorTimezone !== TZ;
   const [isLoggedIn, setIsLoggedIn]       = useState(false);
   const [pendingBook, setPendingBook]     = useState(false);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);   // guest "create account to book" popup
@@ -312,6 +311,19 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // before the Razorpay popup so the amount is never a surprise. The discounted value
   // equals what Razorpay actually charges.
   const [priceMap, setPriceMap]     = useState<Record<string, DisplayPrice>>({});
+
+  // The visitor's country (edge/IP geo). Used to label their timezone with their actual
+  // location's city and to keep PPP consistent with what they're shown.
+  const [userCountry, setUserCountry] = useState<string | undefined>(undefined);
+  useEffect(() => { detectCountry().then(c => { if (c) setUserCountry(c); }); }, []);
+
+  // Timezones to DISPLAY (labels + slot conversions). userTz prefers the visitor's
+  // location city when its offset matches the browser clock, so "your time" agrees with
+  // the location badge (Tilburg -> Amsterdam, not the OS's Berlin). mentorTz falls back to
+  // the mentor's country when their stored zone is a bare 'UTC', so it shows a real city.
+  const userTz = userDisplayTz(TZ, userCountry);
+  const mentorTz = mentorDisplayTz(mentorTimezone, mentor.country);
+  const showMentorTz = !!mentorTz && tzOffset(mentorTz) !== tzOffset(userTz);
 
   // Load services
   useEffect(() => {
@@ -632,8 +644,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           </p>
         )}
         <p className="text-xs text-muted mt-2">
-          Your time {tzShort(TZ)} · a confirmation has been emailed to {email}.
-          {showMentorTz && selectedSlot && <> Mentor&apos;s time: {formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!)}.</>}
+          Your time {tzShort(userTz)} · a confirmation has been emailed to {email}.
+          {showMentorTz && selectedSlot && <> Mentor&apos;s time: {formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)}.</>}
         </p>
         <div className="flex flex-wrap gap-2 justify-center mt-6">
           {bookingId && (
@@ -690,8 +702,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         </div>
         {/* Timezones on their own row so they never squeeze the name/headline on mobile. */}
         <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
-          <span>Your time <span className="font-semibold text-foreground">{tzShort(TZ)}</span></span>
-          {showMentorTz && <span>Mentor&apos;s time <span className="font-semibold text-foreground">{tzShort(mentorTimezone!)}</span></span>}
+          <span>Your time <span className="font-semibold text-foreground">{tzShort(userTz)}</span></span>
+          {showMentorTz && <span>Mentor&apos;s time <span className="font-semibold text-foreground">{tzShort(mentorTz)}</span></span>}
           {mentor.smart_pricing && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 font-medium">
               Fair pricing for your country
@@ -772,7 +784,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                         <h4 className="text-sm font-semibold text-brand-900">{formatDate(selectedDate)}</h4>
                         <p className="text-xs text-muted mb-3">
                           {timeSlotsForDay.length} open · your time
-                          {showMentorTz && <> · mentor&apos;s time in {tzCity(mentorTimezone!)}</>}
+                          {showMentorTz && <> · mentor&apos;s time in {tzCity(mentorTz)}</>}
                         </p>
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-[360px] overflow-y-auto pr-1">
                           {timeSlotsForDay.map(slot => {
@@ -784,7 +796,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                                 <span className="text-sm font-semibold text-foreground">{formatSlotTime(slot.slot_start)}</span>
                                 {showMentorTz && (
                                   <span className="text-[11px] leading-tight text-muted">
-                                    mentor {formatSlotTimeInTz(slot.slot_start, mentorTimezone!)}
+                                    {formatSlotTimeInTz(slot.slot_start, mentorTz)} for mentor
                                   </span>
                                 )}
                               </button>
@@ -812,8 +824,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 <p className="text-sm text-muted">{selectedService.duration} min · {selectedService.type === 'video' ? 'Video call' : 'Direct message'}</p>
               </div>
               <div className="border-y border-[--color-border] py-3 flex flex-col gap-1.5">
-                <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start))}, ${formatSlotTime(selectedSlot.slot_start)}` : '—'} />
-                {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!) : '—'} />}
+                <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start))}, ${formatSlotTime(selectedSlot.slot_start)}` : 'Not selected yet'} />
+                {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? formatSlotTimeInTz(selectedSlot.slot_start, mentorTz) : 'Not selected yet'} />}
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted">Total</span>
