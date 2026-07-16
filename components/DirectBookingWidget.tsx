@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Check, ChevronLeft, ChevronRight, Clock, Loader2, MessageSquare, Star, Video,
+  Check, ChevronLeft, ChevronRight, Clock, Loader2, MapPin, MessageSquare, Star, Video,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -13,6 +13,8 @@ import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { openRazorpayCheckout } from '../lib/razorpay';
 import { detectCountry } from '../lib/geo';
+import { tzShort, tzCity } from '../lib/timezone';
+import { countryLabel } from '../lib/countries';
 import { BookingAccountPrompt } from './BookingAccountPrompt';
 import { cn } from '../lib/utils';
 
@@ -68,6 +70,8 @@ interface MentorInfo {
   headline: string | null;
   bio: string | null;
   photo_url: string | null;
+  city?: string | null;
+  country?: string | null;
   avg_rating?: number | null;
   review_count?: number | null;
   smart_pricing?: boolean | null;
@@ -113,10 +117,6 @@ function formatSlotTimeInTz(isoStr: string, tz: string): string {
   });
 }
 
-// "Europe/Amsterdam" → "Amsterdam"
-function shortTz(tz: string): string {
-  return tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
-}
 
 // Step progress header (Service → Date & time → Confirm).
 function StepBar({ step }: { step: Step }) {
@@ -610,6 +610,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const availableDates   = useMemo(() => new Set(slotsByDate.keys()), [slotsByDate]);
   const timeSlotsForDay  = selectedDate ? (slotsByDate.get(selectedDate) ?? []) : [];
   const initials         = mentor.display_name.split(' ').map(p => p[0] ?? '').join('').slice(0, 2).toUpperCase();
+  const mentorLocation   = [mentor.city, mentor.country ? countryLabel(mentor.country) : ''].filter(Boolean).join(', ');
 
   function bookAnotherTime() {
     setBookingId(null);
@@ -631,7 +632,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           </p>
         )}
         <p className="text-xs text-muted mt-2">
-          Your time ({shortTz(TZ)}) · a confirmation has been emailed to {email}.
+          Your time {tzShort(TZ)} · a confirmation has been emailed to {email}.
           {showMentorTz && selectedSlot && <> Mentor&apos;s time: {formatSlotTimeInTz(selectedSlot.slot_start, mentorTimezone!)}.</>}
         </p>
         <div className="flex flex-wrap gap-2 justify-center mt-6">
@@ -660,32 +661,41 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Header: identity + rating + timezones ─────────────────── */}
-      <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6 flex flex-wrap items-center gap-4">
-        {mentor.photo_url ? (
-          <img src={mentor.photo_url} alt={mentor.display_name} className="h-16 w-16 rounded-full object-cover shrink-0" />
-        ) : (
-          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-lg font-semibold shrink-0">
-            {initials}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 truncate">{mentor.display_name}</h1>
-          {mentor.headline && <p className="text-sm text-muted mt-0.5 line-clamp-2">{mentor.headline}</p>}
-          {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
-            <p className="text-sm font-medium text-amber-600 mt-1 flex items-center gap-1">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              {mentor.avg_rating.toFixed(1)}
-              <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
-            </p>
-          )}
-        </div>
-        <div className="text-xs text-muted sm:text-right sm:ml-auto shrink-0">
-          <div>Your time <span className="font-semibold text-foreground">{shortTz(TZ)}</span></div>
-          {showMentorTz && <div className="mt-0.5">Mentor <span className="font-semibold text-foreground">{shortTz(mentorTimezone!)}</span></div>}
-          {mentor.smart_pricing && (
-            <div className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 font-medium">
-              Fair pricing for your country
+      <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
+        <div className="flex items-start gap-4">
+          {mentor.photo_url ? (
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-lg font-semibold shrink-0">
+              {initials}
             </div>
+          )}
+          <div className="flex-1 min-w-0">
+            {/* Full name + headline, never truncated - the mentee needs the whole value prop to choose. */}
+            <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-brand-900 break-words">{mentor.display_name}</h1>
+            {mentor.headline && <p className="text-sm text-muted mt-1 break-words">{mentor.headline}</p>}
+            {mentorLocation && (
+              <p className="text-xs text-muted mt-1.5 flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 shrink-0" /> {mentorLocation}
+              </p>
+            )}
+            {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
+              <p className="text-sm font-medium text-amber-600 mt-1.5 flex items-center gap-1">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                {mentor.avg_rating.toFixed(1)}
+                <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
+              </p>
+            )}
+          </div>
+        </div>
+        {/* Timezones on their own row so they never squeeze the name/headline on mobile. */}
+        <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
+          <span>Your time <span className="font-semibold text-foreground">{tzShort(TZ)}</span></span>
+          {showMentorTz && <span>Mentor&apos;s time <span className="font-semibold text-foreground">{tzShort(mentorTimezone!)}</span></span>}
+          {mentor.smart_pricing && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 font-medium">
+              Fair pricing for your country
+            </span>
           )}
         </div>
       </div>
@@ -760,16 +770,23 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                     ) : (
                       <>
                         <h4 className="text-sm font-semibold text-brand-900">{formatDate(selectedDate)}</h4>
-                        <p className="text-xs text-muted mb-3">{timeSlotsForDay.length} open · your time</p>
-                        <div className="grid grid-cols-2 gap-2 max-h-[360px] overflow-y-auto pr-1">
+                        <p className="text-xs text-muted mb-3">
+                          {timeSlotsForDay.length} open · your time
+                          {showMentorTz && <> · mentor&apos;s time in {tzCity(mentorTimezone!)}</>}
+                        </p>
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-[360px] overflow-y-auto pr-1">
                           {timeSlotsForDay.map(slot => {
                             const sel = selectedSlot?.slot_start === slot.slot_start;
                             return (
                               <button key={slot.slot_start} type="button" onClick={() => selectSlot(slot)}
-                                className={cn('flex flex-col gap-0.5 px-3 py-2 rounded-lg border text-left transition-colors',
+                                className={cn('flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg border text-center transition-colors',
                                   sel ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600' : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50')}>
-                                <span className="text-sm font-medium text-foreground">{formatSlotTime(slot.slot_start)}</span>
-                                {showMentorTz && <span className="text-[11px] text-muted">mentor {formatSlotTimeInTz(slot.slot_start, mentorTimezone!)}</span>}
+                                <span className="text-sm font-semibold text-foreground">{formatSlotTime(slot.slot_start)}</span>
+                                {showMentorTz && (
+                                  <span className="text-[11px] leading-tight text-muted">
+                                    mentor {formatSlotTimeInTz(slot.slot_start, mentorTimezone!)}
+                                  </span>
+                                )}
                               </button>
                             );
                           })}

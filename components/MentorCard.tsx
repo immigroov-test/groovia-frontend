@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Star, Globe } from 'lucide-react';
+import { Star, Globe, MapPin } from 'lucide-react';
 import { Card, CardBody } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
@@ -21,6 +21,8 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
   const categories = mentor.expertise_categories ?? [];
   const languages = mentor.languages ?? [];
   const rating = mentor.avg_rating ?? 0;
+  const location = [mentor.city, mentor.country ? countryLabel(mentor.country) : '']
+    .filter(Boolean).join(', ');
 
   return (
     <Card className="h-full flex flex-col hover:border-brand-300 hover:-translate-y-0.5 transition-transform">
@@ -36,9 +38,9 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
             </div>
           )}
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-brand-900 truncate">{mentor.display_name}</h3>
-            {mentor.headline && <p className="text-sm text-muted line-clamp-1">{mentor.headline}</p>}
-            <p className="text-sm font-medium text-amber-600 mt-0.5 flex items-center gap-1">
+            <h3 className="text-base font-semibold text-brand-900 break-words">{mentor.display_name}</h3>
+            {mentor.headline && <p className="text-sm text-muted mt-0.5 break-words">{mentor.headline}</p>}
+            <p className="text-sm font-medium text-amber-600 mt-1 flex items-center gap-1">
               <Star className={`h-3.5 w-3.5 ${rating > 0 ? 'fill-amber-400 text-amber-400' : 'text-muted'}`} />
               {rating > 0 ? rating.toFixed(1) : '0.0'}
               <span className="text-muted font-normal">({mentor.review_count ?? 0})</span>
@@ -61,6 +63,14 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
           <p className="text-xs text-muted flex items-center gap-1.5">
             <Globe className="h-3.5 w-3.5 shrink-0" />
             {languages.map((l) => languageLabel(l)).join(', ')}
+          </p>
+        )}
+
+        {/* Where the mentor is based */}
+        {location && (
+          <p className="text-xs text-muted flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            {location}
           </p>
         )}
 

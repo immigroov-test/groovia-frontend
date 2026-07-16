@@ -102,6 +102,8 @@ export default async function MentorProfilePage({
             headline:     mentor.headline ?? null,
             bio:          mentor.bio ?? null,
             photo_url:    mentor.photo_url ?? null,
+            city:         mentor.city ?? null,
+            country:      mentor.country ?? null,
             avg_rating:   mentor.avg_rating ?? null,
             review_count: mentor.review_count ?? null,
             smart_pricing: mentor.smart_pricing ?? false,

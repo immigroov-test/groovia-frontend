@@ -12,6 +12,8 @@ export interface Mentor {
   languages: string[];
   professional_domains: string[];
   years_lived_experience: number | null;
+  city?: string | null;
+  country?: string | null;   // ISO-3166 alpha-2 of where the mentor is based
   timezone?: string | null;
   avg_rating?: number | null;
   review_count?: number | null;
