@@ -1,79 +1,189 @@
 'use client';
-import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Search, Plus, X, Sparkles } from 'lucide-react';
 import { MentorCard } from './MentorCard';
-import { MultiSelect } from './ui/MultiSelect';
+import { MultiSelect, type SelectOption } from './ui/MultiSelect';
 import { Flag } from './ui/Flag';
 import { countryLabel } from '../lib/countries';
+import { languageLabel } from '../lib/languages';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
 import type { Mentor } from '../lib/types';
 
 const CATEGORY_LABELS = EXPERTISE_CATEGORY_MAP;
 
+// Distinct, non-empty values from a set of mentors, so each filter only offers what
+// actually exists across the listed mentors.
+function distinct(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+type FilterValue = string[] | boolean;
+
+interface FilterDef {
+  key: string;
+  label: string;
+  kind: 'multi' | 'toggle';
+  icon?: ReactNode;
+  placeholder?: string;
+  options?: (mentors: Mentor[]) => SelectOption[];       // multi only
+  match: (m: Mentor, value: FilterValue) => boolean;
+}
+
+const byLabel = (a: SelectOption, b: SelectOption) => a.label.localeCompare(b.label);
+
+// Add new filters here - the UI (Add-filters menu, controls, matching) is fully
+// data-driven off this list.
+const FILTERS: FilterDef[] = [
+  {
+    key: 'country', label: 'Country', kind: 'multi', placeholder: 'Any country',
+    options: (ms) => distinct(ms.flatMap((m) => m.expertise_country_codes ?? []))
+      .map((c) => ({ value: c, label: countryLabel(c), icon: <Flag code={c} /> })).sort(byLabel),
+    match: (m, v) => (v as string[]).length === 0 || (v as string[]).some((c) => (m.expertise_country_codes ?? []).includes(c)),
+  },
+  {
+    key: 'topic', label: 'Topic', kind: 'multi', placeholder: 'Any topic',
+    options: (ms) => distinct(ms.flatMap((m) => m.expertise_categories ?? []))
+      .map((c) => ({ value: c, label: CATEGORY_LABELS[c] ?? c })).sort(byLabel),
+    match: (m, v) => (v as string[]).length === 0 || (v as string[]).some((c) => (m.expertise_categories ?? []).includes(c)),
+  },
+  {
+    key: 'language', label: 'Language', kind: 'multi', placeholder: 'Any language',
+    options: (ms) => distinct(ms.flatMap((m) => m.languages ?? []))
+      .map((l) => ({ value: l, label: languageLabel(l) })).sort(byLabel),
+    match: (m, v) => (v as string[]).length === 0 || (v as string[]).some((l) => (m.languages ?? []).includes(l)),
+  },
+  {
+    key: 'profession', label: 'Profession', kind: 'multi', placeholder: 'Any profession',
+    options: (ms) => distinct(ms.flatMap((m) => m.professional_domains ?? []))
+      .map((p) => ({ value: p, label: p })).sort(byLabel),
+    match: (m, v) => (v as string[]).length === 0 || (v as string[]).some((p) => (m.professional_domains ?? []).includes(p)),
+  },
+  {
+    key: 'fair_pricing', label: 'Fair pricing', kind: 'toggle', icon: <Sparkles className="h-3.5 w-3.5" />,
+    match: (m, v) => !v || !!m.smart_pricing,
+  },
+];
+
 export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
   const [q, setQ] = useState('');
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-  const [category, setCategory] = useState('');
+  const [active, setActive] = useState<Record<string, FilterValue>>({});
+  const [addOpen, setAddOpen] = useState(false);
 
-  const countries = useMemo(() => {
-    const s = new Set<string>();
-    mentors.forEach((m) => m.expertise_country_codes.forEach((c) => s.add(c)));
-    return Array.from(s);
-  }, [mentors]);
+  const activeKeys = Object.keys(active);
+  const available = FILTERS.filter((f) => !activeKeys.includes(f.key));
 
-  // Full country names, alphabetically, with flags - searchable + multi-select.
-  const countryOptions = useMemo(
-    () => countries
-      .map((c) => ({ value: c, label: countryLabel(c), icon: <Flag code={c} /> }))
-      .sort((a, b) => a.label.localeCompare(b.label)),
-    [countries],
-  );
-
-  const categories = useMemo(() => {
-    const s = new Set<string>();
-    mentors.forEach((m) => (m.expertise_categories ?? []).forEach((c) => s.add(c)));
-    return Array.from(s).sort();
-  }, [mentors]);
+  function addFilter(f: FilterDef) {
+    setActive((a) => ({ ...a, [f.key]: f.kind === 'toggle' ? true : [] }));
+    setAddOpen(false);
+  }
+  function removeFilter(key: string) {
+    setActive((a) => { const n = { ...a }; delete n[key]; return n; });
+  }
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
     return mentors.filter((m) => {
-      if (selectedCountries.length && !selectedCountries.some((c) => m.expertise_country_codes.includes(c))) return false;
-      if (category && !(m.expertise_categories ?? []).includes(category)) return false;
       if (ql) {
         const hay = `${m.display_name} ${m.headline ?? ''} ${(m.professional_domains ?? []).join(' ')}`.toLowerCase();
         if (!hay.includes(ql)) return false;
       }
+      for (const key of activeKeys) {
+        const def = FILTERS.find((f) => f.key === key);
+        if (def && !def.match(m, active[key])) return false;
+      }
       return true;
     });
-  }, [mentors, q, selectedCountries, category]);
+  }, [mentors, q, active, activeKeys]);
 
-  const hasFilters = !!(q || selectedCountries.length || category);
+  const hasFilters = !!q || activeKeys.length > 0;
 
   return (
     <>
       <div className="mb-8 flex flex-col gap-3">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search mentors, roles…"
-            className="w-full h-11 pl-10 pr-3.5 rounded-full bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(0,0,0,0.2)]"
-          />
-        </div>
-        <div className="flex flex-wrap items-start gap-2">
-          <div className="min-w-[240px]">
-            <MultiSelect options={countryOptions} value={selectedCountries} onChange={setSelectedCountries}
-              placeholder="Filter by country…" />
+        {/* Search + Add filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search mentors, roles…"
+              className="w-full h-11 pl-10 pr-3.5 rounded-full bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(0,0,0,0.2)]"
+            />
           </div>
-          <FilterSelect label="All topics" value={category} onChange={setCategory} options={categories.map((c) => ({ value: c, label: CATEGORY_LABELS[c] ?? c }))} />
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setAddOpen((o) => !o)}
+              disabled={available.length === 0}
+              className="inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-white text-sm font-medium text-brand-900 shadow-[0_0_0_1px_rgba(15,23,42,0.08)] hover:bg-brand-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="h-4 w-4" /> Add filters
+            </button>
+            {addOpen && available.length > 0 && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setAddOpen(false)} />
+                <div className="absolute left-0 z-30 mt-1 w-52 rounded-xl bg-white border border-[--color-border] shadow-lg py-1">
+                  {available.map((f) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => addFilter(f)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-brand-50 text-left"
+                    >
+                      {f.icon}{f.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           {hasFilters && (
-            <button onClick={() => { setQ(''); setSelectedCountries([]); setCategory(''); }} className="text-sm text-muted hover:text-foreground px-3 py-2 h-10">
-              Clear
+            <button onClick={() => { setQ(''); setActive({}); }} className="text-sm text-muted hover:text-foreground px-3 py-2 h-11">
+              Clear all
             </button>
           )}
         </div>
+
+        {/* Active filter controls */}
+        {activeKeys.length > 0 && (
+          <div className="flex flex-wrap items-start gap-3">
+            {activeKeys.map((key) => {
+              const def = FILTERS.find((f) => f.key === key);
+              if (!def) return null;
+
+              if (def.kind === 'toggle') {
+                return (
+                  <span key={key} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full bg-amber-50 text-amber-800 text-sm font-medium">
+                    {def.icon} {def.label}
+                    <button type="button" onClick={() => removeFilter(key)} aria-label={`Remove ${def.label} filter`} className="text-amber-500 hover:text-amber-800">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </span>
+                );
+              }
+
+              return (
+                <div key={key} className="min-w-[220px] max-w-xs flex-1">
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">{def.label}</span>
+                    <button type="button" onClick={() => removeFilter(key)} aria-label={`Remove ${def.label} filter`} className="text-muted hover:text-foreground">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <MultiSelect
+                    options={def.options!(mentors)}
+                    value={active[key] as string[]}
+                    onChange={(v) => setActive((a) => ({ ...a, [key]: v }))}
+                    placeholder={def.placeholder}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -87,25 +197,5 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
         </>
       )}
     </>
-  );
-}
-
-function FilterSelect({
-  label, value, onChange, options,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-10 px-4 rounded-full bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(0,0,0,0.2)] cursor-pointer"
-    >
-      <option value="">{label}</option>
-      {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
   );
 }

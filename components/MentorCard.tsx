@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Star, Globe, MapPin } from 'lucide-react';
+import { Star, Globe, MapPin, Sparkles } from 'lucide-react';
 import { Card, CardBody } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
@@ -31,9 +31,9 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
         <div className="flex items-start gap-3">
           {mentor.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-14 w-14 rounded-full object-cover shrink-0" />
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-20 w-20 rounded-full object-cover shrink-0" />
           ) : (
-            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white font-semibold shrink-0">
+            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-lg font-semibold shrink-0">
               {initials}
             </div>
           )}
@@ -48,8 +48,13 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
           </div>
         </div>
 
-        {/* Expertise: category tags + countries (full names) */}
+        {/* Expertise: fair-pricing tag + category tags + countries (full names) */}
         <div className="flex flex-wrap gap-1.5">
+          {mentor.smart_pricing && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">
+              <Sparkles className="h-3 w-3" /> Fair pricing
+            </span>
+          )}
           {categories.slice(0, 3).map((cat) => (
             <Badge key={cat} tone="accent">{EXPERTISE_CATEGORY_MAP[cat] ?? cat}</Badge>
           ))}
