@@ -21,9 +21,9 @@ export function LocationBadge() {
   return (
     <span
       title={label}
-      className="inline-flex max-w-[55vw] items-center gap-1 leading-none text-[11px] font-medium text-brand-900/70"
+      className="flex min-w-0 max-w-full items-center gap-1 leading-none text-[10px] font-medium text-brand-900/70"
     >
-      <MapPin className="h-3 w-3 shrink-0 text-accent-500" aria-hidden />
+      <MapPin className="h-2.5 w-2.5 shrink-0 text-accent-500" aria-hidden />
       <span className="truncate">{label}</span>
     </span>
   );
