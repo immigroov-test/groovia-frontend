@@ -634,7 +634,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       ['Duration', `${selectedService.duration} min · ${selectedService.type === 'video' ? 'Video call' : 'Direct message'}`],
     ] : [];
     return (
-      <div className="rounded-2xl border border-[--color-border] bg-white px-6 py-10 max-w-lg mx-auto">
+      <div className="rounded-2xl border border-[--color-border] bg-white px-6 py-10 sm:px-8 max-w-lg mx-auto">
         <div className="text-center">
           <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
             <Check className="h-7 w-7 text-emerald-500" />
@@ -643,12 +643,12 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           <p className="text-sm text-muted mt-1">A confirmation has been emailed to {email}.</p>
         </div>
 
-        {/* Mentor */}
-        <div className="mt-6 flex items-center gap-3 rounded-xl border border-[--color-border] p-4">
+        {/* Mentor - clean, no box */}
+        <div className="mt-8 flex items-center gap-3">
           {mentor.photo_url ? (
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-12 w-12 rounded-full object-cover shrink-0" />
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-14 w-14 rounded-full object-cover shrink-0" />
           ) : (
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white font-semibold shrink-0">{initials}</div>
+            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white font-semibold shrink-0">{initials}</div>
           )}
           <div className="min-w-0">
             <p className="font-semibold text-brand-900 break-words">{mentor.display_name}</p>
@@ -659,20 +659,20 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           </div>
         </div>
 
-        {/* Session details */}
+        {/* Session details - airy label/value pairs, no boxes */}
         {detailRows.length > 0 && (
-          <dl className="mt-4 rounded-xl border border-[--color-border] overflow-hidden text-sm">
+          <dl className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
             {detailRows.map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4 px-4 py-2.5 border-b border-[--color-border] last:border-0">
-                <dt className="text-muted shrink-0">{k}</dt>
-                <dd className="font-medium text-foreground text-right">{v}</dd>
+              <div key={k}>
+                <dt className="text-[11px] font-medium uppercase tracking-wider text-muted">{k}</dt>
+                <dd className="mt-1 text-sm font-semibold text-foreground break-words">{v}</dd>
               </div>
             ))}
           </dl>
         )}
 
         {/* Actions */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-2">
+        <div className="mt-8 flex flex-col sm:flex-row gap-2">
           {bookingId && (
             <Link href={`/meeting/${bookingId}`} className="flex-1"><Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button></Link>
           )}
