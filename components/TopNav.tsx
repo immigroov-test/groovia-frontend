@@ -81,10 +81,9 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
   return (
     <header className="fixed top-0 inset-x-0 z-40 h-16 bg-brand-50">
       <div className="mx-auto max-w-6xl h-full px-4 sm:px-6 flex items-center gap-3">
-        {/* Left section: logo, with the visitor's location tucked directly under it on
-            the home page. flex-1 so the left + right sides carry equal weight, which
-            keeps the centered nav truly centered without overlapping either. */}
-        <div className="flex-1 flex flex-col justify-center items-start min-w-0 gap-0.5">
+        {/* Left section: logo. flex-1 so the left + right sides carry equal weight,
+            which keeps the centered nav truly centered without overlapping either. */}
+        <div className="flex-1 flex items-center min-w-0">
         <Link href="/home" aria-label="Immigroov home" className="shrink-0 inline-flex items-center">
           <Image
             src="/Immigroov_Transparent_Logo.png"
@@ -96,7 +95,6 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
             style={{ height: '26px', width: 'auto' }}
           />
         </Link>
-        {pathname === '/home' && <LocationBadge />}
         </div>
 
         {/* Center: nav pill, in normal flow (shrink-0) and NOT absolutely positioned.
@@ -249,6 +247,7 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
               </Button>
             )}
           </div>
+          <LocationBadge />
         </div>
       )}
     </header>

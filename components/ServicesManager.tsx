@@ -7,7 +7,7 @@ import { Card, CardBody } from './ui/Card';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { TagInput } from './ui/TagInput';
 import { SERVICE_CATEGORIES, SERVICE_DESCRIPTION_TEMPLATE } from '../lib/content';
-import { isRichTextEmpty } from '../lib/sanitizeHtml';
+import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
 import { cn } from '../lib/utils';
 
 interface Service {
@@ -207,8 +207,8 @@ export function ServicesManager() {
               <p className="text-xs text-muted">
                 {svc.duration}m · {svc.type === 'video' ? 'Video' : 'DM'} · {svc.set_price === 0 ? 'Free' : `${svc.set_currency} ${svc.set_price}`}
               </p>
-              {svc.description && (
-                <p className="text-xs text-muted mt-1 line-clamp-2">{svc.description}</p>
+              {!isRichTextEmpty(svc.description) && (
+                <p className="text-xs text-muted mt-1 line-clamp-2">{richTextToPlain(svc.description)}</p>
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">

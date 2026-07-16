@@ -21,3 +21,22 @@ export function isRichTextEmpty(html: string | null | undefined): boolean {
   if (!html) return true;
   return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() === '';
 }
+
+// Plain-text preview of rich text: strip tags and decode the entities our editor
+// emits, collapsing whitespace. For compact previews (e.g. a service list) where
+// showing raw HTML tags is wrong and full formatting isn't needed. Works on server
+// and client (no DOM).
+export function richTextToPlain(html: string | null | undefined): string {
+  if (!html) return '';
+  return html
+    .replace(/<\/?(p|div|br|li|h[1-6]|ul|ol)\b[^>]*>/gi, ' ')  // block boundaries -> space
+    .replace(/<[^>]*>/g, '')                                    // remaining inline tags
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&rsquo;|&lsquo;|&#39;/gi, "'")
+    .replace(/&rdquo;|&ldquo;|&quot;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}

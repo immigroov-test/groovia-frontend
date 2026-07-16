@@ -9,7 +9,7 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { PhoneInput } from './ui/PhoneInput';
 import { RichText } from './ui/RichText';
-import { isRichTextEmpty } from '../lib/sanitizeHtml';
+import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { openRazorpayCheckout } from '../lib/razorpay';
 import { detectCountry } from '../lib/geo';
@@ -769,7 +769,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                               : <MessageSquare className="h-4 w-4 text-brand-600 shrink-0" />}
                             <span className="text-sm font-semibold text-foreground">{svc.title}</span>
                           </div>
-                          {svc.description && <p className="text-xs text-muted leading-relaxed line-clamp-2">{svc.description}</p>}
+                          {!isRichTextEmpty(svc.description) && <p className="text-xs text-muted leading-relaxed line-clamp-2">{richTextToPlain(svc.description)}</p>}
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted">
                             <Clock className="h-3 w-3" />{svc.duration} min · {svc.type === 'video' ? 'Video call' : 'Direct message'}
                             {svc.category && <span>· {svc.category}</span>}
