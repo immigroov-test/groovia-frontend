@@ -21,7 +21,7 @@ export const UI_CONTENT = {
     headline: 'Peer-to-Peer Personalized Immigration Mentoring Platform',
     // Three carded lines, mirroring the Groovia feature cards (icon + text).
     cards: [
-      'Trusted mentors, expats and locals who have already made the move.',
+      'Connect with verified mentors, expats and locals who have already made the move.',
       'Not just a platform, a movement of people helping people move smarter.',
       'Powered by Groovia (Agentic) AI.',
     ],

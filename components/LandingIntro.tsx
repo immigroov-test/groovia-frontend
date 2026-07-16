@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Users, Globe, Sparkles } from 'lucide-react';
 import { UI_CONTENT } from '../lib/content';
 import { TypeText } from './TypeText';
+import { IntroHeadline } from './IntroHeadline';
 import { CyclingText } from './CyclingText';
 import { AiAvatar } from './AiAvatar';
 
@@ -85,7 +86,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
             </motion.div>
           )}
           <h1 className="min-h-[3rem] sm:min-h-[6rem] text-lg sm:text-4xl font-bold tracking-tight leading-[1.15] text-center sm:text-left gradient-flow bg-clip-text text-transparent">
-            <TypeText text={b.headline} active={step >= 1} speed={HEAD_SPEED} />
+            <IntroHeadline prefix="Immigroov is a " main={b.headline} active={step >= 1} speed={HEAD_SPEED} />
           </h1>
         </div>
       </motion.div>
