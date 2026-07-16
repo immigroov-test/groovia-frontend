@@ -624,40 +624,65 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const initials         = mentor.display_name.split(' ').map(p => p[0] ?? '').join('').slice(0, 2).toUpperCase();
   const mentorLocation   = [mentor.city, mentor.country ? countryLabel(mentor.country) : ''].filter(Boolean).join(', ');
 
-  function bookAnotherTime() {
-    setBookingId(null);
-    setSelectedSlot(null);
-    setStep('datetime');
-  }
-
   // ── Confirmed state ──────────────────────────────────────────────────────────
   if (step === 'confirmed') {
+    const detailRows: [string, string][] = selectedService && selectedSlot ? [
+      ['Session', selectedService.title],
+      ['Date', formatDate(slotDateKey(selectedSlot.slot_start))],
+      ['Your time', `${formatSlotTime(selectedSlot.slot_start)} · ${tzShort(userTz)}`],
+      ...(showMentorTz ? [['Mentor\'s time', `${formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)} · ${tzShort(mentorTz)}`] as [string, string]] : []),
+      ['Duration', `${selectedService.duration} min · ${selectedService.type === 'video' ? 'Video call' : 'Direct message'}`],
+    ] : [];
     return (
-      <div className="rounded-2xl border border-[--color-border] bg-white text-center px-6 py-12 max-w-lg mx-auto">
-        <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
-          <Check className="h-7 w-7 text-emerald-500" />
+      <div className="rounded-2xl border border-[--color-border] bg-white px-6 py-10 max-w-lg mx-auto">
+        <div className="text-center">
+          <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
+            <Check className="h-7 w-7 text-emerald-500" />
+          </div>
+          <h2 className="text-2xl font-semibold text-brand-900 mt-4">You&apos;re booked!</h2>
+          <p className="text-sm text-muted mt-1">A confirmation has been emailed to {email}.</p>
         </div>
-        <h2 className="text-xl font-semibold text-brand-900 mt-4">You&apos;re booked!</h2>
-        {selectedService && selectedSlot && (
-          <p className="text-sm font-semibold text-foreground mt-2">
-            {selectedService.title} · {formatDate(slotDateKey(selectedSlot.slot_start))}, {formatSlotTime(selectedSlot.slot_start)}
-          </p>
-        )}
-        <p className="text-xs text-muted mt-2">
-          Your time {tzShort(userTz)} · a confirmation has been emailed to {email}.
-          {showMentorTz && selectedSlot && <> Mentor&apos;s time: {formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)}.</>}
-        </p>
-        <div className="flex flex-wrap gap-2 justify-center mt-6">
-          {bookingId && (
-            <Link href={`/meeting/${bookingId}`}><Button variant="primary"><Video className="h-4 w-4" /> Join meeting</Button></Link>
+
+        {/* Mentor */}
+        <div className="mt-6 flex items-center gap-3 rounded-xl border border-[--color-border] p-4">
+          {mentor.photo_url ? (
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-12 w-12 rounded-full object-cover shrink-0" />
+          ) : (
+            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white font-semibold shrink-0">{initials}</div>
           )}
-          <Link href="/account/sessions"><Button variant="outline">View my sessions</Button></Link>
-          <Button variant="ghost" onClick={bookAnotherTime}>Book another time</Button>
+          <div className="min-w-0">
+            <p className="font-semibold text-brand-900 break-words">{mentor.display_name}</p>
+            {mentor.headline && <p className="text-xs text-muted break-words">{mentor.headline}</p>}
+            {mentorLocation && (
+              <p className="text-xs text-muted mt-0.5 flex items-center gap-1"><MapPin className="h-3 w-3 shrink-0" /> {mentorLocation}</p>
+            )}
+          </div>
         </div>
-        <p className="text-xs text-muted mt-5">
-          Manage or reschedule anytime under{' '}
-          <Link href="/account/sessions" className="underline hover:text-foreground">My sessions</Link>.
-        </p>
+
+        {/* Session details */}
+        {detailRows.length > 0 && (
+          <dl className="mt-4 rounded-xl border border-[--color-border] overflow-hidden text-sm">
+            {detailRows.map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 px-4 py-2.5 border-b border-[--color-border] last:border-0">
+                <dt className="text-muted shrink-0">{k}</dt>
+                <dd className="font-medium text-foreground text-right">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        {/* Actions */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-2">
+          {bookingId && (
+            <Link href={`/meeting/${bookingId}`} className="flex-1"><Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button></Link>
+          )}
+          {bookingId && (
+            <Link href={`/account/sessions/${bookingId}/reschedule`} className="flex-1"><Button variant="outline" className="w-full">Reschedule</Button></Link>
+          )}
+        </div>
+        <div className="mt-3 text-center">
+          <Link href="/account/sessions" className="text-sm text-muted underline hover:text-foreground">View all my sessions</Link>
+        </div>
       </div>
     );
   }
