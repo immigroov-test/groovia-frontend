@@ -231,9 +231,12 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
     <div className="mx-auto max-w-xl px-4 sm:px-6 py-8 sm:py-10">
       <BackLink />
 
+      {/* Everything sits in one card, matching the booking-confirmation layout. */}
+      <div className="mt-4 rounded-2xl border border-[--color-border] bg-white p-6 sm:p-8">
+
       {/* Header: title + status */}
-      <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="text-2xl font-semibold tracking-tight text-brand-900">{d.service_title}</h1>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 break-words">{d.service_title}</h1>
         <Badge tone={STATUS_TONE[d.status] ?? 'neutral'}>
           {STATUS_LABEL[d.status] ?? d.status.replace('_', ' ')}
         </Badge>
@@ -448,6 +451,8 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </Button>
         )}
       </div>
+
+      </div>{/* end card */}
 
       {/* Join-window popup */}
       {showJoinInfo && (
