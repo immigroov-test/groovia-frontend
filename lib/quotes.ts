@@ -55,6 +55,14 @@ export const QUOTES: Quote[] = [
   { text: "Speak your knowledge clearly before the learned, and absorb knowledge from those who are more learned than you.", author: "Kural 714 (trans. W.H. Drew & John Lazarus)" },
   { text: "The learning a person acquires in one lifetime will stand by them and protect them through seven future births.", author: "Kural 398 (trans. W.H. Drew & John Lazarus)" },
   { text: "Seeing that their learning brings joy to the world, the wise are motivated to love learning even more.", author: "Kural 399 (trans. W.H. Drew & John Lazarus)" },
+  { text: "Employ your time in improving yourself by other men's learnings, so that you shall gain easily what others have labored hard for.", author: "Socrates" },
+  { text: "Associate with people who are likely to improve you.", author: "Seneca" },
+  { text: "I am not an Athenian or a Greek, but a citizen of the world.", author: "Socrates" },
+  { text: "If a man knows not to which port he sails, no wind is favorable.", author: "Seneca" },
+  { text: "We have two ears and one mouth so that we can listen twice as much as we speak.", author: "Epictetus" },
+  { text: "Not because things are difficult do we not dare; it is because we do not dare that they are difficult.", author: "Seneca" },
+  { text: "As the soil, however rich it may be, cannot be productive without cultivation, so the mind without learning can never produce good fruit.", author: "Seneca" },
+  { text: "He who has begun has half done. Dare to be wise; begin.", author: "Horace" },
 ];
 
 export function randomQuote(): Quote {
