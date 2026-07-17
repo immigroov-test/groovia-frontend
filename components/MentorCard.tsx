@@ -15,7 +15,9 @@ function money(amount: number, currency: string): string {
   }
 }
 
-export function MentorCard({ mentor }: { mentor: Mentor }) {
+interface DisplayPrice { original: number; discounted: number; currency: string }
+
+export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayPrice }) {
   const initials = mentor.display_name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase();
   const countries = mentor.expertise_country_codes ?? [];
   const categories = mentor.expertise_categories ?? [];
@@ -38,13 +40,17 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
             </div>
           )}
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-brand-900 break-words">{mentor.display_name}</h3>
+            <div className="flex items-baseline gap-x-2 gap-y-0.5 flex-wrap">
+              <h3 className="text-base font-semibold text-brand-900 break-words">{mentor.display_name}</h3>
+              {rating > 0 && (
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 shrink-0">
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                  {rating.toFixed(1)}
+                  <span className="text-muted font-normal">({mentor.review_count ?? 0})</span>
+                </span>
+              )}
+            </div>
             {mentor.headline && <p className="text-sm text-muted mt-0.5 break-words">{mentor.headline}</p>}
-            <p className="text-sm font-medium text-amber-600 mt-1 flex items-center gap-1">
-              <Star className={`h-3.5 w-3.5 ${rating > 0 ? 'fill-amber-400 text-amber-400' : 'text-muted'}`} />
-              {rating > 0 ? rating.toFixed(1) : '0.0'}
-              <span className="text-muted font-normal">({mentor.review_count ?? 0})</span>
-            </p>
           </div>
         </div>
 
@@ -83,9 +89,16 @@ export function MentorCard({ mentor }: { mentor: Mentor }) {
         <div className="mt-auto pt-3 border-t border-[--color-border] flex items-center justify-between gap-3">
           {mentor.min_price != null && mentor.min_price > 0 ? (
             <div>
-              <p className="text-lg font-bold text-brand-900 leading-tight">
-                {money(mentor.min_price, mentor.price_currency ?? 'USD')}
-              </p>
+              {price && price.discounted < price.original ? (
+                <p className="leading-tight">
+                  <span className="text-sm text-muted line-through">{money(price.original, price.currency)}</span>{' '}
+                  <span className="text-lg font-bold text-brand-900">{money(price.discounted, price.currency)}</span>
+                </p>
+              ) : (
+                <p className="text-lg font-bold text-brand-900 leading-tight">
+                  {price ? money(price.discounted, price.currency) : money(mentor.min_price, mentor.price_currency ?? 'USD')}
+                </p>
+              )}
               <p className="text-[11px] text-muted">from · per session</p>
             </div>
           ) : (

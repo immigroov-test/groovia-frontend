@@ -708,19 +708,21 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            {/* Full name + headline, never truncated - the mentee needs the whole value prop to choose. */}
-            <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-brand-900 break-words">{mentor.display_name}</h1>
+            {/* Full name + rating on one line; headline + location below. Never truncated. */}
+            <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
+              <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-brand-900 break-words">{mentor.display_name}</h1>
+              {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 shrink-0">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  {mentor.avg_rating.toFixed(1)}
+                  <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
+                </span>
+              )}
+            </div>
             {mentor.headline && <p className="text-sm text-muted mt-1 break-words">{mentor.headline}</p>}
             {mentorLocation && (
               <p className="text-xs text-muted mt-1.5 flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5 shrink-0" /> {mentorLocation}
-              </p>
-            )}
-            {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
-              <p className="text-sm font-medium text-amber-600 mt-1.5 flex items-center gap-1">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                {mentor.avg_rating.toFixed(1)}
-                <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
               </p>
             )}
           </div>

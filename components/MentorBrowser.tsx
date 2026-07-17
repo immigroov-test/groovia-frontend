@@ -1,13 +1,16 @@
 'use client';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Search, Plus, X, Sparkles } from 'lucide-react';
 import { MentorCard } from './MentorCard';
 import { MultiSelect, type SelectOption } from './ui/MultiSelect';
 import { Flag } from './ui/Flag';
+import { detectCountry } from '../lib/geo';
 import { countryLabel } from '../lib/countries';
 import { languageLabel } from '../lib/languages';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
 import type { Mentor } from '../lib/types';
+
+interface DisplayPrice { original: number; discounted: number; currency: string }
 
 const CATEGORY_LABELS = EXPERTISE_CATEGORY_MAP;
 
@@ -68,6 +71,36 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
   const [q, setQ] = useState('');
   const [active, setActive] = useState<Record<string, FilterValue>>({});
   const [addOpen, setAddOpen] = useState(false);
+
+  // Localized "from" price per mentor id (customer currency + PPP), so fair-pricing
+  // mentors show the original struck through beside the discounted price. Best-effort:
+  // on any failure cards fall back to the mentor-currency min_price.
+  const [priceMap, setPriceMap] = useState<Record<string, DisplayPrice>>({});
+  useEffect(() => {
+    const paid = mentors.filter((m) => (m.min_price ?? 0) > 0);
+    if (paid.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const country = await detectCountry();
+        if (cancelled) return;
+        const res = await fetch('/api/pricing/convert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            country: country ?? null,
+            items: paid.map((m) => ({ key: m.id, amount: m.min_price, from: m.price_currency ?? 'USD', is_ppp: !!m.smart_pricing })),
+          }),
+        });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const map: Record<string, DisplayPrice> = {};
+        for (const p of (data.prices ?? [])) map[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency };
+        if (!cancelled) setPriceMap(map);
+      } catch { /* keep min_price fallback */ }
+    })();
+    return () => { cancelled = true; };
+  }, [mentors]);
 
   const activeKeys = Object.keys(active);
   const available = FILTERS.filter((f) => !activeKeys.includes(f.key));
@@ -192,7 +225,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
         <>
           <p className="text-sm text-muted mb-4">{filtered.length} mentor{filtered.length !== 1 ? 's' : ''}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 reveal-children">
-            {filtered.map((m) => <MentorCard key={m.id} mentor={m} />)}
+            {filtered.map((m) => <MentorCard key={m.id} mentor={m} price={priceMap[m.id]} />)}
           </div>
         </>
       )}
