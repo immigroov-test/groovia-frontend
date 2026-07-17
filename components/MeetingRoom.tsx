@@ -67,12 +67,17 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
   useEffect(() => {
     if (state !== 'open' || !info?.room || !info.domain || !containerRef.current) return;
     let disposed = false;
+    let onHide: (() => void) | null = null;
     (async () => {
       const ok = await loadJitsi(info.domain!);
       if (disposed) return;
       if (!ok || !window.JitsiMeetExternalAPI || !containerRef.current) {
         setErrMsg('Could not load the video component.'); setState('error'); return;
       }
+      // Capture the auth header once so a "left" beacon can still fire on abrupt
+      // tab-close (when async session lookups wouldn't complete in time).
+      const headers = await authHeaders();
+      if (disposed) return;
       const api = new window.JitsiMeetExternalAPI(info.domain!, {
         roomName: info.room!,
         parentNode: containerRef.current,
@@ -84,16 +89,23 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
       });
       apiRef.current = api;
       const post = (event: 'joined' | 'left') => {
-        void authHeaders().then((h) => fetch(`/api/booking/${bookingId}/attendance`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json', ...h },
+        fetch(`/api/booking/${bookingId}/attendance`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
           body: JSON.stringify({ event }), keepalive: true,
-        }).catch(() => {}));
+        }).catch(() => {});
       };
       api.addListener('videoConferenceJoined', () => post('joined'));
       api.addListener('videoConferenceLeft', () => post('left'));
       api.addListener('readyToClose', () => router.push('/account/sessions'));
+      onHide = () => post('left');
+      window.addEventListener('pagehide', onHide);
     })();
-    return () => { disposed = true; try { apiRef.current?.dispose(); } catch { /* noop */ } apiRef.current = null; };
+    return () => {
+      disposed = true;
+      if (onHide) window.removeEventListener('pagehide', onHide);
+      try { apiRef.current?.dispose(); } catch { /* noop */ }
+      apiRef.current = null;
+    };
   }, [state, info, bookingId, router]);
 
   if (state === 'open') {
