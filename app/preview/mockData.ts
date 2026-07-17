@@ -64,25 +64,24 @@ function isoInEnd(days: number, hour = 15): string {
 function emptyBooking(): ManagedBooking {
   return {
     id: '', status: 'confirmed', slot_time: null, slot_end: null, mentor_tz: 'Europe/Amsterdam',
-    meeting_url: null, service_title: null, service_duration: 60, other_name: null, other_email: null,
-    deadline_state: null, reschedule_count: 0, no_show_by: null, offer_id: null, offer_by: null,
-    offer_status: null, range_start: null, range_end: null, selected_time: null, req_id: null,
-    req_kind: null, req_initiated_by: null, req_status: null, req_respond_by: null,
+    service_title: null, service_duration: 60, other_name: null, reschedule_count: 0,
   };
 }
 
 export function mockBookings(role: 'mentee' | 'mentor'): ManagedBooking[] {
   const other = role === 'mentee' ? 'Maya Singh' : 'Aditya Rao';
   return [
+    { ...emptyBooking(), id: 'bk-pending', status: 'pending',
+      slot_time: isoIn(5), slot_end: isoInEnd(5),
+      service_title: '45-min Deep Dive', service_duration: 45, other_name: other },
     { ...emptyBooking(), id: 'bk-upcoming', status: 'confirmed',
       slot_time: isoIn(3), slot_end: isoInEnd(3),
-      meeting_url: 'https://meet.google.com/abc-defg-hij',
       service_title: 'Visa & PR guidance', service_duration: 60,
-      other_name: other, deadline_state: 'free', reschedule_count: 0 },
+      other_name: other, reschedule_count: 0 },
     { ...emptyBooking(), id: 'bk-past', status: 'completed',
       slot_time: isoIn(-6), slot_end: isoInEnd(-6),
       service_title: 'Career strategy call', service_duration: 45,
-      other_name: other, deadline_state: null, reschedule_count: 1 },
+      other_name: other, reschedule_count: 1 },
   ];
 }
 

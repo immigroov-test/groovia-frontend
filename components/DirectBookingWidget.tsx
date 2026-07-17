@@ -11,7 +11,7 @@ import { PhoneInput } from './ui/PhoneInput';
 import { RichText } from './ui/RichText';
 import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
-import { openRazorpayCheckout } from '../lib/razorpay';
+import { startPaidCheckout } from '../lib/checkout';
 import { detectCountry } from '../lib/geo';
 import { tzShort, tzCity, tzOffset, userDisplayTz, mentorDisplayTz } from '../lib/timezone';
 import { countryLabel } from '../lib/countries';
@@ -522,91 +522,36 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     finally { setSubmitting(false); }
   }
 
-  // Paid path: quote → reserve (10-min hold) → Razorpay order → Checkout → verify.
+  // Paid path: delegates to the shared quote → reserve → Razorpay → verify flow
+  // (lib/checkout), which is also used by the session detail page's "Complete payment".
   // Robust to a dropped webhook: /verify finalizes right after Checkout, and the
   // dispatcher's sweep is the backstop if even that call is lost.
   async function paidBookingFlow() {
     if (!selectedSlot || !selectedService) return;
     setSubmitting(true); setPaying(true);
-    const fail = (msg: string) => { setFormError(msg); setSubmitting(false); setPaying(false); };
-    try {
-      const authHeaders = await sessionAuthHeaders();
-      const answersJson = questions
-        .map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' }))
-        .filter(a => a.answer_text);
-
-      // 1. Binding price quote (customer currency + PPP).
-      const country = await detectCountry();
-      const qRes = await fetch(`/api/pricing/quote/${selectedService.id}${country ? `?country=${country}` : ''}`, { cache: 'no-store' });
-      const quote = await qRes.json().catch(() => ({}));
-      if (!qRes.ok || !quote.quote_id) { fail(quote.detail || 'Could not price this session. Please try again.'); return; }
-
-      // 2. Reserve a 10-minute payment hold.
-      const rRes = await fetch('/api/payments/reserve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({
-          quote_id: quote.quote_id,
-          mentor_id: mentor.id,
-          service_id: selectedService.id,
-          slot_time: selectedSlot.slot_start,
-          email: email.trim(),
-          phone: phone.trim(),
-          name: name.trim() || null,
-          notes: notes.trim() || null,
-          timezone: TZ,
-          answers: answersJson,
-          specific_availability_id: null,
-        }),
-      });
-      const reserved = await rRes.json().catch(() => ({}));
-      if (!rRes.ok || !reserved.booking_id) { fail(reserved.detail || 'That slot is no longer available. Please pick another time.'); return; }
-      const newBookingId: string = reserved.booking_id;
-
-      // 3. Create the Razorpay order.
-      const oRes = await fetch('/api/payments/razorpay/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ booking_id: newBookingId }),
-      });
-      const order = await oRes.json().catch(() => ({}));
-      if (!oRes.ok || !order.order_id) { fail(order.detail || 'Could not start the payment. Please try again.'); return; }
-
-      // 4. Open Checkout. Outcomes arrive via handler (paid) / ondismiss (cancelled).
-      const opened = await openRazorpayCheckout({
-        key: order.key_id,
-        order_id: order.order_id,
-        amount: order.amount,
-        currency: order.currency,
-        name: 'Immigroov',
-        description: selectedService.title,
-        prefill: { name: name.trim() || undefined, email: email.trim() },
-        theme: { color: '#102a4c' },
-        handler: async () => {
-          try {
-            // Webhook-independent confirmation. Whether or not this call lands, the
-            // payment is captured and the webhook/sweep will finalize the booking,
-            // so we always advance to the confirmed screen.
-            await fetch('/api/payments/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', ...authHeaders },
-              body: JSON.stringify({ order_id: order.order_id }),
-            }).catch(() => {});
-            setBookingId(newBookingId);
-            setStep('confirmed');
-          } finally { setSubmitting(false); setPaying(false); }
-        },
-        modal: {
-          ondismiss: () => {
-            setSubmitting(false); setPaying(false);
-            setFormError('Payment cancelled. Your slot is held for 10 minutes if you want to try again.');
-          },
-        },
-      });
-      if (!opened) { fail('Could not load the payment window. Please check your connection and try again.'); }
-    } catch {
-      fail('Could not complete the payment. Please try again.');
-    }
+    const done = () => { setSubmitting(false); setPaying(false); };
+    await startPaidCheckout(
+      {
+        mentorId: mentor.id,
+        serviceId: selectedService.id,
+        slotTime: selectedSlot.slot_start,
+        email: email,
+        phone: phone,
+        name: name,
+        notes: notes,
+        serviceTitle: selectedService.title,
+        timezone: TZ,
+        answers: questions
+          .map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' }))
+          .filter(a => a.answer_text),
+      },
+      {
+        onConfirmed: (id) => { setBookingId(id); setStep('confirmed'); done(); },
+        onSlotTaken: (msg) => { setFormError(msg); done(); },
+        onError: (msg) => { setFormError(msg); done(); },
+        onDismiss: () => { setFormError('Payment cancelled. Your slot is held for 10 minutes if you want to try again.'); done(); },
+      },
+    );
   }
 
   // Slot grouping
