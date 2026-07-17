@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { detectLocation, countryName, type GeoLocation } from '../lib/geo';
 
-// "You are here" row shown at the bottom of the nav menu. Uses the same edge geo as
-// pricing, and renders nothing until it resolves so there's no flash of an empty value.
-export function LocationBadge() {
+// "You are here" indicator. `inline` = a compact chip for the desktop nav (next to
+// the logo); `menu` (default) = a full row at the bottom of the mobile menu. Uses the
+// same edge geo as pricing, and renders nothing until it resolves (no flash).
+export function LocationBadge({ variant = 'menu' }: { variant?: 'inline' | 'menu' }) {
   const [loc, setLoc] = useState<GeoLocation | null>(null);
 
   useEffect(() => {
@@ -16,6 +17,15 @@ export function LocationBadge() {
 
   if (!loc) return null;
   const label = loc.city ? `${loc.city}, ${countryName(loc.code)}` : countryName(loc.code);
+
+  if (variant === 'inline') {
+    return (
+      <span title={label} className="inline-flex min-w-0 max-w-[200px] items-center gap-1 text-xs font-medium text-muted">
+        <MapPin className="h-3.5 w-3.5 shrink-0 text-accent-500" aria-hidden />
+        <span className="truncate">{label}</span>
+      </span>
+    );
+  }
 
   return (
     <div className="mt-1 flex items-center gap-2 border-t border-[--color-border] px-3 pt-3 pb-1 text-xs text-muted">

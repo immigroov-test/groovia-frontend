@@ -92,6 +92,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
   const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<string[]>([]);   // validation summary (all issues)
   const [submitting, setSubmitting] = useState(false);
   const [saveWarnings, setSaveWarnings] = useState<string[] | null>(null);
 
@@ -108,18 +109,21 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (tz) setTimezone(tz);
   }
 
-  function validateDetails(): string | null {
-    if (!displayName.trim()) return 'Display name is required.';
-    if (!professionalTitle.trim()) return 'Headline is required.';
-    if (!country) return 'Please select your current country.';
-    if (languages.length === 0) return 'Select at least one language.';
-    if (expertiseCountries.length === 0) return 'Select at least one country of expertise.';
-    if (expertiseCountries.length > 2) return 'You can select a maximum of 2 countries of expertise.';
+  // All missing/invalid Step-1 (details) fields at once, so the summary can list them
+  // together instead of surfacing one at a time.
+  function collectDetailErrors(): string[] {
+    const e: string[] = [];
+    if (!displayName.trim()) e.push('Display name is required.');
+    if (!professionalTitle.trim()) e.push('Headline is required.');
+    if (!country) e.push('Please select your current country.');
+    if (languages.length === 0) e.push('Select at least one language.');
+    if (expertiseCountries.length === 0) e.push('Select at least one country of expertise.');
+    if (expertiseCountries.length > 2) e.push('Select a maximum of 2 countries of expertise.');
     const years = parseInt(yearsExp, 10);
-    if (!yearsExp || isNaN(years) || years < 0) return 'Enter your years of lived experience.';
+    if (!yearsExp || isNaN(years) || years < 0) e.push('Enter your years of lived experience.');
     const cityErr = validateCityName(city);
-    if (cityErr) return cityErr;
-    return null;
+    if (cityErr) e.push(cityErr);
+    return e;
   }
 
   const availError = validateWeeklyHours(weeklyHours);
@@ -133,9 +137,20 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
   const canSubmit = !availError && !sessionError && !rulesError && agreedMentor;
 
+  // Every missing/invalid field across both steps, for the submit-time summary.
+  function collectAllErrors(): string[] {
+    const e = collectDetailErrors();
+    if (availError) e.push(availError);
+    if (sessionError) e.push(sessionError);
+    if (rulesError) e.push(rulesError);
+    if (!agreedMentor) e.push('Accept the Mentor Agreement to proceed.');
+    return e;
+  }
+
   function goToStep2() {
-    const err = validateDetails();
-    if (err) { setError(err); return; }
+    const errs = collectDetailErrors();
+    if (errs.length) { setFormErrors(errs); setError(null); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    setFormErrors([]);
     setError(null);
     setStep(2);
   }
@@ -148,12 +163,15 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     e.preventDefault();
     setError(null);
 
-    const detailErr = validateDetails();
-    if (detailErr) { setError(detailErr); setStep(1); return; }
-    if (availError) { setError(availError); return; }
-    if (sessionError) { setError(sessionError); return; }
-    if (rulesError) { setError(rulesError); return; }
-    if (!agreedMentor) { setError('Please accept the Mentor Agreement to proceed.'); return; }
+    const detailErrs = collectDetailErrors();
+    const allErrs = collectAllErrors();
+    if (allErrs.length) {
+      setFormErrors(allErrs);
+      if (detailErrs.length) setStep(1);   // land on the fields that need fixing
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setFormErrors([]);
 
     setSubmitting(true);
     try {
@@ -263,6 +281,18 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           </div>
         ))}
       </div>
+
+      {/* Validation summary - lists every missing/invalid field on a submit attempt. */}
+      {formErrors.length > 0 && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-700">
+            Please fix {formErrors.length === 1 ? 'the following' : `these ${formErrors.length} items`} before submitting:
+          </p>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-sm text-red-700">
+            {formErrors.map((msg, i) => <li key={i}>{msg}</li>)}
+          </ul>
+        </div>
+      )}
 
       {/* ══ STEP 1: DETAILS ═══════════════════════════════════════════ */}
       <div className={cn('flex-col gap-6', step === 1 ? 'flex' : 'hidden')}>
@@ -501,7 +531,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
             <div className="flex items-center justify-between gap-3">
               <Button type="button" variant="ghost" onClick={backToStep1} disabled={submitting}>← Back</Button>
-              <Button type="submit" variant="accent" loading={submitting} disabled={!canSubmit}>Submit for approval</Button>
+              <Button type="submit" variant="accent" loading={submitting}>Submit for approval</Button>
             </div>
             <p className="text-xs text-muted">Our team reviews applications within 1-2 business days.</p>
           </CardBody>
