@@ -234,10 +234,10 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
       {/* Everything sits in one card, matching the booking-confirmation layout. */}
       <div className="mt-4 rounded-2xl border border-[--color-border] bg-white p-6 sm:p-8">
 
-      {/* Header: title + status */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 break-words">{d.service_title}</h1>
-        <Badge tone={STATUS_TONE[d.status] ?? 'neutral'}>
+      {/* Header: title on the left, status pinned top-right beside it. */}
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="min-w-0 flex-1 text-lg font-semibold tracking-tight text-brand-900 break-words">{d.service_title}</h1>
+        <Badge tone={STATUS_TONE[d.status] ?? 'neutral'} className="shrink-0 text-sm px-3.5 py-1">
           {STATUS_LABEL[d.status] ?? d.status.replace('_', ' ')}
         </Badge>
       </div>
