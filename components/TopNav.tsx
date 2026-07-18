@@ -95,8 +95,6 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
             style={{ height: '26px', width: 'auto' }}
           />
         </Link>
-        {/* Desktop: location beside the logo. On small screens it's in the menu instead. */}
-        <span className="hidden lg:flex items-center ml-3 min-w-0"><LocationBadge variant="inline" /></span>
         </div>
 
         {/* Center: nav pill, in normal flow (shrink-0) and NOT absolutely positioned.
@@ -166,6 +164,8 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
                     >
                       <LogOut className="h-4 w-4" /> {signingOut ? 'Signing out…' : 'Sign out'}
                     </button>
+                    {/* Location tag lives under Sign out (desktop) instead of the main nav. */}
+                    <LocationBadge />
                   </div>
                 </div>
               )}
