@@ -1,13 +1,33 @@
 export const UI_CONTENT = {
-  welcomeMessage: "Attach your resume or profile below and we'll get started.",
+  welcomeMessage: "Hi, I'm Groovia 👋 What would you like to do?",
   uploadIndicator: '📎 Resume uploaded',
-  intentPrompt: 'What would you like to do next?',
+  intentPrompt: 'What would you like to do?',
+  askQuestionPrompt: 'Sure — what would you like to know? Ask me anything about visas, jobs, salaries, or moving abroad.',
   inputPlaceholder: 'Ask about your career...',
-  inputPlaceholderLocked: 'Login to continue…',
+  inputPlaceholderLocked: 'Type your question — sign in when you send…',
   inputPlaceholderNoResume: 'Attach your resume above to start chatting…',
   disclaimer:
     'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions.',
-  signInToContinue: 'Login to continue the conversation',
+  signInToContinue: 'Sign in to continue',
+  // Career-report intent: a popup explains it, then it needs sign-in + résumé.
+  report: {
+    title: 'Generate your career pathway report',
+    intro: 'A personalized report that maps your best-fit countries and the exact route to each.',
+    bullets: [
+      'Your top country matches, chosen for your background and goals',
+      'Visa/route, salary or tuition, market, pros and cons for each',
+      'Mentors in those countries you can book right away',
+    ],
+    why: 'It analyzes your own profile, so it needs you to sign in and share your résumé (PDF or DOCX). Finding a mentor or asking a question does not.',
+    proceed: 'Continue',
+    cancel: 'Not now',
+    needLogin: "Let's set this up. Sign in or create a free account, then attach your résumé and I'll build your report.",
+    needResume: "You're signed in. Now attach your résumé (PDF or DOCX) with the 📎 button below, and I'll generate your report.",
+  },
+  mentorResults: {
+    none: "We don't have mentors based there yet — our network is actively expanding. Try a nearby country, or browse the full directory.",
+    tip: 'Tip: sign in and share your résumé to get matches tuned to your background.',
+  },
   errors: {
     backendUnreachable: 'Error: Could not connect to backend.',
     noResponse: 'No response received.',
@@ -274,7 +294,7 @@ export const SERVICE_DESCRIPTION_TEMPLATE =
   "<p>The concrete outcome or next steps after the session.</p>";
 
 export const INTENT_OPTIONS = [
-  { label: '📊 Generate a career pathway', message: 'I want to generate a career pathway.' },
-  { label: '🤝 Find me a Mentor',          message: 'I want to find a mentor.', mentor: true },
-  { label: '💬 Ask a Question',            message: 'I just want to ask some questions.' },
+  { kind: 'report', label: '📊 Generate a career pathway', message: 'I want to generate a career pathway.' },
+  { kind: 'mentor', label: '🤝 Find me a Mentor',          message: 'I want to find a mentor.' },
+  { kind: 'qna',    label: '💬 Ask a Question',            message: 'I just want to ask some questions.' },
 ] as const;

@@ -15,6 +15,7 @@ import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
 import { cn } from '../lib/utils';
 import { LandingIntro } from './LandingIntro';
 import { RateLimitModal } from './RateLimitModal';
+import { ReportInfoModal } from './ReportInfoModal';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { AiAvatar } from './AiAvatar';
 
@@ -130,6 +131,9 @@ export default function ChatInterface({ authed }: Props) {
   const [loading, setLoading] = useState(false);
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [intentSelected, setIntentSelected] = useState(false);
+  // Career-report intent: popup shown first, then a login -> résumé -> generate sequence.
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [pendingReport, setPendingReport] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   // Find-a-mentor dropdowns are DB-driven facets so they only show topics/countries we
   // actually have mentors for, and auto-expand as mentors join. The two are dependent:
@@ -194,6 +198,17 @@ export default function ChatInterface({ authed }: Props) {
     if (!hydrated) return;
     window.localStorage.setItem(LS_KEYS.intentSelected, JSON.stringify(intentSelected));
   }, [intentSelected, hydrated]);
+
+  // A report user who just signed in still needs to attach a résumé - guide them to the clip.
+  useEffect(() => {
+    if (!authed || !pendingReport || resumeUploaded) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMessages((prev) =>
+      prev.some((m) => m.content === UI_CONTENT.report.needResume)
+        ? prev
+        : [...prev, { role: 'assistant', content: UI_CONTENT.report.needResume }],
+    );
+  }, [authed, pendingReport, resumeUploaded]);
 
   // When a guest signs in, link the guest thread to their account so it appears in history.
   useEffect(() => {
@@ -270,6 +285,8 @@ export default function ChatInterface({ authed }: Props) {
     setMessages([]);
     setResumeUploaded(false);
     setIntentSelected(false);
+    setShowReportModal(false);
+    setPendingReport(false);
     setMentorTopic('');
     setMentorStep('');
     setWelcomeRevealed(false);
@@ -441,23 +458,17 @@ export default function ChatInterface({ authed }: Props) {
 
     try {
       const data = await postChat(formData);
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: data.response || UI_CONTENT.errors.noResponse },
-      ]);
       setResumeUploaded(true);
-      // A fresh resume upload starts the intent-selection step, so re-arm the option
-      // buttons even if an earlier message (e.g. "hi") had set intentSelected.
-      setIntentSelected(false);
-
-      // Guests: tell them why first, then open the auth gate a beat later so the popup
-      // doesn't appear out of nowhere.
-      if (!authed) {
+      if (pendingReport) {
+        // Report flow: résumé is in → generate immediately (skip the "pick an option" ack).
+        sendReport();
+      } else {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: 'Your resume is in. Please log in or sign up to access the chat and get your personalised guidance.' },
+          { role: 'assistant', content: data.response || UI_CONTENT.errors.noResponse },
         ]);
-        window.setTimeout(() => openGate(), 1500);
+        // A fresh résumé upload re-offers the intent chips.
+        setIntentSelected(false);
       }
     } catch (e) {
       applyChatError(e);
@@ -484,10 +495,81 @@ export default function ChatInterface({ authed }: Props) {
     ]);
     setMentorStep('country');
   }
-  function pickMentorCountry(code: string) {
+  // Find-a-mentor is fully client-side: fetch the PUBLIC /mentors list (no login, no LLM/Groq
+  // tokens) and render the matches as a chat message. Then re-offer the intents.
+  async function pickMentorCountry(code: string) {
     setMentorStep('');
-    // After the mentor results come back, re-offer the three intent options as a follow-up.
-    sendMessage(`I'm looking for a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.`, true);
+    setIntentSelected(true);
+    setMessages((prev) => [
+      ...prev,
+      { role: 'user', content: `Find me a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.` },
+    ]);
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/mentors?country=${encodeURIComponent(code)}&category=${encodeURIComponent(mentorTopic)}&limit=6`,
+        { cache: 'no-store' },
+      );
+      const data = res.ok ? await res.json() : null;
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: renderMentorResults(data?.mentors ?? [], code) },
+      ]);
+    } catch {
+      setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.errors.backendUnreachable }]);
+    } finally {
+      setLoading(false);
+      setIntentSelected(false); // re-offer the intent chips after results
+    }
+  }
+
+  // Build the mentor-results markdown (rendered by MD_COMPONENTS - internal links become
+  // Next <Link>s, so "View & book" lands on the mentor's booking page).
+  function renderMentorResults(mentors: Array<{ slug?: string; display_name?: string; headline?: string }>, code: string): string {
+    const place = countryLabel(code);
+    if (!mentors.length) {
+      return `${UI_CONTENT.mentorResults.none}\n\n[Browse the full Mentor Directory](/mentors)`;
+    }
+    const lines = mentors.slice(0, 3).map((m) => {
+      const head = m.headline ? ` — ${m.headline}` : '';
+      return `- **${m.display_name ?? 'Mentor'}**${head}  \n  [View profile & book a session](/mentors/${m.slug ?? ''})`;
+    });
+    return (
+      `Here are mentors for **${topicLabel(mentorTopic)}** in **${place}**:\n\n` +
+      `${lines.join('\n')}\n\n[See all mentors in ${place}](/mentors?country=${code})\n\n_${UI_CONTENT.mentorResults.tip}_`
+    );
+  }
+
+  // Intent chip dispatcher. Mentor = open (no login). Q&A = login, then answer. Report = the
+  // info popup, which drives login -> résumé -> generate.
+  function handleIntent(kind: 'report' | 'mentor' | 'qna') {
+    if (kind === 'mentor') { startMentorFlow(); return; }
+    if (kind === 'report') { setShowReportModal(true); return; }
+    if (!authed) { openGate(); return; }
+    setIntentSelected(true);
+    setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.askQuestionPrompt }]);
+  }
+
+  // Report: after the popup, require login then résumé, then send the generate request.
+  function proceedReport() {
+    setShowReportModal(false);
+    setIntentSelected(true);
+    if (!authed) {
+      setPendingReport(true);
+      setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.report.needLogin }]);
+      openGate();
+      return;
+    }
+    if (!resumeUploaded) {
+      setPendingReport(true);
+      setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.report.needResume }]);
+      return;
+    }
+    sendReport();
+  }
+  function sendReport() {
+    setPendingReport(false);
+    void sendMessage('I want to generate a career pathway.');
   }
 
   async function sendMessage(text: string, reOfferIntents = false) {
@@ -625,26 +707,24 @@ export default function ChatInterface({ authed }: Props) {
 
           {loading && <ThinkingIndicator />}
 
-          {resumeUploaded && !intentSelected && !loading && (
+          {!intentSelected && !loading && (welcomeRevealed || messages.length > 0) && (
             <div className="pt-2 animate-fade-up">
-              {/* Step 0: pick an intent. "Find me a Mentor" starts the mimicked mini-chat. */}
+              {/* Step 0: pick an intent - shown up front (no résumé/login wall). Mentor = open,
+                  Q&A = login, Report = popup then login + résumé. */}
               {mentorStep === '' && (
                 <>
                   <p className="text-sm font-medium text-foreground mb-3">{UI_CONTENT.intentPrompt}</p>
                   <div className="flex flex-wrap gap-2">
-                    {INTENT_OPTIONS.map((opt) => {
-                      const isMentor = 'mentor' in opt && opt.mentor;
-                      return (
-                        <button
-                          key={opt.label}
-                          onClick={() => (isMentor ? startMentorFlow() : sendMessage(opt.message))}
-                          disabled={loading}
-                          className="px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
+                    {INTENT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.label}
+                        onClick={() => handleIntent(opt.kind)}
+                        disabled={loading}
+                        className="px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
                 </>
               )}
@@ -673,7 +753,7 @@ export default function ChatInterface({ authed }: Props) {
                   value=""
                   disabled={loading}
                   aria-label="Which country?"
-                  onChange={(e) => { if (e.target.value) pickMentorCountry(e.target.value); }}
+                  onChange={(e) => { if (e.target.value) void pickMentorCountry(e.target.value); }}
                   className={MENTOR_PILL}
                 >
                   <option value="">🌍 Which country?</option>
@@ -693,7 +773,7 @@ export default function ChatInterface({ authed }: Props) {
       {/* z-index: 10 keeps the input bar above both the scroll area (z-1) and landmarks (z-0). */}
       <div className="bg-transparent relative" style={{ zIndex: 10 }}>
         <div className="mx-auto max-w-3xl px-4 py-4">
-          {gated && resumeUploaded && (
+          {gated && messages.length > 0 && (
             <button
               onClick={openGate}
               className="w-full flex items-center justify-center gap-2 mb-2 px-4 py-2.5 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium"
@@ -717,18 +797,16 @@ export default function ChatInterface({ authed }: Props) {
           <div
             className={cn(
               "flex items-end gap-2 rounded-2xl px-2 py-1.5",
-              (gated && resumeUploaded || rateLimited) && "opacity-60",
-              // The glow only lands on the composer once it's actually usable (logged in +
-              // resume attached). Before that it lives on the "attach your resume" message
-              // and the paperclip, so the user is guided to the clip, not the locked input.
-              authed && resumeUploaded && !rateLimited && "composer-glow",
+              rateLimited && "opacity-60",
+              // Glow when the composer is usable (signed in, not rate-limited).
+              authed && !rateLimited && "composer-glow",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
             {FEATURES.resumeUpload && (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => { if (!authed) { openGate(); return; } fileInputRef.current?.click(); }}
                 disabled={loading || resumeUploaded}
                 title={resumeUploaded ? UI_CONTENT.tooltips.resumeAlreadyUploaded : UI_CONTENT.tooltips.attachResume}
                 className={cn(
@@ -755,21 +833,17 @@ export default function ChatInterface({ authed }: Props) {
                   sendMessage(input);
                 }
               }}
-              placeholder={
-                !resumeUploaded ? ''
-                : gated ? UI_CONTENT.inputPlaceholderLocked
-                : UI_CONTENT.inputPlaceholder
-              }
-              // Chat is locked until the user is logged in AND has attached a resume, so they
-              // can't type before the flow is ready (avoids stray messages we then handle).
-              disabled={!authed || !resumeUploaded || rateLimited}
+              placeholder={gated ? UI_CONTENT.inputPlaceholderLocked : UI_CONTENT.inputPlaceholder}
+              // Typing is open to everyone; sending as a guest opens the sign-in gate (Q&A needs
+              // login). Only a rate-limit actually disables the field.
+              disabled={rateLimited}
               className="flex-1 bg-transparent border-none outline-none text-sm leading-relaxed resize-none py-2 max-h-40 disabled:cursor-not-allowed"
             />
 
             <button
               type="button"
               onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim() || !authed || !resumeUploaded || rateLimited}
+              disabled={loading || !input.trim() || rateLimited}
               className="h-9 w-9 flex items-center justify-center rounded-lg bg-brand-900 text-white hover:bg-brand-800 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               <Send className="h-4 w-4" />
@@ -780,6 +854,9 @@ export default function ChatInterface({ authed }: Props) {
         </div>
       </div>
 
+      {showReportModal && (
+        <ReportInfoModal onProceed={proceedReport} onClose={() => setShowReportModal(false)} />
+      )}
       {showRateModal && rateLimitedUntil !== null && (
         <RateLimitModal until={rateLimitedUntil} onClose={() => setShowRateModal(false)} />
       )}
