@@ -14,7 +14,7 @@ import { UI_CONTENT } from '../lib/content';
 import { randomQuote } from '../lib/quotes';
 import { TypeText } from './TypeText';
 
-type Stage = 'email' | 'login' | 'setup' | 'forgot' | 'sent';
+type Stage = 'email' | 'login' | 'oauth' | 'setup' | 'forgot' | 'sent';
 
 function AuthModalInner() {
   const router = useRouter();
@@ -109,8 +109,11 @@ function AuthModalInner() {
         body: JSON.stringify({ email: cleanEmail() }),
       });
       if (!res.ok) { setLoading(false); setError('Something went wrong. Please try again.'); return; }
-      const { has_password } = await res.json();
-      if (has_password) { setLoading(false); setStage('login'); return; }
+      const data = await res.json();
+      if (data.has_password) { setLoading(false); setStage('login'); return; }
+      // Account exists via Google with no password → guide them to Google instead of
+      // emailing a link (which would let them accidentally add a password).
+      if (data.oauth_only) { setLoading(false); setStage('oauth'); return; }
       const { error } = await createClient().auth.signInWithOtp({
         email: cleanEmail(),
         options: { shouldCreateUser: true, emailRedirectTo: signupSetupRedirect() },
@@ -177,8 +180,8 @@ function AuthModalInner() {
     return `${window.location.origin}/auth/callback?next=${encodeURIComponent(setupNext)}`;
   }
 
-  async function handleForgot(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleForgot(e?: React.FormEvent) {
+    e?.preventDefault();
     setError(null); setLoading(true);
     const { error } = await createClient().auth.resetPasswordForEmail(cleanEmail(), {
       redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
@@ -279,6 +282,28 @@ function AuthModalInner() {
                 <div className="mt-4 flex items-center justify-between text-sm">
                   <button type="button" onClick={() => { setStage('forgot'); setError(null); }} className="text-brand-700 hover:underline">{t.forgot}</button>
                   <button type="button" onClick={() => { setStage('email'); setPassword(''); setError(null); }} className="text-muted hover:text-foreground">{t.back}</button>
+                </div>
+              </>
+            )}
+
+            {stage === 'oauth' && (
+              <>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">This account uses Google</h2>
+                <p className="text-base text-muted mt-1 text-center break-all">{email}</p>
+                <p className="text-sm text-muted mt-3 text-center leading-relaxed">
+                  You created this account with Google, so there&apos;s no password. Continue with Google to sign in.
+                </p>
+                <div className="mt-6">
+                  <GoogleButton label="Continue with Google" next={next} />
+                </div>
+                {error && <p className="mt-3 text-xs text-red-600 text-center">{error}</p>}
+                <div className="mt-5 flex flex-col items-center gap-2 text-sm">
+                  <button type="button" onClick={() => handleForgot()} disabled={loading}
+                    className="text-brand-700 hover:underline disabled:opacity-50">
+                    Prefer a password? Set one by email
+                  </button>
+                  <button type="button" onClick={() => { setStage('email'); setPassword(''); setError(null); }}
+                    className="text-muted hover:text-foreground">Use a different email</button>
                 </div>
               </>
             )}
