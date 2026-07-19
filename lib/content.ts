@@ -5,6 +5,7 @@ export const UI_CONTENT = {
   askQuestionPrompt: 'Sure — what would you like to know? Ask me anything about visas, jobs, salaries, or moving abroad.',
   inputPlaceholder: 'Ask about your career...',
   inputPlaceholderLocked: 'Type your question — sign in when you send…',
+  inputPlaceholderBlocked: 'Pick an option above to get started…',
   inputPlaceholderNoResume: 'Attach your resume above to start chatting…',
   disclaimer:
     'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions.',

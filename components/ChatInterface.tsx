@@ -134,6 +134,10 @@ export default function ChatInterface({ authed }: Props) {
   // Career-report intent: popup shown first, then a login -> résumé -> generate sequence.
   const [showReportModal, setShowReportModal] = useState(false);
   const [pendingReport, setPendingReport] = useState(false);
+  // Typing is BLOCKED until the user picks "Ask a Question" (or is mid Q&A). The three intent
+  // buttons are the only entry until then. pendingQna resumes the Q&A intent after a guest logs in.
+  const [qnaActive, setQnaActive] = useState(false);
+  const [pendingQna, setPendingQna] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   // Find-a-mentor dropdowns are DB-driven facets so they only show topics/countries we
   // actually have mentors for, and auto-expand as mentors join. The two are dependent:
@@ -209,6 +213,12 @@ export default function ChatInterface({ authed }: Props) {
         : [...prev, { role: 'assistant', content: UI_CONTENT.report.needResume }],
     );
   }, [authed, pendingReport, resumeUploaded]);
+
+  // Resume the Q&A intent once a guest signs in for it.
+  useEffect(() => {
+    if (authed && pendingQna) startQna();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authed, pendingQna]);
 
   // When a guest signs in, link the guest thread to their account so it appears in history.
   useEffect(() => {
@@ -287,6 +297,8 @@ export default function ChatInterface({ authed }: Props) {
     setIntentSelected(false);
     setShowReportModal(false);
     setPendingReport(false);
+    setQnaActive(false);
+    setPendingQna(false);
     setMentorTopic('');
     setMentorStep('');
     setWelcomeRevealed(false);
@@ -545,7 +557,14 @@ export default function ChatInterface({ authed }: Props) {
   function handleIntent(kind: 'report' | 'mentor' | 'qna') {
     if (kind === 'mentor') { startMentorFlow(); return; }
     if (kind === 'report') { setShowReportModal(true); return; }
-    if (!authed) { openGate(); return; }
+    // Q&A needs login. Remember the intent so it resumes automatically after sign-in.
+    if (!authed) { setPendingQna(true); openGate(); return; }
+    startQna();
+  }
+  // Unlocks the composer and invites the question. Typing is blocked until this runs.
+  function startQna() {
+    setPendingQna(false);
+    setQnaActive(true);
     setIntentSelected(true);
     setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.askQuestionPrompt }]);
   }
@@ -569,6 +588,7 @@ export default function ChatInterface({ authed }: Props) {
   }
   function sendReport() {
     setPendingReport(false);
+    setQnaActive(true);   // report done → allow typed follow-up questions
     void sendMessage('I want to generate a career pathway.');
   }
 
@@ -773,7 +793,7 @@ export default function ChatInterface({ authed }: Props) {
       {/* z-index: 10 keeps the input bar above both the scroll area (z-1) and landmarks (z-0). */}
       <div className="bg-transparent relative" style={{ zIndex: 10 }}>
         <div className="mx-auto max-w-3xl px-4 py-4">
-          {gated && messages.length > 0 && (
+          {gated && (pendingQna || pendingReport) && (
             <button
               onClick={openGate}
               className="w-full flex items-center justify-center gap-2 mb-2 px-4 py-2.5 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium"
@@ -797,9 +817,9 @@ export default function ChatInterface({ authed }: Props) {
           <div
             className={cn(
               "flex items-end gap-2 rounded-2xl px-2 py-1.5",
-              rateLimited && "opacity-60",
-              // Glow when the composer is usable (signed in, not rate-limited).
-              authed && !rateLimited && "composer-glow",
+              (!qnaActive || rateLimited) && "opacity-60",
+              // Glow only when the composer is actually usable (Q&A active, not rate-limited).
+              qnaActive && !rateLimited && "composer-glow",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
@@ -807,13 +827,14 @@ export default function ChatInterface({ authed }: Props) {
               <button
                 type="button"
                 onClick={() => { if (!authed) { openGate(); return; } fileInputRef.current?.click(); }}
-                disabled={loading || resumeUploaded}
+                // Attach is only relevant for the career report - blocked (and un-emphasized)
+                // otherwise, so it stops competing with the three intent buttons up front.
+                disabled={loading || resumeUploaded || !pendingReport}
                 title={resumeUploaded ? UI_CONTENT.tooltips.resumeAlreadyUploaded : UI_CONTENT.tooltips.attachResume}
                 className={cn(
                   "h-9 w-9 flex items-center justify-center rounded-lg hover:bg-brand-50/40 disabled:opacity-30 disabled:cursor-not-allowed",
-                  // Highlight the clip once the first message is revealed (or the chat is
-                  // underway) until a resume is attached.
-                  (welcomeRevealed || messages.length > 0) && !resumeUploaded && !loading
+                  // Pulse the clip only while the report flow is waiting for the résumé.
+                  pendingReport && !resumeUploaded && !loading
                     ? "text-accent-600 animate-attach-pulse"
                     : "text-muted hover:text-foreground",
                 )}
@@ -833,17 +854,17 @@ export default function ChatInterface({ authed }: Props) {
                   sendMessage(input);
                 }
               }}
-              placeholder={gated ? UI_CONTENT.inputPlaceholderLocked : UI_CONTENT.inputPlaceholder}
-              // Typing is open to everyone; sending as a guest opens the sign-in gate (Q&A needs
-              // login). Only a rate-limit actually disables the field.
-              disabled={rateLimited}
+              placeholder={!qnaActive ? UI_CONTENT.inputPlaceholderBlocked : UI_CONTENT.inputPlaceholder}
+              // Typing is BLOCKED until the user chooses "Ask a Question" (which requires login).
+              // Before that, the three intent buttons are the only way forward.
+              disabled={!qnaActive || rateLimited}
               className="flex-1 bg-transparent border-none outline-none text-sm leading-relaxed resize-none py-2 max-h-40 disabled:cursor-not-allowed"
             />
 
             <button
               type="button"
               onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim() || rateLimited}
+              disabled={loading || !input.trim() || !qnaActive || rateLimited}
               className="h-9 w-9 flex items-center justify-center rounded-lg bg-brand-900 text-white hover:bg-brand-800 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               <Send className="h-4 w-4" />
