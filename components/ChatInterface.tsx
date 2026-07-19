@@ -308,6 +308,7 @@ export default function ChatInterface({ authed }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const intentBlockRef = useRef<HTMLDivElement>(null);
   const chatStartRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -376,6 +377,17 @@ export default function ChatInterface({ authed }: Props) {
     if (!resumeUploaded && messages.length <= 1) return;
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, resumeUploaded]);
+
+  // After "Chat with Groovia" (welcome revealed), bring the welcome + the three intent buttons
+  // into view on every device - on short screens the buttons otherwise sit below the fold.
+  useEffect(() => {
+    if (!welcomeRevealed || intentSelected) return;
+    const t = window.setTimeout(
+      () => intentBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }),
+      160,
+    );
+    return () => window.clearTimeout(t);
+  }, [welcomeRevealed, intentSelected, mentorStep]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -728,7 +740,7 @@ export default function ChatInterface({ authed }: Props) {
           {loading && <ThinkingIndicator />}
 
           {!intentSelected && !loading && (welcomeRevealed || messages.length > 0) && (
-            <div className="pt-2 animate-fade-up">
+            <div ref={intentBlockRef} className="pt-2 animate-fade-up">
               {/* Step 0: pick an intent - shown up front (no résumé/login wall). Mentor = open,
                   Q&A = login, Report = popup then login + résumé. */}
               {mentorStep === '' && (
