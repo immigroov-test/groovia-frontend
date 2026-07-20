@@ -501,23 +501,33 @@ export default function ChatInterface({ authed }: Props) {
     }
   }
 
+  // Predefined/canned answers still feel like the assistant is thinking: hold the thinking
+  // indicator ~1.1-1.7s (padding out an instant reply) before revealing the message. Done in
+  // the frontend so it uniformly covers backend-canned replies AND client-side answers.
+  async function thinkPause(started: number) {
+    const target = 1100 + Math.random() * 600;
+    const elapsed = Date.now() - started;
+    if (elapsed < target) await new Promise((r) => setTimeout(r, target - elapsed));
+  }
+  async function revealAssistant(content: string, after?: () => void) {
+    const started = Date.now();
+    setLoading(true);
+    await thinkPause(started);
+    setMessages((prev) => [...prev, { role: 'assistant', content }]);
+    setLoading(false);
+    after?.();
+  }
+
   // Find-a-mentor mimicked flow. Clicking the intent asks the topic; picking a topic asks
   // the country; picking the country makes the one real backend call (with both).
   function startMentorFlow() {
+    setPendingQna(false); setPendingReport(false);   // switching intents clears any pending login gate
     loadFacets();
-    setMessages((prev) => [
-      ...prev,
-      { role: 'assistant', content: 'Happy to help you find a mentor. What do you need guidance on?' },
-    ]);
-    setMentorStep('topic');
+    void revealAssistant('Happy to help you find a mentor. What do you need guidance on?', () => setMentorStep('topic'));
   }
   function pickMentorTopic(code: string) {
     setMentorTopic(code);
-    setMessages((prev) => [
-      ...prev,
-      { role: 'assistant', content: `Great. Which country are you looking at for ${topicLabel(code)}?` },
-    ]);
-    setMentorStep('country');
+    void revealAssistant(`Great. Which country are you looking at for ${topicLabel(code)}?`, () => setMentorStep('country'));
   }
   // Find-a-mentor is fully client-side: fetch the PUBLIC /mentors list (no login, no LLM/Groq
   // tokens) and render the matches as a chat message. Then re-offer the intents.
@@ -529,17 +539,20 @@ export default function ChatInterface({ authed }: Props) {
       { role: 'user', content: `Find me a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.` },
     ]);
     setLoading(true);
+    const started = Date.now();
     try {
       const res = await fetch(
         `/api/mentors?country=${encodeURIComponent(code)}&category=${encodeURIComponent(mentorTopic)}&limit=6`,
         { cache: 'no-store' },
       );
       const data = res.ok ? await res.json() : null;
+      await thinkPause(started);
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: renderMentorResults(data?.mentors ?? [], code) },
       ]);
     } catch {
+      await thinkPause(started);
       setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.errors.backendUnreachable }]);
     } finally {
       setLoading(false);
@@ -578,7 +591,7 @@ export default function ChatInterface({ authed }: Props) {
     setPendingQna(false);
     setQnaActive(true);
     setIntentSelected(true);
-    setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.askQuestionPrompt }]);
+    void revealAssistant(UI_CONTENT.askQuestionPrompt);
   }
 
   // Report: after the popup, require login then résumé, then send the generate request.
@@ -604,7 +617,7 @@ export default function ChatInterface({ authed }: Props) {
     void sendMessage('I want to generate a career pathway.');
   }
 
-  async function sendMessage(text: string, reOfferIntents = false) {
+  async function sendMessage(text: string) {
     const trimmed = text.trim();
 
     // Dev/QA hook: "/ratelimit" or "/ratelimit 45" simulates a Groq rate-limit locally (and
@@ -624,6 +637,7 @@ export default function ChatInterface({ authed }: Props) {
     setInput('');
     setIntentSelected(true);
     setLoading(true);
+    const started = Date.now();
 
     const formData = new FormData();
     formData.append('message', trimmed);
@@ -631,13 +645,12 @@ export default function ChatInterface({ authed }: Props) {
 
     try {
       const data = await postChat(formData);
+      // Fast canned replies still pause on the thinking indicator so every answer feels weighed.
+      await thinkPause(started);
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: data.response || UI_CONTENT.errors.noResponse },
       ]);
-      // e.g. after the mentor results, re-arm the intent buttons so the user can pick a
-      // next step (another pathway, another mentor, or a question).
-      if (reOfferIntents) setIntentSelected(false);
       // First real turn just created/updated the thread row - refresh history so
       // the new title or thread shows up in the sidebar.
       if (authed) window.dispatchEvent(new CustomEvent('groovia:history-refresh'));

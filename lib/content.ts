@@ -4,22 +4,15 @@ export const UI_CONTENT = {
   intentPrompt: 'What would you like to do?',
   askQuestionPrompt: 'Sure — what would you like to know? Ask me anything about visas, jobs, salaries, or moving abroad.',
   inputPlaceholder: 'Ask about your career...',
-  inputPlaceholderLocked: 'Type your question — sign in when you send…',
   inputPlaceholderBlocked: 'Pick an option above to get started…',
-  inputPlaceholderNoResume: 'Attach your resume above to start chatting…',
   disclaimer:
     'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions.',
   signInToContinue: 'Sign in to continue',
   // Career-report intent: a popup explains it, then it needs sign-in + résumé.
   report: {
-    title: 'Generate your career pathway report',
-    intro: 'A personalized report that maps your best-fit countries and the exact route to each.',
-    bullets: [
-      'Your top country matches, chosen for your background and goals',
-      'Visa/route, salary or tuition, market, pros and cons for each',
-      'Mentors in those countries you can book right away',
-    ],
-    why: 'It analyzes your own profile, so it needs you to sign in and share your résumé (PDF or DOCX). Finding a mentor or asking a question does not.',
+    title: 'Career pathway report',
+    intro: 'Your best-fit countries and the exact visa route to each — matched to your background, with mentors you can book.',
+    why: 'To make it truly yours, we need you to sign in and share your résumé so the report can analyze your own profile.',
     proceed: 'Continue',
     cancel: 'Not now',
     needLogin: "Let's set this up. Sign in or create a free account, then attach your résumé and I'll build your report.",
