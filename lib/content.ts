@@ -2,7 +2,7 @@ export const UI_CONTENT = {
   welcomeMessage: "Hi, I'm Groovia 👋 What would you like to do?",
   uploadIndicator: '📎 Resume uploaded',
   intentPrompt: 'What would you like to do?',
-  askQuestionPrompt: 'Sure — what would you like to know? Ask me anything about visas, jobs, salaries, or moving abroad.',
+  askQuestionPrompt: 'Sure, what would you like to know? Ask me anything about visas, jobs, salaries, or moving abroad.',
   inputPlaceholder: 'Ask about your career...',
   inputPlaceholderBlocked: 'Pick an option above to get started…',
   disclaimer:
@@ -11,15 +11,15 @@ export const UI_CONTENT = {
   // Career-report intent: a popup explains it, then it needs sign-in + résumé.
   report: {
     title: 'Career pathway report',
-    intro: 'Your best-fit countries and the exact visa route to each — matched to your background, with mentors you can book.',
-    why: 'To make it truly yours, we need you to sign in and share your résumé so the report can analyze your own profile.',
+    intro: 'Your best-fit countries and the visa route to each, with mentors you can book.',
+    why: 'We need you to sign in and share your resume so we can build your report.',
     proceed: 'Continue',
     cancel: 'Not now',
-    needLogin: "Let's set this up. Sign in or create a free account, then attach your résumé and I'll build your report.",
-    needResume: "You're signed in. Now attach your résumé (PDF or DOCX) with the 📎 button below, and I'll generate your report.",
+    needLogin: "Sign in or create a free account, then attach your resume and we'll build your report.",
+    needResume: "You're signed in. Now attach your resume (PDF or DOCX) using the attach button below.",
   },
   mentorResults: {
-    none: "We don't have mentors based there yet — our network is actively expanding. Try a nearby country, or browse the full directory.",
+    none: "We don't have mentors based there yet. Our network is expanding, so try a nearby country or browse the full directory.",
     tip: 'Tip: sign in and share your résumé to get matches tuned to your background.',
   },
   errors: {

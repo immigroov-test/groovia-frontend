@@ -568,7 +568,7 @@ export default function ChatInterface({ authed }: Props) {
       return `${UI_CONTENT.mentorResults.none}\n\n[Browse the full Mentor Directory](/mentors)`;
     }
     const lines = mentors.slice(0, 3).map((m) => {
-      const head = m.headline ? ` — ${m.headline}` : '';
+      const head = m.headline ? `, ${m.headline}` : '';
       return `- **${m.display_name ?? 'Mentor'}**${head}  \n  [View profile & book a session](/mentors/${m.slug ?? ''})`;
     });
     return (

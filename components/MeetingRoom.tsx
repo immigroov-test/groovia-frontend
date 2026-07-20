@@ -133,7 +133,7 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
           {info?.slot_time && <> ({fmt(info.slot_time)})</>}.
           {info?.other_name && <> You’ll meet <strong>{info.other_name}</strong>.</>}
         </p>
-        <p className="text-xs text-muted mt-3">This page checks automatically — no need to refresh.</p>
+        <p className="text-xs text-muted mt-3">This page checks automatically, no need to refresh.</p>
         <div className="mt-4"><Button variant="ghost" onClick={() => void checkRoom()}>Check now</Button></div>
       </Shell>
     );
