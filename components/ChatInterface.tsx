@@ -527,17 +527,17 @@ export default function ChatInterface({ authed }: Props) {
   }
   function pickMentorTopic(code: string) {
     setMentorTopic(code);
-    void revealAssistant(`Great. Which country are you looking at for ${topicLabel(code)}?`, () => setMentorStep('country'));
+    // Echo the dropdown pick as a user message, so it reads like they typed it.
+    setMessages((prev) => [...prev, { role: 'user', content: topicLabel(code) }]);
+    void revealAssistant('Great. Which country are you looking at?', () => setMentorStep('country'));
   }
   // Find-a-mentor is fully client-side: fetch the PUBLIC /mentors list (no login, no LLM/Groq
   // tokens) and render the matches as a chat message. Then re-offer the intents.
   async function pickMentorCountry(code: string) {
     setMentorStep('');
     setIntentSelected(true);
-    setMessages((prev) => [
-      ...prev,
-      { role: 'user', content: `Find me a mentor for ${topicLabel(mentorTopic)} in ${countryLabel(code)}.` },
-    ]);
+    // Echo the country pick as a user message too (like they typed it).
+    setMessages((prev) => [...prev, { role: 'user', content: countryLabel(code) }]);
     setLoading(true);
     const started = Date.now();
     try {
@@ -758,7 +758,9 @@ export default function ChatInterface({ authed }: Props) {
                   Q&A = login, Report = popup then login + résumé. */}
               {mentorStep === '' && (
                 <>
-                  <p className="text-sm font-medium text-foreground mb-3">{UI_CONTENT.intentPrompt}</p>
+                  {/* The landing welcome already asks "What would you like to do?"; only label
+                      the chips when they're re-offered later (welcome has scrolled away). */}
+                  {messages.length > 0 && <p className="text-sm font-medium text-foreground mb-3">{UI_CONTENT.intentPrompt}</p>}
                   <div className="flex flex-wrap gap-2">
                     {INTENT_OPTIONS.map((opt) => (
                       <button
