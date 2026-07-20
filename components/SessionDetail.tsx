@@ -103,6 +103,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [slotTaken, setSlotTaken] = useState<string | null>(null);
   const [showJoinInfo, setShowJoinInfo] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [newTime, setNewTime] = useState('');
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
@@ -436,7 +437,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
             )}
             {d.can_cancel && (
               <Button variant="ghost" loading={busy} className="text-red-600 hover:bg-red-50 self-start"
-                onClick={() => act('/api/booking/cancel', { booking_id: d.id, cancelled_by: isMentor ? 'mentor' : 'user' })}>
+                onClick={() => setShowCancelConfirm(true)}>
                 {d.deadline_state === 'free' || isMentor ? 'Cancel session' : 'Request cancellation'}
               </Button>
             )}
@@ -453,6 +454,38 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
       </div>
 
       </div>{/* end card */}
+
+      {/* Cancel confirmation with the refund notice (never a silent one-click cancel) */}
+      {showCancelConfirm && (() => {
+        const late = d.deadline_state !== 'free';
+        const title = !isMentor && late ? 'Request cancellation?' : 'Cancel this session?';
+        const notice = isMentor
+          ? (late
+              ? 'Late cancellation (within 24 hours): the attendee is refunded in full, and a 25% penalty applies to your payout.'
+              : 'The attendee will be refunded in full. No penalty applies.')
+          : (late
+              ? "This is within 24 hours of the session, so it needs your mentor's approval. If they decline, only 50% is refunded (a 50% late-cancellation fee is kept)."
+              : "You're cancelling more than 24 hours ahead, so you'll be refunded in full.");
+        const confirmLabel = isMentor ? 'Yes, cancel' : late ? 'Send request' : 'Cancel & refund';
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowCancelConfirm(false)}>
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
+              <div className="mx-auto h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-brand-900">{title}</h3>
+              <p className="mt-2 text-sm text-muted leading-relaxed">{notice}</p>
+              <div className="mt-6 flex flex-col gap-2.5">
+                <Button variant="ghost" className="text-red-600 hover:bg-red-50" loading={busy}
+                  onClick={async () => { setShowCancelConfirm(false); await act('/api/booking/cancel', { booking_id: d.id, cancelled_by: isMentor ? 'mentor' : 'user' }); }}>
+                  {confirmLabel}
+                </Button>
+                <Button variant="primary" onClick={() => setShowCancelConfirm(false)}>Keep session</Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Join-window popup */}
       {showJoinInfo && (
