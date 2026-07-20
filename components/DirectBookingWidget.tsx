@@ -434,6 +434,13 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     router.push(`${pathname}?auth=open&email=${encodeURIComponent(email.trim())}`);
   }
 
+  // Flight-style guest checkout: skip the account and go straight to payment. The booking is
+  // stored under their email (candidate_id NULL) and claimed if they sign up later with it.
+  function proceedAsGuest() {
+    setShowAccountPrompt(false);
+    submitBooking();
+  }
+
   // Load slots when a service is selected
   async function selectService(svc: Service) {
     setSelectedService(svc);
@@ -616,18 +623,34 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           </dl>
         )}
 
-        {/* Actions */}
-        <div className="mt-8 flex flex-col sm:flex-row gap-2">
-          {bookingId && (
-            <Link href={`/meeting/${bookingId}`} className="flex-1"><Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button></Link>
-          )}
-          {bookingId && (
-            <Link href={`/account/sessions/${bookingId}/reschedule`} className="flex-1"><Button variant="outline" className="w-full">Reschedule</Button></Link>
-          )}
-        </div>
-        <div className="mt-3 text-center">
-          <Link href="/account/sessions" className="text-sm text-muted underline hover:text-foreground">View all my sessions</Link>
-        </div>
+        {/* Actions - a guest can't join/manage until they claim the booking with an account. */}
+        {isLoggedIn ? (
+          <>
+            <div className="mt-8 flex flex-col sm:flex-row gap-2">
+              {bookingId && (
+                <Link href={`/meeting/${bookingId}`} className="flex-1"><Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button></Link>
+              )}
+              {bookingId && (
+                <Link href={`/account/sessions/${bookingId}/reschedule`} className="flex-1"><Button variant="outline" className="w-full">Reschedule</Button></Link>
+              )}
+            </div>
+            <div className="mt-3 text-center">
+              <Link href="/account/sessions" className="text-sm text-muted underline hover:text-foreground">View all my sessions</Link>
+            </div>
+          </>
+        ) : (
+          <div className="mt-8 flex flex-col gap-3">
+            <p className="text-sm text-muted text-center leading-relaxed">
+              You booked as a guest. Create a free account with{' '}
+              <span className="font-medium text-foreground break-words">{email}</span>{' '}
+              to join your session and manage it.
+            </p>
+            <Button variant="accent" className="w-full"
+              onClick={() => router.push(`${pathname}?auth=open&email=${encodeURIComponent(email.trim())}`)}>
+              Create a free account
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -886,7 +909,12 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       </div>
 
       {showAccountPrompt && (
-        <BookingAccountPrompt onProceed={proceedToLogin} onDismiss={() => setShowAccountPrompt(false)} />
+        <BookingAccountPrompt
+          onProceed={proceedToLogin}
+          onGuest={proceedAsGuest}
+          onDismiss={() => setShowAccountPrompt(false)}
+          email={email.trim()}
+        />
       )}
     </div>
   );

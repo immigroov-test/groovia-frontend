@@ -3,13 +3,19 @@ import Image from 'next/image';
 import { X } from 'lucide-react';
 import { Button } from './ui/Button';
 
-// Shown when a guest tries to book: booking requires an account, so we insist on login/
-// signup with a blocking overlay (like the login modal). "Log in or sign up" opens the
-// normal auth popup (which resumes the booking after sign-in); "Not now" just closes.
-export function BookingAccountPrompt({ onProceed, onDismiss }: { onProceed: () => void; onDismiss: () => void }) {
+// Shown before payment when a guest books (flight-style checkout). Two options: create a free
+// account now, or continue as a guest and pay. Guests still get the confirmation email; to join
+// or manage the session they create an account later with the same email (auto-linked).
+export function BookingAccountPrompt({
+  onProceed, onGuest, onDismiss, email,
+}: {
+  onProceed: () => void;   // create a free account (resumes the booking after sign-in)
+  onGuest: () => void;     // continue as guest -> go straight to payment
+  onDismiss: () => void;
+  email?: string;
+}) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-900/50 backdrop-blur-sm">
-      {/* Backdrop click closes; blocks interaction with everything behind it. */}
       <div className="absolute inset-0" onClick={onDismiss} aria-hidden />
 
       <div className="relative w-full max-w-sm rounded-3xl bg-card shadow-2xl border border-[--color-border] p-7 text-center animate-fade-up">
@@ -34,15 +40,21 @@ export function BookingAccountPrompt({ onProceed, onDismiss }: { onProceed: () =
           />
         </div>
 
-        <h2 className="mt-5 text-lg font-semibold text-brand-900">Log in or sign up to book</h2>
+        <h2 className="mt-5 text-lg font-semibold text-brand-900">How would you like to book?</h2>
         <p className="mt-2 text-sm text-muted leading-relaxed">
-          Log in or create a free account to manage it later and get the most out of Immigroov.
+          Create a free account to join and manage your session easily, or continue as a guest.
+          {' '}Either way we&apos;ll email your confirmation{email ? <> to <span className="font-medium text-foreground">{email}</span></> : null}.
         </p>
 
         <div className="mt-6 flex flex-col gap-2.5">
-          <Button variant="accent" onClick={onProceed}>Log in or sign up</Button>
-          <Button variant="ghost" onClick={onDismiss}>Not now</Button>
+          <Button variant="accent" onClick={onProceed}>Create a free account</Button>
+          <Button variant="outline" onClick={onGuest}>Continue as guest</Button>
         </div>
+
+        <p className="mt-3 text-[11px] text-muted leading-snug">
+          Booking as a guest? You can create an account later with the same email to join and
+          manage your session.
+        </p>
       </div>
     </div>
   );

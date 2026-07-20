@@ -18,6 +18,36 @@ export interface ManagedBooking {
   service_duration: number | null;
   other_name: string | null;
   reschedule_count: number;
+  // Money (major units). Candidate view (my_bookings): their charge; mentor view: their payout.
+  pay_amount?: number | null;
+  pay_currency?: string | null;
+  pay_state?: string | null;
+  payout_amount?: number | null;
+  payout_currency?: string | null;
+  payout_state?: string | null;
+}
+
+function money(amount?: number | null, currency?: string | null): string {
+  if (amount == null || !currency) return '';
+  try { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount); }
+  catch { return `${amount.toFixed(2)} ${currency}`; }
+}
+
+// A short money line for the card: candidate sees their charge + status, mentor sees their earning.
+function payLine(b: ManagedBooking, role: Role): string | null {
+  if (role === 'mentee') {
+    if (!b.pay_state) return null;   // free / mock session
+    const amt = money(b.pay_amount, b.pay_currency);
+    if (b.pay_state === 'captured' || b.pay_state === 'processed') return amt ? `${amt} · Paid` : 'Paid';
+    if (b.pay_state === 'refunded' || b.pay_state === 'partially_refunded') return amt ? `${amt} · Refunded` : 'Refunded';
+    if (b.pay_state === 'failed') return 'Payment failed';
+    return amt ? `${amt} · Payment pending` : 'Payment pending';
+  }
+  if (role === 'mentor' && b.payout_amount != null) {
+    const amt = money(b.payout_amount, b.payout_currency);
+    return amt ? `You earn ${amt}${b.payout_state === 'paid' ? ' · Paid out' : ''}` : null;
+  }
+  return null;
 }
 
 type Role = 'mentee' | 'mentor';
@@ -174,6 +204,10 @@ function BookingCard({ b, role }: { b: ManagedBooking; role: Role }) {
             {showMentorTz && <> · mentor {timeInTz(b.slot_time!, b.mentor_tz!)} ({shortTz(b.mentor_tz!)})</>}
             {b.service_duration ? ` · ${b.service_duration} min` : ''}
           </p>
+          {(() => {
+            const pl = payLine(b, role);
+            return pl ? <p className="text-xs font-medium text-brand-700 mt-1 truncate">{pl}</p> : null;
+          })()}
         </div>
 
         {/* Right: state hint + chevron, vertically centered */}

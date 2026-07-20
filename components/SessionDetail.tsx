@@ -77,11 +77,11 @@ function timeShort(iso: string | null, tz: string): string {
 }
 function fmtMoney(amount: number | null | undefined, currency: string | null | undefined): string {
   if (amount == null || !currency) return '';
-  // customer_payments.amount is stored in minor units (paise/cents).
+  // customer_payments.amount is stored in MAJOR units (decimal, actually charged) - not minor.
   try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount / 100);
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount);
   } catch {
-    return `${(amount / 100).toFixed(2)} ${currency}`;
+    return `${amount.toFixed(2)} ${currency}`;
   }
 }
 
