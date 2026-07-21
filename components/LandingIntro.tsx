@@ -10,7 +10,7 @@ import { AiAvatar } from './AiAvatar';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const CARD_ICONS = [Users, Globe, Sparkles];
-const HEAD_SPEED = 34;
+const HEAD_SPEED = 42;
 
 // The landing as one tight, choreographed column (no full-height section voids):
 //   step 1 headline + globe (at the top)  ->  2/3/4 the three boxes come in one by one  ->
@@ -40,12 +40,14 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
     // Wait out the one-time logo splash on a first visit.
     const splashPending = !window.localStorage.getItem('groovia.introSeen');
     const base = splashPending ? 2300 : 300;
+    // Slower, readable pacing: each box holds ~1.6s so it can actually be read (esp. on mobile),
+    // and box 1 waits for the headline to finish typing first.
     const timers = [
       window.setTimeout(() => setStep(1), base),          // headline + globe
-      window.setTimeout(() => setStep(2), base + 2400),   // box 1
-      window.setTimeout(() => setStep(3), base + 3300),   // box 2
-      window.setTimeout(() => setStep(4), base + 4200),   // box 3
-      window.setTimeout(() => setStep(5), base + 5300),   // Chat with Groovia? + ticker
+      window.setTimeout(() => setStep(2), base + 3200),   // box 1 (after headline types)
+      window.setTimeout(() => setStep(3), base + 4800),   // box 2
+      window.setTimeout(() => setStep(4), base + 6400),   // box 3
+      window.setTimeout(() => setStep(5), base + 8200),   // Try Groovia? + ticker
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -66,7 +68,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
   const rise = (on: boolean, delay = 0) => ({
     initial: { opacity: 0, y: 22 },
     animate: on ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 },
-    transition: { duration: 0.6, delay, ease: EASE },
+    transition: { duration: 0.7, delay, ease: EASE },
   });
 
   return (
@@ -86,7 +88,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
             </motion.div>
           )}
           <h1 className="min-h-[3rem] sm:min-h-[6rem] text-lg sm:text-4xl font-bold tracking-tight leading-[1.15] text-center sm:text-left gradient-flow bg-clip-text text-transparent">
-            <IntroHeadline prefix="Immigroov is a " main={b.headline} active={step >= 1} speed={HEAD_SPEED} />
+            <IntroHeadline prefix="Immigroov is a " main={b.headline} active={step >= 1} speed={HEAD_SPEED} hold={1400} />
           </h1>
         </div>
       </motion.div>
