@@ -23,6 +23,12 @@ import { AiAvatar } from './AiAvatar';
 // survive "clear chat" - which wipes every LS_KEYS entry.
 const RL_KEY = 'groovia.rateLimitedUntil';
 
+// Guest free tier: a few short questions before Groovia asks them to sign in. The counter is a
+// standalone localStorage key (not in LS_KEYS) so "clear chat" never resets it.
+const GUEST_FREE_QUESTIONS = 2;
+const GUEST_WORD_LIMIT = 50;
+const GQ_KEY = 'groovia.guestQuestions';
+
 interface Props {
   authed: boolean;
 }
@@ -138,6 +144,11 @@ export default function ChatInterface({ authed }: Props) {
   // buttons are the only entry until then. pendingQna resumes the Q&A intent after a guest logs in.
   const [qnaActive, setQnaActive] = useState(false);
   const [pendingQna, setPendingQna] = useState(false);
+  // Guest free-tier: how many free questions used, whether the limit banner is up, and the
+  // word-limit hint. guestQuestionsUsed is loaded from localStorage below.
+  const [guestQuestionsUsed, setGuestQuestionsUsed] = useState(0);
+  const [guestGate, setGuestGate] = useState(false);
+  const [guestHint, setGuestHint] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   // Find-a-mentor dropdowns are DB-driven facets so they only show topics/countries we
   // actually have mentors for, and auto-expand as mentors join. The two are dependent:
@@ -518,6 +529,17 @@ export default function ChatInterface({ authed }: Props) {
     after?.();
   }
 
+  // Guest free-question counter (its own key, so "clear chat" never resets it).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGuestQuestionsUsed(Number(localStorage.getItem(GQ_KEY)) || 0);
+  }, []);
+  function bumpGuestQuestions() {
+    const n = (Number(localStorage.getItem(GQ_KEY)) || 0) + 1;
+    localStorage.setItem(GQ_KEY, String(n));
+    setGuestQuestionsUsed(n);
+  }
+
   // Find-a-mentor mimicked flow. Clicking the intent asks the topic; picking a topic asks
   // the country; picking the country makes the one real backend call (with both).
   function startMentorFlow() {
@@ -582,8 +604,7 @@ export default function ChatInterface({ authed }: Props) {
   function handleIntent(kind: 'report' | 'mentor' | 'qna') {
     if (kind === 'mentor') { startMentorFlow(); return; }
     if (kind === 'report') { setShowReportModal(true); return; }
-    // Q&A needs login. Remember the intent so it resumes automatically after sign-in.
-    if (!authed) { setPendingQna(true); openGate(); return; }
+    // Q&A is open to guests for a couple of free questions; Groovia asks them to sign in after.
     startQna();
   }
   // Unlocks the composer and invites the question. Typing is blocked until this runs.
@@ -627,10 +648,24 @@ export default function ChatInterface({ authed }: Props) {
 
     if (!trimmed || loading || rateLimited) return;
 
-    // Guests must sign in before sending any message.
-    if (gated) {
-      openGate();
-      return;
+    // Guest free tier: a couple of short questions, then Groovia itself (not a popup) asks them
+    // to sign in. Long questions are nudged toward an account instead of spending on a big prompt.
+    if (!authed) {
+      if (guestQuestionsUsed >= GUEST_FREE_QUESTIONS) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'user', content: trimmed },
+          { role: 'assistant', content: UI_CONTENT.guestLimit },
+        ]);
+        setInput('');
+        setGuestGate(true);
+        return;
+      }
+      if (trimmed.split(/\s+/).filter(Boolean).length > GUEST_WORD_LIMIT) {
+        setGuestHint(true);   // keep the input so they can shorten it
+        return;
+      }
+      setGuestHint(false);
     }
 
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
@@ -652,8 +687,9 @@ export default function ChatInterface({ authed }: Props) {
         { role: 'assistant', content: data.response || UI_CONTENT.errors.noResponse },
       ]);
       // First real turn just created/updated the thread row - refresh history so
-      // the new title or thread shows up in the sidebar.
+      // the new title or thread shows up in the sidebar. Guests: count the free question.
       if (authed) window.dispatchEvent(new CustomEvent('groovia:history-refresh'));
+      else bumpGuestQuestions();
     } catch (e) {
       applyChatError(e);
     } finally {
@@ -820,14 +856,18 @@ export default function ChatInterface({ authed }: Props) {
       {/* z-index: 10 keeps the input bar above both the scroll area (z-1) and landmarks (z-0). */}
       <div className="bg-transparent relative" style={{ zIndex: 10 }}>
         <div className="mx-auto max-w-3xl px-4 py-4">
-          {gated && (pendingQna || pendingReport) && (
+          {gated && (pendingQna || pendingReport || guestGate) && (
             <button
               onClick={openGate}
               className="w-full flex items-center justify-center gap-2 mb-2 px-4 py-2.5 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium"
             >
               <Lock className="h-4 w-4" />
-              {UI_CONTENT.signInToContinue}
+              {guestGate ? 'Create a free account or sign in' : UI_CONTENT.signInToContinue}
             </button>
+          )}
+
+          {guestHint && (
+            <p className="mb-2 text-xs text-amber-700 text-center">{UI_CONTENT.guestWordLimit}</p>
           )}
 
           {rateLimited && !showRateModal && (
@@ -874,7 +914,7 @@ export default function ChatInterface({ authed }: Props) {
               ref={textareaRef}
               rows={1}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => { setInput(e.target.value); if (guestHint) setGuestHint(false); }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();

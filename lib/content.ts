@@ -3,6 +3,8 @@ export const UI_CONTENT = {
   uploadIndicator: '📎 Resume uploaded',
   intentPrompt: 'What would you like to do?',
   askQuestionPrompt: 'Sure, what would you like to know? Ask me anything about visas, jobs, salaries, or moving abroad.',
+  guestLimit: "That's your 2 free questions. Please create a free account or sign in to keep asking and unlock everything Groovia can do.",
+  guestWordLimit: 'Free questions are limited to about 50 words. Please shorten it, or sign in to ask longer questions.',
   inputPlaceholder: 'Ask about your career...',
   inputPlaceholderBlocked: 'Pick an option above to get started…',
   disclaimer:
