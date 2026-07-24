@@ -7,6 +7,7 @@ import { ServicesManager } from './ServicesManager';
 import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
 import { SmartPricingToggle } from './SmartPricingToggle';
+import { MentorBankCard } from './MentorBankCard';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
@@ -85,7 +86,12 @@ export function MentorHubTabs({ mentor }: { mentor: HubMentor }) {
               ? <BookingManager role="mentor" />
               : <Card><CardBody className="pt-6"><p className="text-sm text-muted">Your booked sessions will appear here once your application is approved.</p></CardBody></Card>
           )}
-          {tab === 'payments' && <UnderDevelopment title="Payments" note="Earnings, payout details, and history will live here." />}
+          {tab === 'payments' && (
+            <div className="flex flex-col gap-6">
+              <MentorBankCard defaultCountry={mentor.country ?? ''} />
+              <UnderDevelopment title="Earnings & history" note="Your session earnings and payout history will appear here." />
+            </div>
+          )}
           {tab === 'webinars' && <UnderDevelopment title="Webinars" note="Host group sessions and webinars for multiple attendees." />}
         </div>
       </div>

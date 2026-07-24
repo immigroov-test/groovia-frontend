@@ -44,6 +44,16 @@ interface ActionConfig {
   loadingKey: string;
 }
 
+interface MaskedBank {
+  has_details: boolean;
+  country_code?: string;
+  scheme?: string;
+  account_holder_name?: string;
+  bank_name?: string | null;
+  account_last4?: string;
+  account_masked?: string;
+}
+
 interface WeeklySlot { id: string; weekday: string; start_time: string; end_time: string; timezone?: string | null }
 interface DateOverride { id: string; slot_date: string; start_time: string | null; end_time: string | null; is_blackout: boolean }
 interface ServiceItem { id: string; title: string; duration: number; is_active: boolean; status: string }
@@ -67,6 +77,7 @@ interface MentorDetail extends AdminMentor {
   services?: ServiceItem[];
   availability_rules?: AvailabilityRules | null;
   date_overrides?: DateOverride[];
+  bank?: MaskedBank | null;
 }
 
 interface Props {
@@ -336,6 +347,12 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
         )}
       </section>
 
+      {/* Payout bank details */}
+      <section>
+        <SectionLabel>Payout details</SectionLabel>
+        <BankSection mentorId={detail.id} bank={detail.bank} />
+      </section>
+
       {/* Session types */}
       <section>
         <SectionLabel>Session types</SectionLabel>
@@ -404,6 +421,66 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
     </div>
   );
 }
+
+// Masked payout details with an explicit reveal (the founder decrypts full numbers to pay).
+function BankSection({ mentorId, bank }: { mentorId: string; bank?: MaskedBank | null }) {
+  const [revealed, setRevealed] = useState<Record<string, string> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!bank?.has_details) return <p className="text-muted text-xs">No bank details on file.</p>;
+
+  async function reveal() {
+    setLoading(true); setError(null);
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      const res = await fetch(`/api/admin/mentors/${mentorId}/bank/reveal`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.detail || 'Could not reveal details.'); return; }
+      setRevealed(data.details ?? {});
+    } catch {
+      setError('Could not reach the server.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+      <Field label="Account holder">{bank.account_holder_name || 'Not set'}</Field>
+      {bank.bank_name && <Field label="Bank">{bank.bank_name}</Field>}
+      <Field label="Country">{bank.country_code ? (COUNTRY_MAP[bank.country_code] ?? bank.country_code) : 'Not set'}</Field>
+      <Field label="Account">{revealed ? '' : (bank.account_masked || '••••')}</Field>
+      <div className="sm:col-span-2">
+        {revealed ? (
+          <div className="rounded-lg border border-[--color-border] p-3 flex flex-col gap-1 text-xs">
+            {Object.entries(revealed).map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-3">
+                <span className="text-muted">{BANK_FIELD_LABELS[k] ?? k}</span>
+                <span className="font-medium text-foreground break-all text-right">{String(v)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            <Button variant="outline" onClick={reveal} loading={loading}>Reveal full details</Button>
+            {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const BANK_FIELD_LABELS: Record<string, string> = {
+  account_number: 'Account number', iban: 'IBAN', routing_number: 'Routing number (ABA)',
+  account_type: 'Account type', sort_code: 'Sort code', ifsc: 'IFSC', swift_bic: 'SWIFT/BIC',
+  bank_address: 'Bank address',
+};
 
 function Avatar({ url, name }: { url?: string | null; name: string }) {
   if (url) {

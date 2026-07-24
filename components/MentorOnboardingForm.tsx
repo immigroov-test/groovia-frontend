@@ -18,6 +18,8 @@ import { Toggle } from './ui/Toggle';
 import { WeeklyHoursEditor, WEEK_DAYS, emptyWeek, validateWeeklyHours, weeklyToSlots, type WeeklyHours } from './WeeklyHoursEditor';
 import { ServiceListEditor, activeServiceCount, type DraftService } from './ServiceListEditor';
 import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
+import { BankDetailsFields } from './BankDetailsFields';
+import { emptyBank, validateBank, toBankPayload, type BankValue } from '../lib/bank';
 import { validateCityName } from '../lib/validators';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { EXPERTISE_CATEGORIES } from '../lib/content';
@@ -89,6 +91,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [cancelHours, setCancelHours] = useState(24);
   const [overrides, setOverrides] = useState<DateOverride[]>([]);
   const [agreedMentor, setAgreedMentor] = useState(false);
+  const [bank, setBank] = useState<BankValue>(emptyBank());   // payout details (optional at signup)
 
   const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +108,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
   function onCountryChange(code: string) {
     setCountry(code);
+    // Default the payout country to the mentor's country until they pick a different one.
+    setBank((b) => (b.country_code ? b : { ...b, country_code: code }));
     const tz = COUNTRY_TIMEZONES[code];
     if (tz) setTimezone(tz);
   }
@@ -135,7 +140,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     return null;
   })();
   const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
-  const canSubmit = !availError && !sessionError && !rulesError && agreedMentor;
+  const bankError = validateBank(bank).length > 0 ? 'Add your payout bank details.' : null;
+  const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentor;
 
   // Every missing/invalid field across both steps, for the submit-time summary.
   function collectAllErrors(): string[] {
@@ -143,6 +149,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (availError) e.push(availError);
     if (sessionError) e.push(sessionError);
     if (rulesError) e.push(rulesError);
+    e.push(...validateBank(bank));   // payout details are required
     if (!agreedMentor) e.push('Accept the Mentor Agreement to proceed.');
     return e;
   }
@@ -210,6 +217,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           })),
           booking_rules: { days_ahead: daysAhead, min_notice_hours: minNotice, cancel_hours: cancelHours },
           date_overrides: overrides,
+          bank: toBankPayload(bank) ?? undefined,
         }),
       });
       const data = await res.json();
@@ -507,6 +515,19 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
         <Card>
           <CardBody className="pt-6 flex flex-col gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Payout details *</h2>
+              <p className="text-sm text-muted mt-0.5">
+                Where we send your earnings for completed sessions. Required. You can update this any
+                time from your Mentor Hub. Your account number is encrypted and never shown in full.
+              </p>
+            </div>
+            <BankDetailsFields value={bank} onChange={setBank} />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="pt-6 flex flex-col gap-4">
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
               <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentor}
                 onChange={(e) => setAgreedMentor(e.target.checked)} />
@@ -524,6 +545,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 {availError && <li>· {availError}</li>}
                 {sessionError && <li>· {sessionError}</li>}
                 {rulesError && <li>· {rulesError}</li>}
+                {bankError && <li>· {bankError}</li>}
                 {!agreedMentor && <li>· Accept the Mentor Agreement.</li>}
               </ul>
             )}

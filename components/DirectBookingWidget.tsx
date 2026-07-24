@@ -279,6 +279,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [isLoggedIn, setIsLoggedIn]       = useState(false);
   const [pendingBook, setPendingBook]     = useState(false);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);   // guest "create account to book" popup
+  const [checkingEmail, setCheckingEmail] = useState(false);          // verifying if the guest's email is already registered
+  const [emailExists, setEmailExists]   = useState(false);            // the entered email already has an account
+  const [emailOauthOnly, setEmailOauthOnly] = useState(false);        // that account signs in with Google (no password)
   const [step, setStep]                   = useState<Step>('service');
   const [services, setServices]           = useState<Service[] | null>(null);
   const [servicesError, setServicesError] = useState<string | null>(null);
@@ -417,12 +420,33 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // BUG-025: bookings require an account. A guest first sees the account prompt; only
   // "Log in or sign up" opens the normal auth popup (which resumes this booking after
   // sign-in via the pendingBook effect above). "Not now" just closes - no guest booking.
-  function handleConfirm() {
+  async function handleConfirm() {
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
     if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
     setFormError(null);
+    // A guest cannot book under an email that already belongs to a registered account: a later
+    // sign-in with that email would claim the booking, so the guest who paid would lose access.
+    // Detect it and route them to log in or change the email instead of booking as a guest.
+    setCheckingEmail(true);
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => ({}));
+      setEmailExists(!!data?.exists);
+      setEmailOauthOnly(!!data?.oauth_only);
+    } catch {
+      // Degrade to the normal guest prompt if the check is unreachable - never block a booking on it.
+      setEmailExists(false);
+      setEmailOauthOnly(false);
+    } finally {
+      setCheckingEmail(false);
+    }
     setShowAccountPrompt(true);
   }
 
@@ -432,6 +456,15 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     setShowAccountPrompt(false);
     setPendingBook(true);
     router.push(`${pathname}?auth=open&email=${encodeURIComponent(email.trim())}`);
+  }
+
+  // Existing-account prompt: user chose to change the email. Close the prompt and return to the
+  // form so they can edit the address (the field lives on the form step).
+  function changeBookingEmail() {
+    setShowAccountPrompt(false);
+    setEmailExists(false);
+    setEmailOauthOnly(false);
+    setFormError(null);
   }
 
   // Flight-style guest checkout: skip the account and go straight to payment. The booking is
@@ -887,7 +920,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying} disabled={!email.trim() || !isValidEmail(email) || !phone.trim()}>
+                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !phone.trim()}>
                     {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
@@ -912,8 +945,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         <BookingAccountPrompt
           onProceed={proceedToLogin}
           onGuest={proceedAsGuest}
-          onDismiss={() => setShowAccountPrompt(false)}
+          onDismiss={() => { setShowAccountPrompt(false); setEmailExists(false); setEmailOauthOnly(false); }}
+          onChangeEmail={changeBookingEmail}
           email={email.trim()}
+          existingAccount={emailExists}
+          oauthOnly={emailOauthOnly}
         />
       )}
     </div>
