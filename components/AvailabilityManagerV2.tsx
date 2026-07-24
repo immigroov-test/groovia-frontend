@@ -106,6 +106,10 @@ export function AvailabilityManagerV2() {
   }
   async function saveRules() {
     if (!rulesForm) return;
+    const { days_ahead, min_notice_hours, cancel_hours } = rulesForm;
+    if (!(days_ahead >= 1 && days_ahead <= 90)) { setError('Book up to must be between 1 and 90 days ahead.'); return; }
+    if (!(min_notice_hours >= 0 && min_notice_hours <= 24)) { setError('Minimum booking notice must be between 0 and 24 hours.'); return; }
+    if (!(cancel_hours >= 2 && cancel_hours <= 48)) { setError('Cancellation / reschedule notice must be between 2 and 48 hours.'); return; }
     setSavingRules(true); setError(null);
     try {
       await apiFetch(`${API}/rules`, 'POST', {
@@ -201,11 +205,11 @@ export function AvailabilityManagerV2() {
               slot is 2 hours from now.
             </p>
             <div className="mt-4 flex flex-wrap items-end gap-4">
-              <RuleField label="Book up to (days ahead)" value={rulesForm.days_ahead} min={1} max={365}
+              <RuleField label="Book up to (days ahead, max 90)" value={rulesForm.days_ahead} min={1} max={90}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, days_ahead: v || 30 } : r)} />
-              <RuleField label="Minimum booking notice (hrs)" value={rulesForm.min_notice_hours} min={0} max={168} step={0.5}
+              <RuleField label="Minimum booking notice (hrs, max 24)" value={rulesForm.min_notice_hours} min={0} max={24} step={0.5}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, min_notice_hours: v || 0 } : r)} />
-              <RuleField label="Cancellation notice (hrs)" value={rulesForm.cancel_hours} min={1} max={168}
+              <RuleField label="Cancellation / reschedule notice (hrs, 2-48)" value={rulesForm.cancel_hours} min={2} max={48}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, cancel_hours: v || 24 } : r)} />
               <Button variant="accent" onClick={saveRules} loading={savingRules} className="h-11">Save rules</Button>
             </div>

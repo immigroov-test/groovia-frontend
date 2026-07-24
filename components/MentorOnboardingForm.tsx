@@ -69,6 +69,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
   const [country, setCountry] = useState('');
+  const [homeCountry, setHomeCountry] = useState('');
   const [city, setCity] = useState('');
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [languages, setLanguages] = useState<string[]>([]);
@@ -76,7 +77,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [publicNotes, setPublicNotes] = useState(DEFAULT_DISCLAIMER);
   const [expertiseCountries, setExpertiseCountries] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [yearsExp, setYearsExp] = useState('');
+  const [yearsExp, setYearsExp] = useState('');           // years lived abroad (optional)
+  const [yearsProfExp, setYearsProfExp] = useState('');   // years of professional experience (required)
   const [domains, setDomains] = useState<string[]>([]);
 
   // Step 2 - availability + sessions
@@ -120,12 +122,14 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     const e: string[] = [];
     if (!displayName.trim()) e.push('Display name is required.');
     if (!professionalTitle.trim()) e.push('Headline is required.');
+    if (!homeCountry) e.push('Please select your home country.');
     if (!country) e.push('Please select your current country.');
     if (languages.length === 0) e.push('Select at least one language.');
     if (expertiseCountries.length === 0) e.push('Select at least one country of expertise.');
     if (expertiseCountries.length > 2) e.push('Select a maximum of 2 countries of expertise.');
-    const years = parseInt(yearsExp, 10);
-    if (!yearsExp || isNaN(years) || years < 0) e.push('Enter your years of lived experience.');
+    const profYears = parseInt(yearsProfExp, 10);
+    if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) e.push('Enter your years of professional experience (0-60).');
+    if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) e.push('Years lived abroad must be between 0 and 60.'); }
     const cityErr = validateCityName(city);
     if (cityErr) e.push(cityErr);
     return e;
@@ -134,9 +138,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const availError = validateWeeklyHours(weeklyHours);
   const sessionError = activeServiceCount(services) < 1 ? 'Add and activate at least one session type.' : null;
   const rulesError = (() => {
-    if (!(daysAhead >= 1 && daysAhead <= 365)) return 'Set how many days ahead mentees can book (1-365).';
-    if (!(minNotice >= 0 && minNotice <= 168)) return 'Set a valid minimum booking notice (0-168 hours).';
-    if (!(cancelHours >= 1 && cancelHours <= 168)) return 'Set a valid cancellation notice (1-168 hours).';
+    if (!(daysAhead >= 1 && daysAhead <= 90)) return 'Set how many days ahead mentees can book (1-90).';
+    if (!(minNotice >= 0 && minNotice <= 24)) return 'Set a valid minimum booking notice (0-24 hours).';
+    if (!(cancelHours >= 2 && cancelHours <= 48)) return 'Set a valid cancellation/rescheduling notice (2-48 hours).';
     return null;
   })();
   const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
@@ -196,6 +200,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           phone: phone || undefined,
           bio: isRichTextEmpty(bio) ? undefined : bio,
           country,
+          home_country_code: homeCountry || undefined,
           city: city.trim() || undefined,
           timezone,
           languages,
@@ -203,7 +208,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           public_notes: publicNotes.trim() || undefined,
           expertise_country_codes: expertiseCountries,
           expertise_categories: categories,
-          years_lived_experience: parseInt(yearsExp, 10),
+          years_lived_experience: yearsExp ? parseInt(yearsExp, 10) : null,
+          years_professional_experience: parseInt(yearsProfExp, 10),
           professional_domains: domains,
           agreed_to_mentor_terms: true,
           hourly_rate: parseFloat(hourlyRate) || null,
@@ -342,8 +348,21 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           <CardBody className="pt-6 flex flex-col gap-4">
             <h2 className="text-base font-semibold text-foreground">Location & Languages</h2>
 
-            <CountrySelect label="Country" value={country} onChange={onCountryChange} required
-              placeholder="Select your current country" hint="Country you currently live in." />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <CountrySelect label="Current country *" value={country} onChange={onCountryChange} required
+                placeholder="Where you live now" hint="Country you currently live in." />
+              <CountrySelect label="Home country *" value={homeCountry} onChange={setHomeCountry} required
+                placeholder="Where you're originally from" hint="Shown to mentees as where you're from." />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
+                onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8"
+                hint="Total years in your profession." />
+              <Input label="Years lived abroad" type="number" min={0} max={60} value={yearsExp}
+                onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5"
+                hint="Optional. Leave blank if you're a local." />
+            </div>
 
             <Input label="City" value={city} onChange={(e) => setCity(e.target.value)}
               placeholder={country ? 'e.g. Amsterdam' : 'Select a country first'} disabled={!country}
@@ -379,9 +398,6 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               placeholder="Type to search, press Enter to add"
               hint="Topics you can advise on. Shown as tags on your card and used to filter the mentor list." />
 
-            <Input label="Years of Lived Experience *" type="number" min={0} max={60} value={yearsExp}
-              onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5"
-              hint="Total years you have lived or worked abroad as an immigrant." />
 
             <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
               placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
@@ -479,20 +495,20 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             </div>
             <div className="flex flex-wrap gap-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted">Book up to (days ahead)</span>
-                <input type="number" min={1} max={365} value={daysAhead}
+                <span className="text-xs font-medium text-muted">Book up to (days ahead, max 90)</span>
+                <input type="number" min={1} max={90} value={daysAhead}
                   onChange={(e) => setDaysAhead(parseInt(e.target.value) || 0)}
                   className="h-11 w-40 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted">Minimum booking notice (hrs)</span>
-                <input type="number" min={0} max={168} step={0.5} value={minNotice}
+                <span className="text-xs font-medium text-muted">Minimum booking notice (hrs, max 24)</span>
+                <input type="number" min={0} max={24} step={0.5} value={minNotice}
                   onChange={(e) => setMinNotice(parseFloat(e.target.value) || 0)}
                   className="h-11 w-44 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted">Cancellation notice (hrs)</span>
-                <input type="number" min={1} max={168} value={cancelHours}
+                <span className="text-xs font-medium text-muted">Cancellation / reschedule notice (hrs, 2-48)</span>
+                <input type="number" min={2} max={48} value={cancelHours}
                   onChange={(e) => setCancelHours(parseInt(e.target.value) || 0)}
                   className="h-11 w-40 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
               </label>

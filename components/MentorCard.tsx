@@ -25,6 +25,7 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
   const rating = mentor.avg_rating ?? 0;
   const location = [mentor.city, mentor.country ? countryLabel(mentor.country) : '']
     .filter(Boolean).join(', ');
+  const homeLabel = mentor.home_country_code ? countryLabel(mentor.home_country_code) : '';
 
   return (
     <Card className="h-full flex flex-col hover:border-brand-300 hover:-translate-y-0.5 transition-transform">
@@ -77,7 +78,13 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
           </p>
         )}
 
-        {/* Where the mentor is based */}
+        {/* Origin (home country) + where the mentor is based */}
+        {homeLabel && (
+          <p className="text-xs text-muted flex items-center gap-1.5">
+            <Globe className="h-3.5 w-3.5 shrink-0" />
+            From {homeLabel}
+          </p>
+        )}
         {location && (
           <p className="text-xs text-muted flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5 shrink-0" />

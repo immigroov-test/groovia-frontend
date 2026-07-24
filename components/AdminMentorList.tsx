@@ -65,12 +65,14 @@ interface MentorDetail extends AdminMentor {
   phone?: string | null;
   city?: string | null;
   country?: string | null;
+  home_country_code?: string | null;
   timezone?: string | null;
   expertise_country_codes?: string[];
   expertise_categories?: string[];
   languages?: string[];
   professional_domains?: string[];
   years_lived_experience?: number | null;
+  years_professional_experience?: number | null;
   public_notes?: string | null;
   social_links?: SocialLink[];
   weekly_availability?: WeeklySlot[];
@@ -306,8 +308,16 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 mt-4">
           {location && <Field label="Location">{location}</Field>}
+          {detail.home_country_code && (
+            <Field label="Home country">{COUNTRY_MAP[detail.home_country_code] ?? detail.home_country_code}</Field>
+          )}
           {detail.phone && <Field label="Phone">{detail.phone}</Field>}
           {detail.timezone && <Field label="Timezone">{detail.timezone}</Field>}
+          {detail.years_professional_experience != null && (
+            <Field label="Years of professional experience">
+              {detail.years_professional_experience} yr{detail.years_professional_experience !== 1 ? 's' : ''}
+            </Field>
+          )}
           {detail.years_lived_experience != null && (
             <Field label="Years lived abroad">
               {detail.years_lived_experience} yr{detail.years_lived_experience !== 1 ? 's' : ''}

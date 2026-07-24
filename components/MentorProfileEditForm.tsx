@@ -42,6 +42,7 @@ interface EditableFields {
   phone?: string | null;
   bio?: string | null;
   country?: string | null;
+  home_country_code?: string | null;
   city?: string | null;
   timezone?: string | null;
   languages?: string[] | null;
@@ -51,6 +52,7 @@ interface EditableFields {
   expertise_categories?: string[] | null;
   professional_domains?: string[] | null;
   years_lived_experience?: number | null;
+  years_professional_experience?: number | null;
   hourly_rate?: number | null;
   currency?: string | null;
 }
@@ -89,6 +91,7 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
   const [phone, setPhone] = useState(src.phone ?? '');
   const [bio, setBio] = useState(src.bio ?? '');
   const [country, setCountry] = useState(src.country ?? '');
+  const [homeCountry, setHomeCountry] = useState(src.home_country_code ?? '');
   const [city, setCity] = useState(src.city ?? '');
   const [timezone, setTimezone] = useState(src.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [languages, setLanguages] = useState<string[]>(src.languages ?? []);
@@ -97,6 +100,7 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
   const [expertiseCountries, setExpertiseCountries] = useState<string[]>(src.expertise_country_codes ?? []);
   const [categories, setCategories] = useState<string[]>(src.expertise_categories ?? []);
   const [yearsExp, setYearsExp] = useState(src.years_lived_experience != null ? String(src.years_lived_experience) : '');
+  const [yearsProfExp, setYearsProfExp] = useState(src.years_professional_experience != null ? String(src.years_professional_experience) : '');
   const [domains, setDomains] = useState<string[]>(src.professional_domains ?? []);
   const [hourlyRate, setHourlyRate] = useState(src.hourly_rate != null ? String(src.hourly_rate) : '');
   const [currency, setCurrency] = useState(src.currency ?? 'USD');
@@ -114,11 +118,13 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
     if (!displayName.trim()) return 'Full name is required.';
     if (!headline.trim()) return 'Headline is required.';
     if (!country) return 'Please select your current country.';
+    if (!homeCountry) return 'Please select your home country.';
     if (languages.length === 0) return 'Select at least one language.';
     if (expertiseCountries.length === 0) return 'Select at least one country of expertise.';
     if (expertiseCountries.length > 2) return 'You can select a maximum of 2 countries of expertise.';
-    const years = parseInt(yearsExp, 10);
-    if (!yearsExp || isNaN(years) || years < 0) return 'Enter your years of lived experience.';
+    const profYears = parseInt(yearsProfExp, 10);
+    if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) return 'Enter your years of professional experience (0-60).';
+    if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) return 'Years lived abroad must be between 0 and 60.'; }
     const cityErr = validateCityName(city);
     if (cityErr) return cityErr;
     return null;
@@ -144,6 +150,7 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
           phone: phone || null,
           bio: isRichTextEmpty(bio) ? null : bio,
           country,
+          home_country_code: homeCountry || null,
           city: city.trim() || null,
           timezone,
           languages,
@@ -151,7 +158,8 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
           public_notes: publicNotes.trim() || null,
           expertise_country_codes: expertiseCountries,
           expertise_categories: categories,
-          years_lived_experience: parseInt(yearsExp, 10),
+          years_lived_experience: yearsExp ? parseInt(yearsExp, 10) : null,
+          years_professional_experience: parseInt(yearsProfExp, 10),
           professional_domains: domains,
           hourly_rate: parseFloat(hourlyRate) || null,
           currency,
@@ -226,8 +234,18 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
       <Card>
         <CardBody className="pt-6 flex flex-col gap-4">
           <h2 className="text-base font-semibold text-foreground">Location & Languages</h2>
-          <CountrySelect label="Country" value={country} onChange={onCountryChange} required
-            placeholder="Select your current country" hint="Country you currently live in." />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CountrySelect label="Current country *" value={country} onChange={onCountryChange} required
+              placeholder="Where you live now" hint="Country you currently live in." />
+            <CountrySelect label="Home country *" value={homeCountry} onChange={setHomeCountry} required
+              placeholder="Where you're originally from" hint="Shown to mentees as where you're from." />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
+              onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8" hint="Total years in your profession." />
+            <Input label="Years lived abroad" type="number" min={0} max={60} value={yearsExp}
+              onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5" hint="Optional. Leave blank if you're a local." />
+          </div>
           <Input label="City" value={city} onChange={(e) => setCity(e.target.value)}
             placeholder={country ? 'e.g. Amsterdam' : 'Select a country first'} disabled={!country}
             autoComplete="address-level2" hint="Optional, shown on your public profile." />
@@ -259,9 +277,6 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
           <MultiSelect label="Areas of Expertise" options={CATEGORY_OPTIONS} value={categories} onChange={setCategories}
             placeholder="Type to search, press Enter to add"
             hint="Topics you can advise on. Shown as tags on your card and used to filter the mentor list." />
-          <Input label="Years of Lived Experience *" type="number" min={0} max={60} value={yearsExp}
-            onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5"
-            hint="Total years you have lived or worked abroad as an immigrant." />
           <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
             placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
         </CardBody>
