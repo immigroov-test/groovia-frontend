@@ -12,6 +12,8 @@ import { isRichTextEmpty } from '../lib/sanitizeHtml';
 export interface DraftService {
   title: string; duration: number; active: boolean; price: number;
   description: string; category: string; tags: string[];
+  code?: string;    // catalogue code (BUG-043), or 'custom-<uuid>' for a mentor's own service
+  free?: boolean;   // offered free (price 0 regardless of the base rate)
 }
 
 const DURATIONS = [15, 30, 45, 60] as const;

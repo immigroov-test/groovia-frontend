@@ -181,7 +181,7 @@ export function ServicesManager() {
 
       {services.length === 0 && !creating && (
         <p className="text-sm text-muted">
-          You haven&apos;t set up any session types yet. Create one below.
+          You haven&apos;t added any services yet. Create one below.
         </p>
       )}
 
@@ -273,7 +273,7 @@ export function ServicesManager() {
       {creating ? (
         <Card>
           <CardBody className="pt-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-foreground">New session type</h3>
+            <h3 className="text-sm font-semibold text-foreground">New service</h3>
             <Input label="Title *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="e.g. 30-min Career Q&A" />
             <div className="flex flex-col gap-1.5">
@@ -334,10 +334,10 @@ export function ServicesManager() {
           onClick={startCreate}
           className="flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
         >
-          <Plus className="h-4 w-4" /> Add session type
+          <Plus className="h-4 w-4" /> Add service
         </button>
       ) : (
-        <p className="text-xs text-muted">You have a session type for every length (15, 30, 45, 60 min).</p>
+        <p className="text-xs text-muted">You have a service for every length (15, 30, 45, 60 min).</p>
       )}
     </div>
   );

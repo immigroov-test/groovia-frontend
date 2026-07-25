@@ -16,7 +16,8 @@ import { RichTextEditor } from './ui/RichTextEditor';
 import { Flag } from './ui/Flag';
 import { Toggle } from './ui/Toggle';
 import { WeeklyHoursEditor, WEEK_DAYS, emptyWeek, validateWeeklyHours, weeklyToSlots, type WeeklyHours } from './WeeklyHoursEditor';
-import { ServiceListEditor, activeServiceCount, type DraftService } from './ServiceListEditor';
+import { activeServiceCount, proratePrice, type DraftService } from './ServiceListEditor';
+import { ServiceCatalog } from './ServiceCatalog';
 import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
 import { BankDetailsFields } from './BankDetailsFields';
 import { emptyBank, validateBank, toBankPayload, type BankValue } from '../lib/bank';
@@ -136,7 +137,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   }
 
   const availError = validateWeeklyHours(weeklyHours);
-  const sessionError = activeServiceCount(services) < 1 ? 'Add and activate at least one session type.' : null;
+  const sessionError = activeServiceCount(services) < 1
+    ? 'Turn on at least one service.'
+    : services.some((s) => !s.title.trim()) ? 'Give every service a title, or remove it.' : null;
   const rulesError = (() => {
     if (!(daysAhead >= 1 && daysAhead <= 90)) return 'Set how many days ahead mentees can book (1-90).';
     if (!(minNotice >= 0 && minNotice <= 24)) return 'Set a valid minimum booking notice (0-24 hours).';
@@ -217,7 +220,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           smart_pricing: smartPricing,
           weekly_availability: weeklyToSlots(weeklyHours),
           services: services.map((s) => ({
-            title: s.title, duration: s.duration, is_active: s.active, set_price: s.price,
+            title: s.title, duration: s.duration, is_active: s.active,
+            set_price: s.free ? 0 : proratePrice(parseFloat(hourlyRate) || 0, s.duration),
             description: isRichTextEmpty(s.description) ? null : s.description,
             category: s.category || null, tags: s.tags,
           })),
@@ -451,8 +455,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
         <Card>
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
-              <h2 className="text-base font-semibold text-foreground">Pricing &amp; session types *</h2>
-              <p className="text-sm text-muted mt-0.5">Add the sessions mentees can book (one per length: 15, 30, 45, 60 min). At least one must be active.</p>
+              <h2 className="text-base font-semibold text-foreground">Your rate *</h2>
+              <p className="text-sm text-muted mt-0.5">Set your hourly rate once. Each service is priced from it by its length (a 30-min session is half your hourly rate).</p>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
@@ -469,9 +473,6 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 </select>
               </div>
             </div>
-            <p className="text-xs text-muted">
-              Immigroov prorates your hourly rate by each session&apos;s length (a 30-min session is half your hourly rate). Each price is prefilled from it and you can fine-tune any session below.
-            </p>
             <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">Smart pricing</p>
@@ -479,7 +480,19 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               </div>
               <Toggle checked={smartPricing} onChange={setSmartPricing} aria-label="Smart pricing" />
             </label>
-            <ServiceListEditor value={services} onChange={setServices} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody className="pt-6 flex flex-col gap-4">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Services *</h2>
+              <p className="text-sm text-muted mt-0.5">
+                Turn on the services you offer, edit the title or description if you like, and pick a
+                duration. Add your own at the end. Turn on at least one.
+              </p>
+            </div>
+            <ServiceCatalog value={services} onChange={setServices} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />
           </CardBody>
         </Card>
 
