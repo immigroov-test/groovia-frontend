@@ -488,7 +488,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     try {
       const today = new Date();
       const maxDate = new Date(today);
-      maxDate.setDate(today.getDate() + 30);
+      // Request the max window the endpoint allows (60 days). get_available_slots then clamps
+      // to each mentor's own booking window (app_booking_window / days_ahead), so a mentor who
+      // takes bookings 60 days out shows all of them, not just the first 30.
+      maxDate.setDate(today.getDate() + 60);
       const from = today.toLocaleDateString('en-CA');
       const to   = maxDate.toLocaleDateString('en-CA');
       const res = await fetch(
@@ -798,7 +801,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               ) : slotsLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading availability…</div>
               ) : slots && slots.length === 0 ? (
-                <p className="text-sm text-muted text-center py-8">No open slots in the next 30 days.<br /><span className="text-xs">Check back later.</span></p>
+                <p className="text-sm text-muted text-center py-8">No open slots in the mentor&apos;s booking window.<br /><span className="text-xs">Check back later.</span></p>
               ) : slots ? (
                 <div className="grid sm:grid-cols-[minmax(0,280px)_1fr] gap-6 items-start">
                   <CalendarPanel
