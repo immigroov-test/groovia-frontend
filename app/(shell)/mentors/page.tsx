@@ -4,7 +4,9 @@ import { backendBaseUrl } from '../../../lib/backend';
 
 async function fetchMentors(): Promise<Mentor[]> {
   try {
-    const res = await fetch(`${backendBaseUrl()}/mentors`, { cache: 'no-store' });
+    // The directory shows every mentor, so request a high cap (the backend still filters to
+    // approved + active + bookable). Bump this if the roster ever approaches it.
+    const res = await fetch(`${backendBaseUrl()}/mentors?limit=300`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return data.mentors ?? [];
