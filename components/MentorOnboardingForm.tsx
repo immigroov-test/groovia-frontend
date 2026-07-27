@@ -28,9 +28,9 @@ import { EXPERTISE_CATEGORIES } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
+import { suggestHeadline } from '../lib/headline';
 import { cn } from '../lib/utils';
 
-const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }));
 const CATEGORY_OPTIONS = EXPERTISE_CATEGORIES.map((c) => ({ value: c.value, label: c.label }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
@@ -67,6 +67,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   // Step 1 - details
   const [displayName, setDisplayName] = useState(defaultName);
   const [professionalTitle, setProfessionalTitle] = useState('');
+  const [headlineEdited, setHeadlineEdited] = useState(false);   // true once the mentor types their own headline
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
@@ -77,7 +78,6 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [languages, setLanguages] = useState<string[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [publicNotes, setPublicNotes] = useState(DEFAULT_DISCLAIMER);
-  const [expertiseCountries, setExpertiseCountries] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [yearsExp, setYearsExp] = useState('');           // years lived abroad (optional)
   const [yearsProfExp, setYearsProfExp] = useState('');   // years of professional experience (required)
@@ -110,6 +110,19 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [step]);
 
+  // Countries a mentee can browse this mentor by = the two countries they actually know:
+  // their home (origin) and current (destination). Derived, not asked for separately.
+  const expertiseCountries = Array.from(
+    new Set([country, homeCountry].map((c) => (c || '').toUpperCase()).filter(Boolean)),
+  );
+
+  // The headline is auto-drafted from the mentor's own answers (no LLM): derived during render
+  // so it tracks Domains / Areas of Expertise / country live, until the mentor types their own
+  // (headlineEdited), after which their text wins. "Suggest" clears the flag to re-derive.
+  const effectiveHeadline = headlineEdited
+    ? professionalTitle
+    : suggestHeadline({ domain: domains[0], category: categories[0], country });
+
   function onCountryChange(code: string) {
     setCountry(code);
     // Default the payout country to the mentor's country until they pick a different one.
@@ -123,12 +136,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   function collectDetailErrors(): string[] {
     const e: string[] = [];
     if (!displayName.trim()) e.push('Display name is required.');
-    if (!professionalTitle.trim()) e.push('Headline is required.');
+    if (!effectiveHeadline.trim()) e.push('Headline is required.');
     if (!homeCountry) e.push('Please select your home country.');
     if (!country) e.push('Please select your current country.');
     if (languages.length === 0) e.push('Select at least one language.');
-    if (expertiseCountries.length === 0) e.push('Select at least one country of expertise.');
-    if (expertiseCountries.length > 2) e.push('Select a maximum of 2 countries of expertise.');
     const profYears = parseInt(yearsProfExp, 10);
     if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) e.push('Enter your years of professional experience (0-60).');
     if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) e.push('Years lived abroad must be between 0 and 60.'); }
@@ -199,7 +210,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
           display_name: displayName.trim(),
-          headline: professionalTitle.trim() || undefined,
+          headline: effectiveHeadline.trim() || undefined,
           photo_url: photoUrl || undefined,
           phone: phone || undefined,
           bio: isRichTextEmpty(bio) ? undefined : bio,
@@ -335,8 +346,19 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <Input label="Full name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. Priya Nair" autoComplete="name" required />
 
-            <Input label="Headline *" value={professionalTitle} onChange={(e) => setProfessionalTitle(e.target.value)}
-              placeholder="e.g. Supply Chain Professional, Software Engineer, AI Developer, Career Expert" required />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-sm font-medium text-foreground">Headline *</label>
+                <button type="button" onClick={() => { setHeadlineEdited(false); setProfessionalTitle(''); }}
+                  className="text-xs font-medium text-primary hover:underline">
+                  Suggest from my expertise
+                </button>
+              </div>
+              <Input value={effectiveHeadline}
+                onChange={(e) => { setHeadlineEdited(true); setProfessionalTitle(e.target.value); }}
+                placeholder="e.g. Software Engineering mentor | Helping you land jobs in the Netherlands" required />
+              <p className="text-xs text-muted">Auto-drafted from your expertise below. Edit it to make it yours.</p>
+            </div>
 
             <PhoneInput label="Phone Number" value={phone} onChange={setPhone} required
               hint="Used for session coordination. Not shown to users." />
@@ -397,9 +419,21 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               <p className="text-sm text-muted mt-0.5">These fields determine which mentees you can best serve. Changes here will require re-approval by our team.</p>
             </div>
 
-            <MultiSelect label="Countries of Expertise * (max 2)" options={COUNTRY_OPTIONS} value={expertiseCountries}
-              onChange={setExpertiseCountries} placeholder="Type to search, press Enter to add" maxSelected={2}
-              hint="Countries you have direct immigration or career experience in." />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">Countries you can be found under</label>
+              {expertiseCountries.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {expertiseCountries.map((code) => (
+                    <span key={code} className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-3 py-1 text-sm text-foreground">
+                      <Flag code={code} /> {COUNTRIES.find((c) => c.code === code)?.name || code}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted">Set your home and current country above.</p>
+              )}
+              <p className="text-xs text-muted">Taken from your home and current country. Mentees browse for you by these.</p>
+            </div>
 
             <MultiSelect label="Areas of Expertise" options={CATEGORY_OPTIONS} value={categories} onChange={setCategories}
               placeholder="Type to search, press Enter to add"
@@ -475,8 +509,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <div>
               <h2 className="text-base font-semibold text-foreground">Services *</h2>
               <p className="text-sm text-muted mt-0.5">
-                Turn on the services you offer, edit the title or description if you like, and pick a
-                duration. Add your own at the end. Turn on at least one.
+                Tap a session to add it, then set its length and description. Toggle one off to pause it,
+                or delete it to remove it. Add your own if it&apos;s not listed. Offer at least one.
               </p>
             </div>
             <ServiceCatalog value={services} onChange={setServices} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />

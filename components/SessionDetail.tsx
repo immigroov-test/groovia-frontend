@@ -60,9 +60,9 @@ const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 function fmtInTz(iso: string | null, tz: string): string {
   if (!iso) return 'Time to be set';
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString('en-GB', {
     timeZone: tz, weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit', hour12: true,
+    hour: '2-digit', minute: '2-digit', hour12: false,
   });
 }
 function dateLong(iso: string | null): string {
@@ -73,7 +73,7 @@ function dateLong(iso: string | null): string {
 }
 function timeShort(iso: string | null, tz: string): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleTimeString(undefined, { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
+  return new Date(iso).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
 }
 function fmtMoney(amount: number | null | undefined, currency: string | null | undefined): string {
   if (amount == null || !currency) return '';

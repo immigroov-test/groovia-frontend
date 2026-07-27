@@ -64,13 +64,13 @@ function dayNum(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, day: 'numeric' }) : '?';
 }
 function timeOnly(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleTimeString(undefined, { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+  return iso ? new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false }) : '';
 }
 function dateLong(iso: string | null): string {
   return iso ? new Date(iso).toLocaleDateString(undefined, { timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric' }) : 'Time to be set';
 }
 function timeInTz(iso: string, tz: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
+  return new Date(iso).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 type BadgeTone = 'brand' | 'accent' | 'neutral' | 'success' | 'warning';

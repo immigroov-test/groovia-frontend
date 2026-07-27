@@ -28,7 +28,7 @@ export function buildGrid(year: number, month: number): (Date | null)[] {
   return grid;
 }
 export function formatSlotTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString(undefined, { timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true });
+  return new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 }
 export function shortTz(tz: string): string {
   return tz.split('/').pop()?.replace(/_/g, ' ') ?? tz;
@@ -38,8 +38,8 @@ export function formatDate(dateStr: string): string {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 export function formatFullDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  return new Date(iso).toLocaleString('en-GB', {
+    timeZone: TZ, weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
   });
 }
 

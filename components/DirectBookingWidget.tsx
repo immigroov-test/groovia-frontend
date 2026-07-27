@@ -105,15 +105,17 @@ function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+// 24-hour clock throughout the booking flow (e.g. "14:30"), so the customer's time and the
+// mentor's time read the same way and there's no AM/PM ambiguity across zones.
 function formatSlotTime(isoStr: string): string {
-  return new Date(isoStr).toLocaleTimeString(undefined, {
-    timeZone: TZ, hour: 'numeric', minute: '2-digit', hour12: true,
+  return new Date(isoStr).toLocaleTimeString('en-GB', {
+    timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false,
   });
 }
 
 function formatSlotTimeInTz(isoStr: string, tz: string): string {
-  return new Date(isoStr).toLocaleTimeString(undefined, {
-    timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true,
+  return new Date(isoStr).toLocaleTimeString('en-GB', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
   });
 }
 
@@ -824,7 +826,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                                 <span className="text-sm font-semibold text-foreground">{formatSlotTime(slot.slot_start)}</span>
                                 {showMentorTz && (
                                   <span className="text-[11px] leading-tight text-muted">
-                                    {formatSlotTimeInTz(slot.slot_start, mentorTz)} for mentor
+                                    {formatSlotTimeInTz(slot.slot_start, mentorTz)} {tzShort(mentorTz)} for mentor
                                   </span>
                                 )}
                               </button>
@@ -853,7 +855,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               </div>
               <div className="border-y border-[--color-border] py-3 flex flex-col gap-1.5">
                 <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start))}, ${formatSlotTime(selectedSlot.slot_start)}` : 'Not selected yet'} />
-                {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? formatSlotTimeInTz(selectedSlot.slot_start, mentorTz) : 'Not selected yet'} />}
+                {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? `${formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)} ${tzShort(mentorTz)}` : 'Not selected yet'} />}
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted">Total</span>

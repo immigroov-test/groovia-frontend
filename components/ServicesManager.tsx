@@ -7,6 +7,7 @@ import { Card, CardBody } from './ui/Card';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { TagInput } from './ui/TagInput';
 import { SERVICE_CATEGORIES, SERVICE_DESCRIPTION_TEMPLATE } from '../lib/content';
+import { catalogByCategory, type CatalogService } from '../lib/serviceCatalog';
 import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
 import { cn } from '../lib/utils';
 
@@ -59,6 +60,7 @@ export function ServicesManager() {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
   const [creating, setCreating]     = useState(false);
+  const [picking, setPicking]       = useState(false);   // showing the catalogue tags to pick from
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [questions, setQuestions]   = useState<Record<string, Question[]>>({});
 
@@ -96,11 +98,23 @@ export function ServicesManager() {
   const usedDurations = new Set(services.map((s) => s.duration));
   const availableDurations = DURATION_OPTIONS.filter((d) => !usedDurations.has(d));
 
-  function startCreate() {
+  // Titles the mentor already offers, so the catalogue can mark those tags as added.
+  const usedTitles = new Set(services.map((s) => s.title.trim().toLowerCase()));
+
+  // "Add service" opens the catalogue tags (same design as onboarding) instead of a blank form.
+  function startPick() { setFormError(null); setPicking(true); }
+
+  // Tap a catalogue tag -> open the create block prefilled from the template. The template's
+  // suggested length may already be taken (one service per length), so fall back to an open one.
+  function pickCatalog(cat: CatalogService) {
+    const duration = (availableDurations as readonly number[]).includes(cat.duration) ? cat.duration : (availableDurations[0] ?? cat.duration);
+    setForm({ title: cat.title, description: cat.description, type: 'video', duration, category: cat.category, set_price: cat.free ? '0' : '', is_ppp: false, tags: [] });
+    setFormError(null); setPicking(false); setCreating(true);
+  }
+  function pickCustom() {
     const first = availableDurations[0] ?? 30;
     setForm({ title: '', description: SERVICE_DESCRIPTION_TEMPLATE, type: 'video', duration: first, category: '', set_price: '', is_ppp: false, tags: [] });
-    setFormError(null);
-    setCreating(true);
+    setFormError(null); setPicking(false); setCreating(true);
   }
 
   async function createService() {
@@ -329,9 +343,52 @@ export function ServicesManager() {
             </div>
           </CardBody>
         </Card>
+      ) : picking ? (
+        <Card>
+          <CardBody className="pt-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Add a session</h3>
+                <p className="text-xs text-muted mt-0.5">Tap one to add it, then set the length and description.</p>
+              </div>
+              <Button variant="outline" onClick={() => setPicking(false)} className="h-8 px-3 text-xs">Cancel</Button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {catalogByCategory(SERVICE_CATEGORIES).map((g) => (
+                <div key={g.category}>
+                  <p className="text-xs font-medium text-muted mb-1.5">{g.category}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {g.services.map((cat) => {
+                      const added = usedTitles.has(cat.title.trim().toLowerCase());
+                      return (
+                        <button key={cat.code} type="button" onClick={() => pickCatalog(cat)}
+                          className={cn(
+                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors',
+                            added
+                              ? 'border-[--color-border] bg-neutral-100 text-muted'
+                              : 'border-[--color-border] bg-white text-foreground hover:border-brand-500 hover:bg-brand-50',
+                          )}>
+                          <Plus className="h-3.5 w-3.5 text-brand-600" /> {cat.title}
+                          {added && <span className="text-[10px] uppercase tracking-wide">added</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              <div>
+                <p className="text-xs font-medium text-muted mb-1.5">Something else</p>
+                <button type="button" onClick={pickCustom}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Add your own service
+                </button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
       ) : availableDurations.length > 0 ? (
         <button
-          onClick={startCreate}
+          onClick={startPick}
           className="flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
         >
           <Plus className="h-4 w-4" /> Add service
