@@ -4,7 +4,7 @@ import { Search, Plus, X, Sparkles } from 'lucide-react';
 import { MentorCard } from './MentorCard';
 import { MultiSelect, type SelectOption } from './ui/MultiSelect';
 import { Flag } from './ui/Flag';
-import { detectCountry } from '../lib/geo';
+import { pricingCountry } from '../lib/geo';
 import { countryLabel } from '../lib/countries';
 import { languageLabel } from '../lib/languages';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
@@ -82,7 +82,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
     let cancelled = false;
     (async () => {
       try {
-        const country = await detectCountry();
+        const country = await pricingCountry();
         if (cancelled) return;
         const res = await fetch('/api/pricing/convert', {
           method: 'POST',

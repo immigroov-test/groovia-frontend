@@ -90,6 +90,18 @@ export async function detectCountry(): Promise<string | undefined> {
   return /^[A-Z]{2}$/.test(g.code) ? g.code : undefined;
 }
 
+// Country to price for on the display side, honouring a ?country=XX override so you can preview
+// prices as any country on staging (detection uses your real location, e.g. Tilburg -> NL -> EUR).
+// Display-only: in production the backend trusts the signed edge geo and ignores this, so the
+// override never changes what a real visitor is charged.
+export async function pricingCountry(): Promise<string | undefined> {
+  if (typeof window !== 'undefined') {
+    const q = new URLSearchParams(window.location.search).get('country');
+    if (q && /^[A-Za-z]{2}$/.test(q)) return q.toUpperCase();
+  }
+  return detectCountry();
+}
+
 // "IN" -> "India" using the platform's own locale data (no map to maintain).
 export function countryName(code: string): string {
   try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code.toUpperCase()) || code.toUpperCase(); }

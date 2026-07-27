@@ -12,7 +12,7 @@ import { RichText } from './ui/RichText';
 import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
-import { detectCountry } from '../lib/geo';
+import { detectCountry, pricingCountry } from '../lib/geo';
 import { tzShort, tzCity, tzOffset, userDisplayTz, mentorDisplayTz } from '../lib/timezone';
 import { countryLabel } from '../lib/countries';
 import { BookingAccountPrompt } from './BookingAccountPrompt';
@@ -351,14 +351,16 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     let cancelled = false;
     (async () => {
       try {
-        const country = await detectCountry();
+        const country = await pricingCountry();
         if (cancelled) return;
         const res = await fetch('/api/pricing/convert', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             country: country ?? null,
-            items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: s.is_ppp })),
+            // PPP is the mentor-level toggle (what the charge uses), so the displayed price matches
+            // what's actually charged - not the per-service legacy is_ppp flag.
+            items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: !!mentor.smart_pricing })),
           }),
         });
         if (!res.ok || cancelled) return;

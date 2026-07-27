@@ -6,7 +6,7 @@
 // `reserve` reuses the caller's OWN un-expired hold, so retrying after a cancelled popup
 // always works; it 409s only when SOMEONE ELSE holds or booked the slot (onSlotTaken).
 import { openRazorpayCheckout } from './razorpay';
-import { detectCountry } from './geo';
+import { pricingCountry } from './geo';
 import { createClient } from './supabase/client';
 
 export interface CheckoutParams {
@@ -39,8 +39,9 @@ export async function startPaidCheckout(p: CheckoutParams, h: CheckoutHandlers):
   const tz = p.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const headers = { 'Content-Type': 'application/json', ...(await authHeaders()) };
   try {
-    // 1. Binding price quote (customer currency + PPP).
-    const country = await detectCountry();
+    // 1. Binding price quote (customer currency + PPP). Honours the ?country= override on staging
+    // for testing; in production the backend trusts signed edge geo and ignores it.
+    const country = await pricingCountry();
     const qRes = await fetch(`/api/pricing/quote/${p.serviceId}${country ? `?country=${country}` : ''}`, { cache: 'no-store' });
     const quote = await qRes.json().catch(() => ({}));
     if (!qRes.ok || !quote.quote_id) { h.onError(quote.detail || 'Could not price this session. Please try again.'); return; }
