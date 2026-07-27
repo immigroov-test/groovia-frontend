@@ -14,10 +14,11 @@ import { CountrySelect } from './ui/CountrySelect';
 import { TimezoneSelect } from './ui/TimezoneSelect';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { Flag } from './ui/Flag';
-import { Toggle } from './ui/Toggle';
 import { WeeklyHoursEditor, WEEK_DAYS, emptyWeek, validateWeeklyHours, weeklyToSlots, type WeeklyHours } from './WeeklyHoursEditor';
 import { activeServiceCount, proratePrice, type DraftService } from './ServiceListEditor';
 import { ServiceCatalog } from './ServiceCatalog';
+import { CurrencyRatesEditor } from './CurrencyRatesEditor';
+import { deriveCurrencyPrices, type CurrencyRate } from '../lib/pricing';
 import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
 import { BankDetailsFields } from './BankDetailsFields';
 import { emptyBank, validateBank, toBankPayload, type BankValue } from '../lib/bank';
@@ -86,9 +87,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [weeklyHours, setWeeklyHours] = useState<WeeklyHours>(emptyWeek());
   const [services, setServices] = useState<DraftService[]>([]);
   const [hourlyRate, setHourlyRate] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('INR');
+  const [currencyRates, setCurrencyRates] = useState<CurrencyRate[]>([]);
   const [smartPricing, setSmartPricing] = useState(false);
-  const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'NZD', 'SGD', 'AED', 'CHF'];
   const [daysAhead, setDaysAhead] = useState(30);
   const [minNotice, setMinNotice] = useState(2);
   const [cancelHours, setCancelHours] = useState(24);
@@ -217,11 +218,13 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           agreed_to_mentor_terms: true,
           hourly_rate: parseFloat(hourlyRate) || null,
           currency,
+          currency_rates: currencyRates,
           smart_pricing: smartPricing,
           weekly_availability: weeklyToSlots(weeklyHours),
           services: services.map((s) => ({
             title: s.title, duration: s.duration, is_active: s.active,
             set_price: s.free ? 0 : proratePrice(parseFloat(hourlyRate) || 0, s.duration),
+            currency_prices: s.free ? [] : deriveCurrencyPrices(currencyRates, s.duration),
             description: isRichTextEmpty(s.description) ? null : s.description,
             category: s.category || null, tags: s.tags,
           })),
@@ -456,30 +459,14 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">Your rate *</h2>
-              <p className="text-sm text-muted mt-0.5">Set your hourly rate once. Each service is priced from it by its length (a 30-min session is half your hourly rate).</p>
+              <p className="text-sm text-muted mt-0.5">Set your base hourly rate once. Each service is priced from it by its length (a 30-min session is half your hourly rate). Add other currencies for customers abroad.</p>
             </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Hourly rate</label>
-                <input type="number" min={0} step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)}
-                  placeholder="e.g. 60"
-                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Currency</label>
-                <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            </div>
-            <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">Smart pricing</p>
-                <p className="text-xs text-muted mt-0.5">Let Immigroov adapt your price to each customer&apos;s country (purchasing-power parity) so it feels fair to them. This usually lifts your booking rate.</p>
-              </div>
-              <Toggle checked={smartPricing} onChange={setSmartPricing} aria-label="Smart pricing" />
-            </label>
+            <CurrencyRatesEditor
+              primaryCurrency={currency} onPrimaryCurrency={setCurrency}
+              baseRate={hourlyRate} onBaseRate={setHourlyRate}
+              rates={currencyRates} onRates={setCurrencyRates}
+              smartPricing={smartPricing} onSmartPricing={setSmartPricing}
+            />
           </CardBody>
         </Card>
 
