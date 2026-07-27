@@ -37,6 +37,26 @@ const COMMENT_ACTIONS: Record<string, { title: string; hint: string; placeholder
   },
 };
 
+// Actions that live at the bottom of "View details" and open a confirmation popup before firing
+// (a destructive step the reviewer should see the full profile before taking).
+const CONFIRM_ACTIONS: Record<string, { label: string; confirm: string; body: (name: string) => string }> = {
+  suspend: {
+    label: 'Suspend mentor',
+    confirm: 'Suspend mentor',
+    body: (name) => `${name} will be hidden from the site and can take no new bookings. Both the mentor and the admin team will be emailed.`,
+  },
+};
+
+function money(amount?: number | null, currency?: string | null): string {
+  if (amount == null) return '';
+  if (amount === 0) return 'Free';
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return `${amount} ${currency || ''}`.trim();
+  }
+}
+
 interface ActionConfig {
   action: Action;
   label: string;
@@ -56,7 +76,7 @@ interface MaskedBank {
 
 interface WeeklySlot { id: string; weekday: string; start_time: string; end_time: string; timezone?: string | null }
 interface DateOverride { id: string; slot_date: string; start_time: string | null; end_time: string | null; is_blackout: boolean }
-interface ServiceItem { id: string; title: string; duration: number; is_active: boolean; status: string }
+interface ServiceItem { id: string; title: string; duration: number; is_active: boolean; status: string; set_price?: number | null; set_currency?: string | null; is_ppp?: boolean }
 interface AvailabilityRules { days_ahead?: number; min_notice_hours?: number; cancel_hours?: number; timezone?: string }
 interface SocialLink { type: string; url: string }
 
@@ -101,6 +121,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
   const [details, setDetails] = useState<Record<string, MentorDetail | null>>({});
   const [detailLoading, setDetailLoading] = useState<Record<string, boolean>>({});
   const [commentFor, setCommentFor] = useState<{ id: string; action: Action } | null>(null);
+  const [confirmFor, setConfirmFor] = useState<{ id: string; action: Action; name: string } | null>(null);
   const [reason, setReason] = useState('');
   const [query, setQuery] = useState('');
 
@@ -117,6 +138,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
       });
       if (res.ok) {
         setCommentFor(null);
+        setConfirmFor(null);
         if (removeOnAction) {
           setMentors((ms) => ms.filter((m) => m.id !== id));
         } else {
@@ -225,7 +247,8 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                   >
                     {isExpanded ? 'Hide details' : 'View details'}
                   </button>
-                  {actions.map(({ action, label, variant, loadingKey }) => (
+                  {/* Confirm actions (suspend) live at the bottom of the details, not here. */}
+                  {actions.filter(({ action }) => !CONFIRM_ACTIONS[action]).map(({ action, label, variant, loadingKey }) => (
                     <Button
                       key={action}
                       variant={variant}
@@ -277,12 +300,47 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                     <p className="text-sm text-red-600">Could not load profile details.</p>
                   )}
                   {!isDetailLoading && detail && <MentorDetailView detail={detail} />}
+                  {/* Suspend (and any other confirm-action) sits at the very bottom of the details. */}
+                  {actions.some(({ action }) => CONFIRM_ACTIONS[action]) && (
+                    <div className="mt-6 pt-4 border-t border-[--color-border] flex flex-wrap justify-end gap-2">
+                      {actions.filter(({ action }) => CONFIRM_ACTIONS[action]).map(({ action }) => (
+                        <Button key={action} variant="outline" size="sm"
+                          disabled={!!pending[mentor.id]}
+                          onClick={() => setConfirmFor({ id: mentor.id, action, name: mentor.display_name })}>
+                          {CONFIRM_ACTIONS[action].label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </CardBody>
           </Card>
         );
       })}
+
+      {/* Confirmation popup for suspend (and any other confirm-action) */}
+      {confirmFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog" aria-modal="true" onClick={() => setConfirmFor(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-foreground">
+              {CONFIRM_ACTIONS[confirmFor.action].label}?
+            </h3>
+            <p className="text-sm text-muted">{CONFIRM_ACTIONS[confirmFor.action].body(confirmFor.name)}</p>
+            {errors[confirmFor.id] && <p className="text-xs text-red-600">{errors[confirmFor.id]}</p>}
+            <div className="flex justify-end gap-2 mt-1">
+              <Button variant="ghost" size="sm" onClick={() => setConfirmFor(null)}>Cancel</Button>
+              <Button variant="primary" size="sm"
+                loading={pending[confirmFor.id] === confirmFor.action}
+                onClick={() => act(confirmFor.id, confirmFor.action)}>
+                {CONFIRM_ACTIONS[confirmFor.action].confirm}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -363,9 +421,10 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
         <BankSection mentorId={detail.id} bank={detail.bank} />
       </section>
 
-      {/* Session types */}
+      {/* Session types + the mentor's own price (what they set; customers pay this plus the
+          platform markup and any PPP adjustment, which the mentor never sees). */}
       <section>
-        <SectionLabel>Session types</SectionLabel>
+        <SectionLabel>Session types &amp; pricing</SectionLabel>
         {services.length === 0 ? (
           <p className="text-muted text-xs">None added.</p>
         ) : (
@@ -374,10 +433,13 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
               <div key={s.id} className="flex items-center gap-2 flex-wrap">
                 <span className="text-foreground font-medium">{s.title}</span>
                 <span className="text-muted">· {s.duration} min</span>
+                <span className="text-foreground font-semibold">· {money(s.set_price, s.set_currency)}</span>
+                {s.is_ppp && <Badge tone="accent">fair pricing</Badge>}
                 {!s.is_active && <Badge tone="neutral">inactive</Badge>}
                 {s.status && s.status !== 'approved' && <Badge tone="warning">{s.status}</Badge>}
               </div>
             ))}
+            <p className="text-muted text-xs mt-1">Prices are the mentor&apos;s own rate. Customers are shown this plus the platform markup and any PPP adjustment.</p>
           </div>
         )}
       </section>
