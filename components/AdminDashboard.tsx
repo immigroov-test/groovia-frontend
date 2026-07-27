@@ -8,7 +8,7 @@ import { AdminPayouts } from './AdminPayouts';
 import { UI_CONTENT } from '../lib/content';
 import type { AdminMentor } from '../app/(shell)/admin/page';
 
-interface Stats { pending_mentor_count: number; approved_mentor_count: number; total_bookings: number; }
+interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; hidden_mentor_count: number; total_bookings: number; }
 type Tab = 'review' | 'mentors' | 'bookings' | 'payouts';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions }: {
@@ -29,9 +29,10 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
       <h1 className="text-3xl font-semibold tracking-tight text-brand-900">{t.title}</h1>
       <p className="text-sm text-muted mt-1">{t.subtitle}</p>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard n={stats.pending_mentor_count} label="Pending review" />
-        <StatCard n={stats.approved_mentor_count} label="Active mentors" />
+        <StatCard n={stats.active_mentor_count} label="Active mentors" hint="visible to users" />
+        <StatCard n={stats.hidden_mentor_count} label="Hidden / incomplete" hint="inactive or no service" />
         <StatCard n={stats.total_bookings} label="Total bookings" />
       </div>
 
@@ -90,11 +91,12 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
   );
 }
 
-function StatCard({ n, label }: { n: number; label: string }) {
+function StatCard({ n, label, hint }: { n: number; label: string; hint?: string }) {
   return (
     <Card><CardBody className="pt-5 pb-5">
       <p className="text-2xl font-bold text-foreground">{n}</p>
       <p className="text-xs text-muted mt-0.5">{label}</p>
+      {hint && <p className="text-[11px] text-muted/70 mt-0.5">{hint}</p>}
     </CardBody></Card>
   );
 }
