@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '../lib/supabase/client';
@@ -7,6 +7,7 @@ import { Card, CardBody } from './ui/Card';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { MultiSelect } from './ui/MultiSelect';
+import { TagInput } from './ui/TagInput';
 import { PhoneInput } from './ui/PhoneInput';
 import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
@@ -35,10 +36,27 @@ const CATEGORY_OPTIONS = EXPERTISE_CATEGORIES.map((c) => ({ value: c.value, labe
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
 const DOMAIN_OPTIONS = [
-  'Software Engineering', 'Product Management', 'Data Science & AI', 'Design (UX/UI)',
-  'Marketing', 'Sales', 'Finance & Banking', 'Healthcare', 'Legal', 'Education',
-  'Entrepreneurship', 'Operations', 'HR & Recruiting', 'Consulting', 'Research',
-  'Manufacturing', 'Real Estate', 'Media & Journalism', 'Government & Policy', 'Non-profit',
+  // Tech & data
+  'Software Engineering', 'Web Development', 'Mobile Development', 'DevOps & Cloud', 'Cybersecurity',
+  'Data Science & AI', 'Machine Learning', 'Data Engineering', 'Data Analytics', 'Blockchain & Web3',
+  'QA & Testing', 'IT Support & Systems', 'Game Development', 'Embedded & Hardware',
+  // Product, design & marketing
+  'Product Management', 'Project & Program Management', 'Design (UX/UI)', 'Graphic Design',
+  'Marketing', 'Digital Marketing', 'Content & Copywriting', 'SEO & Growth', 'Social Media',
+  'Sales', 'Business Development', 'Customer Success',
+  // Business, finance & ops
+  'Finance & Banking', 'Accounting & Audit', 'Investment & Trading', 'Financial Planning',
+  'Consulting', 'Strategy', 'Operations', 'Supply Chain & Logistics', 'Procurement',
+  'HR & Recruiting', 'Entrepreneurship', 'Startups', 'E-commerce', 'Real Estate',
+  // Science, health & engineering
+  'Healthcare', 'Nursing', 'Pharmacy', 'Biotechnology', 'Public Health', 'Mental Health & Therapy',
+  'Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering', 'Chemical Engineering',
+  'Manufacturing', 'Automotive', 'Energy & Utilities', 'Architecture', 'Research',
+  // People, public & creative
+  'Education & Teaching', 'Academia & PhD', 'Law & Legal', 'Immigration Law',
+  'Government & Policy', 'Non-profit & NGO', 'Media & Journalism', 'Film & Video',
+  'Music & Audio', 'Writing & Publishing', 'Hospitality & Tourism', 'Aviation',
+  'Fashion & Beauty', 'Sports & Fitness', 'Agriculture', 'Skilled Trades',
 ].map((d) => ({ value: d, label: d }));
 
 const BIO_MAX = 2000;
@@ -82,6 +100,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [yearsExp, setYearsExp] = useState('');           // years lived abroad (optional)
   const [yearsProfExp, setYearsProfExp] = useState('');   // years of professional experience (required)
   const [domains, setDomains] = useState<string[]>([]);
+  const [specializations, setSpecializations] = useState<string[]>([]);   // free-text specifics under domains
 
   // Step 2 - availability + sessions
   const [weeklyHours, setWeeklyHours] = useState<WeeklyHours>(emptyWeek());
@@ -109,6 +128,12 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [step]);
+
+  // Take the mentor straight to the validation summary whenever new errors appear on submit.
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (formErrors.length > 0) errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [formErrors]);
 
   // Countries a mentee can browse this mentor by = the two countries they actually know:
   // their home (origin) and current (destination). Derived, not asked for separately.
@@ -175,7 +200,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
   function goToStep2() {
     const errs = collectDetailErrors();
-    if (errs.length) { setFormErrors(errs); setError(null); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    if (errs.length) { setFormErrors(errs); setError(null); return; }   // the effect scrolls to the summary
     setFormErrors([]);
     setError(null);
     setStep(2);
@@ -192,9 +217,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     const detailErrs = collectDetailErrors();
     const allErrs = collectAllErrors();
     if (allErrs.length) {
-      setFormErrors(allErrs);
-      if (detailErrs.length) setStep(1);   // land on the fields that need fixing
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (detailErrs.length) setStep(1);   // land on the step whose fields need fixing
+      setFormErrors(allErrs);              // the effect scrolls the summary into view
       return;
     }
     setFormErrors([]);
@@ -226,6 +250,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           years_lived_experience: yearsExp ? parseInt(yearsExp, 10) : null,
           years_professional_experience: parseInt(yearsProfExp, 10),
           professional_domains: domains,
+          specializations,
           agreed_to_mentor_terms: true,
           hourly_rate: parseFloat(hourlyRate) || null,
           currency,
@@ -324,7 +349,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
       {/* Validation summary - lists every missing/invalid field on a submit attempt. */}
       {formErrors.length > 0 && (
-        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+        <div ref={errorSummaryRef} role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-700">
             Please fix {formErrors.length === 1 ? 'the following' : `these ${formErrors.length} items`} before submitting:
           </p>
@@ -353,20 +378,6 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
             <Input label="Full name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. Priya Nair" autoComplete="name" required />
-
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-medium text-foreground">Headline *</label>
-                <button type="button" onClick={() => { setHeadlineEdited(false); setProfessionalTitle(''); }}
-                  className="text-xs font-medium text-primary hover:underline">
-                  Suggest from my expertise
-                </button>
-              </div>
-              <Input value={effectiveHeadline}
-                onChange={(e) => { setHeadlineEdited(true); setProfessionalTitle(e.target.value); }}
-                placeholder="e.g. Software Engineering mentor | Helping you land jobs in the Netherlands" required />
-              <p className="text-xs text-muted">Auto-drafted from your expertise below. Edit it to make it yours.</p>
-            </div>
 
             <PhoneInput label="Phone Number" value={phone} onChange={setPhone} required
               hint="Used for session coordination. Not shown to users." />
@@ -440,16 +451,42 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               ) : (
                 <p className="text-sm text-muted">Set your home and current country above.</p>
               )}
-              <p className="text-xs text-muted">Taken from your home and current country. Mentees browse for you by these.</p>
             </div>
 
             <MultiSelect label="Areas of Expertise" options={CATEGORY_OPTIONS} value={categories} onChange={setCategories}
               placeholder="Type to search, press Enter to add"
-              hint="Topics you can advise on. Shown as tags on your card and used to filter the mentor list." />
-
+              hint="Topics you can advise on. Shown as tags on your card." />
 
             <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
               placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Specializations <span className="text-muted font-normal">(optional)</span>
+              </label>
+              <TagInput value={specializations} onChange={setSpecializations} max={12}
+                placeholder="e.g. ML in production, computer vision, model deployment" />
+              <p className="text-xs text-muted">Add the specific things you go deep on. The more specific, the easier it is for mentees to find you.</p>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Headline: auto-drafted from the expertise above; placed last so every input feeds it. */}
+        <Card>
+          <CardBody className="pt-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-sm font-medium text-foreground">Headline *</label>
+                <button type="button" onClick={() => { setHeadlineEdited(false); setProfessionalTitle(''); }}
+                  className="text-xs font-medium text-primary hover:underline">
+                  Suggest from my expertise
+                </button>
+              </div>
+              <Input value={effectiveHeadline}
+                onChange={(e) => { setHeadlineEdited(true); setProfessionalTitle(e.target.value); }}
+                placeholder="e.g. Software Engineering mentor | Helping you land jobs in the Netherlands" required />
+              <p className="text-xs text-muted">Auto-drafted from your details above as you fill them in. Edit it to make it yours.</p>
+            </div>
           </CardBody>
         </Card>
 
@@ -463,7 +500,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 className={cn('px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-y placeholder:text-muted',
                   'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
                   'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]')} />
-              <p className="text-xs text-muted">A standard disclaimer is prefilled. Edit or replace it as you like.</p>
+              <p className="text-xs text-muted">Edit or replace this as you like.</p>
               <p className={cn('text-xs text-right', publicNotes.length >= NOTES_MAX ? 'text-red-500' : 'text-muted')}>{publicNotes.length}/{NOTES_MAX}</p>
             </div>
           </CardBody>
@@ -521,7 +558,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 or delete it to remove it. Add your own if it&apos;s not listed. Offer at least one.
               </p>
             </div>
-            <ServiceCatalog value={services} onChange={setServices} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />
+            <ServiceCatalog value={services} onChange={setServices} categories={categories} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />
           </CardBody>
         </Card>
 

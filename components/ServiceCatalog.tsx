@@ -25,13 +25,29 @@ function priceLabel(s: DraftService, hourlyRate: number | undefined, currency: s
   return p > 0 ? `${currency} ${p}` : 'Set your rate above';
 }
 
+// Map a mentor's Area-of-Expertise codes to catalogue service categories, so we show only the
+// templates relevant to what they picked on the first page. General Guidance is always available.
+const EXPERTISE_TO_SERVICE_CATS: Record<string, string[]> = {
+  job_career: ['Jobs & Careers'],
+  study_abroad: ['Education & Studies'],
+  visa_pr: ['Visa & Immigration'], work_visa: ['Visa & Immigration'],
+  family_visa: ['Visa & Immigration'], asylum: ['Visa & Immigration'],
+  life_settling: ['Housing & Relocation', 'Culture & Daily Life', 'Finance & Taxes'],
+  entrepreneur: ['Business & Startup'],
+};
+
 export function ServiceCatalog({
-  value, onChange, hourlyRate, currency = 'USD',
+  value, onChange, hourlyRate, currency = 'USD', categories,
 }: {
-  value: DraftService[]; onChange: (s: DraftService[]) => void; hourlyRate?: number; currency?: string;
+  value: DraftService[]; onChange: (s: DraftService[]) => void; hourlyRate?: number; currency?: string; categories?: string[];
 }) {
   const byCode = new Map(value.map((v) => [v.code ?? '', v]));
-  const groups = catalogByCategory(SERVICE_CATEGORIES);
+  // Only the categories matching the mentor's selected areas (+ General Guidance). If they picked
+  // none yet, fall back to the full catalogue so they're never stuck with nothing to add.
+  const allowed = new Set<string>(['General Guidance']);
+  (categories ?? []).forEach((c) => (EXPERTISE_TO_SERVICE_CATS[c] ?? []).forEach((sc) => allowed.add(sc)));
+  const groups = catalogByCategory(SERVICE_CATEGORIES)
+    .filter((g) => (categories && categories.length ? allowed.has(g.category) : true));
 
   function patch(code: string, p: Partial<DraftService>) {
     onChange(value.map((v) => (v.code === code ? { ...v, ...p } : v)));
@@ -125,19 +141,18 @@ export function ServiceCatalog({
         <h3 className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
           {value.length > 0 ? 'Add another session' : 'Choose the sessions you offer'}
         </h3>
-        <p className="text-xs text-muted mb-3">Tap one to add it, then set the length and description.</p>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {groups.map((g) => {
             const tags = g.services.filter((cat) => !byCode.has(cat.code));
             if (tags.length === 0) return null;
             return (
               <div key={g.category}>
-                <p className="text-xs font-medium text-muted mb-1.5">{g.category}</p>
+                <p className="text-sm font-semibold text-foreground mb-2">{g.category}</p>
                 <div className="flex flex-wrap gap-2">
                   {tags.map((cat) => (
                     <button key={cat.code} type="button" onClick={() => addCatalog(cat)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
-                      <Plus className="h-3.5 w-3.5 text-brand-600" /> {cat.title}
+                      className="inline-flex items-center rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                      {cat.title}
                     </button>
                   ))}
                 </div>

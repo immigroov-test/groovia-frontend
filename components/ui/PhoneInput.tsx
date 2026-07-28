@@ -96,10 +96,15 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
     }
   }
 
-  function handleNumber(e: React.ChangeEvent<HTMLInputElement>) {
-    const n = e.target.value.replace(/[^\d\s\-()]/g, '');
+  function applyNumber(raw: string) {
+    const n = raw.replace(/[^\d\s\-()]/g, '');
     setNumber(n);
     onChange(`${dialCode} ${n}`);
+  }
+  // onBlur re-reads the field so an AUTOFILLED value (which often doesn't fire React's onChange) is
+  // captured and validated the moment the mentor leaves the field - not only once they start typing.
+  function handleNumber(e: React.ChangeEvent<HTMLInputElement> | React.FocusEvent<HTMLInputElement>) {
+    applyNumber(e.target.value);
   }
 
   // Client-side format/length check for the selected country (no SMS, no cost).
@@ -133,8 +138,10 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
         {/* Number input */}
         <input
           type="tel"
+          inputMode="numeric"
           value={number}
           onChange={handleNumber}
+          onBlur={handleNumber}
           placeholder="612 345 678"
           required={required}
           autoComplete="tel-national"

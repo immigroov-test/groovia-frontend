@@ -52,20 +52,19 @@ export function CurrencyRatesEditor({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base rate (per hour)</label>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted w-8 text-right">{currencySymbol(primaryCurrency)}</span>
-            <input type="number" min={0} step="0.01" value={baseRate} onChange={(e) => onBaseRate(e.target.value)}
-              placeholder="e.g. 2000" className={`${rateInput} w-36`} />
+          <div className="relative w-40">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">{currencySymbol(primaryCurrency)}</span>
+            <input type="number" min={0} step="0.01" inputMode="decimal" value={baseRate} onChange={(e) => onBaseRate(e.target.value)}
+              placeholder="e.g. 2000" className={`${rateInput} w-full pl-8`} />
           </div>
         </div>
       </div>
 
       {showInfo && (
         <p className="text-xs text-muted leading-relaxed bg-brand-50 rounded-lg p-3">
-          Customers in a country that uses <strong>{primaryCurrency}</strong> (e.g. India for ₹) pay this
-          exact rate. Customers elsewhere pay one of the extra currencies you add below; if you haven&apos;t set
-          their currency, they pay an auto-converted price. Each session&apos;s price comes from this hourly rate,
-          split by its length.
+          Customers in a country that uses <strong>{primaryCurrency}</strong> pay this exact rate. Customers
+          elsewhere pay one of the extra currencies you add below; if you haven&apos;t set their currency, they
+          pay an auto-converted price. Each session&apos;s price comes from this hourly rate, split by its length.
         </p>
       )}
 
