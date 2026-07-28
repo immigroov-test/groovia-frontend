@@ -20,6 +20,8 @@ export interface AdminMentor {
   pending_submitted_at?: string | null;
   commission_pct?: number | null;
   commission_expires_at?: string | null;
+  is_active?: boolean;
+  bookable?: boolean;
 }
 
 interface AdminStats {

@@ -6,7 +6,12 @@ import { AdminRevisionList, type AdminRevision } from './AdminRevisionList';
 import { AdminBookings } from './AdminBookings';
 import { AdminPayouts } from './AdminPayouts';
 import { UI_CONTENT } from '../lib/content';
+import { cn } from '../lib/utils';
 import type { AdminMentor } from '../app/(shell)/admin/page';
+
+type MentorFilter = 'all' | 'active' | 'inactive' | 'no_service';
+const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
+  m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; total_bookings: number; global_commission_pct: number; }
 type Tab = 'review' | 'mentors' | 'bookings' | 'payouts';
@@ -15,7 +20,12 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
 }) {
   const [tab, setTab] = useState<Tab>('review');
+  const [mentorFilter, setMentorFilter] = useState<MentorFilter>('all');
   const t = UI_CONTENT.admin;
+
+  const mCounts = { all: approved.length, active: 0, inactive: 0, no_service: 0 };
+  approved.forEach((m) => { mCounts[mentorCategory(m)]++; });
+  const shownMentors = mentorFilter === 'all' ? approved : approved.filter((m) => mentorCategory(m) === mentorFilter);
   const reviewCount = pending.length + revisions.length;
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: 'review', label: 'Review', count: reviewCount || undefined },
@@ -39,7 +49,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
 
       <p className="mt-3 text-xs text-muted">
         Platform commission <span className="font-semibold text-foreground">{stats.global_commission_pct}%</span> (set in
-        backend, added to the mentor rate to get the customer price). A per-mentor override, set on each mentor below, wins over this.
+        backend, added to the mentor rate to get the customer price).
       </p>
 
       <div className="mt-8 flex items-center gap-1 border-b border-[--color-border] overflow-x-auto overflow-y-hidden">
@@ -75,7 +85,19 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
         {tab === 'mentors' && (
           <div className="flex flex-col gap-10">
             <Section title={t.activeTitle} subtitle={t.activeSubtitle}>
-              <AdminMentorList initialMentors={approved} actions={[
+              <div className="flex flex-wrap gap-2 mb-4">
+                {([
+                  ['all', 'All'], ['active', 'Active'], ['inactive', 'Inactive'], ['no_service', 'No services'],
+                ] as const).map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setMentorFilter(key)}
+                    className={cn('rounded-full px-3 py-1 text-sm font-medium border transition-colors',
+                      mentorFilter === key ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-[--color-border] text-muted hover:text-foreground')}>
+                    {label} ({mCounts[key]})
+                  </button>
+                ))}
+              </div>
+              {/* key forces AdminMentorList to re-init its list from the filtered set on tag change */}
+              <AdminMentorList key={mentorFilter} initialMentors={shownMentors} actions={[
                 { action: 'suspend', label: t.suspend, variant: 'outline', loadingKey: 'suspend' },
               ]} />
             </Section>

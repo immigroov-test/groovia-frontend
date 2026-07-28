@@ -435,7 +435,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">Expertise</h2>
-              <p className="text-sm text-muted mt-0.5">These fields determine which mentees you can best serve. Changes here will require re-approval by our team.</p>
+              <p className="text-sm text-muted mt-0.5">Used to match you with the right mentees. Changes need re-approval.</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -554,8 +554,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <div>
               <h2 className="text-base font-semibold text-foreground">Services *</h2>
               <p className="text-sm text-muted mt-0.5">
-                Tap a session to add it, then set its length and description. Toggle one off to pause it,
-                or delete it to remove it. Add your own if it&apos;s not listed. Offer at least one.
+                Tap a session to add it, then set its length and description. Add your own if it&apos;s not
+                listed. Offer at least one.
               </p>
             </div>
             <ServiceCatalog value={services} onChange={setServices} categories={categories} hourlyRate={parseFloat(hourlyRate) || undefined} currency={currency} />
@@ -567,9 +567,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <div>
               <h2 className="text-base font-semibold text-foreground">Booking rules *</h2>
               <p className="text-sm text-muted mt-0.5">
-                How far ahead mentees can book, the minimum warning you need before a session, and how late
-                a session can be cancelled. Example: a minimum notice of 2 means the soonest bookable slot is
-                2 hours from now.
+                How far ahead mentees can book, how much notice you need, and how late a session can be
+                cancelled. A minimum notice of 2 means the soonest slot is 2 hours from now.
               </p>
             </div>
             <div className="flex flex-wrap gap-4">

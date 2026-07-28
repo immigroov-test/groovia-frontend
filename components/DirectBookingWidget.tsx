@@ -299,11 +299,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [bioExpanded, setBioExpanded]   = useState(false);
   const bioRef = useRef<HTMLDivElement>(null);
   const [bioOverflows, setBioOverflows] = useState(false);
-  // Only offer "Read more" when the bio is actually taller than the 4-line clamp. Measured once,
-  // while collapsed, so a short bio (3 lines) shows no button.
+  // Only offer "Read more" when the bio is actually taller than the clamp. Re-measure after paint
+  // and after the (serif) web font settles - a first measure before the font loads under-counts the
+  // lines, which is why a clearly-clamped bio was showing no button.
   useEffect(() => {
     const el = bioRef.current;
-    if (el) setBioOverflows(el.scrollHeight > el.clientHeight + 4);
+    if (!el) return;
+    const measure = () => setBioOverflows(el.scrollHeight - el.clientHeight > 2);
+    measure();
+    const raf = requestAnimationFrame(measure);
+    const fonts = (document as { fonts?: { ready?: Promise<unknown> } }).fonts;
+    fonts?.ready?.then(measure).catch(() => {});
+    return () => cancelAnimationFrame(raf);
   }, [mentor.bio]);
 
   // Persist the in-progress booking (service + slot) so it survives a login redirect - including
