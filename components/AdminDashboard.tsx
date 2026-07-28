@@ -8,7 +8,7 @@ import { AdminPayouts } from './AdminPayouts';
 import { UI_CONTENT } from '../lib/content';
 import type { AdminMentor } from '../app/(shell)/admin/page';
 
-interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; total_bookings: number; }
+interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; total_bookings: number; global_commission_pct: number; }
 type Tab = 'review' | 'mentors' | 'bookings' | 'payouts';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions }: {
@@ -36,6 +36,11 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
         <StatCard n={stats.no_service_mentor_count} label="No services" hint="nothing to book yet" />
         <StatCard n={stats.total_bookings} label="Total bookings" />
       </div>
+
+      <p className="mt-3 text-xs text-muted">
+        Platform commission <span className="font-semibold text-foreground">{stats.global_commission_pct}%</span> (set in
+        backend, added to the mentor rate to get the customer price). A per-mentor override, set on each mentor below, wins over this.
+      </p>
 
       <div className="mt-8 flex items-center gap-1 border-b border-[--color-border] overflow-x-auto overflow-y-hidden">
         {tabs.map((x) => (

@@ -8,6 +8,7 @@ import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
 import { SmartPricingToggle } from './SmartPricingToggle';
 import { MentorBankCard } from './MentorBankCard';
+import { FirstLoginRateModal } from './FirstLoginRateModal';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
@@ -33,6 +34,7 @@ export interface HubMentor {
   years_lived_experience?: number | null;
   public_notes?: string | null;
   smart_pricing?: boolean;
+  hourly_rate?: number | null;
 }
 
 type TabId = 'profile' | 'availability' | 'sessions' | 'payments' | 'webinars';
@@ -48,8 +50,13 @@ export function MentorHubTabs({ mentor }: { mentor: HubMentor }) {
   ];
   const [tab, setTab] = useState<TabId>('profile');
 
+  // Migrated mentors arrive with no per-hour rate. Block the hub with a mandatory first-login popup
+  // to capture it (same rate + currencies + fair-pricing a new mentor fills in) before they proceed.
+  const needsRate = !mentor.hourly_rate;
+
   return (
     <div className="flex flex-col gap-6">
+      {needsRate && <FirstLoginRateModal />}
       <StatusBanner mentor={mentor} />
 
       <div>

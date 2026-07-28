@@ -224,6 +224,10 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                       {mentor.submission_count > 1 && (
                         <Badge tone="warning">Re-submission #{mentor.submission_count}</Badge>
                       )}
+                      {mentor.commission_pct != null &&
+                        (!mentor.commission_expires_at || new Date(mentor.commission_expires_at) > new Date()) && (
+                        <Badge tone="accent">Commission {mentor.commission_pct}%</Badge>
+                      )}
                     </div>
                     {mentor.headline && (
                       <p className="text-sm text-muted mt-0.5">{mentor.headline}</p>
@@ -421,6 +425,12 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
         <BankSection mentorId={detail.id} bank={detail.bank} />
       </section>
 
+      {/* Per-mentor commission override */}
+      <section>
+        <SectionLabel>Commission</SectionLabel>
+        <CommissionEditor mentorId={detail.id} initialPct={detail.commission_pct} initialExpiry={detail.commission_expires_at} />
+      </section>
+
       {/* Session types + the mentor's own price (what they set; customers pay this plus the
           platform markup and any PPP adjustment, which the mentor never sees). */}
       <section>
@@ -490,6 +500,65 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+// Set or clear a mentor's commission override (wins over the global commission until an optional
+// expiry). The customer price the mentor's clients see uses this % instead of the global one.
+function CommissionEditor({ mentorId, initialPct, initialExpiry }: { mentorId: string; initialPct?: number | null; initialExpiry?: string | null }) {
+  const [pct, setPct] = useState(initialPct != null ? String(initialPct) : '');
+  const [expiry, setExpiry] = useState(initialExpiry ? initialExpiry.slice(0, 10) : '');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [current, setCurrent] = useState<{ pct: number | null; expiry: string | null }>({ pct: initialPct ?? null, expiry: initialExpiry ?? null });
+
+  async function save(clear: boolean) {
+    setSaving(true); setMsg(null);
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      const commission_pct = clear ? null : (pct.trim() === '' ? null : parseFloat(pct));
+      const expires_at = clear || !expiry ? null : new Date(expiry + 'T23:59:59').toISOString();
+      const res = await fetch(`/api/admin/mentors/${mentorId}/commission`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commission_pct, expires_at }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setMsg(d.detail || 'Could not save.'); return; }
+      setCurrent({ pct: commission_pct, expiry: expires_at });
+      if (clear) { setPct(''); setExpiry(''); }
+      setMsg('Saved.');
+    } catch { setMsg('Could not reach the server.'); }
+    finally { setSaving(false); }
+  }
+
+  const expired = current.expiry ? new Date(current.expiry) < new Date() : false;
+  const active = current.pct != null && !expired;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs text-muted">
+        {active
+          ? <>Override active: <span className="font-semibold text-foreground">{current.pct}%</span>{current.expiry ? ` until ${current.expiry.slice(0, 10)}` : ' (no expiry)'}.</>
+          : current.pct != null
+            ? <>Override <span className="font-semibold text-foreground">expired</span> - using the global commission.</>
+            : 'No override - this mentor uses the global commission.'}
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="text-muted">Commission %</span>
+          <input type="number" min={0} max={100} step={0.5} value={pct} onChange={(e) => setPct(e.target.value)} placeholder="e.g. 12"
+            className="h-9 w-24 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="text-muted">Expires (optional)</span>
+          <input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)}
+            className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+        </label>
+        <Button variant="primary" size="sm" loading={saving} disabled={pct.trim() === ''} onClick={() => save(false)}>Set</Button>
+        {current.pct != null && <Button variant="ghost" size="sm" onClick={() => save(true)}>Clear</Button>}
+      </div>
+      {msg && <p className="text-xs text-muted">{msg}</p>}
     </div>
   );
 }

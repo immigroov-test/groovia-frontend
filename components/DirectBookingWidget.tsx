@@ -361,7 +361,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             country: country ?? null,
             // PPP is the mentor-level toggle (what the charge uses), so the displayed price matches
             // what's actually charged - not the per-service legacy is_ppp flag.
-            items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: !!mentor.smart_pricing, mentor_country: mentor.country ?? null })),
+            items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: !!mentor.smart_pricing, mentor_country: mentor.country ?? null, mentor_id: mentor.id })),
           }),
         });
         if (!res.ok || cancelled) return;

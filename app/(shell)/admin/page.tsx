@@ -18,6 +18,8 @@ export interface AdminMentor {
   full_name: string | null;
   submission_count: number;
   pending_submitted_at?: string | null;
+  commission_pct?: number | null;
+  commission_expires_at?: string | null;
 }
 
 interface AdminStats {
@@ -27,6 +29,7 @@ interface AdminStats {
   inactive_mentor_count: number;
   no_service_mentor_count: number;
   total_bookings: number;
+  global_commission_pct: number;
 }
 
 async function fetchJson<T>(url: string, token: string, fallback: T): Promise<T> {
@@ -69,6 +72,7 @@ export default async function AdminPage() {
     inactive_mentor_count: 0,
     no_service_mentor_count: 0,
     total_bookings: 0,
+    global_commission_pct: 10,
   };
 
   return <AdminDashboard stats={stats} pending={pending} approved={approved} suspended={suspended} revisions={revisions} />;
