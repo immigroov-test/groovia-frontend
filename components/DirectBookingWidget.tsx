@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Check, ChevronLeft, ChevronRight, Clock, Loader2, MapPin, MessageSquare, Star, Video,
+  Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -294,6 +294,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [slotsError, setSlotsError]     = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [bioExpanded, setBioExpanded]   = useState(false);
 
   const [questions, setQuestions]   = useState<Question[]>([]);
   const [answers, setAnswers]       = useState<Record<string, string>>({});
@@ -360,7 +361,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             country: country ?? null,
             // PPP is the mentor-level toggle (what the charge uses), so the displayed price matches
             // what's actually charged - not the per-service legacy is_ppp flag.
-            items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: !!mentor.smart_pricing })),
+            items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: !!mentor.smart_pricing, mentor_country: mentor.country ?? null })),
           }),
         });
         if (!res.ok || cancelled) return;
@@ -747,8 +748,22 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         </div>
       </div>
 
-      {/* ── Bio ───────────────────────────────────────────────────── */}
-      {mentor.bio && !isRichTextEmpty(mentor.bio) && <RichText html={mentor.bio} className="max-w-3xl" />}
+      {/* ── Bio (collapsed to ~4 lines with a Read more / Show less toggle) ── */}
+      {mentor.bio && !isRichTextEmpty(mentor.bio) && (
+        <div className="max-w-3xl">
+          <RichText
+            html={mentor.bio}
+            className={cn('transition-all', !bioExpanded && 'line-clamp-4')}
+          />
+          <button
+            type="button"
+            onClick={() => setBioExpanded((v) => !v)}
+            className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
+          >
+            {bioExpanded ? <>Show less <ChevronUp className="h-4 w-4" /></> : <>Read more <ChevronDown className="h-4 w-4" /></>}
+          </button>
+        </div>
+      )}
 
       {/* ── Stepper ───────────────────────────────────────────────── */}
       <StepBar step={step} />

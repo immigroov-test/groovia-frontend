@@ -89,7 +89,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             country: country ?? null,
-            items: paid.map((m) => ({ key: m.id, amount: m.min_price, from: m.price_currency ?? 'USD', is_ppp: !!m.smart_pricing })),
+            items: paid.map((m) => ({ key: m.id, amount: m.min_price, from: m.price_currency ?? 'USD', is_ppp: !!m.smart_pricing, mentor_country: m.country ?? null })),
           }),
         });
         if (!res.ok || cancelled) return;

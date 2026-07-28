@@ -8,7 +8,7 @@ import { AdminPayouts } from './AdminPayouts';
 import { UI_CONTENT } from '../lib/content';
 import type { AdminMentor } from '../app/(shell)/admin/page';
 
-interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; hidden_mentor_count: number; total_bookings: number; }
+interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; total_bookings: number; }
 type Tab = 'review' | 'mentors' | 'bookings' | 'payouts';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions }: {
@@ -29,10 +29,11 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
       <h1 className="text-3xl font-semibold tracking-tight text-brand-900">{t.title}</h1>
       <p className="text-sm text-muted mt-1">{t.subtitle}</p>
 
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard n={stats.pending_mentor_count} label="Pending review" />
         <StatCard n={stats.active_mentor_count} label="Active mentors" hint="visible to users" />
-        <StatCard n={stats.hidden_mentor_count} label="Hidden / incomplete" hint="inactive or no service" />
+        <StatCard n={stats.inactive_mentor_count} label="Inactive" hint="hidden by admin" />
+        <StatCard n={stats.no_service_mentor_count} label="No services" hint="nothing to book yet" />
         <StatCard n={stats.total_bookings} label="Total bookings" />
       </div>
 
