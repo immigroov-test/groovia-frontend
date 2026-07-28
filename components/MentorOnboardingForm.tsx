@@ -244,8 +244,15 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           bank: toBankPayload(bank) ?? undefined,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.detail || 'Something went wrong. Please try again.'); return; }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Surface the real reason (backend detail, or the BFF's error, or the status) so a failure
+        // is never silent.
+        const reason = data.detail || data.error || `Request failed (HTTP ${res.status}).`;
+        console.error('Mentor signup failed:', res.status, data);
+        setError(reason);
+        return;
+      }
       if (!data.id) { setError('Unexpected response from server. Please try again.'); return; }
       if (Array.isArray(data.warnings) && data.warnings.length > 0) {
         // BUG-012: some items failed to save during signup. Don't silently redirect
@@ -255,8 +262,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
       }
       router.push('/mentor');
       router.refresh();
-    } catch {
-      setError('Could not create your mentor profile. Please try again.');
+    } catch (err) {
+      console.error('Mentor signup error:', err);
+      setError(`Could not create your mentor profile: ${err instanceof Error ? err.message : 'network error'}. Please try again.`);
     } finally {
       setSubmitting(false);
     }

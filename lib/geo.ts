@@ -29,8 +29,14 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 }
 
-// Tried in order. Each resolves to { code, city } or throws.
+// Client-side IP-geolocation providers, tried in order (the browser-location backup to Vercel's
+// edge geo). Each resolves to { code, city } or throws; the caller moves to the next on failure.
 const PROVIDERS: (() => Promise<GeoLocation>)[] = [
+  async () => {
+    // country.is: tiny, fast, very reliable - country only.
+    const r = await (await withTimeout(fetch('https://api.country.is/'), 2500)).json();
+    return { code: String(r.country || '').toUpperCase() };
+  },
   async () => {
     const r = await (await withTimeout(fetch('https://get.geojs.io/v1/ip/geo.json'), 2500)).json();
     return { code: String(r.country_code || '').toUpperCase(), city: r.city || undefined };

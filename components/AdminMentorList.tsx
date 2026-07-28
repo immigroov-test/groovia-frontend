@@ -269,6 +269,14 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                 </div>
               </div>
 
+              {/* Per-mentor commission override - on the card itself for active mentors */}
+              {mentor.status === 'approved' && (
+                <div className="mt-4 pt-4 border-t border-[--color-border]">
+                  <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Commission</p>
+                  <CommissionEditor mentorId={mentor.id} initialPct={mentor.commission_pct} initialExpiry={mentor.commission_expires_at} />
+                </div>
+              )}
+
               {/* Reviewer note (decline / request changes) - stored + shown to the mentor + emailed */}
               {commentFor?.id === mentor.id && COMMENT_ACTIONS[commentFor.action] && (
                 <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[--color-border] bg-brand-50/40 p-3">
@@ -425,11 +433,6 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
         <BankSection mentorId={detail.id} bank={detail.bank} />
       </section>
 
-      {/* Per-mentor commission override */}
-      <section>
-        <SectionLabel>Commission</SectionLabel>
-        <CommissionEditor mentorId={detail.id} initialPct={detail.commission_pct} initialExpiry={detail.commission_expires_at} />
-      </section>
 
       {/* Session types + the mentor's own price (what they set; customers pay this plus the
           platform markup and any PPP adjustment, which the mentor never sees). */}

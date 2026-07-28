@@ -26,6 +26,9 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
   const location = [mentor.city, mentor.country ? countryLabel(mentor.country) : '']
     .filter(Boolean).join(', ');
   const homeLabel = mentor.home_country_code ? countryLabel(mentor.home_country_code) : '';
+  // Only strike the original when it actually differs from the discounted price at DISPLAY precision.
+  // Same-region fair pricing gives you == you0, so striking "€24 -> €24" is meaningless and confusing.
+  const showStrike = !!price && money(price.original, price.currency) !== money(price.discounted, price.currency);
 
   return (
     <Card className="h-full flex flex-col hover:border-brand-300 hover:-translate-y-0.5 transition-transform">
@@ -55,13 +58,8 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
           </div>
         </div>
 
-        {/* Expertise: fair-pricing tag + category tags + countries (full names) */}
+        {/* Expertise: category tags + countries (full names). Fair-pricing badge lives by the price. */}
         <div className="flex flex-wrap gap-1.5">
-          {mentor.smart_pricing && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">
-              <Sparkles className="h-3 w-3" /> Fair pricing
-            </span>
-          )}
           {categories.slice(0, 3).map((cat) => (
             <Badge key={cat} tone="accent">{EXPERTISE_CATEGORY_MAP[cat] ?? cat}</Badge>
           ))}
@@ -96,7 +94,7 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
         <div className="mt-auto pt-3 border-t border-[--color-border] flex items-center justify-between gap-3">
           {mentor.min_price != null && mentor.min_price > 0 ? (
             <div>
-              {price && price.discounted < price.original ? (
+              {price && showStrike ? (
                 <p className="leading-tight">
                   <span className="text-sm text-muted line-through">{money(price.original, price.currency)}</span>{' '}
                   <span className="text-lg font-bold text-brand-900">{money(price.discounted, price.currency)}</span>
@@ -106,7 +104,14 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
                   {price ? money(price.discounted, price.currency) : money(mentor.min_price, mentor.price_currency ?? 'USD')}
                 </p>
               )}
-              <p className="text-[11px] text-muted">from · per session</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[11px] text-muted">from · per session</span>
+                {mentor.smart_pricing && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700">
+                    <Sparkles className="h-3 w-3" /> Fair pricing
+                  </span>
+                )}
+              </div>
             </div>
           ) : (
             <span className="text-sm text-muted">Free intro</span>

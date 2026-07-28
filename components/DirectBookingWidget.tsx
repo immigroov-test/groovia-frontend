@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -170,7 +170,9 @@ function PriceLabel({
 }: { service: Service; price?: DisplayPrice; className?: string }) {
   if (service.set_price === 0) return <span className={className}>Free</span>;
   if (!price) return <span className={className}>{formatPrice(service.set_price, service.set_currency)}</span>;
-  const discounted = price.discounted < price.original;
+  // Only strike when the DISPLAYED amounts differ (same-region fair pricing gives an equal price, so
+  // striking the same number is meaningless).
+  const discounted = formatPrice(price.original, price.currency) !== formatPrice(price.discounted, price.currency);
   return (
     <span className={cn('inline-flex items-baseline gap-1.5', className)}>
       {discounted && (
@@ -295,6 +297,23 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
   const [bioExpanded, setBioExpanded]   = useState(false);
+  const bioRef = useRef<HTMLDivElement>(null);
+  const [bioOverflows, setBioOverflows] = useState(false);
+  // Only offer "Read more" when the bio is actually taller than the 4-line clamp. Measured once,
+  // while collapsed, so a short bio (3 lines) shows no button.
+  useEffect(() => {
+    const el = bioRef.current;
+    if (el) setBioOverflows(el.scrollHeight > el.clientHeight + 4);
+  }, [mentor.bio]);
+
+  // Persist the in-progress booking (service + slot) so it survives a login redirect - including
+  // Google OAuth, which fully navigates away and back. Restored on mount below.
+  const draftKey = `ig_booking_draft_${mentor.slug}`;
+  const restoreSlotRef = useRef<string | null>(null);
+  function saveDraft(serviceId: string, slotStart?: string | null) {
+    try { sessionStorage.setItem(draftKey, JSON.stringify({ serviceId, slotStart: slotStart ?? null })); } catch { /* ignore */ }
+  }
+  function clearDraft() { try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ } }
 
   const [questions, setQuestions]   = useState<Question[]>([]);
   const [answers, setAnswers]       = useState<Record<string, string>>({});
@@ -338,10 +357,31 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         const res = await fetch(`/api/mentors/${mentor.slug}/services`, { cache: 'no-store' });
         const data = await res.json();
         if (!res.ok) { setServicesError('Could not load services.'); return; }
-        setServices(data.services ?? []);
+        const list: Service[] = data.services ?? [];
+        setServices(list);
+        // Restore an in-progress booking after a login redirect: re-select the service (which
+        // loads its slots), and remember the saved slot for the slot-restore effect below.
+        try {
+          const raw = sessionStorage.getItem(draftKey);
+          if (raw) {
+            const draft = JSON.parse(raw) as { serviceId?: string; slotStart?: string | null };
+            const svc = list.find((s) => s.id === draft.serviceId);
+            if (svc) { restoreSlotRef.current = draft.slotStart ?? null; selectService(svc); }
+          }
+        } catch { /* ignore a bad draft */ }
       } catch { setServicesError('Could not load services.'); }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mentor.slug]);
+
+  // When slots arrive during a restore, pick the saved slot and jump to the form step.
+  useEffect(() => {
+    if (!restoreSlotRef.current || !slots) return;
+    const slot = slots.find((s) => s.slot_start === restoreSlotRef.current);
+    restoreSlotRef.current = null;
+    if (slot) selectSlot(slot);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slots]);
 
   // Convert all paid services to the customer's currency (with PPP) once loaded, so
   // each price and the summary show the localized original/discounted amount up front.
@@ -482,6 +522,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // Load slots when a service is selected
   async function selectService(svc: Service) {
     setSelectedService(svc);
+    saveDraft(svc.id);
     setSlots(null);
     setSlotsError(null);
     setSelectedDate(null);
@@ -511,6 +552,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // Load questions when moving to form
   async function selectSlot(slot: Slot) {
     setSelectedSlot(slot);
+    if (selectedService) saveDraft(selectedService.id, slot.slot_start);
     setIdemKey(crypto.randomUUID());   // one key per chosen slot; reused across retries
     setStep('form');
     try {
@@ -565,6 +607,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       const data = await res.json();
       if (!res.ok) { setFormError(data.detail || 'Booking failed. Please try another slot.'); return; }
       setBookingId(data.booking_id);
+      clearDraft();
       setStep('confirmed');
     } catch { setFormError('Could not complete the booking. Please try again.'); }
     finally { setSubmitting(false); }
@@ -594,7 +637,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           .filter(a => a.answer_text),
       },
       {
-        onConfirmed: (id) => { setBookingId(id); setStep('confirmed'); done(); },
+        onConfirmed: (id) => { setBookingId(id); clearDraft(); setStep('confirmed'); done(); },
         onSlotTaken: (msg) => { setFormError(msg); done(); },
         onError: (msg) => { setFormError(msg); done(); },
         onDismiss: () => { setFormError('Payment cancelled. Your slot is held for 10 minutes if you want to try again.'); done(); },
@@ -697,6 +740,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   }
 
   function changeService() {
+    clearDraft();
     setSelectedService(null);
     setSelectedDate(null);
     setSelectedSlot(null);
@@ -710,9 +754,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
         <div className="flex items-start gap-4">
           {mentor.photo_url ? (
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-14 w-14 sm:h-16 sm:w-16 rounded-full object-cover shrink-0" />
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover shrink-0" />
           ) : (
-            <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-lg font-semibold shrink-0">
+            <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-2xl font-semibold shrink-0">
               {initials}
             </div>
           )}
@@ -748,20 +792,21 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         </div>
       </div>
 
-      {/* ── Bio (collapsed to ~4 lines with a Read more / Show less toggle) ── */}
+      {/* ── Bio (clamped to ~4 lines; Read more only when it actually overflows) ── */}
       {mentor.bio && !isRichTextEmpty(mentor.bio) && (
         <div className="max-w-3xl">
-          <RichText
-            html={mentor.bio}
-            className={cn('transition-all', !bioExpanded && 'line-clamp-4')}
-          />
-          <button
-            type="button"
-            onClick={() => setBioExpanded((v) => !v)}
-            className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
-          >
-            {bioExpanded ? <>Show less <ChevronUp className="h-4 w-4" /></> : <>Read more <ChevronDown className="h-4 w-4" /></>}
-          </button>
+          <div ref={bioRef} className={cn('transition-all', !bioExpanded && 'line-clamp-4')}>
+            <RichText html={mentor.bio} />
+          </div>
+          {bioOverflows && (
+            <button
+              type="button"
+              onClick={() => setBioExpanded((v) => !v)}
+              className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
+            >
+              {bioExpanded ? <>Show less <ChevronUp className="h-4 w-4" /></> : <>Read more <ChevronDown className="h-4 w-4" /></>}
+            </button>
+          )}
         </div>
       )}
 
