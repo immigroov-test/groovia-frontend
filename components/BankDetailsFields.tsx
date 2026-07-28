@@ -45,10 +45,10 @@ export function BankDetailsFields({
 
           {scheme === 'iban' && (
             <>
-              <Input label="IBAN" value={value.iban} onChange={(e) => set({ iban: e.target.value })}
+              <Input label="IBAN" value={value.iban} onChange={(e) => set({ iban: e.target.value.toUpperCase() })}
                 onBlur={() => blur('iban')} error={err('iban')}
                 placeholder="e.g. DE89 3704 0044 0532 0130 00" autoComplete="off" spellCheck={false} />
-              <Input label="SWIFT / BIC (optional)" value={value.swift_bic} onChange={(e) => set({ swift_bic: e.target.value })}
+              <Input label="SWIFT / BIC (optional)" value={value.swift_bic} onChange={(e) => set({ swift_bic: e.target.value.toUpperCase() })}
                 onBlur={() => blur('swift_bic')} error={err('swift_bic')}
                 placeholder="e.g. DEUTDEFF" autoComplete="off" spellCheck={false}
                 hint="Helps for international transfers." />
@@ -65,7 +65,7 @@ export function BankDetailsFields({
               <Input label="Account number" value={value.account_number} onChange={(e) => set({ account_number: e.target.value })}
                 onBlur={() => blur('account_number')} error={err('account_number')}
                 placeholder="Your bank account number" inputMode="numeric" autoComplete="off" />
-              <Input label="IFSC code" value={value.ifsc} onChange={(e) => set({ ifsc: e.target.value })}
+              <Input label="IFSC code" value={value.ifsc} onChange={(e) => set({ ifsc: e.target.value.toUpperCase() })}
                 onBlur={() => blur('ifsc')} error={err('ifsc')}
                 placeholder="e.g. HDFC0001234" autoComplete="off" spellCheck={false}
                 hint="11 characters, found on your cheque book or bank app." />
@@ -120,7 +120,7 @@ export function BankDetailsFields({
               <Input label="Account number / IBAN" value={value.account_number} onChange={(e) => set({ account_number: e.target.value })}
                 onBlur={() => blur('account_number')} error={err('account_number')}
                 placeholder="Your account number" autoComplete="off" spellCheck={false} />
-              <Input label="SWIFT / BIC" value={value.swift_bic} onChange={(e) => set({ swift_bic: e.target.value })}
+              <Input label="SWIFT / BIC" value={value.swift_bic} onChange={(e) => set({ swift_bic: e.target.value.toUpperCase() })}
                 onBlur={() => blur('swift_bic')} error={err('swift_bic')}
                 placeholder="e.g. DBSSSGSG" autoComplete="off" spellCheck={false}
                 hint="8 or 11 characters, used for international transfers." />
@@ -130,8 +130,7 @@ export function BankDetailsFields({
           )}
 
           <p className="text-xs text-muted leading-relaxed">
-            Used only to pay you for completed sessions. Your account number is encrypted and never
-            shown in full.
+            Your account number is encrypted and never shown in full.
           </p>
         </>
       )}

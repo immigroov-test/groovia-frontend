@@ -56,11 +56,11 @@ export function DateOverridesEditor({
 
   function upsert(o: DateOverride) {
     onChange([...value.filter((x) => x.slot_date !== o.slot_date), o]);
-    setSelDate(null);
+    // Keep the date selected so the panel immediately shows the result (e.g. "Blocked for the day"
+    // + Remove) instead of resetting to "Pick a date".
   }
   function removeOverride(date: string) {
     onChange(value.filter((x) => x.slot_date !== date));
-    setSelDate(null);
   }
   function setCustom(date: string) {
     if (ovTo <= ovFrom) { setErr('End must be after start.'); return; }

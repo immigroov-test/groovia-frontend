@@ -76,10 +76,15 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
   // mentors show the original struck through beside the discounted price. Best-effort:
   // on any failure cards fall back to the mentor-currency min_price.
   const [priceMap, setPriceMap] = useState<Record<string, DisplayPrice>>({});
+  // Prices are shown only once the backend-localized figures are in, so cards never flash the raw
+  // mentor-currency amount (e.g. "A$36") and then correct themselves. All money comes from the
+  // backend; the UI just displays it.
+  const [priceReady, setPriceReady] = useState(false);
   useEffect(() => {
     const paid = mentors.filter((m) => (m.min_price ?? 0) > 0);
-    if (paid.length === 0) return;
+    if (paid.length === 0) { setPriceReady(true); return; }
     let cancelled = false;
+    setPriceReady(false);
     (async () => {
       try {
         const country = await pricingCountry();
@@ -92,12 +97,14 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
             items: paid.map((m) => ({ key: m.id, amount: m.min_price, from: m.price_currency ?? 'USD', is_ppp: !!m.smart_pricing, mentor_country: m.country ?? null, mentor_id: m.id })),
           }),
         });
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        const map: Record<string, DisplayPrice> = {};
-        for (const p of (data.prices ?? [])) map[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency };
-        if (!cancelled) setPriceMap(map);
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          const map: Record<string, DisplayPrice> = {};
+          for (const p of (data.prices ?? [])) map[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency };
+          setPriceMap(map);
+        }
       } catch { /* keep min_price fallback */ }
+      finally { if (!cancelled) setPriceReady(true); }
     })();
     return () => { cancelled = true; };
   }, [mentors]);
@@ -225,7 +232,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
         <>
           <p className="text-sm text-muted mb-4">{filtered.length} mentor{filtered.length !== 1 ? 's' : ''}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 reveal-children">
-            {filtered.map((m) => <MentorCard key={m.id} mentor={m} price={priceMap[m.id]} />)}
+            {filtered.map((m) => <MentorCard key={m.id} mentor={m} price={priceMap[m.id]} priceReady={priceReady} />)}
           </div>
         </>
       )}

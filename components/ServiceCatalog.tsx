@@ -1,5 +1,6 @@
 'use client';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { Input } from './ui/Input';
 import { RichTextEditor } from './ui/RichTextEditor';
@@ -42,6 +43,9 @@ export function ServiceCatalog({
   value: DraftService[]; onChange: (s: DraftService[]) => void; hourlyRate?: number; currency?: string; categories?: string[];
 }) {
   const byCode = new Map(value.map((v) => [v.code ?? '', v]));
+  // Only one service is expanded at a time; the rest collapse to a compact card (name + toggle +
+  // delete). Adding a new one expands it and collapses the others.
+  const [expandedCode, setExpandedCode] = useState<string | null>(null);
   // Only the categories matching the mentor's selected areas (+ General Guidance). If they picked
   // none yet, fall back to the full catalogue so they're never stuck with nothing to add.
   const allowed = new Set<string>(['General Guidance']);
@@ -54,7 +58,8 @@ export function ServiceCatalog({
   }
   function removeByCode(code: string) { onChange(value.filter((v) => v.code !== code)); }
 
-  // Tap a catalogue tag -> add it as an active block, prefilled from the template.
+  // Tap a catalogue tag -> add it as an active block, prefilled from the template, and expand it
+  // (collapsing whatever was open).
   function addCatalog(cat: CatalogService) {
     if (byCode.has(cat.code)) return;
     onChange([...value, {
@@ -62,31 +67,34 @@ export function ServiceCatalog({
       price: cat.free ? 0 : proratePrice(hourlyRate, cat.duration),
       description: cat.description, category: cat.category, tags: [], free: !!cat.free,
     }]);
+    setExpandedCode(cat.code);
   }
   function addCustom() {
+    const code = `custom-${crypto.randomUUID()}`;
     onChange([...value, {
-      code: `custom-${crypto.randomUUID()}`, title: '', duration: 30, active: true,
+      code, title: '', duration: 30, active: true,
       price: proratePrice(hourlyRate, 30), description: '', category: 'General Guidance', tags: [], free: false,
     }]);
+    setExpandedCode(code);
   }
 
   function block(s: DraftService) {
     const custom = isCustom(s.code);
+    const expanded = s.code === expandedCode;
     return (
       <div key={s.code} className={cn(
         'rounded-xl border border-[--color-border] p-3 transition-opacity',
         !s.active && 'opacity-60',
       )}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            {custom ? (
-              <Input value={s.title} onChange={(e) => patch(s.code!, { title: e.target.value })}
-                placeholder="e.g. Portfolio review" aria-label="Service title" />
-            ) : (
-              <p className="text-sm font-medium text-foreground">{s.title}</p>
-            )}
-            {!s.active && <p className="text-xs text-muted mt-1">Inactive — mentees won&apos;t see this.</p>}
-          </div>
+        <div className="flex items-center justify-between gap-3">
+          <button type="button" onClick={() => setExpandedCode(expanded ? null : (s.code ?? null))}
+            className="min-w-0 flex-1 flex items-center gap-2 text-left">
+            {expanded ? <ChevronUp className="h-4 w-4 text-muted shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted shrink-0" />}
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-foreground truncate">{s.title.trim() || 'Untitled service'}</span>
+              <span className="block text-xs text-muted">{s.duration} min · {priceLabel(s, hourlyRate, currency)}{!s.active ? ' · inactive' : ''}</span>
+            </span>
+          </button>
           <div className="flex items-center gap-1 shrink-0">
             <Toggle checked={s.active} onChange={() => patch(s.code!, { active: !s.active })}
               aria-label={s.active ? 'Deactivate service' : 'Activate service'} />
@@ -97,32 +105,38 @@ export function ServiceCatalog({
           </div>
         </div>
 
-        <div className="mt-3 flex flex-col gap-3 border-t border-[--color-border] pt-3">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-foreground">Duration</label>
-              <select value={String(s.duration)}
-                onChange={(e) => { const d = parseInt(e.target.value); patch(s.code!, { duration: d, price: s.free ? 0 : proratePrice(hourlyRate, d) }); }}
-                className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                {DURATIONS.map((d) => <option key={d} value={d}>{d} minutes</option>)}
-              </select>
+        {expanded && (
+          <div className="mt-3 flex flex-col gap-3 border-t border-[--color-border] pt-3">
+            {custom && (
+              <Input label="Title" value={s.title} onChange={(e) => patch(s.code!, { title: e.target.value })}
+                placeholder="e.g. Portfolio review" />
+            )}
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Duration</label>
+                <select value={String(s.duration)}
+                  onChange={(e) => { const d = parseInt(e.target.value); patch(s.code!, { duration: d, price: s.free ? 0 : proratePrice(hourlyRate, d) }); }}
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                  {DURATIONS.map((d) => <option key={d} value={d}>{d} minutes</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-foreground">Price</span>
+                <span className="h-10 flex items-center text-sm text-muted">{priceLabel(s, hourlyRate, currency)}</span>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-muted h-10 cursor-pointer">
+                <input type="checkbox" className="accent-[--color-brand-500]" checked={!!s.free}
+                  onChange={(e) => patch(s.code!, { free: e.target.checked, price: e.target.checked ? 0 : proratePrice(hourlyRate, s.duration) })} />
+                Offer for free
+              </label>
             </div>
             <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-foreground">Price</span>
-              <span className="h-10 flex items-center text-sm text-muted">{priceLabel(s, hourlyRate, currency)}</span>
+              <label className="text-sm font-medium text-foreground">Description <span className="text-muted font-normal">(can be edited)</span></label>
+              <RichTextEditor value={s.description} onChange={(html) => patch(s.code!, { description: html })} maxChars={1000}
+                placeholder="Describe what this session covers and who it's for." />
             </div>
-            <label className="flex items-center gap-2 text-sm text-muted h-10 cursor-pointer">
-              <input type="checkbox" className="accent-[--color-brand-500]" checked={!!s.free}
-                onChange={(e) => patch(s.code!, { free: e.target.checked, price: e.target.checked ? 0 : proratePrice(hourlyRate, s.duration) })} />
-              Offer for free
-            </label>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">Description</label>
-            <RichTextEditor value={s.description} onChange={(html) => patch(s.code!, { description: html })} maxChars={1000}
-              placeholder="Describe what this session covers and who it's for." />
-          </div>
-        </div>
+        )}
       </div>
     );
   }

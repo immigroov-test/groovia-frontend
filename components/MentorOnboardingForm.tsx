@@ -613,8 +613,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <div>
               <h2 className="text-base font-semibold text-foreground">Payout details *</h2>
               <p className="text-sm text-muted mt-0.5">
-                Where we send your earnings for completed sessions. Required. You can update this any
-                time from your Mentor Hub. Your account number is encrypted and never shown in full.
+                Update these any time from your Mentor Hub. Your account number is encrypted and never shown in full.
               </p>
             </div>
             <BankDetailsFields value={bank} onChange={setBank} />

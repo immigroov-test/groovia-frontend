@@ -17,7 +17,7 @@ function money(amount: number, currency: string): string {
 
 interface DisplayPrice { original: number; discounted: number; currency: string }
 
-export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayPrice }) {
+export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mentor; price?: DisplayPrice; priceReady?: boolean }) {
   const initials = mentor.display_name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase();
   const countries = mentor.expertise_country_codes ?? [];
   const categories = mentor.expertise_categories ?? [];
@@ -93,6 +93,10 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
         {/* Footer: starting price + Book */}
         <div className="mt-auto pt-3 border-t border-[--color-border] flex items-center justify-between gap-3">
           {mentor.min_price != null && mentor.min_price > 0 ? (
+            !priceReady ? (
+              // Wait for the backend-localized price so we never flash the raw mentor currency.
+              <div className="h-6 w-24 rounded bg-neutral-100 animate-pulse" aria-hidden />
+            ) : (
             <div>
               {price && showStrike ? (
                 <p className="leading-tight">
@@ -113,6 +117,7 @@ export function MentorCard({ mentor, price }: { mentor: Mentor; price?: DisplayP
                 )}
               </div>
             </div>
+            )
           ) : (
             <span className="text-sm text-muted">Free intro</span>
           )}
