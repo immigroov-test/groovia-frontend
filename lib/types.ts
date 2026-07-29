@@ -9,6 +9,8 @@ export interface Mentor {
   photo_url: string | null;
   expertise_country_codes: string[];
   expertise_categories: string[];
+  service_categories?: string[];   // derived from the mentor's configured services (browse filter facet)
+  specializations?: string[];      // mentor's editable free-text tags (feed search)
   languages: string[];
   professional_domains: string[];
   years_lived_experience: number | null;

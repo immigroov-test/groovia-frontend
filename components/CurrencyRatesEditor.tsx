@@ -1,12 +1,11 @@
 'use client';
-import { useState } from 'react';
-import { Info, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { CURRENCIES, currencySymbol, type CurrencyRate } from '../lib/pricing';
 
-// Multi-currency rate setup (BUG-042): a primary currency (default INR) + base hourly rate, an
-// optional list of additional-currency rates, and the smart-pricing (PPP) toggle. Each service's
-// prices are derived from these by duration. Shared by onboarding + hub + profile edit.
+// Multi-currency rate setup (BUG-042): a base currency (default INR) + base hourly rate, an optional
+// list of additional-currency rates for foreign customers, and the smart-pricing (PPP) toggle. Each
+// service's price is derived from these by duration. Shared by onboarding + hub + profile edit.
 export function CurrencyRatesEditor({
   primaryCurrency, onPrimaryCurrency, baseRate, onBaseRate, rates, onRates, smartPricing, onSmartPricing,
 }: {
@@ -19,7 +18,6 @@ export function CurrencyRatesEditor({
   smartPricing: boolean;
   onSmartPricing: (v: boolean) => void;
 }) {
-  const [showInfo, setShowInfo] = useState(false);
   const used = new Set([primaryCurrency, ...rates.map((r) => r.currency)]);
   const available = CURRENCIES.filter((c) => !used.has(c.code));
 
@@ -36,16 +34,10 @@ export function CurrencyRatesEditor({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Primary currency + base rate */}
+      {/* Base currency FIRST, then the base rate. */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
-            Base currency
-            <button type="button" onClick={() => setShowInfo((s) => !s)} aria-label="What is the base currency?"
-              className="text-muted hover:text-brand-700">
-              <Info className="h-3.5 w-3.5" />
-            </button>
-          </label>
+          <label className="text-sm font-medium text-foreground">Base currency</label>
           <select value={primaryCurrency} onChange={(e) => onPrimaryCurrency(e.target.value)} className={selectCls}>
             {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
           </select>
@@ -60,46 +52,49 @@ export function CurrencyRatesEditor({
         </div>
       </div>
 
-      {showInfo && (
-        <p className="text-xs text-muted leading-relaxed bg-brand-50 rounded-lg p-3">
-          Customers in a country that uses <strong>{primaryCurrency}</strong> pay this exact rate. Customers
-          elsewhere pay one of the extra currencies you add below; if you haven&apos;t set their currency, they
-          pay an auto-converted price. Each session&apos;s price comes from this hourly rate, split by its length.
-        </p>
-      )}
+      <p className="text-xs text-muted leading-relaxed">
+        This is your <span className="font-medium text-foreground">base rate</span>. Customers who pay in {primaryCurrency}
+        {' '}are charged it directly, and it&apos;s the value we calculate every other customer&apos;s localised price from.
+        Each session&apos;s price is this rate split by its length.
+      </p>
 
-      {/* Additional currencies */}
-      {rates.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground">Other currencies</span>
-          {rates.map((r, i) => (
-            <div key={i} className="flex items-end gap-2">
-              <select value={r.currency} onChange={(e) => setRate(i, { currency: e.target.value })} className={selectCls}>
-                {/* the row's own currency + any not-yet-used ones */}
-                {CURRENCIES.filter((c) => c.code === r.currency || !used.has(c.code)).map((c) => (
-                  <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
-                ))}
-              </select>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted w-8 text-right">{currencySymbol(r.currency)}</span>
-                <input type="number" min={0} step="0.01" value={r.hourly_rate || ''}
-                  onChange={(e) => setRate(i, { hourly_rate: parseFloat(e.target.value) || 0 })}
-                  placeholder="per hour" className={`${rateInput} w-32`} />
-              </div>
-              <button type="button" onClick={() => onRates(rates.filter((_, idx) => idx !== i))} aria-label="Remove currency"
-                className="h-11 w-11 flex items-center justify-center rounded-xl text-muted hover:text-red-600 hover:bg-red-50">
-                <Trash2 className="h-5 w-5" />
-              </button>
+      {/* Additional currencies for foreign customers. */}
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-foreground">
+          Other currencies <span className="font-normal text-muted">(optional)</span>
+        </span>
+        <p className="text-xs text-muted leading-relaxed">
+          Set the exact per-hour rate for customers who pay in another currency (foreign customers). Your base
+          {' '}{primaryCurrency} rate is used for customers in your own country, and anyone whose currency you
+          haven&apos;t set here is priced from it.
+        </p>
+        {rates.map((r, i) => (
+          <div key={i} className="flex items-end gap-2">
+            <select value={r.currency} onChange={(e) => setRate(i, { currency: e.target.value })} className={selectCls}>
+              {/* the row's own currency + any not-yet-used ones */}
+              {CURRENCIES.filter((c) => c.code === r.currency || !used.has(c.code)).map((c) => (
+                <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
+              ))}
+            </select>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted w-8 text-right">{currencySymbol(r.currency)}</span>
+              <input type="number" min={0} step="0.01" value={r.hourly_rate || ''}
+                onChange={(e) => setRate(i, { hourly_rate: parseFloat(e.target.value) || 0 })}
+                placeholder="per hour" className={`${rateInput} w-32`} />
             </div>
-          ))}
-        </div>
-      )}
-      {available.length > 0 && (
-        <button type="button" onClick={addRate}
-          className="flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900 w-fit">
-          <Plus className="h-4 w-4" /> Add another currency
-        </button>
-      )}
+            <button type="button" onClick={() => onRates(rates.filter((_, idx) => idx !== i))} aria-label="Remove currency"
+              className="h-11 w-11 flex items-center justify-center rounded-xl text-muted hover:text-red-600 hover:bg-red-50">
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
+        ))}
+        {available.length > 0 && (
+          <button type="button" onClick={addRate}
+            className="flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900 w-fit mt-1">
+            <Plus className="h-4 w-4" /> Add another currency
+          </button>
+        )}
+      </div>
 
       {/* Smart pricing (PPP) */}
       <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">

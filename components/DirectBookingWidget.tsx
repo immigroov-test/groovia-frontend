@@ -797,25 +797,26 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             </span>
           )}
         </div>
-      </div>
 
-      {/* ── Bio (clamped to ~4 lines; Read more only when it actually overflows) ── */}
-      {mentor.bio && !isRichTextEmpty(mentor.bio) && (
-        <div className="max-w-3xl">
-          <div ref={bioRef} className={cn('transition-all', !bioExpanded && 'line-clamp-4')}>
-            <RichText html={mentor.bio} />
+        {/* Bio lives INSIDE the card, aligned with the identity above it (clamped to ~4 lines;
+            Read more only when it actually overflows). */}
+        {mentor.bio && !isRichTextEmpty(mentor.bio) && (
+          <div className="mt-4 pt-4 border-t border-[--color-border]">
+            <div ref={bioRef} className={cn('text-sm text-foreground leading-relaxed transition-all', !bioExpanded && 'line-clamp-4')}>
+              <RichText html={mentor.bio} />
+            </div>
+            {bioOverflows && (
+              <button
+                type="button"
+                onClick={() => setBioExpanded((v) => !v)}
+                className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
+              >
+                {bioExpanded ? <>Show less <ChevronUp className="h-4 w-4" /></> : <>Read more <ChevronDown className="h-4 w-4" /></>}
+              </button>
+            )}
           </div>
-          {bioOverflows && (
-            <button
-              type="button"
-              onClick={() => setBioExpanded((v) => !v)}
-              className="mt-1.5 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors"
-            >
-              {bioExpanded ? <>Show less <ChevronUp className="h-4 w-4" /></> : <>Read more <ChevronDown className="h-4 w-4" /></>}
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── Stepper ───────────────────────────────────────────────── */}
       <StepBar step={step} />
@@ -898,7 +899,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                                 <span className="text-sm font-semibold text-foreground">{formatSlotTime(slot.slot_start)}</span>
                                 {showMentorTz && (
                                   <span className="text-[11px] leading-tight text-muted">
-                                    {formatSlotTimeInTz(slot.slot_start, mentorTz)} {tzShort(mentorTz)} for mentor
+                                    {formatSlotTimeInTz(slot.slot_start, mentorTz)} for mentor
                                   </span>
                                 )}
                               </button>

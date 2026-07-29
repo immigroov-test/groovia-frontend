@@ -7,12 +7,9 @@ import { Flag } from './ui/Flag';
 import { pricingCountry } from '../lib/geo';
 import { countryLabel } from '../lib/countries';
 import { languageLabel } from '../lib/languages';
-import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
 import type { Mentor } from '../lib/types';
 
 interface DisplayPrice { original: number; discounted: number; currency: string }
-
-const CATEGORY_LABELS = EXPERTISE_CATEGORY_MAP;
 
 // Distinct, non-empty values from a set of mentors, so each filter only offers what
 // actually exists across the listed mentors.
@@ -44,10 +41,12 @@ const FILTERS: FilterDef[] = [
     match: (m, v) => (v as string[]).length === 0 || (v as string[]).some((c) => (m.expertise_country_codes ?? []).includes(c)),
   },
   {
-    key: 'topic', label: 'Topic', kind: 'multi', placeholder: 'Any topic',
-    options: (ms) => distinct(ms.flatMap((m) => m.expertise_categories ?? []))
-      .map((c) => ({ value: c, label: CATEGORY_LABELS[c] ?? c })).sort(byLabel),
-    match: (m, v) => (v as string[]).length === 0 || (v as string[]).some((c) => (m.expertise_categories ?? []).includes(c)),
+    // Facet the mentor by what they actually help with = the categories of the sessions they
+    // configured (derived), not a self-declared list. Values are already human-readable.
+    key: 'topic', label: 'Helps with', kind: 'multi', placeholder: 'Any topic',
+    options: (ms) => distinct(ms.flatMap((m) => m.service_categories ?? []))
+      .map((c) => ({ value: c, label: c })).sort(byLabel),
+    match: (m, v) => (v as string[]).length === 0 || (v as string[]).some((c) => (m.service_categories ?? []).includes(c)),
   },
   {
     key: 'language', label: 'Language', kind: 'multi', placeholder: 'Any language',
@@ -124,7 +123,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
     const ql = q.trim().toLowerCase();
     return mentors.filter((m) => {
       if (ql) {
-        const hay = `${m.display_name} ${m.headline ?? ''} ${(m.professional_domains ?? []).join(' ')}`.toLowerCase();
+        const hay = `${m.display_name} ${m.headline ?? ''} ${(m.professional_domains ?? []).join(' ')} ${(m.service_categories ?? []).join(' ')} ${(m.specializations ?? []).join(' ')}`.toLowerCase();
         if (!hay.includes(ql)) return false;
       }
       for (const key of activeKeys) {

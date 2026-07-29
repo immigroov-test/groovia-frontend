@@ -8,7 +8,7 @@ import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
 import { SmartPricingToggle } from './SmartPricingToggle';
 import { MentorBankCard } from './MentorBankCard';
-import { FirstLoginRateModal } from './FirstLoginRateModal';
+import { MigrationWelcomeModal } from './MigrationWelcomeModal';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
@@ -35,6 +35,7 @@ export interface HubMentor {
   public_notes?: string | null;
   smart_pricing?: boolean;
   hourly_rate?: number | null;
+  needs_onboarding?: boolean;
 }
 
 type TabId = 'profile' | 'availability' | 'sessions' | 'payments' | 'webinars';
@@ -50,13 +51,24 @@ export function MentorHubTabs({ mentor }: { mentor: HubMentor }) {
   ];
   const [tab, setTab] = useState<TabId>('profile');
 
-  // Migrated mentors arrive with no per-hour rate. Block the hub with a mandatory first-login popup
-  // to capture it (same rate + currencies + fair-pricing a new mentor fills in) before they proceed.
-  const needsRate = !mentor.hourly_rate;
+  // Migrated mentors arrive with no per-hour rate. The hub stays locked behind a mandatory
+  // first-login flow (welcome popup -> review profile -> set rate + confirm sessions) until they
+  // finish it. The gate is the server-side needs_onboarding flag, so closing the tab mid-way just
+  // brings the popup back on the next entry.
+  if (mentor.needs_onboarding) {
+    return (
+      <div className="flex flex-col gap-6">
+        <MigrationWelcomeModal mentorName={mentor.display_name} />
+        <Card><CardBody className="pt-6">
+          <h2 className="text-base font-semibold text-foreground">Finish setting up your profile</h2>
+          <p className="text-sm text-muted mt-1">We just need a couple of details before your dashboard unlocks.</p>
+        </CardBody></Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      {needsRate && <FirstLoginRateModal />}
       <StatusBanner mentor={mentor} />
 
       <div>

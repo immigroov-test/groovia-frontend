@@ -16,7 +16,6 @@ import { RichTextEditor } from './ui/RichTextEditor';
 import { Flag } from './ui/Flag';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { COUNTRIES } from '../lib/countries';
-import { EXPERTISE_CATEGORIES } from '../lib/content';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
@@ -24,7 +23,6 @@ import { validateCityName } from '../lib/validators';
 
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
-const CATEGORY_OPTIONS = EXPERTISE_CATEGORIES.map((c) => ({ value: c.value, label: c.label }));
 const DOMAIN_OPTIONS = [
   'Software Engineering', 'Product Management', 'Data Science & AI', 'Design (UX/UI)',
   'Marketing', 'Sales', 'Finance & Banking', 'Healthcare', 'Legal', 'Education',
@@ -65,14 +63,18 @@ export interface MentorProfile extends EditableFields {
   rejection_reason?: string | null;
   pending_submitted_at?: string | null;
   pending_changes?: EditableFields | null;
+  needs_onboarding?: boolean;
 }
 
 interface Props {
   mentor: MentorProfile;
   userId?: string;
+  // Step 1 of a migrated mentor's first-login flow: edits apply live (no staging), pricing is
+  // deferred to the availability step, and saving continues there instead of back to the hub.
+  onboarding?: boolean;
 }
 
-export function MentorProfileEditForm({ mentor, userId }: Props) {
+export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Props) {
   const router = useRouter();
 
   const locked = mentor.status === 'pending_review' || mentor.status === 'suspended';
@@ -98,7 +100,9 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(src.social_links ?? []);
   const [publicNotes, setPublicNotes] = useState(src.public_notes ?? '');
   const [expertiseCountries, setExpertiseCountries] = useState<string[]>(src.expertise_country_codes ?? []);
-  const [categories, setCategories] = useState<string[]>(src.expertise_categories ?? []);
+  // Expertise categories are no longer asked for (they're derived from configured services), but we
+  // keep the existing value so saving the profile never wipes a legacy mentor's stored categories.
+  const [categories] = useState<string[]>(src.expertise_categories ?? []);
   const [yearsExp, setYearsExp] = useState(src.years_lived_experience != null ? String(src.years_lived_experience) : '');
   const [yearsProfExp, setYearsProfExp] = useState(src.years_professional_experience != null ? String(src.years_professional_experience) : '');
   const [domains, setDomains] = useState<string[]>(src.professional_domains ?? []);
@@ -167,7 +171,8 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.detail || 'Save failed. Please try again.'); return; }
-      router.push('/mentor');
+      // Onboarding step 1 -> continue to step 2 (rate + sessions). Otherwise back to the hub.
+      router.push(onboarding ? '/mentor/availability?onboarding=1' : '/mentor');
       router.refresh();
     } catch {
       setError('Save failed. Please try again.');
@@ -196,11 +201,23 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
     );
   }
 
-  const submitLabel = isApproved ? 'Submit changes for approval' : 'Resubmit for approval';
+  const submitLabel = onboarding
+    ? 'Save & continue'
+    : isApproved ? 'Submit changes for approval' : 'Resubmit for approval';
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
-      <StatusNotice status={mentor.status} note={mentor.rejection_reason} hasPendingRevision={hasPendingRevision} />
+      {onboarding ? (
+        <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4">
+          <p className="text-sm font-semibold text-brand-900">Step 1 of 2 · Review your profile</p>
+          <p className="text-sm text-muted mt-1">
+            We imported these details from immigroov.com. Check them, fill in anything missing, then
+            continue to set your rate and sessions.
+          </p>
+        </div>
+      ) : (
+        <StatusNotice status={mentor.status} note={mentor.rejection_reason} hasPendingRevision={hasPendingRevision} />
+      )}
 
       <Card>
         <CardBody className="pt-6 flex flex-col gap-5">
@@ -274,14 +291,12 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
           <MultiSelect label="Countries of Expertise * (max 2)" options={COUNTRY_OPTIONS} value={expertiseCountries}
             onChange={setExpertiseCountries} placeholder="Type to search, press Enter to add" maxSelected={2}
             hint="Countries you have direct immigration or career experience in." />
-          <MultiSelect label="Areas of Expertise" options={CATEGORY_OPTIONS} value={categories} onChange={setCategories}
-            placeholder="Type to search, press Enter to add"
-            hint="Topics you can advise on. Shown as tags on your card and used to filter the mentor list." />
           <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
             placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
         </CardBody>
       </Card>
 
+      {!onboarding && (
       <Card>
         <CardBody className="pt-6 flex flex-col gap-4">
           <div>
@@ -308,6 +323,7 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
           </div>
         </CardBody>
       </Card>
+      )}
 
       <Card>
         <CardBody className="pt-6 flex flex-col gap-4">
@@ -326,8 +342,10 @@ export function MentorProfileEditForm({ mentor, userId }: Props) {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex items-center justify-between gap-3">
-        <Link href="/mentor" className="text-sm text-muted hover:text-foreground underline underline-offset-2">← Back to mentor hub</Link>
+      <div className={cn('flex items-center gap-3', onboarding ? 'justify-end' : 'justify-between')}>
+        {!onboarding && (
+          <Link href="/mentor" className="text-sm text-muted hover:text-foreground underline underline-offset-2">← Back to mentor hub</Link>
+        )}
         <Button type="submit" variant="accent" loading={saving}>{submitLabel}</Button>
       </div>
     </form>

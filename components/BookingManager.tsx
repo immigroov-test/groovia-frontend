@@ -5,6 +5,7 @@ import { ChevronRight, CreditCard, Loader2, Video } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Badge } from './ui/Badge';
 import { cn } from '../lib/utils';
+import { mentorDisplayTz, tzOffset } from '../lib/timezone';
 
 // One row from my_bookings / mentor_sessions. The list only needs the summary fields;
 // the full lifecycle + actions live on the session detail page (/session/[id]).
@@ -14,6 +15,7 @@ export interface ManagedBooking {
   slot_time: string | null;
   slot_end: string | null;
   mentor_tz?: string | null;
+  mentor_country?: string | null;
   service_title: string | null;
   service_duration: number | null;
   other_name: string | null;
@@ -161,7 +163,11 @@ function BookingCard({ b, role }: { b: ManagedBooking; role: Role }) {
   const pending = b.status === 'pending';
   const active = b.status === 'confirmed' || b.status === 'rescheduled';
   const future = b.slot_time ? new Date(b.slot_time).getTime() > Date.now() : true;
-  const showMentorTz = role === 'mentee' && !!b.slot_time && !!b.mentor_tz && b.mentor_tz !== TZ;
+  // Resolve the mentor's display zone the way the booking/detail pages do: a bare 'UTC' (migrated
+  // mentors who never set a real zone) falls back to their country's city instead of an opaque
+  // "UTC". Show it only when it actually differs from the viewer's clock.
+  const mentorTz = mentorDisplayTz(b.mentor_tz ?? undefined, b.mentor_country ?? undefined) || b.mentor_tz || 'UTC';
+  const showMentorTz = role === 'mentee' && !!b.slot_time && !!b.mentor_tz && tzOffset(mentorTz) !== tzOffset(TZ);
 
   const hint = pending
     ? { label: 'Complete payment', icon: CreditCard, cls: 'text-amber-700' }
@@ -201,7 +207,7 @@ function BookingCard({ b, role }: { b: ManagedBooking; role: Role }) {
           )}
           <p className="text-xs text-muted mt-0.5 truncate">
             Your time ({shortTz(TZ)})
-            {showMentorTz && <> · mentor {timeInTz(b.slot_time!, b.mentor_tz!)} ({shortTz(b.mentor_tz!)})</>}
+            {showMentorTz && <> · mentor {timeInTz(b.slot_time!, mentorTz)} ({shortTz(mentorTz)})</>}
             {b.service_duration ? ` · ${b.service_duration} min` : ''}
           </p>
           {(() => {

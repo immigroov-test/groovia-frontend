@@ -25,14 +25,12 @@ import { BankDetailsFields } from './BankDetailsFields';
 import { emptyBank, validateBank, toBankPayload, type BankValue } from '../lib/bank';
 import { validateCityName } from '../lib/validators';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
-import { EXPERTISE_CATEGORIES } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { suggestHeadline } from '../lib/headline';
 import { cn } from '../lib/utils';
 
-const CATEGORY_OPTIONS = EXPERTISE_CATEGORIES.map((c) => ({ value: c.value, label: c.label }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 
 const DOMAIN_OPTIONS = [
@@ -96,7 +94,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [languages, setLanguages] = useState<string[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [publicNotes, setPublicNotes] = useState(DEFAULT_DISCLAIMER);
-  const [categories, setCategories] = useState<string[]>([]);
+  const categories: string[] = [];   // expertise categories are now derived from configured services, not asked here
   const [yearsExp, setYearsExp] = useState('');           // years lived abroad (optional)
   const [yearsProfExp, setYearsProfExp] = useState('');   // years of professional experience (required)
   const [domains, setDomains] = useState<string[]>([]);
@@ -452,10 +450,6 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 <p className="text-sm text-muted">Set your home and current country above.</p>
               )}
             </div>
-
-            <MultiSelect label="Areas of Expertise" options={CATEGORY_OPTIONS} value={categories} onChange={setCategories}
-              placeholder="Type to search, press Enter to add"
-              hint="Topics you can advise on. Shown as tags on your card." />
 
             <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
               placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />

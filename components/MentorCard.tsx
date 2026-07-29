@@ -20,7 +20,11 @@ interface DisplayPrice { original: number; discounted: number; currency: string 
 export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mentor; price?: DisplayPrice; priceReady?: boolean }) {
   const initials = mentor.display_name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase();
   const countries = mentor.expertise_country_codes ?? [];
-  const categories = mentor.expertise_categories ?? [];
+  // Show what the mentor helps with = their configured session categories (already readable). Fall
+  // back to the legacy self-declared expertise categories (mapped) for mentors who have none yet.
+  const categories = (mentor.service_categories && mentor.service_categories.length)
+    ? mentor.service_categories
+    : (mentor.expertise_categories ?? []).map((c) => EXPERTISE_CATEGORY_MAP[c] ?? c);
   const languages = mentor.languages ?? [];
   const rating = mentor.avg_rating ?? 0;
   const location = [mentor.city, mentor.country ? countryLabel(mentor.country) : '']
@@ -61,7 +65,7 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
         {/* Expertise: category tags + countries (full names). Fair-pricing badge lives by the price. */}
         <div className="flex flex-wrap gap-1.5">
           {categories.slice(0, 3).map((cat) => (
-            <Badge key={cat} tone="accent">{EXPERTISE_CATEGORY_MAP[cat] ?? cat}</Badge>
+            <Badge key={cat} tone="accent">{cat}</Badge>
           ))}
           {countries.slice(0, 2).map((c) => (
             <Badge key={c} tone="brand">{countryLabel(c)}</Badge>
