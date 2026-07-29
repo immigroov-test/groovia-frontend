@@ -29,6 +29,7 @@ import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { suggestHeadline } from '../lib/headline';
+import { suggestTags } from '../lib/tags';
 import { cn } from '../lib/utils';
 
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
@@ -460,6 +461,25 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               </label>
               <TagInput value={specializations} onChange={setSpecializations} max={12}
                 placeholder="e.g. ML in production, computer vision, model deployment" />
+              {(() => {
+                // Auto-suggested tags from what they've already entered (domains + countries). One tap
+                // adds one; they stay fully editable. These feed the mentor-listing search.
+                const suggestions = suggestTags({ domains, country, homeCountry })
+                  .filter((t) => !specializations.some((s) => s.toLowerCase() === t.toLowerCase()));
+                if (suggestions.length === 0 || specializations.length >= 12) return null;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs text-muted">Suggested:</span>
+                    {suggestions.slice(0, 8).map((t) => (
+                      <button key={t} type="button"
+                        onClick={() => setSpecializations([...specializations, t].slice(0, 12))}
+                        className="rounded-full border border-dashed border-[--color-border] bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                        + {t}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
               <p className="text-xs text-muted">Add the specific things you go deep on. The more specific, the easier it is for mentees to find you.</p>
             </div>
           </CardBody>

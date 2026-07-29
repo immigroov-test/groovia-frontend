@@ -802,7 +802,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             Read more only when it actually overflows). */}
         {mentor.bio && !isRichTextEmpty(mentor.bio) && (
           <div className="mt-4 pt-4 border-t border-[--color-border]">
-            <div ref={bioRef} className={cn('text-sm text-foreground leading-relaxed transition-all', !bioExpanded && 'line-clamp-4')}>
+            {/* Justify + tighten: migrated bios arrive as many short one-line paragraphs, which
+                otherwise read as a choppy, spaced-out list. Tight paragraph margins + hidden empty
+                paragraphs make it flow as continuous prose. */}
+            <div ref={bioRef} className={cn('text-sm text-foreground leading-relaxed text-justify [&_p]:my-1 [&_p:empty]:hidden transition-all', !bioExpanded && 'line-clamp-4')}>
               <RichText html={mentor.bio} />
             </div>
             {bioOverflows && (
