@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   AlertTriangle, ArrowLeft, Clock, CreditCard, Loader2, Lock, Video,
 } from 'lucide-react';
@@ -509,9 +510,13 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
 }
 
 function BackLink() {
+  const router = useRouter();
+  // "Return to previous page": go back to wherever they came from (admin Bookings, mentor hub, or
+  // the account sessions list) instead of always dumping everyone on the mentee account page.
   return (
-    <Link href="/account/sessions" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
-      <ArrowLeft className="h-4 w-4" /> All sessions
-    </Link>
+    <button type="button" onClick={() => router.back()}
+      className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground">
+      <ArrowLeft className="h-4 w-4" /> Back
+    </button>
   );
 }
