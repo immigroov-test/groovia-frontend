@@ -7,7 +7,6 @@ import { Card, CardBody } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { RichText } from './ui/RichText';
-import { PastSessions, type LegacySession } from './PastSessions';
 import { UI_CONTENT } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
@@ -101,7 +100,6 @@ interface MentorDetail extends AdminMentor {
   availability_rules?: AvailabilityRules | null;
   date_overrides?: DateOverride[];
   bank?: MaskedBank | null;
-  legacy_sessions?: LegacySession[];
 }
 
 interface Props {
@@ -503,13 +501,6 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
               </p>
             ))}
           </div>
-        </section>
-      )}
-
-      {/* Imported session history (read-only track record from the old portal) */}
-      {(detail.legacy_sessions?.length ?? 0) > 0 && (
-        <section>
-          <PastSessions sessions={detail.legacy_sessions!} heading="Past sessions (imported)" bare />
         </section>
       )}
     </div>
