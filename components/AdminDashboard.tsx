@@ -5,6 +5,8 @@ import { AdminMentorList } from './AdminMentorList';
 import { AdminRevisionList, type AdminRevision } from './AdminRevisionList';
 import { AdminBookings } from './AdminBookings';
 import { AdminPayouts } from './AdminPayouts';
+import { AdminPendingServices } from './AdminPendingServices';
+import { AdminOps } from './AdminOps';
 import { UI_CONTENT } from '../lib/content';
 import { cn } from '../lib/utils';
 import type { AdminMentor } from '../app/(shell)/admin/page';
@@ -13,8 +15,8 @@ type MentorFilter = 'all' | 'active' | 'inactive' | 'no_service';
 const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
-interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; total_bookings: number; global_commission_pct: number; }
-type Tab = 'review' | 'mentors' | 'bookings' | 'payouts';
+interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; pending_service_count: number; total_bookings: number; global_commission_pct: number; }
+type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'ops';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
@@ -26,12 +28,13 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
   const mCounts = { all: approved.length, active: 0, inactive: 0, no_service: 0 };
   approved.forEach((m) => { mCounts[mentorCategory(m)]++; });
   const shownMentors = mentorFilter === 'all' ? approved : approved.filter((m) => mentorCategory(m) === mentorFilter);
-  const reviewCount = pending.length + revisions.length;
+  const reviewCount = pending.length + revisions.length + (stats.pending_service_count || 0);
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: 'review', label: 'Review', count: reviewCount || undefined },
     { key: 'mentors', label: 'Mentors', count: approved.length || undefined },
     { key: 'bookings', label: 'Bookings' },
     { key: 'payouts', label: 'Payouts' },
+    { key: 'ops', label: 'Ops' },
   ];
 
   return (
@@ -79,6 +82,9 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
             <Section title="Profile updates" subtitle="Edits from approved mentors. Their live profile stays up until you approve the changes.">
               <AdminRevisionList initialRevisions={revisions} />
             </Section>
+            <Section title="Session types awaiting review" subtitle="New session types added by live mentors. They only appear to users once you approve them.">
+              <AdminPendingServices />
+            </Section>
           </div>
         )}
 
@@ -114,6 +120,12 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
         {tab === 'bookings' && <AdminBookings />}
 
         {tab === 'payouts' && <AdminPayouts />}
+
+        {tab === 'ops' && (
+          <Section title="No-show strikes" subtitle="Mentors with accrued no-show strikes. Reset if a dispute is resolved in their favour.">
+            <AdminOps />
+          </Section>
+        )}
       </div>
     </div>
   );
