@@ -9,6 +9,7 @@ import { BookingManager } from './BookingManager';
 import { SmartPricingToggle } from './SmartPricingToggle';
 import { MentorBankCard } from './MentorBankCard';
 import { MigrationWelcomeModal } from './MigrationWelcomeModal';
+import { PastSessions, type LegacySession } from './PastSessions';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
@@ -40,7 +41,7 @@ export interface HubMentor {
 
 type TabId = 'profile' | 'availability' | 'sessions' | 'payments' | 'webinars';
 
-export function MentorHubTabs({ mentor }: { mentor: HubMentor }) {
+export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMentor; legacySessions?: LegacySession[] }) {
   const approved = mentor.status === 'approved';
   const tabs: { id: TabId; label: string }[] = [
     { id: 'profile', label: 'Profile' },
@@ -101,9 +102,12 @@ export function MentorHubTabs({ mentor }: { mentor: HubMentor }) {
             </div>
           )}
           {tab === 'sessions' && (
-            approved
-              ? <BookingManager role="mentor" />
-              : <Card><CardBody className="pt-6"><p className="text-sm text-muted">Your booked sessions will appear here once your application is approved.</p></CardBody></Card>
+            <div className="flex flex-col gap-8">
+              {approved
+                ? <BookingManager role="mentor" />
+                : <Card><CardBody className="pt-6"><p className="text-sm text-muted">Your booked sessions will appear here once your application is approved.</p></CardBody></Card>}
+              {legacySessions.length > 0 && <PastSessions sessions={legacySessions} heading="Past sessions (imported)" />}
+            </div>
           )}
           {tab === 'payments' && (
             <div className="flex flex-col gap-6">
