@@ -20,6 +20,7 @@ import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
 import { validateCityName } from '../lib/validators';
+import { suggestHeadline } from '../lib/headline';
 
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
@@ -89,6 +90,9 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
 
   const [displayName, setDisplayName] = useState(src.display_name ?? '');
   const [headline, setHeadline] = useState(src.headline ?? '');
+  // Existing mentors keep their own headline (edited=true); "Suggest" re-drafts it from their
+  // expertise. Placed near the end of the form so the draft has the domain/country to work with.
+  const [headlineEdited, setHeadlineEdited] = useState(!!(src.headline ?? '').trim());
   const [photoUrl, setPhotoUrl] = useState<string | null>(src.photo_url ?? null);
   const [phone, setPhone] = useState(src.phone ?? '');
   const [bio, setBio] = useState(src.bio ?? '');
@@ -118,9 +122,11 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
     if (tz) setTimezone(tz);
   }
 
+  const effectiveHeadline = headlineEdited ? headline : suggestHeadline({ domain: domains[0], country });
+
   function validate(): string | null {
     if (!displayName.trim()) return 'Full name is required.';
-    if (!headline.trim()) return 'Headline is required.';
+    if (!effectiveHeadline.trim()) return 'Headline is required.';
     if (!country) return 'Please select your current country.';
     if (!homeCountry) return 'Please select your home country.';
     if (languages.length === 0) return 'Select at least one language.';
@@ -149,7 +155,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({
           display_name: displayName.trim(),
-          headline: headline.trim() || null,
+          headline: effectiveHeadline.trim() || null,
           photo_url: photoUrl || null,
           phone: phone || null,
           bio: isRichTextEmpty(bio) ? null : bio,
@@ -233,8 +239,6 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
 
           <Input label="Full name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
             placeholder="e.g. Priya Nair" autoComplete="name" required />
-          <Input label="Headline *" value={headline} onChange={(e) => setHeadline(e.target.value)}
-            placeholder="e.g. Software engineer who moved from India to the Netherlands" required />
           <PhoneInput label="Phone Number" value={phone} onChange={setPhone}
             hint="Used for session coordination. Not shown to users." />
         </CardBody>
@@ -324,6 +328,24 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
         </CardBody>
       </Card>
       )}
+
+      <Card>
+        <CardBody className="pt-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-sm font-medium text-foreground">Headline *</label>
+              <button type="button" onClick={() => setHeadlineEdited(false)}
+                className="text-xs font-medium text-brand-700 hover:underline">
+                Suggest from my expertise
+              </button>
+            </div>
+            <Input value={effectiveHeadline}
+              onChange={(e) => { setHeadlineEdited(true); setHeadline(e.target.value); }}
+              placeholder="e.g. Software Engineering mentor | Helping you land jobs in the Netherlands" required />
+            <p className="text-xs text-muted">Drafted from your expertise above. Edit to make it yours.</p>
+          </div>
+        </CardBody>
+      </Card>
 
       <Card>
         <CardBody className="pt-6 flex flex-col gap-4">

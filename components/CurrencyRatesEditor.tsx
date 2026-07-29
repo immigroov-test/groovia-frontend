@@ -53,9 +53,8 @@ export function CurrencyRatesEditor({
       </div>
 
       <p className="text-xs text-muted leading-relaxed">
-        This is your <span className="font-medium text-foreground">base rate</span>. Customers who pay in {primaryCurrency}
-        {' '}are charged it directly, and it&apos;s the value we calculate every other customer&apos;s localised price from.
-        Each session&apos;s price is this rate split by its length.
+        Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it directly;
+        everyone else&apos;s price is calculated from it, split by session length.
       </p>
 
       {/* Additional currencies for foreign customers. */}
@@ -64,9 +63,8 @@ export function CurrencyRatesEditor({
           Other currencies <span className="font-normal text-muted">(optional)</span>
         </span>
         <p className="text-xs text-muted leading-relaxed">
-          Set the exact per-hour rate for customers who pay in another currency (foreign customers). Your base
-          {' '}{primaryCurrency} rate is used for customers in your own country, and anyone whose currency you
-          haven&apos;t set here is priced from it.
+          Set an exact rate for another currency&apos;s customers. Anyone whose currency you don&apos;t set is priced
+          from your base {primaryCurrency} rate.
         </p>
         {rates.map((r, i) => (
           <div key={i} className="flex items-end gap-2">
@@ -101,9 +99,8 @@ export function CurrencyRatesEditor({
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Smart pricing</p>
           <p className="text-xs text-muted mt-0.5">
-            For customers whose currency you haven&apos;t set above, adapt the auto-converted price to their
-            country&apos;s cost of living (purchasing-power parity), so it feels fair and usually lifts bookings.
-            It never changes the rates you set here.
+            Adjusts auto-converted prices to each country&apos;s cost of living (PPP), so they feel fair. Never
+            changes the rates you set.
           </p>
         </div>
         <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />

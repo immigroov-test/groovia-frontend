@@ -54,14 +54,11 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
   return (
     <div className="flex flex-col gap-8">
       <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4">
-        <p className="text-sm font-semibold text-brand-900">Step 2 of 2 · Set your rate & sessions</p>
-        <p className="text-sm text-muted mt-1">
-          Add your hourly rate, confirm the sessions you offer, and set your weekly hours. Finish at
-          the bottom to unlock your dashboard.
-        </p>
+        <p className="text-sm font-semibold text-brand-900">Step 2 of 2 · Rate &amp; sessions</p>
+        <p className="text-sm text-muted mt-1">Finish at the bottom to go live.</p>
       </div>
 
-      <Section title="Your rate" subtitle="Mentees never see this number directly, we prorate it per session length and localise it to their currency.">
+      <Section title="Your rate">
         <MentorRateEditor
           initialCurrency={mentor.currency ?? 'INR'}
           initialRate={mentor.hourly_rate != null ? String(mentor.hourly_rate) : ''}
@@ -71,11 +68,11 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
         />
       </Section>
 
-      <Section title="Your sessions" subtitle="These are the sessions we imported for you. You can edit them, or add one of our template sessions (new ones go through a quick review before they appear).">
+      <Section title="Your sessions" subtitle="Add template sessions if you like; new ones need a quick review.">
         <ServicesManager />
       </Section>
 
-      <Section title="Your schedule" subtitle="Set the weekly hours when mentees can book you.">
+      <Section title="Your schedule" subtitle="When mentees can book you.">
         <AvailabilityManagerV2 />
       </Section>
 
@@ -83,9 +80,7 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
         <CardBody className="pt-6 flex flex-col gap-3">
           <h3 className="text-base font-semibold text-foreground">Finish setup</h3>
           <p className="text-sm text-muted">
-            {rateSaved
-              ? "You're all set. Finish to unlock your dashboard, your profile stays live throughout."
-              : 'Save your hourly rate above, then finish to unlock your dashboard.'}
+            {rateSaved ? "You're all set." : 'Save your rate above to finish.'}
           </p>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div>
@@ -99,12 +94,12 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
   );
 }
 
-function Section({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
       <div>
         <h2 className="text-base font-semibold text-foreground">{title}</h2>
-        <p className="text-sm text-muted mt-0.5">{subtitle}</p>
+        {subtitle && <p className="text-sm text-muted mt-0.5">{subtitle}</p>}
       </div>
       {children}
     </section>
