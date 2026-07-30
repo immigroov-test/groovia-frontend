@@ -166,9 +166,12 @@ function formatPrice(price: number, currency: string): string {
 // original is shown struck through beside the discounted amount. Falls back to the
 // mentor-currency base price until the localized figure is available.
 function PriceLabel({
-  service, price, className,
-}: { service: Service; price?: DisplayPrice; className?: string }) {
+  service, price, priceReady = true, className,
+}: { service: Service; price?: DisplayPrice; priceReady?: boolean; className?: string }) {
   if (service.set_price === 0) return <span className={className}>Free</span>;
+  // Skeleton until the backend-localized figure is in, so the page never flashes the raw mentor
+  // currency (e.g. INR) before correcting to the customer's currency.
+  if (!priceReady) return <span className={cn('inline-block h-[1em] w-14 rounded bg-neutral-100 animate-pulse align-middle', className)} aria-hidden />;
   if (!price) return <span className={className}>{formatPrice(service.set_price, service.set_currency)}</span>;
   // Only strike when the DISPLAYED amounts differ (same-region fair pricing gives an equal price, so
   // striking the same number is meaningless).
@@ -343,6 +346,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // before the Razorpay popup so the amount is never a surprise. The discounted value
   // equals what Razorpay actually charges.
   const [priceMap, setPriceMap]     = useState<Record<string, DisplayPrice>>({});
+  // Prices render only once the backend-localized figures are in, so the booking page never flashes
+  // the raw mentor-currency amount before correcting to the customer's currency.
+  const [priceReady, setPriceReady] = useState(false);
 
   // The visitor's country (edge/IP geo). Used to label their timezone with their actual
   // location's city and to keep PPP consistent with what they're shown.
@@ -394,9 +400,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // each price and the summary show the localized original/discounted amount up front.
   // Best-effort: on any failure the UI falls back to the mentor-currency base price.
   useEffect(() => {
-    const paid = (services ?? []).filter(s => s.set_price > 0);
-    if (paid.length === 0) return;
+    if (services === null) return;   // services still loading; keep the skeleton up
+    const paid = services.filter(s => s.set_price > 0);
+    if (paid.length === 0) { setPriceReady(true); return; }
     let cancelled = false;
+    setPriceReady(false);
     (async () => {
       try {
         const country = await pricingCountry();
@@ -411,14 +419,16 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             items: paid.map(s => ({ key: s.id, amount: s.set_price, from: s.set_currency, is_ppp: !!mentor.smart_pricing, mentor_country: mentor.country ?? null, mentor_id: mentor.id })),
           }),
         });
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        const map: Record<string, DisplayPrice> = {};
-        for (const p of (data.prices ?? [])) {
-          map[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency, fxOk: !!p.fx_ok };
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          const map: Record<string, DisplayPrice> = {};
+          for (const p of (data.prices ?? [])) {
+            map[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency, fxOk: !!p.fx_ok };
+          }
+          if (!cancelled) setPriceMap(map);
         }
-        if (!cancelled) setPriceMap(map);
       } catch { /* keep base-price fallback */ }
+      finally { if (!cancelled) setPriceReady(true); }
     })();
     return () => { cancelled = true; };
   }, [services]);
@@ -856,7 +866,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                             {svc.category && <span>· {svc.category}</span>}
                           </div>
                         </div>
-                        <PriceLabel service={svc} price={priceMap[svc.id]} className="shrink-0 text-base font-semibold text-brand-700" />
+                        <PriceLabel service={svc} price={priceMap[svc.id]} priceReady={priceReady} className="shrink-0 text-base font-semibold text-brand-700" />
                       </div>
                     </button>
                   ))}
@@ -935,7 +945,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted">Total</span>
-                <PriceLabel service={selectedService} price={priceMap[selectedService.id]} className="text-lg font-semibold text-brand-900" />
+                <PriceLabel service={selectedService} price={priceMap[selectedService.id]} priceReady={priceReady} className="text-lg font-semibold text-brand-900" />
               </div>
               {(() => {
                 const p = priceMap[selectedService.id];

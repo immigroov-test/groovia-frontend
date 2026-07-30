@@ -5,6 +5,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Card, CardBody } from './ui/Card';
 import { Button } from './ui/Button';
+import { CountrySelect } from './ui/CountrySelect';
 import { countryLabel } from '../lib/countries';
 
 export interface CountryPricing {
@@ -13,6 +14,20 @@ export interface CountryPricing {
 
 function label(cc: string): string {
   return cc === 'DEFAULT' ? 'All other countries (default)' : `${countryLabel(cc)} (${cc})`;
+}
+
+// Live worked example from a base of 100, so the admin sees the effect of the numbers as they type.
+function Example({ fee, tax }: { fee: number; tax: number }) {
+  const base = 100;
+  const feeAmt = base * (fee || 0) / 100;
+  const taxAmt = (base + feeAmt) * (tax || 0) / 100;
+  const total = base + feeAmt + taxAmt;
+  return (
+    <p className="text-xs text-muted">
+      Example: base <span className="font-medium text-foreground">100</span> + fee {fee || 0}% ({feeAmt.toFixed(2)})
+      {' '}+ tax {tax || 0}% ({taxAmt.toFixed(2)}) = <span className="font-semibold text-foreground">{total.toFixed(2)}</span>
+    </p>
+  );
 }
 
 // Per-country platform fee + tax. Customer price = mentor rate x (1 + fee%) x (1 + tax%), by the
@@ -61,36 +76,46 @@ export function AdminPricing() {
 
   if (rows === null) return <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
 
+  const existing = new Set(rows.map((r) => r.country_code));
+
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted">
-        Customer price = mentor rate + platform fee + tax, by the customer&apos;s country. The DEFAULT
-        row applies to any country without its own entry. A per-mentor commission override still wins.
-      </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
-          <Card key={r.country_code}><CardBody className="pt-4 pb-4 flex flex-wrap items-end gap-3">
-            <div className="min-w-[150px] flex-1"><p className="text-sm font-semibold text-foreground">{label(r.country_code)}</p></div>
-            <Field label="Platform fee %" type="number" value={String(r.platform_fee_pct)} onChange={(v) => patch(r.country_code, 'platform_fee_pct', v)} />
-            <Field label="Tax %" type="number" value={String(r.tax_pct)} onChange={(v) => patch(r.country_code, 'tax_pct', v)} />
-            <Field label="Tax label" type="text" value={r.tax_label ?? ''} placeholder="GST / VAT" onChange={(v) => patch(r.country_code, 'tax_label', v)} />
-            <Button variant="primary" size="sm" loading={saving === r.country_code} onClick={() => save(r)}>Save</Button>
+          <Card key={r.country_code}><CardBody className="pt-4 pb-4 flex flex-col gap-2">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-[150px] flex-1"><p className="text-sm font-semibold text-foreground">{label(r.country_code)}</p></div>
+              <Field label="Platform fee %" type="number" value={String(r.platform_fee_pct)} onChange={(v) => patch(r.country_code, 'platform_fee_pct', v)} />
+              <Field label="Tax %" type="number" value={String(r.tax_pct)} onChange={(v) => patch(r.country_code, 'tax_pct', v)} />
+              <Field label="Tax label (optional)" type="text" value={r.tax_label ?? ''} placeholder="GST / VAT" onChange={(v) => patch(r.country_code, 'tax_label', v)} />
+              <Button variant="primary" size="sm" loading={saving === r.country_code} onClick={() => save(r)}>Save</Button>
+            </div>
+            <Example fee={r.platform_fee_pct} tax={r.tax_pct} />
           </CardBody></Card>
         ))}
       </div>
 
-      <Card><CardBody className="pt-4 pb-4 flex flex-wrap items-end gap-3">
-        <Field label="Country (ISO-2)" type="text" value={adding.country_code} placeholder="e.g. GB"
-          onChange={(v) => setAdding((a) => ({ ...a, country_code: v.toUpperCase().slice(0, 2) }))} />
-        <Field label="Platform fee %" type="number" value={adding.platform_fee_pct} onChange={(v) => setAdding((a) => ({ ...a, platform_fee_pct: v }))} />
-        <Field label="Tax %" type="number" value={adding.tax_pct} onChange={(v) => setAdding((a) => ({ ...a, tax_pct: v }))} />
-        <Field label="Tax label" type="text" value={adding.tax_label} placeholder="VAT" onChange={(v) => setAdding((a) => ({ ...a, tax_label: v }))} />
-        <Button variant="accent" size="sm" disabled={adding.country_code.trim().length !== 2 || saving === adding.country_code.toUpperCase()}
-          onClick={() => save({ country_code: adding.country_code, platform_fee_pct: parseFloat(adding.platform_fee_pct) || 0, tax_pct: parseFloat(adding.tax_pct) || 0, tax_label: adding.tax_label.trim() || null })}>
-          <Plus className="h-4 w-4" /> Add country
-        </Button>
+      {/* Add a country */}
+      <Card><CardBody className="pt-4 pb-4 flex flex-col gap-3">
+        <p className="text-sm font-semibold text-foreground">Add a country</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-56">
+            <CountrySelect label="Country" value={adding.country_code}
+              onChange={(code) => setAdding((a) => ({ ...a, country_code: code }))} placeholder="Search a country" />
+          </div>
+          <Field label="Platform fee %" type="number" value={adding.platform_fee_pct} onChange={(v) => setAdding((a) => ({ ...a, platform_fee_pct: v }))} />
+          <Field label="Tax %" type="number" value={adding.tax_pct} onChange={(v) => setAdding((a) => ({ ...a, tax_pct: v }))} />
+          <Field label="Tax label (optional)" type="text" value={adding.tax_label} placeholder="VAT" onChange={(v) => setAdding((a) => ({ ...a, tax_label: v }))} />
+          <Button variant="accent" size="sm"
+            disabled={!adding.country_code || existing.has(adding.country_code) || saving === adding.country_code}
+            onClick={() => save({ country_code: adding.country_code, platform_fee_pct: parseFloat(adding.platform_fee_pct) || 0, tax_pct: parseFloat(adding.tax_pct) || 0, tax_label: adding.tax_label.trim() || null })}>
+            <Plus className="h-4 w-4" /> Add to list
+          </Button>
+        </div>
+        {existing.has(adding.country_code) && <p className="text-xs text-amber-700">That country already has a row above, edit it there.</p>}
+        <Example fee={parseFloat(adding.platform_fee_pct) || 0} tax={parseFloat(adding.tax_pct) || 0} />
       </CardBody></Card>
     </div>
   );
