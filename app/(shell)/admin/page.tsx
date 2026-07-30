@@ -3,6 +3,7 @@ import { serverAuth } from '../../../lib/supabase/server';
 import { backendBaseUrl } from '../../../lib/backend';
 import { AdminDashboard } from '../../../components/AdminDashboard';
 import type { AdminRevision } from '../../../components/AdminRevisionList';
+import type { CountryPricing } from '../../../components/AdminPricing';
 
 export const metadata = { title: 'Admin - Immigroov' };
 
@@ -58,7 +59,7 @@ export default async function AdminPage() {
 
   const base = backendBaseUrl();
 
-  const [pending, approved, suspended, revisions, statsRes] = await Promise.all([
+  const [pending, approved, suspended, revisions, statsRes, countryPricing] = await Promise.all([
     fetchJson<AdminMentor[]>(`${base}/admin/mentors/pending`, token, []),
     fetchJson<AdminMentor[]>(`${base}/admin/mentors/approved`, token, []),
     fetchJson<AdminMentor[]>(`${base}/admin/mentors/suspended`, token, []),
@@ -66,6 +67,7 @@ export default async function AdminPage() {
     fetch(`${base}/admin/stats`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
       .then((r) => r.ok ? r.json() as Promise<AdminStats> : null)
       .catch(() => null),
+    fetchJson<CountryPricing[]>(`${base}/admin/country-pricing`, token, []),
   ]);
 
   const stats: AdminStats = statsRes ?? {
@@ -79,5 +81,5 @@ export default async function AdminPage() {
     global_commission_pct: 10,
   };
 
-  return <AdminDashboard stats={stats} pending={pending} approved={approved} suspended={suspended} revisions={revisions} />;
+  return <AdminDashboard stats={stats} pending={pending} approved={approved} suspended={suspended} revisions={revisions} countryPricing={countryPricing} />;
 }

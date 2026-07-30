@@ -7,6 +7,7 @@ import { AdminBookings } from './AdminBookings';
 import { AdminPayouts } from './AdminPayouts';
 import { AdminPendingServices } from './AdminPendingServices';
 import { AdminOps } from './AdminOps';
+import { AdminPricing, type CountryPricing } from './AdminPricing';
 import { UI_CONTENT } from '../lib/content';
 import { cn } from '../lib/utils';
 import type { AdminMentor } from '../app/(shell)/admin/page';
@@ -16,14 +17,17 @@ const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; pending_service_count: number; total_bookings: number; global_commission_pct: number; }
-type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'ops';
+type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'ops' | 'pricing';
 
-export function AdminDashboard({ stats, pending, approved, suspended, revisions }: {
+export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
+  countryPricing: CountryPricing[];
 }) {
   const [tab, setTab] = useState<Tab>('review');
   const [mentorFilter, setMentorFilter] = useState<MentorFilter>('all');
   const t = UI_CONTENT.admin;
+  const defaultFee = countryPricing.find((c) => c.country_code === 'DEFAULT')?.platform_fee_pct ?? 5;
+  const taxed = countryPricing.filter((c) => c.country_code !== 'DEFAULT' && c.tax_pct > 0);
 
   const mCounts = { all: approved.length, active: 0, inactive: 0, no_service: 0 };
   approved.forEach((m) => { mCounts[mentorCategory(m)]++; });
@@ -35,6 +39,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
     { key: 'bookings', label: 'Bookings' },
     { key: 'payouts', label: 'Payouts' },
     { key: 'ops', label: 'Ops' },
+    { key: 'pricing', label: 'Pricing' },
   ];
 
   return (
@@ -51,8 +56,10 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
       </div>
 
       <p className="mt-3 text-xs text-muted">
-        Platform commission <span className="font-semibold text-foreground">{stats.global_commission_pct}%</span> (set in
-        backend, added to the mentor rate to get the customer price).
+        Platform fee <span className="font-semibold text-foreground">{defaultFee}%</span>
+        {taxed.length > 0 && <> · {taxed.map((c) => `${c.tax_label || 'tax'} ${c.tax_pct}% (${c.country_code})`).join(', ')}</>}
+        {' '}· customer price = mentor rate + platform fee + tax.{' '}
+        <button type="button" onClick={() => setTab('pricing')} className="font-medium text-brand-700 hover:underline">Edit per country</button>
       </p>
 
       <div className="mt-8 flex items-center gap-1 border-b border-[--color-border] overflow-x-auto overflow-y-hidden">
@@ -124,6 +131,12 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions 
         {tab === 'ops' && (
           <Section title="No-show strikes" subtitle="Mentors with accrued no-show strikes. Reset if a dispute is resolved in their favour.">
             <AdminOps />
+          </Section>
+        )}
+
+        {tab === 'pricing' && (
+          <Section title="Platform fee & tax by country" subtitle="Customer price = mentor rate + platform fee + tax, by the customer's country. DEFAULT is the fallback.">
+            <AdminPricing />
           </Section>
         )}
       </div>
