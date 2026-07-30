@@ -38,8 +38,8 @@ export default async function MentorPage() {
 
   const mentor = r.data;
 
-  // Read-only session history imported from the old portal, shown on the Sessions tab.
-  const sessRes = await serverGet<{ sessions: LegacySession[] }>(`/mentors/${mentor.slug}/sessions`, token);
+  // The mentor's OWN imported past sessions (private, own-data endpoint), shown on the Sessions tab.
+  const sessRes = await serverGet<{ sessions: LegacySession[] }>('/mentor/legacy-sessions', token);
   const legacySessions = sessRes.ok && sessRes.data ? sessRes.data.sessions : [];
 
   return (

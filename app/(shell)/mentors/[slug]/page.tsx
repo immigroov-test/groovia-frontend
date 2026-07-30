@@ -4,7 +4,6 @@ import { Card, CardBody } from '../../../../components/ui/Card';
 import { Badge } from '../../../../components/ui/Badge';
 import { RichText } from '../../../../components/ui/RichText';
 import { DirectBookingWidget } from '../../../../components/DirectBookingWidget';
-import { PastSessions, type LegacySession } from '../../../../components/PastSessions';
 import type { Mentor } from '../../../../lib/types';
 import { backendBaseUrl } from '../../../../lib/backend';
 import { countryLabel } from '../../../../lib/countries';
@@ -29,22 +28,13 @@ async function fetchServices(slug: string): Promise<ServiceItem[]> {
   } catch { return []; }
 }
 
-async function fetchSessions(slug: string): Promise<LegacySession[]> {
-  try {
-    const res = await fetch(`${backendBaseUrl()}/mentors/${slug}/sessions`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.sessions ?? [];
-  } catch { return []; }
-}
-
 export default async function MentorProfilePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [mentor, services, sessions] = await Promise.all([fetchMentor(slug), fetchServices(slug), fetchSessions(slug)]);
+  const [mentor, services] = await Promise.all([fetchMentor(slug), fetchServices(slug)]);
   if (!mentor) notFound();
 
   const hasDirectBooking = services.length > 0;
@@ -119,11 +109,6 @@ export default async function MentorProfilePage({
             smart_pricing: mentor.smart_pricing ?? false,
           }}
         />
-        {sessions.length > 0 && (
-          <div className="mt-8">
-            <PastSessions sessions={sessions} />
-          </div>
-        )}
       </div>
     );
   }
@@ -144,12 +129,6 @@ export default async function MentorProfilePage({
             <RichText html={mentor.bio} />
           </CardBody>
         </Card>
-      )}
-
-      {sessions.length > 0 && (
-        <div className="mb-6">
-          <PastSessions sessions={sessions} />
-        </div>
       )}
 
       <Card className="border-dashed">
