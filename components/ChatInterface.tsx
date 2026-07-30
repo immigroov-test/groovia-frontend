@@ -609,6 +609,15 @@ export default function ChatInterface({ authed }: Props) {
   }
   // Unlocks the composer and invites the question. Typing is blocked until this runs.
   function startQna() {
+    // A returning guest who already used their free questions (the counter persists across sessions):
+    // go straight to the sign-in prompt instead of inviting "ask anything" and then blocking on the
+    // first question.
+    if (!authed && guestQuestionsUsed >= GUEST_FREE_QUESTIONS) {
+      setIntentSelected(true);
+      setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.guestLimit }]);
+      setGuestGate(true);
+      return;
+    }
     setPendingQna(false);
     setQnaActive(true);
     setIntentSelected(true);

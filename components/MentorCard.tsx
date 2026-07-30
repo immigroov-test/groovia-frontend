@@ -21,10 +21,12 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
   const initials = mentor.display_name.split(' ').map((p) => p[0] ?? '').join('').slice(0, 2).toUpperCase();
   const countries = mentor.expertise_country_codes ?? [];
   // Show what the mentor helps with = their configured session categories (already readable). Fall
-  // back to the legacy self-declared expertise categories (mapped) for mentors who have none yet.
-  const categories = (mentor.service_categories && mentor.service_categories.length)
+  // back to the legacy self-declared expertise categories for mentors who have none yet. Map every
+  // value through EXPERTISE_CATEGORY_MAP so a stray raw code (e.g. 'job_career') never renders raw.
+  const rawCats = (mentor.service_categories && mentor.service_categories.length)
     ? mentor.service_categories
-    : (mentor.expertise_categories ?? []).map((c) => EXPERTISE_CATEGORY_MAP[c] ?? c);
+    : (mentor.expertise_categories ?? []);
+  const categories = rawCats.map((c) => EXPERTISE_CATEGORY_MAP[c] ?? c);
   const languages = mentor.languages ?? [];
   const rating = mentor.avg_rating ?? 0;
   const location = [mentor.city, mentor.country ? countryLabel(mentor.country) : '']
