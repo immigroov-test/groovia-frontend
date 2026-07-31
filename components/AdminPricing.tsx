@@ -17,15 +17,18 @@ function label(cc: string): string {
 }
 
 // Live worked example from a base of 100, so the admin sees the effect of the numbers as they type.
+// Tax is charged on the (base + fee) subtotal, not just the base - shown step by step so it's clear.
 function Example({ fee, tax }: { fee: number; tax: number }) {
   const base = 100;
   const feeAmt = base * (fee || 0) / 100;
-  const taxAmt = (base + feeAmt) * (tax || 0) / 100;
-  const total = base + feeAmt + taxAmt;
+  const subtotal = base + feeAmt;
+  const taxAmt = subtotal * (tax || 0) / 100;
+  const total = subtotal + taxAmt;
   return (
     <p className="text-xs text-muted">
       Example: base <span className="font-medium text-foreground">100</span> + fee {fee || 0}% ({feeAmt.toFixed(2)})
-      {' '}+ tax {tax || 0}% ({taxAmt.toFixed(2)}) = <span className="font-semibold text-foreground">{total.toFixed(2)}</span>
+      {' '}= {subtotal.toFixed(2)}, then tax {tax || 0}% of that ({taxAmt.toFixed(2)})
+      {' '}= <span className="font-semibold text-foreground">{total.toFixed(2)}</span>
     </p>
   );
 }

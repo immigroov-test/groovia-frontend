@@ -56,6 +56,13 @@ interface DisplayPrice {
 
 interface Slot { slot_start: string; slot_end: string; }
 
+// The customer's own line-item breakdown from the binding quote (service price = localised mentor
+// rate, platform fee, tax, total). Fee/commission config + mentor's raw rate stay redacted server-side.
+interface QuoteBreakdown {
+  mentor_amount: number; fee_amount: number; tax_amount: number; tax_pct: number;
+  gross_customer: number; customer_currency: string;
+}
+
 interface Question {
   id: string;
   question_text: string;
@@ -336,6 +343,13 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [bookingId, setBookingId]   = useState<string | null>(null);
   const [idemKey, setIdemKey]       = useState('');   // stable per booking attempt → server dedupes retries
 
+  // Review & confirm popup: the price breakdown (service price + fee + tax + total) shown before the
+  // final booking, with a referral-code field and a Modify (back to slot) option.
+  const [showReview, setShowReview]       = useState(false);
+  const [reviewQuote, setReviewQuote]     = useState<QuoteBreakdown | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [referralCode, setReferralCode]   = useState('');
+
   // Payments: when the platform toggle is on and the service is paid, bookings go
   // through the reserve → Razorpay → verify flow. Otherwise the direct-confirm path
   // below is used (free sessions, or before payments are switched on).
@@ -479,10 +493,36 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     })();
   }, []);
 
+  // Open the review popup: validate the form, then fetch the binding price breakdown (paid sessions)
+  // so the customer sees exactly what they'll be charged before confirming. All amounts come from the
+  // backend quote; the frontend only displays them.
+  async function openReview() {
+    if (!selectedService || !selectedSlot) return;
+    if (!email.trim()) { setFormError('Email is required.'); return; }
+    if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
+    if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
+    const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
+    if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
+    setFormError(null);
+    setReviewQuote(null);
+    setShowReview(true);
+    if (selectedService.set_price > 0) {
+      setReviewLoading(true);
+      try {
+        const country = await pricingCountry();
+        const res = await fetch(`/api/pricing/quote/${selectedService.id}${country ? `?country=${country}` : ''}`, { cache: 'no-store' });
+        const q = await res.json().catch(() => ({}));
+        if (res.ok && q && q.gross_customer != null) setReviewQuote(q as QuoteBreakdown);
+      } catch { /* fall back to the summary total */ }
+      finally { setReviewLoading(false); }
+    }
+  }
+
   // BUG-025: bookings require an account. A guest first sees the account prompt; only
   // "Log in or sign up" opens the normal auth popup (which resumes this booking after
   // sign-in via the pendingBook effect above). "Not now" just closes - no guest booking.
   async function handleConfirm() {
+    setShowReview(false);
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
@@ -1008,8 +1048,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={handleConfirm} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !phone.trim()}>
-                    {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
+                  <Button variant="accent" onClick={openReview} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !phone.trim()}>
+                    Review &amp; confirm
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
                     <p className="text-[11px] text-muted leading-snug text-center">
@@ -1028,6 +1068,68 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           )}
         </aside>
       </div>
+
+      {showReview && selectedService && selectedSlot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl flex flex-col max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-[--color-border]">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted">Review &amp; payment</p>
+                <h3 className="text-base font-semibold text-brand-900 break-words">{selectedService.title}</h3>
+                <p className="text-xs text-muted mt-1">
+                  {formatDate(slotDateKey(selectedSlot.slot_start))} · {formatSlotTime(selectedSlot.slot_start)} · {selectedService.duration} min
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowReview(false)} aria-label="Close" className="text-muted hover:text-foreground shrink-0 text-lg leading-none">✕</button>
+            </div>
+
+            {/* Referral code (redemption is a separate feature; the field captures the code for now) */}
+            <div className="p-5 border-b border-[--color-border] flex flex-col gap-2">
+              <label className="text-sm font-medium text-foreground">Referral code</label>
+              <div className="flex gap-2">
+                <input value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code"
+                  className="flex-1 h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                <Button variant="outline" disabled className="shrink-0">Apply</Button>
+              </div>
+            </div>
+
+            {/* Price breakdown - all amounts come straight from the backend quote */}
+            <div className="p-5 flex flex-col gap-2">
+              {selectedService.set_price === 0 ? (
+                <Row k="Total" v="Free" />
+              ) : reviewLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Calculating price…</div>
+              ) : reviewQuote ? (
+                <>
+                  <Row k="Service price" v={formatPrice(reviewQuote.mentor_amount, reviewQuote.customer_currency)} />
+                  <Row k="Platform fee" v={formatPrice(reviewQuote.fee_amount, reviewQuote.customer_currency)} />
+                  {reviewQuote.tax_amount > 0 && (
+                    <Row k={`Tax${reviewQuote.tax_pct ? ` (${reviewQuote.tax_pct}%)` : ''}`} v={formatPrice(reviewQuote.tax_amount, reviewQuote.customer_currency)} />
+                  )}
+                  <div className="mt-1 pt-2 border-t border-[--color-border] flex items-center justify-between">
+                    <span className="text-sm font-semibold text-foreground">Total to pay</span>
+                    <span className="text-base font-bold text-brand-900">{formatPrice(reviewQuote.gross_customer, reviewQuote.customer_currency)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-foreground">Total to pay</span>
+                  <PriceLabel service={selectedService} price={priceMap[selectedService.id]} priceReady={priceReady} className="text-base font-bold text-brand-900" />
+                </div>
+              )}
+              {formError && <p className="text-sm text-red-600 mt-1">{formError}</p>}
+            </div>
+
+            {/* Actions: confirm, or go back to change the slot */}
+            <div className="p-5 border-t border-[--color-border] flex flex-col-reverse sm:flex-row gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setShowReview(false); setStep('datetime'); }}>Modify booking</Button>
+              <Button variant="accent" className="flex-1" loading={submitting || pendingBook || paying || checkingEmail} onClick={handleConfirm}>
+                {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAccountPrompt && (
         <BookingAccountPrompt

@@ -58,7 +58,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
       <p className="mt-3 text-xs text-muted">
         Platform fee <span className="font-semibold text-foreground">{defaultFee}%</span>
         {taxed.length > 0 && <> · {taxed.map((c) => `${c.tax_label || 'tax'} ${c.tax_pct}% (${c.country_code})`).join(', ')}</>}
-        {' '}· customer price = mentor rate + platform fee + tax.{' '}
+        {' '}· customer price = (mentor rate + platform fee), then tax on that subtotal.{' '}
         <button type="button" onClick={() => setTab('pricing')} className="font-medium text-brand-700 hover:underline">Edit per country</button>
       </p>
 
@@ -135,7 +135,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         )}
 
         {tab === 'pricing' && (
-          <Section title="Platform fee & tax by country" subtitle="Customer price = mentor rate + platform fee + tax, by the customer's country. DEFAULT is the fallback.">
+          <Section title="Platform fee & tax by country" subtitle="Customer price = (mentor rate + platform fee), then tax charged on that subtotal, by the customer's country. DEFAULT is the fallback; a per-mentor commission override still wins for the fee.">
             <AdminPricing />
           </Section>
         )}

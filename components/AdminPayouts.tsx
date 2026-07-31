@@ -48,9 +48,27 @@ function money(amount: number | null | undefined, currency: string | null | unde
   }
 }
 
+// Imported historical sessions from the old portal. We only have the gross customer-paid amount
+// (the old net/commission split isn't available), so this is a gross earnings view per mentor.
+interface LegacyEarning {
+  mentor_name: string | null; amount_total: number | null; amount_currency: string | null;
+}
+function aggregateEarnings(rows: LegacyEarning[]): { mentor: string; count: number; totals: Record<string, number> }[] {
+  const byMentor = new Map<string, { mentor: string; count: number; totals: Record<string, number> }>();
+  for (const r of rows) {
+    const key = r.mentor_name ?? '-';
+    const g = byMentor.get(key) ?? { mentor: key, count: 0, totals: {} };
+    g.count += 1;
+    if (r.amount_total && r.amount_currency) g.totals[r.amount_currency] = (g.totals[r.amount_currency] ?? 0) + r.amount_total;
+    byMentor.set(key, g);
+  }
+  return Array.from(byMentor.values()).sort((a, b) => b.count - a.count);
+}
+
 export function AdminPayouts() {
   const [payouts, setPayouts] = useState<Payout[] | null>(null);
   const [payments, setPayments] = useState<Payment[] | null>(null);
+  const [legacy, setLegacy] = useState<LegacyEarning[] | null>(null);
   const [configured, setConfigured] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);   // booking_id being acted on
@@ -68,9 +86,10 @@ export function AdminPayouts() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [poRes, pmRes] = await Promise.all([
+      const [poRes, pmRes, lgRes] = await Promise.all([
         authedFetch('/api/admin/payouts'),
         authedFetch('/api/admin/payments'),
+        authedFetch('/api/admin/legacy-sessions'),
       ]);
       if (!poRes.ok || !pmRes.ok) { setError('Could not load financials.'); return; }
       const po = await poRes.json();
@@ -78,6 +97,7 @@ export function AdminPayouts() {
       setConfigured(po.configured !== false && pm.configured !== false);
       setPayouts(po.payouts ?? []);
       setPayments(pm.payments ?? []);
+      setLegacy(lgRes.ok ? await lgRes.json() : []);
     } catch { setError('Could not load financials.'); }
   }, [authedFetch]);
 
@@ -97,30 +117,66 @@ export function AdminPayouts() {
     finally { setBusy(null); }
   }
 
-  if (payouts === null || payments === null) {
+  if (payouts === null || payments === null || legacy === null) {
     return <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading financials…</div>;
   }
 
+  const earnings = aggregateEarnings(legacy);
+  const legacySection = earnings.length > 0 ? (
+    <section>
+      <h2 className="text-lg font-semibold text-foreground">Past earnings (imported)</h2>
+      <p className="text-sm text-muted mt-0.5 mb-4">
+        Historical sessions from the old portal, per mentor. This is the gross amount the customer paid (the old net/commission split isn&apos;t available).
+      </p>
+      <div className="overflow-x-auto rounded-xl border border-[--color-border]">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-muted border-b border-[--color-border]">
+              <th className="px-4 py-2.5 font-medium">Mentor</th>
+              <th className="px-4 py-2.5 font-medium">Sessions</th>
+              <th className="px-4 py-2.5 font-medium">Gross earnings</th>
+            </tr>
+          </thead>
+          <tbody>
+            {earnings.map((e) => (
+              <tr key={e.mentor} className="border-b border-[--color-border] last:border-0">
+                <td className="px-4 py-2.5 text-foreground">{e.mentor}</td>
+                <td className="px-4 py-2.5 text-muted">{e.count}</td>
+                <td className="px-4 py-2.5 text-foreground">
+                  {Object.keys(e.totals).length === 0 ? '-' : Object.entries(e.totals).map(([c, a]) => money(a, c)).join(' · ')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  ) : null;
+
   if (!configured) {
     return (
-      <Card>
-        <CardBody className="pt-10 pb-10 flex flex-col items-center text-center gap-2">
-          <div className="h-11 w-11 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
-            <Wrench className="h-5 w-5" />
-          </div>
-          <p className="text-base font-semibold text-foreground">Payments not set up yet</p>
-          <p className="text-sm text-muted max-w-md">
-            Apply <code>payments_setup.sql</code> and enable payments (see docs/PAYMENTS.md).
-            Payouts and payments will appear here once the first paid booking comes through.
-          </p>
-        </CardBody>
-      </Card>
+      <div className="flex flex-col gap-10">
+        {legacySection}
+        <Card>
+          <CardBody className="pt-10 pb-10 flex flex-col items-center text-center gap-2">
+            <div className="h-11 w-11 rounded-full bg-brand-50 flex items-center justify-center text-brand-600">
+              <Wrench className="h-5 w-5" />
+            </div>
+            <p className="text-base font-semibold text-foreground">Payments not set up yet</p>
+            <p className="text-sm text-muted max-w-md">
+              Apply <code>payments_setup.sql</code> and enable payments (see docs/PAYMENTS.md).
+              Payouts and payments will appear here once the first paid booking comes through.
+            </p>
+          </CardBody>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-10">
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {legacySection}
 
       {/* ── Mentor payouts ─────────────────────────────────────────── */}
       <section>

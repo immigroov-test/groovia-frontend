@@ -112,6 +112,7 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
           {tab === 'payments' && (
             <div className="flex flex-col gap-6">
               <MentorBankCard defaultCountry={mentor.country ?? ''} />
+              {legacySessions.length > 0 && <PastSessions sessions={legacySessions} heading="Past earnings (imported)" />}
               <UnderDevelopment title="Earnings & history" note="Your session earnings and payout history will appear here." />
             </div>
           )}
