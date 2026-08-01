@@ -33,7 +33,6 @@ interface AdminStats {
   no_service_mentor_count: number;
   pending_service_count: number;
   total_bookings: number;
-  global_commission_pct: number;
 }
 
 async function fetchJson<T>(url: string, token: string, fallback: T): Promise<T> {
@@ -78,7 +77,6 @@ export default async function AdminPage() {
     no_service_mentor_count: 0,
     pending_service_count: 0,
     total_bookings: 0,
-    global_commission_pct: 10,
   };
 
   return <AdminDashboard stats={stats} pending={pending} approved={approved} suspended={suspended} revisions={revisions} countryPricing={countryPricing} />;

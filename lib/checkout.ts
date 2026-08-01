@@ -20,6 +20,7 @@ export interface CheckoutParams {
   notes?: string | null;
   answers?: { question_id: string; answer_text: string }[];
   timezone?: string;
+  referralCode?: string;       // validated server-side in reserve; applies its discount
 }
 
 export interface CheckoutHandlers {
@@ -62,6 +63,7 @@ export async function startPaidCheckout(p: CheckoutParams, h: CheckoutHandlers):
         timezone: tz,
         answers: p.answers ?? [],
         specific_availability_id: null,
+        referral_code: p.referralCode || undefined,
       }),
     });
     const reserved = await rRes.json().catch(() => ({}));

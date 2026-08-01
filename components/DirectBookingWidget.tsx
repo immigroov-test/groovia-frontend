@@ -59,7 +59,7 @@ interface Slot { slot_start: string; slot_end: string; }
 // The customer's own line-item breakdown from the binding quote (service price = localised mentor
 // rate, platform fee, tax, total). Fee/commission config + mentor's raw rate stay redacted server-side.
 interface QuoteBreakdown {
-  mentor_amount: number; fee_amount: number; tax_amount: number; tax_pct: number;
+  mentor_amount: number; tax_amount: number; tax_pct: number;
   gross_customer: number; customer_currency: string;
 }
 
@@ -349,6 +349,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const [reviewQuote, setReviewQuote]     = useState<QuoteBreakdown | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [referralCode, setReferralCode]   = useState('');
+  const [referralInfo, setReferralInfo]   = useState<{ discount_pct: number; code: string } | null>(null);
+  const [referralChecking, setReferralChecking] = useState(false);
+  const [referralMsg, setReferralMsg]     = useState<string | null>(null);
 
   // Payments: when the platform toggle is on and the service is paid, bookings go
   // through the reserve → Razorpay → verify flow. Otherwise the direct-confirm path
@@ -518,6 +521,40 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     }
   }
 
+  function referralReason(reason?: string): string {
+    switch (reason) {
+      case 'expired': return 'That code has expired.';
+      case 'inactive': return 'That code is no longer active.';
+      case 'cap_reached': return 'That code has reached its usage limit.';
+      case 'affiliate_inactive': return 'That code is no longer active.';
+      default: return 'That code is not valid.';
+    }
+  }
+
+  // Validate the referral code in the BACKEND; a valid code shows a discount line + reduced total.
+  async function applyReferral() {
+    const code = referralCode.trim();
+    if (!code) { setReferralInfo(null); setReferralMsg(null); return; }
+    setReferralChecking(true); setReferralMsg(null);
+    try {
+      const res = await fetch('/api/referrals/validate', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }), cache: 'no-store',
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d?.valid) {
+        const pct = Number(d.discount_pct) || 0;
+        setReferralInfo({ discount_pct: pct, code: d.code || code });
+        setReferralMsg(pct > 0 ? `Code applied: ${pct}% off` : 'Code applied');
+      } else {
+        setReferralInfo(null);
+        setReferralMsg(referralReason(d?.reason));
+      }
+    } catch {
+      setReferralInfo(null); setReferralMsg('Could not check the code. Please try again.');
+    } finally { setReferralChecking(false); }
+  }
+
   // BUG-025: bookings require an account. A guest first sees the account prompt; only
   // "Log in or sign up" opens the normal auth popup (which resumes this booking after
   // sign-in via the pendingBook effect above). "Not now" just closes - no guest booking.
@@ -658,6 +695,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           notes:       notes.trim(),
           timezone:    TZ,
           idempotency_key: idemKey,
+          referral_code: referralCode.trim() || undefined,
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
         }),
       });
@@ -689,6 +727,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         notes: notes,
         serviceTitle: selectedService.title,
         timezone: TZ,
+        referralCode: referralCode.trim() || undefined,
         answers: questions
           .map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' }))
           .filter(a => a.answer_text),
@@ -1083,14 +1122,19 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               <button type="button" onClick={() => setShowReview(false)} aria-label="Close" className="text-muted hover:text-foreground shrink-0 text-lg leading-none">✕</button>
             </div>
 
-            {/* Referral code (redemption is a separate feature; the field captures the code for now) */}
+            {/* Referral code: validated in the backend; a valid code applies its discount below. */}
             <div className="p-5 border-b border-[--color-border] flex flex-col gap-2">
               <label className="text-sm font-medium text-foreground">Referral code</label>
               <div className="flex gap-2">
-                <input value={referralCode} onChange={(e) => setReferralCode(e.target.value)} placeholder="Enter code"
+                <input value={referralCode}
+                  onChange={(e) => { setReferralCode(e.target.value); setReferralInfo(null); setReferralMsg(null); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyReferral(); } }}
+                  placeholder="Enter code"
                   className="flex-1 h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
-                <Button variant="outline" disabled className="shrink-0">Apply</Button>
+                <Button variant="outline" className="shrink-0" onClick={applyReferral}
+                  loading={referralChecking} disabled={!referralCode.trim()}>Apply</Button>
               </div>
+              {referralMsg && <p className={`text-xs ${referralInfo ? 'text-green-600' : 'text-red-600'}`}>{referralMsg}</p>}
             </div>
 
             {/* Price breakdown - all amounts come straight from the backend quote */}
@@ -1102,13 +1146,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               ) : reviewQuote ? (
                 <>
                   <Row k="Service price" v={formatPrice(reviewQuote.mentor_amount, reviewQuote.customer_currency)} />
-                  <Row k="Platform fee" v={formatPrice(reviewQuote.fee_amount, reviewQuote.customer_currency)} />
                   {reviewQuote.tax_amount > 0 && (
                     <Row k={`Tax${reviewQuote.tax_pct ? ` (${reviewQuote.tax_pct}%)` : ''}`} v={formatPrice(reviewQuote.tax_amount, reviewQuote.customer_currency)} />
                   )}
+                  {referralInfo && referralInfo.discount_pct > 0 && (
+                    <div className="flex items-center justify-between text-green-700">
+                      <span className="text-sm">Referral discount ({referralInfo.discount_pct}%)</span>
+                      <span className="text-sm">- {formatPrice(reviewQuote.gross_customer * referralInfo.discount_pct / 100, reviewQuote.customer_currency)}</span>
+                    </div>
+                  )}
                   <div className="mt-1 pt-2 border-t border-[--color-border] flex items-center justify-between">
                     <span className="text-sm font-semibold text-foreground">Total to pay</span>
-                    <span className="text-base font-bold text-brand-900">{formatPrice(reviewQuote.gross_customer, reviewQuote.customer_currency)}</span>
+                    <span className="text-base font-bold text-brand-900">{formatPrice(reviewQuote.gross_customer * (1 - (referralInfo?.discount_pct || 0) / 100), reviewQuote.customer_currency)}</span>
                   </div>
                 </>
               ) : (

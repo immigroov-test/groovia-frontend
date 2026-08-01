@@ -4,6 +4,7 @@ import { Card, CardBody } from '../../../../components/ui/Card';
 import { Badge } from '../../../../components/ui/Badge';
 import { RichText } from '../../../../components/ui/RichText';
 import { DirectBookingWidget } from '../../../../components/DirectBookingWidget';
+import { ReviewsList } from '../../../../components/Reviews';
 import type { Mentor } from '../../../../lib/types';
 import { backendBaseUrl } from '../../../../lib/backend';
 import { countryLabel } from '../../../../lib/countries';
@@ -109,6 +110,11 @@ export default async function MentorProfilePage({
             smart_pricing: mentor.smart_pricing ?? false,
           }}
         />
+
+        <section className="mt-10">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Reviews</h2>
+          <ReviewsList mentorId={mentor.id} />
+        </section>
       </div>
     );
   }

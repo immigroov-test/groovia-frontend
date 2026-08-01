@@ -8,6 +8,7 @@ import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
 import { SmartPricingToggle } from './SmartPricingToggle';
 import { MentorBankCard } from './MentorBankCard';
+import { MentorReferrals } from './MentorReferrals';
 import { MigrationWelcomeModal } from './MigrationWelcomeModal';
 import { PastSessions, type LegacySession } from './PastSessions';
 import { COUNTRIES } from '../lib/countries';
@@ -39,7 +40,7 @@ export interface HubMentor {
   needs_onboarding?: boolean;
 }
 
-type TabId = 'profile' | 'availability' | 'sessions' | 'payments' | 'webinars';
+type TabId = 'profile' | 'availability' | 'sessions' | 'payments' | 'referrals' | 'webinars';
 
 export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMentor; legacySessions?: LegacySession[] }) {
   const approved = mentor.status === 'approved';
@@ -48,6 +49,7 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
     { id: 'availability', label: 'Availability' },
     { id: 'sessions', label: 'Sessions' },
     { id: 'payments', label: 'Payments' },
+    { id: 'referrals', label: 'Referrals' },
     { id: 'webinars', label: 'Webinars' },
   ];
   const [tab, setTab] = useState<TabId>('profile');
@@ -115,6 +117,11 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
               {legacySessions.length > 0 && <PastSessions sessions={legacySessions} heading="Past earnings (imported)" />}
               <UnderDevelopment title="Earnings & history" note="Your session earnings and payout history will appear here." />
             </div>
+          )}
+          {tab === 'referrals' && (
+            approved
+              ? <MentorReferrals />
+              : <Card><CardBody className="pt-6"><p className="text-sm text-muted">Referral codes unlock once your application is approved.</p></CardBody></Card>
           )}
           {tab === 'webinars' && <UnderDevelopment title="Webinars" note="Host group sessions and webinars for multiple attendees." />}
         </div>

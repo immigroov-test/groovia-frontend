@@ -5,6 +5,7 @@ import { createClient } from '../lib/supabase/client';
 import { Badge } from './ui/Badge';
 import { Button } from './ui/Button';
 import { Card, CardBody } from './ui/Card';
+import { AdminReferralCommissions } from './AdminReferrals';
 
 // ── Types (mirror the backend admin payloads) ────────────────────────────────
 interface MentorRef { display_name: string | null }
@@ -177,6 +178,16 @@ export function AdminPayouts() {
     <div className="flex flex-col gap-10">
       {error && <p className="text-sm text-red-600">{error}</p>}
       {legacySection}
+
+      {/* ── Referral commissions (promoter payouts) ────────────────── */}
+      <section>
+        <h2 className="text-lg font-semibold text-foreground">Referral commissions</h2>
+        <p className="text-sm text-muted mt-0.5 mb-4">
+          Promoter payouts from referral codes: who referred the customer, the discount, the final amount paid, the
+          split, and the commission owed. Approve or reject in the Referrals tab; mark one paid here once you&apos;ve sent it.
+        </p>
+        <AdminReferralCommissions />
+      </section>
 
       {/* ── Mentor payouts ─────────────────────────────────────────── */}
       <section>

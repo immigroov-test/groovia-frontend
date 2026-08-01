@@ -10,6 +10,7 @@ import { startPaidCheckout } from '../lib/checkout';
 import { mentorDisplayTz, tzShort } from '../lib/timezone';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { ReviewForm } from './Reviews';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Offer {
@@ -306,6 +307,15 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </div>
         ))}
       </dl>
+
+      {/* Mentee: rate + review a completed session */}
+      {isCandidate && d.status === 'completed' && (
+        <div className="mt-7 rounded-2xl border border-[--color-border] p-5">
+          <h2 className="text-base font-semibold text-foreground">Rate your session</h2>
+          <p className="text-sm text-muted mt-0.5 mb-3">Your review helps other mentees. You can update it anytime.</p>
+          <ReviewForm bookingId={bookingId} />
+        </div>
+      )}
 
       {actionError && (
         <p className="mt-6 text-sm text-red-600 flex items-center gap-1.5">

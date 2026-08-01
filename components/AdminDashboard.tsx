@@ -8,6 +8,8 @@ import { AdminPayouts } from './AdminPayouts';
 import { AdminPendingServices } from './AdminPendingServices';
 import { AdminOps } from './AdminOps';
 import { AdminPricing, type CountryPricing } from './AdminPricing';
+import { AdminReferrals } from './AdminReferrals';
+import { AdminReviews } from './AdminReviews';
 import { UI_CONTENT } from '../lib/content';
 import { cn } from '../lib/utils';
 import type { AdminMentor } from '../app/(shell)/admin/page';
@@ -16,8 +18,8 @@ type MentorFilter = 'all' | 'active' | 'inactive' | 'no_service';
 const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
-interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; pending_service_count: number; total_bookings: number; global_commission_pct: number; }
-type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'ops' | 'pricing';
+interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; pending_service_count: number; total_bookings: number; }
+type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'ops' | 'pricing';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
@@ -38,6 +40,8 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
     { key: 'mentors', label: 'Mentors', count: approved.length || undefined },
     { key: 'bookings', label: 'Bookings' },
     { key: 'payouts', label: 'Payouts' },
+    { key: 'referrals', label: 'Referrals' },
+    { key: 'reviews', label: 'Reviews' },
     { key: 'ops', label: 'Ops' },
     { key: 'pricing', label: 'Pricing' },
   ];
@@ -56,9 +60,9 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
       </div>
 
       <p className="mt-3 text-xs text-muted">
-        Platform fee <span className="font-semibold text-foreground">{defaultFee}%</span>
+        Commission <span className="font-semibold text-foreground">{defaultFee}%</span>
         {taxed.length > 0 && <> · {taxed.map((c) => `${c.tax_label || 'tax'} ${c.tax_pct}% (${c.country_code})`).join(', ')}</>}
-        {' '}· customer price = (mentor rate + platform fee), then tax on that subtotal.{' '}
+        {' '}· the mentor's rate is the customer price; commission comes out of it, tax is added on top.{' '}
         <button type="button" onClick={() => setTab('pricing')} className="font-medium text-brand-700 hover:underline">Edit per country</button>
       </p>
 
@@ -128,6 +132,18 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
 
         {tab === 'payouts' && <AdminPayouts />}
 
+        {tab === 'referrals' && (
+          <Section title="Referrals" subtitle="Codes by affiliate (mentors + influencers), who used them, the discount, and the commission split. Approve or reject a referral commission here; the payout appears in the Payouts tab.">
+            <AdminReferrals />
+          </Section>
+        )}
+
+        {tab === 'reviews' && (
+          <Section title="Reviews" subtitle="Mentee ratings + written reviews. Hide anything abusive; hidden reviews drop out of the mentor's public rating.">
+            <AdminReviews />
+          </Section>
+        )}
+
         {tab === 'ops' && (
           <Section title="No-show strikes" subtitle="Mentors with accrued no-show strikes. Reset if a dispute is resolved in their favour.">
             <AdminOps />
@@ -135,7 +151,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         )}
 
         {tab === 'pricing' && (
-          <Section title="Platform fee & tax by country" subtitle="Customer price = (mentor rate + platform fee), then tax charged on that subtotal, by the customer's country. DEFAULT is the fallback; a per-mentor commission override still wins for the fee.">
+          <Section title="Commission & tax by country" subtitle="The mentor's rate is the customer's price; commission is taken out of it (the mentor nets the rest) and tax is added on top, by the customer's country. DEFAULT is the fallback; a per-mentor commission override still wins.">
             <AdminPricing />
           </Section>
         )}

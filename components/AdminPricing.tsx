@@ -17,30 +17,33 @@ function label(cc: string): string {
 }
 
 // Live worked example from a base of 100, so the admin sees the effect of the numbers as they type.
-// Tax is charged on the (base + fee) subtotal, not just the base - shown step by step so it's clear.
+// Revenue-split model: the mentor's price (100) is what the customer pays; the commission comes OUT
+// of it (the mentor keeps the rest), and tax is added on top for the customer.
 function Example({ fee, tax }: { fee: number; tax: number }) {
   const base = 100;
   const feeAmt = base * (fee || 0) / 100;
-  const subtotal = base + feeAmt;
-  const taxAmt = subtotal * (tax || 0) / 100;
-  const total = subtotal + taxAmt;
+  const taxAmt = base * (tax || 0) / 100;
+  const total = base + taxAmt;
+  const mentorKeeps = base - feeAmt;
   return (
     <p className="text-xs text-muted">
-      Example: base <span className="font-medium text-foreground">100</span> + fee {fee || 0}% ({feeAmt.toFixed(2)})
-      {' '}= {subtotal.toFixed(2)}, then tax {tax || 0}% of that ({taxAmt.toFixed(2)})
-      {' '}= <span className="font-semibold text-foreground">{total.toFixed(2)}</span>
+      Example: customer pays <span className="font-medium text-foreground">100</span> + tax {tax || 0}% ({taxAmt.toFixed(2)})
+      {' '}= <span className="font-semibold text-foreground">{total.toFixed(2)}</span>.
+      {' '}Of the 100, commission {fee || 0}% ({feeAmt.toFixed(2)}) to Immigroov, mentor keeps{' '}
+      <span className="font-semibold text-foreground">{mentorKeeps.toFixed(2)}</span>.
     </p>
   );
 }
 
-// Per-country platform fee + tax. Customer price = mentor rate x (1 + fee%) x (1 + tax%), by the
-// customer's country. The DEFAULT row is the fallback for any country without its own entry.
+// Per-country commission + tax. The mentor's rate IS the customer price; the commission is taken OUT
+// of it (customer pays price + tax), keyed to the customer's country. The DEFAULT row is the
+// fallback for any country without its own entry.
 export function AdminPricing() {
   const router = useRouter();
   const [rows, setRows] = useState<CountryPricing[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
-  const [adding, setAdding] = useState({ country_code: '', platform_fee_pct: '5', tax_pct: '0', tax_label: '' });
+  const [adding, setAdding] = useState({ country_code: '', platform_fee_pct: '15', tax_pct: '0', tax_label: '' });
 
   const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const { data: { session } } = await createClient().auth.getSession();
@@ -65,7 +68,7 @@ export function AdminPricing() {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(r),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.detail || 'Save failed.'); return; }
-      setAdding({ country_code: '', platform_fee_pct: '5', tax_pct: '0', tax_label: '' });
+      setAdding({ country_code: '', platform_fee_pct: '15', tax_pct: '0', tax_label: '' });
       await load();
       router.refresh();   // keep the dashboard summary line in sync
     } catch { setError('Save failed.'); }
@@ -90,7 +93,7 @@ export function AdminPricing() {
           <Card key={r.country_code}><CardBody className="pt-4 pb-4 flex flex-col gap-2">
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-[150px] flex-1"><p className="text-sm font-semibold text-foreground">{label(r.country_code)}</p></div>
-              <Field label="Platform fee %" type="number" value={String(r.platform_fee_pct)} onChange={(v) => patch(r.country_code, 'platform_fee_pct', v)} />
+              <Field label="Commission %" type="number" value={String(r.platform_fee_pct)} onChange={(v) => patch(r.country_code, 'platform_fee_pct', v)} />
               <Field label="Tax %" type="number" value={String(r.tax_pct)} onChange={(v) => patch(r.country_code, 'tax_pct', v)} />
               <Field label="Tax label (optional)" type="text" value={r.tax_label ?? ''} placeholder="GST / VAT" onChange={(v) => patch(r.country_code, 'tax_label', v)} />
               <Button variant="primary" size="sm" loading={saving === r.country_code} onClick={() => save(r)}>Save</Button>
@@ -108,7 +111,7 @@ export function AdminPricing() {
             <CountrySelect label="Country" value={adding.country_code}
               onChange={(code) => setAdding((a) => ({ ...a, country_code: code }))} placeholder="Search a country" />
           </div>
-          <Field label="Platform fee %" type="number" value={adding.platform_fee_pct} onChange={(v) => setAdding((a) => ({ ...a, platform_fee_pct: v }))} />
+          <Field label="Commission %" type="number" value={adding.platform_fee_pct} onChange={(v) => setAdding((a) => ({ ...a, platform_fee_pct: v }))} />
           <Field label="Tax %" type="number" value={adding.tax_pct} onChange={(v) => setAdding((a) => ({ ...a, tax_pct: v }))} />
           <Field label="Tax label (optional)" type="text" value={adding.tax_label} placeholder="VAT" onChange={(v) => setAdding((a) => ({ ...a, tax_label: v }))} />
           <Button variant="accent" size="sm"
