@@ -49,6 +49,14 @@ export function AdminReferrals() {
 
   return (
     <div className="flex flex-col gap-4">
+      {rows && rows.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <RefKpi label="Affiliates" value={String(rows.length)} />
+          <RefKpi label="Referrals" value={String(rows.reduce((s, r) => s + r.referrals, 0))} />
+          <RefKpi label="Commission earned" value={inr(rows.reduce((s, r) => s + (r.commission_inr || 0), 0))} hint="approved + paid" />
+          <RefKpi label="Commission pending" value={inr(rows.reduce((s, r) => s + (r.commission_pending_inr || 0), 0))} hint="under review" />
+        </div>
+      )}
       <div className="flex gap-2">
         {(['affiliates', 'commissions'] as const).map((v) => (
           <button key={v} type="button" onClick={() => { setView(v); if (v === 'affiliates') setFocus(null); }}
@@ -179,6 +187,16 @@ function StatusPill({ status }: { status: string }) {
   };
   const label = status === 'pending_review' ? 'Pending' : status.charAt(0).toUpperCase() + status.slice(1);
   return <span className={`text-xs px-2 py-0.5 rounded-full ${map[status] || 'bg-slate-100 text-slate-500'}`}>{label}</span>;
+}
+
+function RefKpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <Card><CardBody className="pt-4 pb-4">
+      <p className="text-xs text-muted">{label}</p>
+      <p className="text-lg font-bold text-foreground mt-0.5">{value}</p>
+      {hint && <p className="text-[11px] text-muted/70 mt-0.5">{hint}</p>}
+    </CardBody></Card>
+  );
 }
 
 const Loading = () => <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
