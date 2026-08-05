@@ -32,9 +32,11 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
   const location = [mentor.city, mentor.country ? countryLabel(mentor.country) : '']
     .filter(Boolean).join(', ');
   const homeLabel = mentor.home_country_code ? countryLabel(mentor.home_country_code) : '';
-  // Only strike the original when it actually differs from the discounted price at DISPLAY precision.
-  // Same-region fair pricing gives you == you0, so striking "€24 -> €24" is meaningless and confusing.
-  const showStrike = !!price && money(price.original, price.currency) !== money(price.discounted, price.currency);
+  // Strike the original ONLY when fair pricing made the price LOWER (a real discount). Equal at
+  // display precision -> no strike ("€24 -> €24" is noise); higher -> show just the final price
+  // (a cheaper struck-out figure beside a higher charge reads as a markup, not a deal).
+  const showStrike = !!price && price.discounted < price.original
+    && money(price.original, price.currency) !== money(price.discounted, price.currency);
 
   return (
     <Card className="h-full flex flex-col hover:border-brand-300 hover:-translate-y-0.5 transition-transform">

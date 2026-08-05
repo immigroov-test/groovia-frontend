@@ -180,9 +180,11 @@ function PriceLabel({
   // currency (e.g. INR) before correcting to the customer's currency.
   if (!priceReady) return <span className={cn('inline-block h-[1em] w-14 rounded bg-neutral-100 animate-pulse align-middle', className)} aria-hidden />;
   if (!price) return <span className={className}>{formatPrice(service.set_price, service.set_currency)}</span>;
-  // Only strike when the DISPLAYED amounts differ (same-region fair pricing gives an equal price, so
-  // striking the same number is meaningless).
-  const discounted = formatPrice(price.original, price.currency) !== formatPrice(price.discounted, price.currency);
+  // Strike the original ONLY when fair pricing made the price LOWER (a real discount). When PPP
+  // raises the price (or leaves it equal at display precision) show just the final amount - showing
+  // a cheaper struck-out price next to a higher charge would read as a markup, not a deal.
+  const discounted = price.discounted < price.original
+    && formatPrice(price.original, price.currency) !== formatPrice(price.discounted, price.currency);
   return (
     <span className={cn('inline-flex items-baseline gap-1.5', className)}>
       {discounted && (

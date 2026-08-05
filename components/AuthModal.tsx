@@ -137,6 +137,21 @@ function AuthModalInner() {
       if (msg.includes('invalid login')) { setError(t.badCredentials); return; }
       setError(error.message); return;
     }
+    // Sync the account (links a migrated mentor by email on first login). A mentor who hasn't
+    // finished first-login onboarding is sent straight to /mentor, where the mandatory welcome
+    // popup fires - regardless of which page they logged in from. Best-effort: if the sync call
+    // fails, fall through to the normal navigation (the /mentor hub still enforces the gate).
+    try {
+      const { data: { session } } = await createClient().auth.getSession();
+      if (session?.access_token) {
+        const res = await fetch('/api/auth/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        });
+        const d = await res.json().catch(() => ({}));
+        if (d?.role === 'mentor' && d?.needs_onboarding) { router.push('/mentor'); return; }
+      }
+    } catch { /* best-effort */ }
     // Honour `next` (the page they were headed to, or the mentor onboarding form).
     // Without one, stay on the current page and just refresh to reflect the session.
     if (next) { router.push(next); } else { close(); router.refresh(); }
