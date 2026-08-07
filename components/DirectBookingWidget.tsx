@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
+  Bell, CalendarClock, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
 } from 'lucide-react';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import { Button } from './ui/Button';
@@ -795,8 +795,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
             <Check className="h-7 w-7 text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-semibold text-brand-900 mt-4">You&apos;re booked!</h2>
-          <p className="text-sm text-muted mt-1">A confirmation has been emailed to {email}.</p>
+          <h2 className="text-2xl font-semibold text-brand-900 mt-4">Your session is confirmed</h2>
+          <p className="text-sm text-muted mt-1">
+            You&apos;re all set with {mentor.display_name}. A confirmation is on its way to{' '}
+            <span className="font-medium text-foreground break-words">{email}</span>.
+          </p>
         </div>
 
         {/* Mentor - clean, no box */}
@@ -826,6 +829,16 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             ))}
           </dl>
         )}
+
+        {/* What happens next - BUG-080: reassure the customer and set expectations. */}
+        <div className="mt-8 rounded-2xl border border-[--color-border] bg-brand-50/50 p-4">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted">What happens next</p>
+          <ul className="mt-2 flex flex-col gap-2 text-sm text-foreground">
+            <li className="flex items-start gap-2"><Bell className="h-4 w-4 mt-0.5 shrink-0 text-brand-700" /> We&apos;ll send a reminder 24 hours and 1 hour before it starts.</li>
+            <li className="flex items-start gap-2"><Video className="h-4 w-4 mt-0.5 shrink-0 text-brand-700" /> Your Join button opens 5 minutes before the start time.</li>
+            <li className="flex items-start gap-2"><CalendarClock className="h-4 w-4 mt-0.5 shrink-0 text-brand-700" /> {isLoggedIn ? 'Need a change? Reschedule or cancel anytime from your sessions.' : 'Create your free account below to join, reschedule, or cancel.'}</li>
+          </ul>
+        </div>
 
         {/* Actions - a guest can't join/manage until they claim the booking with an account. */}
         {isLoggedIn ? (

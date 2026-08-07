@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, ArrowLeft, Clock, CreditCard, Loader2, Lock, Video,
+  AlertTriangle, ArrowLeft, Check, Clock, CreditCard, Loader2, Lock, Video,
 } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
@@ -16,7 +16,9 @@ import { ReviewForm } from './Reviews';
 interface Offer {
   id: string; proposed_by: string; status: string;
   range_start: string | null; range_end: string | null;
+  requested_date?: string | null; selected_time?: string | null;
 }
+interface PSlot { slot_start: string; slot_end: string; }
 interface Req {
   id: string; kind: string; initiated_by: string; status: string; respond_by: string | null;
 }
@@ -103,12 +105,17 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [slotTaken, setSlotTaken] = useState<string | null>(null);
   const [showJoinInfo, setShowJoinInfo] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [newTime, setNewTime] = useState('');
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
+  // Mentor-proposal (accept) picker + counter-offer date.
+  const [pSlots, setPSlots] = useState<PSlot[] | null>(null);
+  const [selPSlot, setSelPSlot] = useState<string>('');
+  const [askDate, setAskDate] = useState('');
 
   const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const supabase = createClient();
@@ -135,12 +142,30 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
 
   useEffect(() => { load(); }, [load]);
 
-  async function act(url: string, body: Record<string, unknown>) {
-    setBusy(true); setActionError(null);
+  // When the mentor has an open proposal, load the REAL bookable slots inside its range so the
+  // customer picks a valid time (BUG-085) instead of typing one that fails the availability check.
+  useEffect(() => {
+    const off = d?.offer;
+    const isMentorProposal = !!off && off.proposed_by === 'mentor' && off.status === 'pending';
+    if (!d || d.role !== 'candidate' || !isMentorProposal) { setPSlots(null); return; }
+    let active = true;
+    (async () => {
+      try {
+        const res = await authedFetch(`/api/booking/${bookingId}/proposal-slots`);
+        const data = await res.json().catch(() => ({}));
+        if (active) setPSlots(res.ok ? (data.slots ?? []) : []);
+      } catch { if (active) setPSlots([]); }
+    })();
+    return () => { active = false; };
+  }, [d, authedFetch, bookingId]);
+
+  async function act(url: string, body: Record<string, unknown>, successMsg?: string) {
+    setBusy(true); setActionError(null); setActionSuccess(null);
     try {
       const res = await authedFetch(url, { method: 'POST', body: JSON.stringify(body) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setActionError(data.detail || 'Action failed. Please try again.'); return; }
+      if (successMsg) setActionSuccess(successMsg);
       await load();
     } catch { setActionError('Action failed. Please try again.'); }
     finally { setBusy(false); }
@@ -227,6 +252,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   }
 
   const mentorProposal = d.offer && d.offer.proposed_by === 'mentor' && d.offer.status === 'pending';
+  const userCounterOffer = d.offer && d.offer.proposed_by === 'user' && d.offer.status === 'pending';
   const pendingReq = d.request && d.request.status === 'pending';
   const toIso = (local: string) => new Date(local).toISOString();
 
@@ -323,6 +349,14 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         </p>
       )}
 
+      {/* Confirmation after an action (e.g. reporting a no-show or choosing a resolution) - BUG-082. */}
+      {actionSuccess && (
+        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-2.5">
+          <Check className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+          <p className="text-sm font-medium text-emerald-900">{actionSuccess}</p>
+        </div>
+      )}
+
       {/* Slot-taken message after a failed re-pay */}
       {slotTaken && (
         <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4">
@@ -357,24 +391,77 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           )
         )}
 
-        {/* Mentee: mentor proposed a new time */}
+        {/* Mentee: mentor proposed a new time - Accept a real slot / Ask another date / Reject */}
         {isCandidate && mentorProposal && d.offer && (
-          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 flex flex-col gap-2">
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 flex flex-col gap-3">
             <p className="text-sm text-violet-900">
-              Your mentor proposed a new time between <strong>{fmtInTz(d.offer.range_start, BROWSER_TZ)}</strong> and <strong>{fmtInTz(d.offer.range_end, BROWSER_TZ)}</strong>. Pick a slot inside that range:
+              Your mentor proposed a new time between <strong>{fmtInTz(d.offer.range_start, BROWSER_TZ)}</strong> and <strong>{fmtInTz(d.offer.range_end, BROWSER_TZ)}</strong>.
             </p>
-            <input type="datetime-local" value={newTime} onChange={(e) => setNewTime(e.target.value)}
-              className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
-            <div className="flex flex-wrap gap-2">
-              <Button variant="primary" loading={busy} disabled={!newTime}
-                onClick={() => act('/api/booking/reschedule/accept', { offer_id: d.offer!.id, slot_time: toIso(newTime) })}>
+
+            {/* 1. Accept a real, bookable slot inside the range */}
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-violet-900">Pick a time that works</p>
+              {pSlots === null ? (
+                <p className="text-xs text-violet-800 flex items-center gap-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading open times…</p>
+              ) : pSlots.length === 0 ? (
+                <p className="text-xs text-violet-800">No open times in that range right now. Ask for another date, or reject the proposal.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {pSlots.map((s) => {
+                    const active = selPSlot === s.slot_start;
+                    return (
+                      <button key={s.slot_start} type="button" onClick={() => setSelPSlot(s.slot_start)}
+                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${active ? 'border-brand-900 bg-brand-900 text-white' : 'border-violet-200 bg-white hover:border-brand-500'}`}>
+                        {fmtInTz(s.slot_start, BROWSER_TZ)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <Button variant="primary" loading={busy} disabled={!selPSlot} className="self-start"
+                onClick={() => act('/api/booking/reschedule/accept', { offer_id: d.offer!.id, slot_time: selPSlot }, 'Your session is rescheduled to the new time.')}>
                 Accept this time
               </Button>
-              <Button variant="outline" loading={busy}
-                onClick={() => act('/api/booking/reschedule/reject', { offer_id: d.offer!.id })}>
-                Reject
-              </Button>
             </div>
+
+            {/* 2. Counter-offer: ask for a different day */}
+            <div className="flex flex-col gap-2 border-t border-violet-200 pt-3">
+              <p className="text-xs font-medium text-violet-900">None of these work? Ask your mentor for a different day</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <input type="date" value={askDate} onChange={(e) => setAskDate(e.target.value)}
+                  className="h-9 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                <Button variant="outline" loading={busy} disabled={!askDate}
+                  onClick={() => act('/api/booking/reschedule/request-date', { booking_id: d.id, requested_date: askDate }, 'Sent. Your mentor will propose times for that day.')}>
+                  Ask for this date
+                </Button>
+              </div>
+            </div>
+
+            {/* 3. Reject - explicitly cancels the session */}
+            <div className="border-t border-violet-200 pt-3">
+              <button type="button" onClick={() => setShowRejectConfirm(true)}
+                className="text-xs font-medium text-red-600 hover:underline">
+                Reject the proposal (this cancels the session)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mentee: their counter-offer is pending - waiting for the mentor to propose times */}
+        {isCandidate && userCounterOffer && d.offer && (
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+            <p className="text-sm text-violet-900">
+              You asked for a different day{d.offer.requested_date ? <> (<strong>{dateLong(`${d.offer.requested_date}T12:00:00`)}</strong>)</> : null}. Waiting for {d.mentor_name ?? 'your mentor'} to propose times. We&apos;ll email you when they do.
+            </p>
+          </div>
+        )}
+
+        {/* Mentor: the attendee asked for another day - propose times below */}
+        {isMentor && userCounterOffer && d.offer && (
+          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+            <p className="text-sm text-violet-900">
+              The attendee asked for a different day{d.offer.requested_date ? <> (<strong>{dateLong(`${d.offer.requested_date}T12:00:00`)}</strong>)</> : null}. Propose times you can offer using the reschedule option below.
+            </p>
           </div>
         )}
 
@@ -398,9 +485,9 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
             <p className="text-sm text-red-900">Your mentor didn&apos;t show up. How would you like to resolve it?</p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_same' })}>Rebook same mentor</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' })}>Try a different mentor</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund' })}>Request refund</Button>
+              <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_same' }, 'Done. Your session is reinstated with the same mentor, no penalty to you.')}>Rebook same mentor</Button>
+              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' }, 'Done. You have been credited in full. Browse other mentors to rebook whenever you like.')}>Try a different mentor</Button>
+              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund' }, 'Refund requested. We will return the full amount to your original payment method.')}>Request refund</Button>
             </div>
           </div>
         )}
@@ -408,8 +495,8 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
             <p className="text-sm text-red-900">The attendee was marked as a no-show.</p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'accept_rebook' })}>Offer a rebook</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'reject' })}>Close session</Button>
+              <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'accept_rebook' }, 'Rebook offered. The session is reinstated for the attendee.')}>Offer a rebook</Button>
+              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'reject' }, 'Session closed. It is marked complete and your payout stands.')}>Close session</Button>
             </div>
           </div>
         )}
@@ -442,7 +529,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
             )}
             {d.can_report_no_show && (
               <Button variant="outline" loading={busy}
-                onClick={() => act('/api/booking/no-show/flag', { booking_id: d.id, no_show_party: isCandidate ? 'mentor' : 'user' })}>
+                onClick={() => act('/api/booking/no-show/flag', { booking_id: d.id, no_show_party: isCandidate ? 'mentor' : 'user' }, 'No-show reported. We have emailed a confirmation to both of you. Choose how to resolve it below.')}>
                 Report a no-show
               </Button>
             )}
@@ -497,6 +584,31 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </div>
         );
       })()}
+
+      {/* Reject-proposal confirmation - rejecting cancels the session (policy Diagram 3) */}
+      {showRejectConfirm && d.offer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowRejectConfirm(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="mx-auto h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold text-brand-900">Reject and cancel the session?</h3>
+            <p className="mt-2 text-sm text-muted leading-relaxed">
+              {(d.deadline_state === 'free'
+                ? "Rejecting cancels this session. You'll receive the full amount as wallet credit (no cash refund)."
+                : "Rejecting cancels this session. You'll be refunded in full.")
+                + ' To keep the session and change the time instead, use the Ask for a different day option above.'}
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5">
+              <Button variant="ghost" className="text-red-600 hover:bg-red-50" loading={busy}
+                onClick={async () => { setShowRejectConfirm(false); await act('/api/booking/reschedule/reject', { offer_id: d.offer!.id }, 'The proposal was rejected and the session cancelled.'); }}>
+                Reject &amp; cancel
+              </Button>
+              <Button variant="primary" onClick={() => setShowRejectConfirm(false)}>Go back</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Join-window popup */}
       {showJoinInfo && (
