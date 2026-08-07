@@ -514,6 +514,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     if (!selectedService || !selectedSlot) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
+    if (!isLoggedIn && !name.trim()) { setFormError('Please enter your name.'); return; }
     if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
@@ -574,6 +575,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
+    if (!isLoggedIn && !name.trim()) { setFormError('Please enter your name.'); return; }
     if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     setFormError(null);
     // A guest cannot book under an email that already belongs to a registered account: a later
@@ -588,7 +590,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         cache: 'no-store',
       });
       const data = await res.json().catch(() => ({}));
-      setEmailExists(!!data?.exists);
+      // Only treat the email as an existing account (and block guest booking) when it's a REAL,
+      // usable account: verified, or has a password, or signs in with Google. A dangling
+      // half-started signup (row created but never verified, no password) must not block the same
+      // person from booking as a guest with that email.
+      setEmailExists(!!data?.exists && (!!data?.confirmed || !!data?.has_password || !!data?.oauth_only));
       setEmailOauthOnly(!!data?.oauth_only);
     } catch {
       // Degrade to the normal guest prompt if the check is unreachable - never block a booking on it.
@@ -680,6 +686,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     if (!selectedSlot || !selectedService) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
+    if (!isLoggedIn && !name.trim()) { setFormError('Please enter your name.'); return; }
     if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
@@ -1087,7 +1094,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                     <p className="text-sm text-muted">Booking as <span className="font-medium text-foreground">{email}</span>.</p>
                   ) : (
                     <>
-                      <Input label="Your name" value={name} onChange={e => setName(e.target.value)} placeholder="Optional" autoComplete="name" />
+                      <Input label="Your name *" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" autoComplete="name" required />
                       <Input label="Email *" type="email" required value={email} onChange={e => setEmail(e.target.value)}
                         placeholder="you@email.com" autoComplete="email"
                         hint={email.trim() && !isValidEmail(email) ? undefined : "We'll send your confirmation here."} />
@@ -1102,7 +1109,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-sm font-medium text-foreground">
-                      What should your mentor prepare? <span className="text-muted font-normal">(optional)</span>
+                      What should your mentor prepare?
                     </label>
                     <textarea rows={3} maxLength={NOTES_MAX} value={notes} onChange={e => setNotes(e.target.value)}
                       placeholder="Share your goal or specific questions so your mentor can prepare."
@@ -1110,7 +1117,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={openReview} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !isValidPhone(phone)}>
+                  <Button variant="accent" onClick={openReview} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !isValidPhone(phone) || (!isLoggedIn && !name.trim())}>
                     Review &amp; confirm
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
