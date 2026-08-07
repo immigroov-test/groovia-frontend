@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
 } from 'lucide-react';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { PhoneInput } from './ui/PhoneInput';
@@ -28,6 +29,12 @@ const NOTES_MAX = 500;
 // still edit the prefilled value). Mirrors the backend's own @/. validation.
 function isValidEmail(e: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+}
+
+// Per-country phone validity (length + format), from the same libphonenumber the PhoneInput uses. The
+// stored value is "{dial} {national}" (e.g. "+31 612345678"), which parses to the right country.
+function isValidPhone(phone: string): boolean {
+  try { return isValidPhoneNumber(phone.trim()); } catch { return false; }
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -507,7 +514,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     if (!selectedService || !selectedSlot) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
-    if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
+    if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
     setFormError(null);
@@ -567,7 +574,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
-    if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
+    if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     setFormError(null);
     // A guest cannot book under an email that already belongs to a registered account: a later
     // sign-in with that email would claim the booking, so the guest who paid would lose access.
@@ -673,7 +680,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     if (!selectedSlot || !selectedService) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
-    if (phone.replace(/\D/g, '').length < 7) { setFormError('A valid phone number is required.'); return; }
+    if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
     setFormError(null);
@@ -966,7 +973,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <h3 className="text-base font-semibold text-brand-900">Pick a date &amp; time</h3>
-                <button type="button" onClick={changeService} className="text-xs font-medium text-brand-700 hover:underline shrink-0">Change service</button>
+                <button type="button" onClick={changeService}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[--color-border] px-2.5 py-1.5 text-xs font-medium text-brand-700 hover:border-brand-400 hover:bg-brand-50 transition-colors shrink-0">
+                  <ChevronLeft className="h-3.5 w-3.5" /> Back to services
+                </button>
               </div>
               {slotsError ? (
                 <p className="text-sm text-red-600">{slotsError}</p>
@@ -1100,7 +1110,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={openReview} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !phone.trim()}>
+                  <Button variant="accent" onClick={openReview} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !isValidPhone(phone)}>
                     Review &amp; confirm
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (

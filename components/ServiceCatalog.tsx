@@ -111,6 +111,16 @@ export function ServiceCatalog({
               <Input label="Title" value={s.title} onChange={(e) => patch(s.code!, { title: e.target.value })}
                 placeholder="e.g. Portfolio review" />
             )}
+            {custom && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Category</label>
+                <select value={s.category ?? 'General Guidance'}
+                  onChange={(e) => patch(s.code!, { category: e.target.value })}
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                  {SERVICE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            )}
             <div className="flex flex-wrap items-end gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Duration</label>
@@ -143,14 +153,8 @@ export function ServiceCatalog({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Selected services -> editable blocks */}
-      {value.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          {value.map((s) => block(s))}
-        </div>
-      )}
-
-      {/* Catalogue tags: tap to add. Only templates not already added are shown. */}
+      {/* Catalogue tags: tap to add. Placed ABOVE the selected list so a tapped session drops into
+          "Your sessions" right below it (BUG-070). Only templates not already added are shown. */}
       <div>
         <h3 className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
           {value.length > 0 ? 'Add another session' : 'Choose the sessions you offer'}
@@ -182,6 +186,14 @@ export function ServiceCatalog({
           </div>
         </div>
       </div>
+
+      {/* Selected services -> editable blocks, listed BELOW the picker (BUG-070) */}
+      {value.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">Your sessions</h3>
+          {value.map((s) => block(s))}
+        </div>
+      )}
     </div>
   );
 }

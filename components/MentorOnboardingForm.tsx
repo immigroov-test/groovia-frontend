@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { createClient } from '../lib/supabase/client';
 import { Card, CardBody } from './ui/Card';
 import { Input } from './ui/Input';
@@ -167,6 +168,13 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     const profYears = parseInt(yearsProfExp, 10);
     if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) e.push('Enter your years of professional experience (0-60).');
     if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) e.push('Years lived abroad must be between 0 and 60.'); }
+    // Per-country phone validity (only when a number was entered, so this never newly blocks a mentor
+    // who left the optional field blank).
+    if (phone.trim()) {
+      let phoneOk = false;
+      try { phoneOk = isValidPhoneNumber(phone); } catch { phoneOk = false; }
+      if (!phoneOk) e.push('Enter a valid phone number for the selected country.');
+    }
     const cityErr = validateCityName(city);
     if (cityErr) e.push(cityErr);
     return e;
