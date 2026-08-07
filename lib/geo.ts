@@ -1,29 +1,28 @@
-// Visitor geolocation. The PRIMARY source in production is Vercel's edge geo (the real
-// connection IP), fetched fresh on every load via /api/geo, so the location follows the
-// visitor when they move countries. IP providers and the timezone are fallbacks used only
-// when the edge geo is unavailable (local dev, or a missing header). A manual user override
-// wins over detection (with a TTL, so it self-heals if the visitor later moves), as the
-// backup for when detection is wrong or blocked.
-//
-// Note: this drives the DISPLAY location + currency. The amount actually charged always
-// follows the trusted edge IP on the backend, so a manual override never lets someone spoof
-// a cheaper country at checkout.
+// Visitor geolocation, fully automatic (no manual country choice, so pricing can't be gamed).
+// Order of sources, each the real location, never user-claimed:
+//   1. /api/geo   Vercel edge geo from the real connection IP (the SAME value the backend
+//                 prices on). Fetched fresh on every load, so a move is reflected at once.
+//   2. cache      a recent successful detection (short TTL), only to avoid re-hitting the
+//                 external providers while the edge geo is momentarily unavailable.
+//   3. providers  client-side IP-geolocation APIs (still the real IP).
+//   4. browser    if IP detection fails entirely, ask the visitor for device location access
+//                 (navigator.geolocation) and reverse-geocode it to a country.
+//   5. timezone   last-resort guess from the browser timezone.
 
 export interface GeoLocation {
   code: string;    // ISO-3166 alpha-2, uppercase
   city?: string;   // when the source supplies it
 }
 
-interface CacheEntry extends GeoLocation { ts: number; source: 'auto' | 'provider' | 'user'; }
+interface CacheEntry extends GeoLocation { ts: number; source: 'auto' | 'provider' | 'geo'; }
 
 const CACHE_KEY = 'ig_geo_location';
-const OVERRIDE_KEY = 'ig_geo_override';
-// The fallback cache is only used when the authoritative edge geo is unavailable; keep it
-// short so a stale value can never pin the wrong country for long (the original bug).
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;      // 6 hours
-const OVERRIDE_TTL_MS = 24 * 60 * 60 * 1000;  // a manual choice self-heals after a day
+// Short, so a stale value can never pin the wrong country for long (the original bug was an
+// infinite cache). The edge geo is authoritative and fetched fresh anyway; this only covers the
+// window where it is briefly unavailable.
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;   // 6 hours
 
-// Timezone -> country: the offline fallback when every provider fails.
+// Timezone -> country: the offline fallback when everything else fails.
 const TZ_COUNTRY: Record<string, string> = {
   'Asia/Kolkata': 'IN', 'Asia/Calcutta': 'IN', 'Europe/Amsterdam': 'NL', 'Europe/Paris': 'FR',
   'Europe/Berlin': 'DE', 'America/Sao_Paulo': 'BR', 'America/New_York': 'US', 'America/Los_Angeles': 'US',
@@ -35,12 +34,10 @@ const TZ_COUNTRY: Record<string, string> = {
 function isCode(c: string): boolean {
   return /^[A-Z]{2}$/.test(c);
 }
-
 function tzCountry(): string {
   try { return TZ_COUNTRY[Intl.DateTimeFormat().resolvedOptions().timeZone] || 'US'; }
   catch { return 'US'; }
 }
-
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
 }
@@ -66,82 +63,74 @@ const PROVIDERS: (() => Promise<GeoLocation>)[] = [
   },
 ];
 
-function readEntry(key: string): CacheEntry | null {
+// Device location via the browser's Geolocation API (this triggers the "allow location access"
+// prompt). Only used when IP detection has failed. The coordinates are reverse-geocoded to a
+// country with a free, no-key, CORS-enabled service. Rejects if unavailable, denied, or timed out.
+function browserGeo(): Promise<GeoLocation> {
+  return new Promise<GeoLocation>((resolve, reject) => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) { reject(new Error('no geolocation')); return; }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`;
+          const j = await (await withTimeout(fetch(url), 2500)).json();
+          const code = String(j.countryCode || '').toUpperCase();
+          if (isCode(code)) resolve({ code, city: j.city || j.locality || undefined });
+          else reject(new Error('reverse geocode failed'));
+        } catch (e) { reject(e as Error); }
+      },
+      (err) => reject(err),
+      { timeout: 8000, maximumAge: 10 * 60 * 1000, enableHighAccuracy: false },
+    );
+  });
+}
+
+function readCache(): CacheEntry | null {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const e = JSON.parse(raw) as CacheEntry;
     return e && isCode(e.code) && typeof e.ts === 'number' ? e : null;
   } catch { return null; }
 }
-function writeEntry(key: string, e: CacheEntry) {
-  try { localStorage.setItem(key, JSON.stringify(e)); } catch { /* ignore */ }
+function writeCache(g: GeoLocation, source: CacheEntry['source']) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...g, ts: Date.now(), source })); } catch { /* ignore */ }
 }
 function isFresh(e: CacheEntry | null, ttl: number): boolean {
   return !!e && (Date.now() - e.ts) < ttl;
 }
 
-// ── Manual override (the backup): the visitor tells us their country. It wins over
-// detection until it expires, so it also covers detection being blocked or wrong (e.g. VPN).
-export function setUserCountry(code: string, city?: string): void {
-  const c = (code || '').toUpperCase();
-  if (!isCode(c)) return;
-  writeEntry(OVERRIDE_KEY, { code: c, city, ts: Date.now(), source: 'user' });
-}
-export function clearUserCountry(): void {
-  try { localStorage.removeItem(OVERRIDE_KEY); } catch { /* ignore */ }
-}
-export function getUserCountry(): GeoLocation | null {
-  const e = readEntry(OVERRIDE_KEY);
-  return isFresh(e, OVERRIDE_TTL_MS) ? { code: e!.code, city: e!.city } : null;
-}
-export function hasUserCountry(): boolean {
-  return getUserCountry() !== null;
-}
-
 let inflight: Promise<GeoLocation> | null = null;
 
-// The visitor's detected location (country + city when available). De-duped so concurrent
-// callers share one lookup.
-//
-// Order: (0) a manual user override, if set; (1) /api/geo (Vercel edge geo, the real IP and
-// the SAME value the backend prices on) - fetched fresh so a move is reflected at once;
-// (2) a recent fallback cache, only when the edge geo is unavailable; (3) client IP
-// providers; (4) a stale prior detection, else the timezone.
+// The visitor's detected location (country + city when available). De-duped so concurrent callers
+// share one lookup, which also means the geolocation prompt (step 4) can fire at most once.
 export function detectLocation(): Promise<GeoLocation> {
   if (typeof window === 'undefined') return Promise.resolve({ code: 'US' });
-  const override = getUserCountry();
-  if (override) return Promise.resolve(override);
   if (inflight) return inflight;
   inflight = (async () => {
-    // 1. Authoritative: Vercel edge geo from the real connection IP. Fresh every load in
-    //    production, so changing country is reflected immediately (no infinite cache).
+    // 1. Authoritative: Vercel edge geo from the real connection IP, fresh every load.
     try {
       const r = await (await withTimeout(fetch('/api/geo', { cache: 'no-store' }), 2500)).json();
       const code = String(r.country || '').toUpperCase();
-      if (isCode(code)) {
-        const g: GeoLocation = { code, city: r.city || undefined };
-        writeEntry(CACHE_KEY, { ...g, ts: Date.now(), source: 'auto' });
-        return g;
-      }
+      if (isCode(code)) { const g: GeoLocation = { code, city: r.city || undefined }; writeCache(g, 'auto'); return g; }
     } catch { /* edge geo unavailable (local dev / missing header) - fall through */ }
 
-    const cached = readEntry(CACHE_KEY);
-    // 2. Recent fallback cache: avoids re-hitting external providers on every load while the
-    //    edge geo is down. Short TTL so it can never pin the wrong country for long.
+    // 2. Recent successful detection, only while the edge geo is momentarily unavailable.
+    const cached = readCache();
     if (isFresh(cached, CACHE_TTL_MS)) return { code: cached!.code, city: cached!.city };
 
-    // 3. Client IP providers (real IP).
+    // 3. Client IP providers (real IP), silent (no prompt).
     for (const p of PROVIDERS) {
-      try {
-        const g = await p();
-        if (isCode(g.code)) { writeEntry(CACHE_KEY, { ...g, ts: Date.now(), source: 'provider' }); return g; }
-      } catch { /* try the next provider */ }
+      try { const g = await p(); if (isCode(g.code)) { writeCache(g, 'provider'); return g; } } catch { /* next */ }
     }
 
-    // 4. Last resort: a stale prior detection (better than nothing), else the timezone.
+    // 4. IP detection failed: ask the visitor for device location access, then reverse-geocode it.
+    try { const g = await browserGeo(); writeCache(g, 'geo'); return g; } catch { /* denied / unavailable */ }
+
+    // 5. Last resort: a stale prior detection, else the timezone. Not cached, so we retry next visit.
     if (cached) return { code: cached.code, city: cached.city };
-    return { code: tzCountry() };   // not cached: retry on the next visit
+    return { code: tzCountry() };
   })().finally(() => { inflight = null; });
   return inflight;
 }
@@ -154,7 +143,7 @@ export async function detectCountry(): Promise<string | undefined> {
 
 // Country to price for on the display side, honouring a ?country=XX override so you can preview
 // prices as any country on staging. Display-only: in production the backend trusts the signed
-// edge geo and ignores this, so the override never changes what a real visitor is charged.
+// edge geo and ignores this, so it never changes what a real visitor is charged.
 export async function pricingCountry(): Promise<string | undefined> {
   if (typeof window !== 'undefined') {
     const q = new URLSearchParams(window.location.search).get('country');
