@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { isValidPhoneNumber } from 'libphonenumber-js';
@@ -90,14 +91,15 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
   const [country, setCountry] = useState('');
-  const [homeCountry, setHomeCountry] = useState('');
+  // Other countries the mentor can advise on (besides their current one), up to 2, each with years lived there.
+  const [servedCountries, setServedCountries] = useState<{ code: string; years: string }[]>([]);
   const [city, setCity] = useState('');
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [languages, setLanguages] = useState<string[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [publicNotes, setPublicNotes] = useState(DEFAULT_DISCLAIMER);
   const categories: string[] = [];   // expertise categories are now derived from configured services, not asked here
-  const [yearsExp, setYearsExp] = useState('');           // years lived abroad (optional)
+  const [yearsExp, setYearsExp] = useState('');           // years in the current country (optional)
   const [yearsProfExp, setYearsProfExp] = useState('');   // years of professional experience (required)
   const [domains, setDomains] = useState<string[]>([]);
   const [specializations, setSpecializations] = useState<string[]>([]);   // free-text specifics under domains
@@ -118,7 +120,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
 
   const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
-  const [formErrors, setFormErrors] = useState<string[]>([]);   // validation summary (all issues)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});   // per-field inline errors (BUG-071)
   const [submitting, setSubmitting] = useState(false);
   const [saveWarnings, setSaveWarnings] = useState<string[] | null>(null);
 
@@ -129,16 +131,16 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [step]);
 
-  // Take the mentor straight to the validation summary whenever new errors appear on submit.
-  const errorSummaryRef = useRef<HTMLDivElement>(null);
+  // On a failed validation, jump to the top of the form so the mentor sees the first flagged field
+  // (each error is shown inline next to its field).
   useEffect(() => {
-    if (formErrors.length > 0) errorSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [formErrors]);
+    if (Object.keys(fieldErrors).length > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [fieldErrors]);
 
-  // Countries a mentee can browse this mentor by = the two countries they actually know:
-  // their home (origin) and current (destination). Derived, not asked for separately.
+  // Countries a mentee can browse this mentor by = their current country plus the other countries they
+  // can advise on. Derived, not asked for separately.
   const expertiseCountries = Array.from(
-    new Set([country, homeCountry].map((c) => (c || '').toUpperCase()).filter(Boolean)),
+    new Set([country, ...servedCountries.map((s) => s.code)].map((c) => (c || '').toUpperCase()).filter(Boolean)),
   );
 
   // The headline is auto-drafted from the mentor's own answers (no LLM): derived during render
@@ -156,27 +158,40 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (tz) setTimezone(tz);
   }
 
-  // All missing/invalid Step-1 (details) fields at once, so the summary can list them
-  // together instead of surfacing one at a time.
-  function collectDetailErrors(): string[] {
-    const e: string[] = [];
-    if (!displayName.trim()) e.push('Display name is required.');
-    if (!effectiveHeadline.trim()) e.push('Headline is required.');
-    if (!homeCountry) e.push('Please select your home country.');
-    if (!country) e.push('Please select your current country.');
-    if (languages.length === 0) e.push('Select at least one language.');
+  // Served-country row helpers (max 2).
+  function addServedCountry() {
+    if (servedCountries.length >= 2) return;
+    setServedCountries([...servedCountries, { code: '', years: '' }]);
+  }
+  function updateServedCountry(i: number, patch: Partial<{ code: string; years: string }>) {
+    setServedCountries(servedCountries.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  }
+  function removeServedCountry(i: number) {
+    setServedCountries(servedCountries.filter((_, idx) => idx !== i));
+  }
+
+  // Every missing/invalid Step-1 field, keyed by field so the message renders inline next to it (BUG-071).
+  function collectDetailErrors(): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (!displayName.trim()) e.displayName = 'Display name is required.';
+    if (!effectiveHeadline.trim()) e.headline = 'Headline is required.';
+    if (!country) e.country = 'Please select your current country.';
+    if (languages.length === 0) e.languages = 'Select at least one language.';
     const profYears = parseInt(yearsProfExp, 10);
-    if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) e.push('Enter your years of professional experience (0-60).');
-    if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) e.push('Years lived abroad must be between 0 and 60.'); }
+    if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) e.yearsProfExp = 'Enter your years of professional experience (0-60).';
+    if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) e.yearsExp = 'Must be between 0 and 60.'; }
     // Per-country phone validity (only when a number was entered, so this never newly blocks a mentor
     // who left the optional field blank).
     if (phone.trim()) {
       let phoneOk = false;
       try { phoneOk = isValidPhoneNumber(phone); } catch { phoneOk = false; }
-      if (!phoneOk) e.push('Enter a valid phone number for the selected country.');
+      if (!phoneOk) e.phone = 'Enter a valid phone number for the selected country.';
     }
+    servedCountries.forEach((sc, i) => {
+      if (sc.years) { const y = parseInt(sc.years, 10); if (isNaN(y) || y < 0 || y > 60) e[`served_${i}`] = 'Years must be 0-60.'; }
+    });
     const cityErr = validateCityName(city);
-    if (cityErr) e.push(cityErr);
+    if (cityErr) e.city = cityErr;
     return e;
   }
 
@@ -194,22 +209,11 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const bankError = validateBank(bank).length > 0 ? 'Add your payout bank details.' : null;
   const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentor;
 
-  // Every missing/invalid field across both steps, for the submit-time summary.
-  function collectAllErrors(): string[] {
-    const e = collectDetailErrors();
-    if (availError) e.push(availError);
-    if (sessionError) e.push(sessionError);
-    if (rulesError) e.push(rulesError);
-    e.push(...validateBank(bank));   // payout details are required
-    if (!agreedMentor) e.push('Accept the Mentor Agreement to proceed.');
-    return e;
-  }
-
   function goToStep2() {
     const errs = collectDetailErrors();
-    if (errs.length) { setFormErrors(errs); setError(null); return; }   // the effect scrolls to the summary
-    setFormErrors([]);
     setError(null);
+    if (Object.keys(errs).length) { setFieldErrors(errs); return; }   // inline errors; the effect scrolls up
+    setFieldErrors({});
     setStep(2);
   }
   function backToStep1() {
@@ -222,13 +226,15 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     setError(null);
 
     const detailErrs = collectDetailErrors();
-    const allErrs = collectAllErrors();
-    if (allErrs.length) {
-      if (detailErrs.length) setStep(1);   // land on the step whose fields need fixing
-      setFormErrors(allErrs);              // the effect scrolls the summary into view
+    if (Object.keys(detailErrs).length) {
+      setStep(1);              // land on the step whose fields need fixing
+      setFieldErrors(detailErrs);
       return;
     }
-    setFormErrors([]);
+    setFieldErrors({});
+    // Step-2 issues (availability / sessions / rules / bank / terms) are shown inline via the
+    // "what's left" list next to the submit button; canSubmit gates the actual submit.
+    if (!canSubmit) return;
 
     setSubmitting(true);
     try {
@@ -246,7 +252,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           phone: phone || undefined,
           bio: isRichTextEmpty(bio) ? undefined : bio,
           country,
-          home_country_code: homeCountry || undefined,
+          served_countries: servedCountries
+            .filter((s) => s.code)
+            .map((s) => ({ code: s.code, years: s.years ? parseInt(s.years, 10) : null })),
           city: city.trim() || undefined,
           timezone,
           languages,
@@ -354,18 +362,6 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
         ))}
       </div>
 
-      {/* Validation summary - lists every missing/invalid field on a submit attempt. */}
-      {formErrors.length > 0 && (
-        <div ref={errorSummaryRef} role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-700">
-            Please fix {formErrors.length === 1 ? 'the following' : `these ${formErrors.length} items`} before submitting:
-          </p>
-          <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-sm text-red-700">
-            {formErrors.map((msg, i) => <li key={i}>{msg}</li>)}
-          </ul>
-        </div>
-      )}
-
       {/* ══ STEP 1: DETAILS ═══════════════════════════════════════════ */}
       <div className={cn('flex-col gap-6', step === 1 ? 'flex' : 'hidden')}>
         <Card>
@@ -384,7 +380,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             </div>
 
             <Input label="Full name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="e.g. Priya Nair" autoComplete="name" required />
+              placeholder="e.g. Priya Nair" autoComplete="name" required error={fieldErrors.displayName} />
 
             <PhoneInput label="Phone Number" value={phone} onChange={setPhone} required
               hint="Used for session coordination. Not shown to users." />
@@ -404,27 +400,54 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <h2 className="text-base font-semibold text-foreground">Location & Languages</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <CountrySelect label="Current country" value={country} onChange={onCountryChange} required
-                placeholder="Where you live now" hint="Country you currently live in." />
-              <CountrySelect label="Home country" value={homeCountry} onChange={setHomeCountry} required
-                placeholder="Where you're originally from" hint="Shown to mentees as where you're from." />
+              <div className="flex flex-col gap-1.5">
+                <CountrySelect label="Current country" value={country} onChange={onCountryChange} required
+                  placeholder="Where you live now" hint="Country you currently live in." />
+                <FieldError msg={fieldErrors.country} />
+              </div>
+              <Input label="How long have you lived here?" type="number" min={0} max={60} value={yearsExp}
+                onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5"
+                hint="Years in your current country. Optional." error={fieldErrors.yearsExp} />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
-                onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8"
-                hint="Total years in your profession." />
-              <Input label="Years lived abroad" type="number" min={0} max={60} value={yearsExp}
-                onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5"
-                hint="Optional. Leave blank if you're a local." />
+            {/* Other countries the mentor can advise on (besides their current one), up to 2, with years lived. */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-baseline gap-2">
+                <label className="text-sm font-medium text-foreground">Other countries you can advise on</label>
+                <span className="text-xs text-muted">(optional, up to 2)</span>
+              </div>
+              {servedCountries.map((sc, i) => (
+                <div key={i} className="flex flex-col gap-1.5">
+                  <div className="grid grid-cols-[1fr_6rem_auto] gap-2 items-start">
+                    <CountrySelect value={sc.code} onChange={(code) => updateServedCountry(i, { code })}
+                      placeholder="Select a country" />
+                    <Input type="number" min={0} max={60} value={sc.years}
+                      onChange={(e) => updateServedCountry(i, { years: e.target.value })} placeholder="Years" />
+                    <button type="button" onClick={() => removeServedCountry(i)} aria-label="Remove country"
+                      className="h-11 w-11 flex items-center justify-center rounded-xl text-muted hover:text-red-600 hover:bg-red-50 transition-colors">
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <FieldError msg={fieldErrors[`served_${i}`]} />
+                </div>
+              ))}
+              {servedCountries.length < 2 && (
+                <button type="button" onClick={addServedCountry}
+                  className="self-start inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                  <Plus className="h-3.5 w-3.5" /> Add a country
+                </button>
+              )}
             </div>
 
             <Input label="City" value={city} onChange={(e) => setCity(e.target.value)}
               placeholder={country ? 'e.g. Amsterdam' : 'Select a country first'} disabled={!country}
-              autoComplete="address-level2" hint="Optional, shown on your public profile." />
+              autoComplete="address-level2" hint="Optional, shown on your public profile." error={fieldErrors.city} />
 
-            <MultiSelect label="Languages Spoken *" options={LANGUAGE_OPTIONS} value={languages} onChange={setLanguages}
-              placeholder={'Type to search (e.g. "Ja" for Japanese)'} hint="Type and press Enter, or click to add." />
+            <div className="flex flex-col gap-1.5">
+              <MultiSelect label="Languages Spoken *" options={LANGUAGE_OPTIONS} value={languages} onChange={setLanguages}
+                placeholder={'Type to search (e.g. "Ja" for Japanese)'} hint="Type and press Enter, or click to add." />
+              <FieldError msg={fieldErrors.languages} />
+            </div>
           </CardBody>
         </Card>
 
@@ -445,6 +468,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               <p className="text-sm text-muted mt-0.5">Used to match you with the right mentees. Changes need re-approval.</p>
             </div>
 
+            <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
+              onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8"
+              hint="Total years in your profession." error={fieldErrors.yearsProfExp} />
+
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Countries you can be found under</label>
               {expertiseCountries.length ? (
@@ -456,7 +483,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted">Set your home and current country above.</p>
+                <p className="text-sm text-muted">Set your current country (and any others) above.</p>
               )}
             </div>
 
@@ -472,7 +499,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               {(() => {
                 // Auto-suggested tags from what they've already entered (domains + countries). One tap
                 // adds one; they stay fully editable. These feed the mentor-listing search.
-                const suggestions = suggestTags({ domains, country, homeCountry })
+                const suggestions = suggestTags({ domains, country })
                   .filter((t) => !specializations.some((s) => s.toLowerCase() === t.toLowerCase()));
                 if (suggestions.length === 0 || specializations.length >= 12) return null;
                 return (
@@ -676,4 +703,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
       </div>
     </form>
   );
+}
+
+// Inline validation message shown directly under a field (BUG-071), for the custom inputs that
+// don't take an `error` prop of their own (CountrySelect, MultiSelect, the served-country rows).
+function FieldError({ msg }: { msg?: string }) {
+  return msg ? <p className="text-xs text-red-600">{msg}</p> : null;
 }
