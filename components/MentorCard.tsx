@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Star, Globe, MapPin, Sparkles } from 'lucide-react';
+import { Star, Globe, MapPin, Sparkles, Gift } from 'lucide-react';
 import { Card, CardBody } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
@@ -32,6 +32,8 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
   const location = [mentor.city, mentor.country ? countryLabel(mentor.country) : '']
     .filter(Boolean).join(', ');
   const homeLabel = mentor.home_country_code ? countryLabel(mentor.home_country_code) : '';
+  // One place line instead of two muted rows: "Amsterdam, Netherlands · from India".
+  const placeLine = [location, homeLabel ? `from ${homeLabel}` : ''].filter(Boolean).join('  ·  ');
   // Strike the original ONLY when fair pricing made the price LOWER (a real discount). Equal at
   // display precision -> no strike ("€24 -> €24" is noise); higher -> show just the final price
   // (a cheaper struck-out figure beside a higher charge reads as a markup, not a deal).
@@ -84,51 +86,55 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
           </p>
         )}
 
-        {/* Origin (home country) + where the mentor is based */}
-        {homeLabel && (
-          <p className="text-xs text-muted flex items-center gap-1.5">
-            <Globe className="h-3.5 w-3.5 shrink-0" />
-            From {homeLabel}
-          </p>
-        )}
-        {location && (
+        {/* Where the mentor is based + their origin, on a single line */}
+        {placeLine && (
           <p className="text-xs text-muted flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
-            {location}
+            <span className="break-words">{placeLine}</span>
           </p>
         )}
 
         {/* Footer: starting price + Book */}
-        <div className="mt-auto pt-3 border-t border-[--color-border] flex items-center justify-between gap-3">
-          {mentor.min_price != null && mentor.min_price > 0 ? (
-            !priceReady ? (
-              // Wait for the backend-localized price so we never flash the raw mentor currency.
-              <div className="h-6 w-24 rounded bg-neutral-100 animate-pulse" aria-hidden />
-            ) : (
-            <div>
-              {price && showStrike ? (
-                <p className="leading-tight">
-                  <span className="text-sm text-muted line-through">{money(price.original, price.currency)}</span>{' '}
-                  <span className="text-lg font-bold text-brand-900">{money(price.discounted, price.currency)}</span>
-                </p>
+        <div className="mt-auto pt-3 border-t border-[--color-border] flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            {mentor.min_price != null && mentor.min_price > 0 ? (
+              !priceReady ? (
+                // Wait for the backend-localized price so we never flash the raw mentor currency.
+                <div className="h-6 w-28 rounded bg-neutral-100 animate-pulse" aria-hidden />
               ) : (
-                <p className="text-lg font-bold text-brand-900 leading-tight">
-                  {price ? money(price.discounted, price.currency) : money(mentor.min_price, mentor.price_currency ?? 'USD')}
-                </p>
-              )}
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[11px] text-muted">from · per session</span>
-                {mentor.smart_pricing && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700">
-                    <Sparkles className="h-3 w-3" /> Fair pricing
-                  </span>
-                )}
-              </div>
-            </div>
-            )
-          ) : (
-            <span className="text-sm text-muted">Free intro</span>
-          )}
+                <>
+                  {/* Reads as "from <cost> per session"; the cheapest PAID session, never the free one. */}
+                  <p className="leading-tight flex flex-wrap items-baseline gap-x-1">
+                    <span className="text-[11px] text-muted">from</span>
+                    {showStrike && price && (
+                      <span className="text-sm text-muted line-through">{money(price.original, price.currency)}</span>
+                    )}
+                    <span className="text-lg font-bold text-brand-900">
+                      {price ? money(price.discounted, price.currency) : money(mentor.min_price, mentor.price_currency ?? 'USD')}
+                    </span>
+                    <span className="text-[11px] text-muted">per session</span>
+                  </p>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                    {mentor.smart_pricing && showStrike && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700">
+                        <Sparkles className="h-3 w-3" /> Fair pricing
+                      </span>
+                    )}
+                    {mentor.has_free_session && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                        <Gift className="h-3 w-3" /> Free intro call
+                      </span>
+                    )}
+                  </div>
+                </>
+              )
+            ) : (
+              // No paid session priced: only a free intro (or nothing bookable-paid yet).
+              <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                <Gift className="h-4 w-4" /> Free intro call
+              </span>
+            )}
+          </div>
           <Link href={`/mentors/${mentor.slug}`}
             className="inline-flex items-center gap-1 h-9 px-4 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 transition-colors shrink-0">
             Book →

@@ -56,10 +56,12 @@ interface DisplayPrice {
 
 interface Slot { slot_start: string; slot_end: string; }
 
-// The customer's own line-item breakdown from the binding quote (service price = localised mentor
-// rate, platform fee, tax, total). Fee/commission config + mentor's raw rate stay redacted server-side.
+// The customer's own line-item breakdown from the binding quote (session price = localised mentor
+// rate, platform fee added on top, tax on session+fee, total). The internal mentor commission +
+// mentor's raw rate stay redacted server-side.
 interface QuoteBreakdown {
-  mentor_amount: number; tax_amount: number; tax_pct: number;
+  mentor_amount: number; platform_fee: number; platform_fee_pct: number;
+  tax_amount: number; tax_pct: number;
   gross_customer: number; customer_currency: string;
 }
 
@@ -757,6 +759,12 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const timeSlotsForDay  = selectedDate ? (slotsByDate.get(selectedDate) ?? []) : [];
   const initials         = mentor.display_name.split(' ').map(p => p[0] ?? '').join('').slice(0, 2).toUpperCase();
   const mentorLocation   = [mentor.city, mentor.country ? countryLabel(mentor.country) : ''].filter(Boolean).join(', ');
+  // Only call it "Fair pricing" when localisation actually LOWERED a price for this visitor. If PPP
+  // leaves prices equal or higher, showing a fair-pricing badge next to a higher charge reads as a
+  // markup (BUG-051), so the badge is suppressed.
+  const hasFairDiscount  = Object.values(priceMap).some(
+    (p) => p.discounted < p.original && formatPrice(p.original, p.currency) !== formatPrice(p.discounted, p.currency),
+  );
 
   // ── Confirmed state ──────────────────────────────────────────────────────────
   if (step === 'confirmed') {
@@ -882,9 +890,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
           <span>Your time <span className="font-semibold text-foreground">{tzShort(userTz)}</span></span>
           {showMentorTz && <span>Mentor&apos;s time <span className="font-semibold text-foreground">{tzShort(mentorTz)}</span></span>}
-          {mentor.smart_pricing && (
+          {mentor.smart_pricing && hasFairDiscount && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 font-medium">
-              Fair pricing for your country
+              Fair pricing
             </span>
           )}
         </div>
@@ -1025,15 +1033,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? `${formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)} ${tzShort(mentorTz)}` : 'Not selected yet'} />}
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted">Total</span>
+                <span className="text-sm text-muted">Session price</span>
                 <PriceLabel service={selectedService} price={priceMap[selectedService.id]} priceReady={priceReady} className="text-lg font-semibold text-brand-900" />
               </div>
+              {selectedService.set_price > 0 && (
+                <p className="-mt-1.5 text-[11px] text-muted text-right">Platform fee and tax shown at checkout</p>
+              )}
               {(() => {
                 const p = priceMap[selectedService.id];
                 if (!p || p.discounted >= p.original) return null;
                 return (
                   <p className="-mt-1.5 text-[11px] font-medium text-amber-700 text-right">
-                    Fair-price discount applied for your country
+                    Fair-price discount applied
                   </p>
                 );
               })()}
@@ -1043,7 +1054,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   {questions.map(q => (
                     <div key={q.id} className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-foreground">
-                        {q.question_text}{q.is_required && <span className="text-red-500 ml-0.5">*</span>}
+                        {q.question_text}{q.is_required && <span className="text-foreground ml-0.5">*</span>}
                       </label>
                       {q.question_type === 'yes_no' ? (
                         <div className="flex gap-3">
@@ -1147,7 +1158,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Calculating price…</div>
               ) : reviewQuote ? (
                 <>
-                  <Row k="Service price" v={formatPrice(reviewQuote.mentor_amount, reviewQuote.customer_currency)} />
+                  <Row k="Session price" v={formatPrice(reviewQuote.mentor_amount, reviewQuote.customer_currency)} />
+                  {reviewQuote.platform_fee > 0 && (
+                    <Row k={`Platform fee${reviewQuote.platform_fee_pct ? ` (${reviewQuote.platform_fee_pct}%)` : ''}`} v={formatPrice(reviewQuote.platform_fee, reviewQuote.customer_currency)} />
+                  )}
                   {reviewQuote.tax_amount > 0 && (
                     <Row k={`Tax${reviewQuote.tax_pct ? ` (${reviewQuote.tax_pct}%)` : ''}`} v={formatPrice(reviewQuote.tax_amount, reviewQuote.customer_currency)} />
                   )}

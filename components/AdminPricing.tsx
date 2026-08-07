@@ -16,34 +16,42 @@ function label(cc: string): string {
   return cc === 'DEFAULT' ? 'All other countries (default)' : `${countryLabel(cc)} (${cc})`;
 }
 
-// Live worked example from a base of 100, so the admin sees the effect of the numbers as they type.
-// Revenue-split model: the mentor's price (100) is what the customer pays; the commission comes OUT
-// of it (the mentor keeps the rest), and tax is added on top for the customer.
+// Live worked example from a session price of 100, so the admin sees the effect of the numbers as
+// they type. Markup model: the platform fee is ADDED ON TOP of the session price, tax is charged on
+// (session + platform fee), and the three sum to what the customer pays. The mentor commission is a
+// separate, internal number (not shown here).
 function Example({ fee, tax }: { fee: number; tax: number }) {
   const base = 100;
   const feeAmt = base * (fee || 0) / 100;
-  const taxAmt = base * (tax || 0) / 100;
-  const total = base + taxAmt;
-  const mentorKeeps = base - feeAmt;
+  const taxAmt = (base + feeAmt) * (tax || 0) / 100;
+  const total = base + feeAmt + taxAmt;
   return (
     <p className="text-xs text-muted">
-      Example: customer pays <span className="font-medium text-foreground">100</span> + tax {tax || 0}% ({taxAmt.toFixed(2)})
-      {' '}= <span className="font-semibold text-foreground">{total.toFixed(2)}</span>.
-      {' '}Of the 100, commission {fee || 0}% ({feeAmt.toFixed(2)}) to Immigroov, mentor keeps{' '}
-      <span className="font-semibold text-foreground">{mentorKeeps.toFixed(2)}</span>.
+      Example: session price <span className="font-medium text-foreground">100</span>
+      {' '}+ platform fee {fee || 0}% ({feeAmt.toFixed(2)})
+      {' '}+ tax {tax || 0}% ({taxAmt.toFixed(2)})
+      {' '}= customer pays <span className="font-semibold text-foreground">{total.toFixed(2)}</span>.
     </p>
   );
 }
 
-// Per-country commission + tax. The mentor's rate IS the customer price; the commission is taken OUT
-// of it (customer pays price + tax), keyed to the customer's country. The DEFAULT row is the
-// fallback for any country without its own entry.
+// Per-country customer platform fee + tax. The platform fee is ADDED ON TOP of the mentor's session
+// price and shown to the customer; tax is charged on (session + platform fee). Keyed to the
+// customer's country; the DEFAULT row is the fallback for any country without its own entry. The
+// internal mentor commission is configured separately.
 export function AdminPricing() {
   const router = useRouter();
   const [rows, setRows] = useState<CountryPricing[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [adding, setAdding] = useState({ country_code: '', platform_fee_pct: '15', tax_pct: '0', tax_label: '' });
+
+  // Global INTERNAL mentor commission % (taken out of the mentor's price). Separate from the
+  // customer-facing platform fee above; a per-mentor override or a referral code can lower it per
+  // booking, this is only the default.
+  const [commission, setCommission] = useState<string>('');
+  const [commissionSaving, setCommissionSaving] = useState(false);
+  const [commissionSaved, setCommissionSaved] = useState(false);
 
   const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const { data: { session } } = await createClient().auth.getSession();
@@ -59,7 +67,28 @@ export function AdminPricing() {
     } catch { setError('Could not load pricing.'); }
   }, [authedFetch]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadCommission = useCallback(async () => {
+    try {
+      const res = await authedFetch('/api/admin/general-pricing');
+      if (res.ok) { const d = await res.json(); setCommission(String(d.mentor_commission_pct ?? 30)); }
+    } catch { /* leave blank; the field just won't prefill */ }
+  }, [authedFetch]);
+
+  useEffect(() => { load(); loadCommission(); }, [load, loadCommission]);
+
+  async function saveCommission() {
+    setCommissionSaving(true); setError(null); setCommissionSaved(false);
+    try {
+      const res = await authedFetch('/api/admin/general-pricing', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mentor_commission_pct: parseFloat(commission) || 0 }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.detail || 'Could not save commission.'); return; }
+      setCommissionSaved(true);
+      router.refresh();
+    } catch { setError('Could not save commission.'); }
+    finally { setCommissionSaving(false); }
+  }
 
   async function save(r: CountryPricing) {
     setSaving(r.country_code); setError(null);
@@ -88,12 +117,33 @@ export function AdminPricing() {
     <div className="flex flex-col gap-4">
       {error && <p className="text-sm text-red-600">{error}</p>}
 
+      {/* Global internal mentor commission (separate from the customer platform fee below) */}
+      <Card><CardBody className="pt-4 pb-4 flex flex-col gap-2">
+        <p className="text-sm font-semibold text-foreground">General mentor commission</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <Field label="Commission %" type="number" value={commission} onChange={(v) => { setCommission(v); setCommissionSaved(false); }} />
+          <Button variant="primary" size="sm" loading={commissionSaving} onClick={saveCommission}>Save</Button>
+          {commissionSaved && <span className="text-xs text-green-600">Saved</span>}
+        </div>
+        <p className="text-xs text-muted">
+          Taken out of the mentor&apos;s session price (internal, never shown to the customer). This is the
+          default only: a per-mentor override or a referral code can lower it for a given booking. For
+          example, when a mentor brings a customer in through their own referral code, we deduct 10%
+          instead of 30%.
+        </p>
+      </CardBody></Card>
+
+      <p className="text-xs text-muted">
+        Platform Fee (below) is charged to the customer on top of the mentor&apos;s session price. It is
+        separate from the mentor commission above.
+      </p>
+
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
           <Card key={r.country_code}><CardBody className="pt-4 pb-4 flex flex-col gap-2">
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-[150px] flex-1"><p className="text-sm font-semibold text-foreground">{label(r.country_code)}</p></div>
-              <Field label="Commission %" type="number" value={String(r.platform_fee_pct)} onChange={(v) => patch(r.country_code, 'platform_fee_pct', v)} />
+              <Field label="Platform Fee %" type="number" value={String(r.platform_fee_pct)} onChange={(v) => patch(r.country_code, 'platform_fee_pct', v)} />
               <Field label="Tax %" type="number" value={String(r.tax_pct)} onChange={(v) => patch(r.country_code, 'tax_pct', v)} />
               <Field label="Tax label (optional)" type="text" value={r.tax_label ?? ''} placeholder="GST / VAT" onChange={(v) => patch(r.country_code, 'tax_label', v)} />
               <Button variant="primary" size="sm" loading={saving === r.country_code} onClick={() => save(r)}>Save</Button>
@@ -111,7 +161,7 @@ export function AdminPricing() {
             <CountrySelect label="Country" value={adding.country_code}
               onChange={(code) => setAdding((a) => ({ ...a, country_code: code }))} placeholder="Search a country" />
           </div>
-          <Field label="Commission %" type="number" value={adding.platform_fee_pct} onChange={(v) => setAdding((a) => ({ ...a, platform_fee_pct: v }))} />
+          <Field label="Platform Fee %" type="number" value={adding.platform_fee_pct} onChange={(v) => setAdding((a) => ({ ...a, platform_fee_pct: v }))} />
           <Field label="Tax %" type="number" value={adding.tax_pct} onChange={(v) => setAdding((a) => ({ ...a, tax_pct: v }))} />
           <Field label="Tax label (optional)" type="text" value={adding.tax_label} placeholder="VAT" onChange={(v) => setAdding((a) => ({ ...a, tax_label: v }))} />
           <Button variant="accent" size="sm"

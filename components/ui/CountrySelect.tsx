@@ -77,7 +77,7 @@ export function CountrySelect({
     <div className="flex flex-col gap-1.5" ref={containerRef}>
       {label && (
         <label className="text-sm font-medium text-foreground">
-          {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+          {label}{required && <span className="text-foreground ml-0.5">*</span>}
         </label>
       )}
 

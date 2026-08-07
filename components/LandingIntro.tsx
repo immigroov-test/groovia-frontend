@@ -24,7 +24,7 @@ interface Props {
 }
 
 export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIntro(
-  { hideGif, showWelcome, onReveal },
+  { showWelcome, onReveal },
   ref,
 ) {
   const b = UI_CONTENT.brandIntro;
@@ -73,24 +73,11 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
 
   return (
     <div ref={ref} className="relative z-10 w-full max-w-4xl mx-auto px-5 sm:px-8 pt-6 sm:pt-10 flex flex-col items-center text-center">
-      {/* Step 1: headline + globe, at the top. */}
+      {/* Step 1: headline, at the top. */}
       <motion.div {...rise(step >= 1)} className="w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] items-center gap-4 sm:gap-8">
-          {!hideGif && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: step >= 1 ? 1 : 0, scale: step >= 1 ? 1 : 0.85 }}
-              transition={{ duration: 0.8, ease: EASE }}
-              className="mx-auto sm:mx-0 shrink-0"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/Globe_landingPage_GIF.gif" alt="" aria-hidden className="w-28 h-28 sm:w-44 sm:h-44 object-contain" />
-            </motion.div>
-          )}
-          <h1 className="min-h-[3rem] sm:min-h-[6rem] text-lg sm:text-4xl font-bold tracking-tight leading-[1.15] text-center sm:text-left gradient-flow bg-clip-text text-transparent">
-            <IntroHeadline prefix="Immigroov is a " main={b.headline} active={step >= 1} speed={HEAD_SPEED} hold={1400} />
-          </h1>
-        </div>
+        <h1 className="min-h-[3rem] sm:min-h-[6rem] text-lg sm:text-4xl font-bold tracking-tight leading-[1.15] text-center gradient-flow bg-clip-text text-transparent">
+          <IntroHeadline prefix="Immigroov is a " main={b.headline} active={step >= 1} speed={HEAD_SPEED} hold={1400} />
+        </h1>
       </motion.div>
 
       {/* Steps 2-4: the three boxes, one by one. */}

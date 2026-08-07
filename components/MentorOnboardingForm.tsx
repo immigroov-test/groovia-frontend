@@ -107,7 +107,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [hourlyRate, setHourlyRate] = useState('');
   const [currency, setCurrency] = useState('INR');
   const [currencyRates, setCurrencyRates] = useState<CurrencyRate[]>([]);
-  const [smartPricing, setSmartPricing] = useState(false);
+  const [smartPricing, setSmartPricing] = useState(true);
   const [daysAhead, setDaysAhead] = useState(30);
   const [minNotice, setMinNotice] = useState(2);
   const [cancelHours, setCancelHours] = useState(24);
@@ -396,9 +396,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <h2 className="text-base font-semibold text-foreground">Location & Languages</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <CountrySelect label="Current country *" value={country} onChange={onCountryChange} required
+              <CountrySelect label="Current country" value={country} onChange={onCountryChange} required
                 placeholder="Where you live now" hint="Country you currently live in." />
-              <CountrySelect label="Home country *" value={homeCountry} onChange={setHomeCountry} required
+              <CountrySelect label="Home country" value={homeCountry} onChange={setHomeCountry} required
                 placeholder="Where you're originally from" hint="Shown to mentees as where you're from." />
             </div>
 

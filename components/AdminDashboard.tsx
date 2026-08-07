@@ -10,6 +10,7 @@ import { AdminOps } from './AdminOps';
 import { AdminPricing, type CountryPricing } from './AdminPricing';
 import { AdminReferrals } from './AdminReferrals';
 import { AdminReviews } from './AdminReviews';
+import { AdminActivity } from './AdminActivity';
 import { UI_CONTENT } from '../lib/content';
 import { cn } from '../lib/utils';
 import type { AdminMentor } from '../app/(shell)/admin/page';
@@ -19,7 +20,7 @@ const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; pending_service_count: number; total_bookings: number; }
-type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'ops' | 'pricing';
+type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
@@ -42,6 +43,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
     { key: 'payouts', label: 'Payouts' },
     { key: 'referrals', label: 'Referrals' },
     { key: 'reviews', label: 'Reviews' },
+    { key: 'activity', label: 'Activity' },
     { key: 'ops', label: 'Ops' },
     { key: 'pricing', label: 'Pricing' },
   ];
@@ -60,9 +62,9 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
       </div>
 
       <p className="mt-3 text-xs text-muted">
-        Commission <span className="font-semibold text-foreground">{defaultFee}%</span>
+        Platform fee <span className="font-semibold text-foreground">{defaultFee}%</span>
         {taxed.length > 0 && <> · {taxed.map((c) => `${c.tax_label || 'tax'} ${c.tax_pct}% (${c.country_code})`).join(', ')}</>}
-        {' '}· the mentor's rate is the customer price; commission comes out of it, tax is added on top.{' '}
+        {' '}· charged to the customer on top of the session price, plus tax; the mentor commission is separate and internal.{' '}
         <button type="button" onClick={() => setTab('pricing')} className="font-medium text-brand-700 hover:underline">Edit per country</button>
       </p>
 
@@ -144,6 +146,12 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
           </Section>
         )}
 
+        {tab === 'activity' && (
+          <Section title="Activity" subtitle="A traceable, admin-only log of everything on the platform: bookings and status changes, payments, payouts, money-ledger movements, referral commissions, and pricing / commission changes. Filter by a booking id to follow one booking end to end.">
+            <AdminActivity />
+          </Section>
+        )}
+
         {tab === 'ops' && (
           <Section title="No-show strikes" subtitle="Mentors with accrued no-show strikes. Reset if a dispute is resolved in their favour.">
             <AdminOps />
@@ -151,7 +159,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         )}
 
         {tab === 'pricing' && (
-          <Section title="Commission & tax by country" subtitle="The mentor's rate is the customer's price; commission is taken out of it (the mentor nets the rest) and tax is added on top, by the customer's country. DEFAULT is the fallback; a per-mentor commission override still wins.">
+          <Section title="Pricing & commission" subtitle="Platform fee + tax are charged to the customer on top of the mentor's session price, by the customer's country (DEFAULT is the fallback). The general mentor commission is internal, taken out of the mentor's price; a per-mentor override or a referral code can lower it per booking.">
             <AdminPricing />
           </Section>
         )}

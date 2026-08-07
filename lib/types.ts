@@ -24,6 +24,7 @@ export interface Mentor {
   smart_pricing?: boolean | null;
   min_price?: number | null;
   price_currency?: string | null;
+  has_free_session?: boolean | null;   // mentor also offers a free (intro) session
 }
 
 export interface AvailabilitySlot {
