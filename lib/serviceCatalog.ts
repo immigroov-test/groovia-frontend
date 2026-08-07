@@ -17,7 +17,7 @@ const D = (intro: string, bullets: string[], outcome: string) =>
 
 export const SERVICE_CATALOG: CatalogService[] = [
   // ── General Guidance ──
-  { code: 'gen-intro', category: 'General Guidance', title: 'Free intro call', duration: 15, free: true,
+  { code: 'gen-intro', category: 'General Guidance', title: 'Introductory call', duration: 15, free: true,
     description: D('A short, no-pressure call to see if we\'re a good fit and how I can help.',
       ['Your goal and current situation', 'How I can support you', 'What working together looks like'],
       'a clear sense of whether to book a full session.') },

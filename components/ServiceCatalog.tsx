@@ -134,11 +134,6 @@ export function ServiceCatalog({
                 <span className="text-sm font-medium text-foreground">Price</span>
                 <span className="h-10 flex items-center text-sm text-muted">{priceLabel(s, hourlyRate, currency)}</span>
               </div>
-              <label className="flex items-center gap-2 text-sm text-muted h-10 cursor-pointer">
-                <input type="checkbox" className="accent-[--color-brand-500]" checked={!!s.free}
-                  onChange={(e) => patch(s.code!, { free: e.target.checked, price: e.target.checked ? 0 : proratePrice(hourlyRate, s.duration) })} />
-                Offer for free
-              </label>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Description <span className="text-muted font-normal">(can be edited)</span></label>
@@ -160,8 +155,29 @@ export function ServiceCatalog({
           {value.length > 0 ? 'Add another session' : 'Choose the sessions you offer'}
         </h3>
         <div className="flex flex-col gap-4">
+          {/* The single free session (Introductory call) is offered as its own category; it is the
+              only free service a mentor can add (BUG-059). */}
+          {(() => {
+            const freeTags = SERVICE_CATALOG.filter((c) => c.free && !byCode.has(c.code));
+            if (freeTags.length === 0) return null;
+            return (
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2">
+                  Introductory call <span className="text-xs font-normal text-emerald-700">· free</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {freeTags.map((cat) => (
+                    <button key={cat.code} type="button" onClick={() => addCatalog(cat)}
+                      className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800 hover:border-emerald-400 hover:bg-emerald-100 transition-colors">
+                      {cat.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           {groups.map((g) => {
-            const tags = g.services.filter((cat) => !byCode.has(cat.code));
+            const tags = g.services.filter((cat) => !byCode.has(cat.code) && !cat.free);
             if (tags.length === 0) return null;
             return (
               <div key={g.category}>
