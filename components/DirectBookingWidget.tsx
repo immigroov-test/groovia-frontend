@@ -302,7 +302,6 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn]       = useState(false);
-  const [pendingBook, setPendingBook]     = useState(false);
   const [showAccountPrompt, setShowAccountPrompt] = useState(false);   // guest "create account to book" popup
   const [checkingEmail, setCheckingEmail] = useState(false);          // verifying if the guest's email is already registered
   const [emailExists, setEmailExists]   = useState(false);            // the entered email already has an account
@@ -334,12 +333,28 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     return () => cancelAnimationFrame(raf);
   }, [mentor.bio]);
 
-  // Persist the in-progress booking (service + slot) so it survives a login redirect - including
-  // Google OAuth, which fully navigates away and back. Restored on mount below.
+  // Persist the in-progress booking so it survives a login redirect - including Google OAuth, which
+  // fully navigates away and back. Restored on mount below.
   const draftKey = `ig_booking_draft_${mentor.slug}`;
   const restoreSlotRef = useRef<string | null>(null);
+  const resumeReviewRef = useRef(false);
   function saveDraft(serviceId: string, slotStart?: string | null) {
-    try { sessionStorage.setItem(draftKey, JSON.stringify({ serviceId, slotStart: slotStart ?? null })); } catch { /* ignore */ }
+    try {
+      const prev = JSON.parse(sessionStorage.getItem(draftKey) || '{}');
+      sessionStorage.setItem(draftKey, JSON.stringify({ ...prev, serviceId, slotStart: slotStart ?? null }));
+    } catch { /* ignore */ }
+  }
+  // Persist the FULL checkout state (contact fields + "was at the review popup") before an auth
+  // redirect, so the customer resumes at the payment-breakdown popup after signing in instead of
+  // starting over - even if the page fully remounts (OAuth, or a refresh race on sign-in). BUG-078.
+  function saveResumeDraft() {
+    try {
+      sessionStorage.setItem(draftKey, JSON.stringify({
+        serviceId: selectedService?.id ?? null,
+        slotStart: selectedSlot?.slot_start ?? null,
+        name: name.trim(), phone: phone.trim(), email: email.trim(), resume: true,
+      }));
+    } catch { /* ignore */ }
   }
   function clearDraft() { try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ } }
 
@@ -405,9 +420,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         try {
           const raw = sessionStorage.getItem(draftKey);
           if (raw) {
-            const draft = JSON.parse(raw) as { serviceId?: string; slotStart?: string | null };
+            const draft = JSON.parse(raw) as {
+              serviceId?: string; slotStart?: string | null;
+              name?: string; phone?: string; email?: string; resume?: boolean;
+            };
             const svc = list.find((s) => s.id === draft.serviceId);
             if (svc) { restoreSlotRef.current = draft.slotStart ?? null; selectService(svc); }
+            // Restore the contact fields the guest already typed, and whether they were at the review
+            // popup, so a post-login return resumes exactly there (BUG-078).
+            if (draft.name) setName(draft.name);
+            if (draft.phone) setPhone(draft.phone);
+            if (draft.email) setEmail(draft.email);
+            if (draft.resume) resumeReviewRef.current = true;
           }
         } catch { /* ignore a bad draft */ }
       } catch { setServicesError('Could not load services.'); }
@@ -492,11 +516,22 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // After the popup signs them in, finish the booking they were mid-way through.
+  // After signing in, resume the booking exactly where they left off: the review / payment-breakdown
+  // popup. Driven by the PERSISTED draft flag (not in-memory state), so it survives the sign-in
+  // navigation/refresh race and even a full remount (OAuth). BUG-078: previously the whole flow was
+  // lost and the customer had to start over.
   useEffect(() => {
-    if (isLoggedIn && pendingBook && selectedSlot) { setPendingBook(false); submitBooking(); }
+    if (resumeReviewRef.current && isLoggedIn && selectedService && selectedSlot && !showReview) {
+      resumeReviewRef.current = false;
+      try {
+        const prev = JSON.parse(sessionStorage.getItem(draftKey) || '{}');
+        delete prev.resume;   // one-shot: don't re-pop the review on a later manual revisit
+        sessionStorage.setItem(draftKey, JSON.stringify(prev));
+      } catch { /* ignore */ }
+      openReview();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn, pendingBook]);
+  }, [isLoggedIn, selectedService, selectedSlot]);
 
   // Is real (Razorpay) checkout on? Falls back to the direct path if unreachable.
   useEffect(() => {
@@ -569,8 +604,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   }
 
   // BUG-025: bookings require an account. A guest first sees the account prompt; only
-  // "Log in or sign up" opens the normal auth popup (which resumes this booking after
-  // sign-in via the pendingBook effect above). "Not now" just closes - no guest booking.
+  // "Log in or sign up" opens the normal auth popup (which resumes this booking at the review popup
+  // after sign-in via the resume-to-review effect above). "Not now" just closes - no guest booking.
   async function handleConfirm() {
     setShowReview(false);
     if (isLoggedIn) { submitBooking(); return; }
@@ -611,11 +646,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // the booking resumes on the same page after sign-in, right where they left off.
   function proceedToLogin() {
     setShowAccountPrompt(false);
-    setPendingBook(true);
-    // BUG-078: carry `next` = this booking page. Email login already stays here, but SIGNUP (a new
-    // email) and Google OAuth fully navigate away and otherwise default to /home, which dropped the
-    // in-progress booking. With `next` set they return to this page and the saved draft (service +
-    // slot) restores, so the customer never loses their steps or lands on the home page.
+    // Persist the full checkout state (service, slot, contact fields, "at review") so we resume at the
+    // payment-breakdown popup after auth - robust to a same-page login, a signup, or a full OAuth
+    // navigation. `next` carries this page so signup/OAuth (which otherwise default to /home) return
+    // here; email login already stays on-page. BUG-078.
+    saveResumeDraft();
     const back = encodeURIComponent(pathname);
     router.push(`${pathname}?auth=open&email=${encodeURIComponent(email.trim())}&next=${back}`);
   }
@@ -1136,7 +1171,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={openReview} loading={submitting || pendingBook || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !isValidPhone(phone) || (!isLoggedIn && !name.trim())}>
+                  <Button variant="accent" onClick={openReview} loading={submitting || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !isValidPhone(phone) || (!isLoggedIn && !name.trim())}>
                     Review &amp; confirm
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
@@ -1224,7 +1259,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             {/* Actions: confirm, or go back to change the slot */}
             <div className="p-5 border-t border-[--color-border] flex flex-col-reverse sm:flex-row gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowReview(false); setStep('datetime'); }}>Modify booking</Button>
-              <Button variant="accent" className="flex-1" loading={submitting || pendingBook || paying || checkingEmail} onClick={handleConfirm}>
+              <Button variant="accent" className="flex-1" loading={submitting || paying || checkingEmail} onClick={handleConfirm}>
                 {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
               </Button>
             </div>
