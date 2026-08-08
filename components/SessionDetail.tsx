@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, ArrowLeft, Check, Clock, CreditCard, Loader2, Lock, Video,
+  AlertTriangle, ArrowLeft, Check, CreditCard, Loader2, Video,
 } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
@@ -107,7 +107,6 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [slotTaken, setSlotTaken] = useState<string | null>(null);
-  const [showJoinInfo, setShowJoinInfo] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
@@ -378,17 +377,20 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </Button>
         )}
 
-        {/* Join (candidate + mentor) on active sessions */}
+        {/* Join (candidate + mentor) on active sessions. BUG-090: this is ALWAYS a real link to the
+            meeting (same as the email), so the customer can join from their dashboard - the /meeting
+            page shows a countdown if it isn't open yet, so we never hide the link. */}
         {(isCandidate || isMentor) && d.paid && !d.is_past && (
-          d.join_open ? (
+          <div className="flex flex-col gap-1.5">
             <Link href={`/meeting/${d.id}`}>
               <Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button>
             </Link>
-          ) : (
-            <Button variant="primary" className="opacity-60" onClick={() => setShowJoinInfo(true)}>
-              <Lock className="h-4 w-4" /> Join meeting
-            </Button>
-          )
+            {!d.join_open && d.opens_at && (
+              <p className="text-xs text-muted text-center">
+                Opens 5 minutes before the session · {timeShort(d.opens_at, BROWSER_TZ)} {tzShort(BROWSER_TZ)}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Mentee: mentor proposed a new time - Accept a real slot / Ask another date / Reject */}
@@ -610,23 +612,6 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         </div>
       )}
 
-      {/* Join-window popup */}
-      {showJoinInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowJoinInfo(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto h-12 w-12 rounded-full bg-brand-50 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-brand-700" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-brand-900">The room isn&apos;t open yet</h3>
-            <p className="mt-1 text-sm text-muted">
-              The meeting room opens 5 minutes before your session
-              {d.opens_at && <> · at <span className="font-medium text-foreground">{timeShort(d.opens_at, BROWSER_TZ)} {tzShort(BROWSER_TZ)}</span></>}.
-              Come back then to join.
-            </p>
-            <Button variant="primary" className="mt-5 w-full" onClick={() => setShowJoinInfo(false)}>Got it</Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
