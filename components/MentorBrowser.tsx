@@ -80,7 +80,9 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
   // backend; the UI just displays it.
   const [priceReady, setPriceReady] = useState(false);
   useEffect(() => {
-    const paid = mentors.filter((m) => (m.min_price ?? 0) > 0);
+    // Price the cheapest paid service through the SAME engine as checkout (display_service_prices),
+    // so the card's "from" price equals the session line the customer sees at checkout (BUG-077).
+    const paid = mentors.filter((m) => (m.min_price ?? 0) > 0 && m.min_price_service_id);
     if (paid.length === 0) { setPriceReady(true); return; }
     let cancelled = false;
     setPriceReady(false);
@@ -88,18 +90,24 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
       try {
         const country = await pricingCountry();
         if (cancelled) return;
-        const res = await fetch('/api/pricing/convert', {
+        const res = await fetch('/api/pricing/display', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             country: country ?? null,
-            items: paid.map((m) => ({ key: m.id, amount: m.min_price, from: m.price_currency ?? 'USD', is_ppp: !!m.smart_pricing, mentor_country: m.country ?? null, mentor_id: m.id })),
+            service_ids: paid.map((m) => m.min_price_service_id),
           }),
         });
         if (res.ok && !cancelled) {
           const data = await res.json();
+          // Results are keyed by service id; map each back to its mentor for the card.
+          const byService: Record<string, DisplayPrice> = {};
+          for (const p of (data.prices ?? [])) byService[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency };
           const map: Record<string, DisplayPrice> = {};
-          for (const p of (data.prices ?? [])) map[p.key] = { original: p.you0, discounted: p.you, currency: p.customer_currency };
+          for (const m of paid) {
+            const dp = m.min_price_service_id ? byService[m.min_price_service_id] : undefined;
+            if (dp) map[m.id] = dp;
+          }
           setPriceMap(map);
         }
       } catch { /* keep min_price fallback */ }

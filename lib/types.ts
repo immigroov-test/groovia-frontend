@@ -24,6 +24,7 @@ export interface Mentor {
   smart_pricing?: boolean | null;
   min_price?: number | null;
   price_currency?: string | null;
+  min_price_service_id?: string | null;   // cheapest paid service, priced via the checkout engine
   has_free_session?: boolean | null;   // mentor also offers a free (intro) session
 }
 
