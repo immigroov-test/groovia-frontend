@@ -68,6 +68,9 @@ export function ServicesManager() {
     title: '', description: '', type: 'video', duration: 30,
     category: '', set_price: '', is_ppp: false, tags: [] as string[],
   });
+  // BUG-059: "free" is the one Introductory call slot from the catalogue, not a price any service
+  // can be typed down to. True only when the open form was opened via that catalogue tag.
+  const [isFreeSlot, setIsFreeSlot] = useState(false);
   const [formError, setFormError]     = useState<string | null>(null);
   const [submitting, setSubmitting]   = useState(false);
   const [newQuestion, setNewQuestion] = useState<Record<string, { text: string; required: boolean }>>({});
@@ -100,6 +103,9 @@ export function ServicesManager() {
 
   // Titles the mentor already offers, so the catalogue can mark those tags as added.
   const usedTitles = new Set(services.map((s) => s.title.trim().toLowerCase()));
+  // BUG-059: at most one free (price 0) service - the catalogue's Introductory call - not a price
+  // any custom or other-category service can be typed down to.
+  const hasFreeService = services.some((s) => Number(s.set_price) === 0);
 
   // "Add service" opens the catalogue tags (same design as onboarding) instead of a blank form.
   function startPick() { setFormError(null); setPicking(true); }
@@ -107,13 +113,16 @@ export function ServicesManager() {
   // Tap a catalogue tag -> open the create block prefilled from the template. The template's
   // suggested length may already be taken (one service per length), so fall back to an open one.
   function pickCatalog(cat: CatalogService) {
+    if (cat.free && hasFreeService) return;   // already have the one free slot
     const duration = (availableDurations as readonly number[]).includes(cat.duration) ? cat.duration : (availableDurations[0] ?? cat.duration);
     setForm({ title: cat.title, description: cat.description, type: 'video', duration, category: cat.category, set_price: cat.free ? '0' : '', is_ppp: false, tags: [] });
+    setIsFreeSlot(!!cat.free);
     setFormError(null); setPicking(false); setCreating(true);
   }
   function pickCustom() {
     const first = availableDurations[0] ?? 30;
     setForm({ title: '', description: SERVICE_DESCRIPTION_TEMPLATE, type: 'video', duration: first, category: '', set_price: '', is_ppp: false, tags: [] });
+    setIsFreeSlot(false);
     setFormError(null); setPicking(false); setCreating(true);
   }
 
@@ -122,7 +131,11 @@ export function ServicesManager() {
     const duration = parseInt(String(form.duration));
     if (!DURATION_OPTIONS.includes(duration as (typeof DURATION_OPTIONS)[number])) { setFormError('Pick a session length.'); return; }
     if (usedDurations.has(duration)) { setFormError('You already have a session of this length.'); return; }
-    const price = parseFloat(form.set_price) || 0;
+    const price = isFreeSlot ? 0 : parseFloat(form.set_price) || 0;
+    // BUG-059: free is reserved for the single Introductory call slot, picked from the catalogue -
+    // a regular/custom service can't be priced down to 0 to become a second free session.
+    if (price === 0 && !isFreeSlot) { setFormError('Only the Introductory call session can be free. Set a price for this one.'); return; }
+    if (isFreeSlot && hasFreeService) { setFormError('You already have a free session (Introductory call). Only one is allowed.'); return; }
     setFormError(null); setSubmitting(true);
     try {
       await apiFetch('/api/mentor/services', 'POST', {
@@ -138,6 +151,7 @@ export function ServicesManager() {
       });
       setCreating(false);
       setForm({ title: '', description: '', type: 'video', duration: 30, category: '', set_price: '', is_ppp: false, tags: [] });
+      setIsFreeSlot(false);
       await load();
     } catch (e: any) { setFormError(e.message); }
     finally { setSubmitting(false); }
@@ -236,10 +250,12 @@ export function ServicesManager() {
                   {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <Input label="Price (USD)" type="number" min={0} step={0.01}
-                value={form.set_price}
+              <Input label="Price (USD)" type="number" min={isFreeSlot ? 0 : 0.01} step={0.01}
+                value={isFreeSlot ? '0' : form.set_price}
                 onChange={e => setForm(f => ({ ...f, set_price: e.target.value }))}
-                placeholder="0 = free" />
+                disabled={isFreeSlot}
+                placeholder={isFreeSlot ? undefined : 'e.g. 50'}
+                hint={isFreeSlot ? 'Free - this is your one Introductory call slot.' : undefined} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Tags <span className="text-muted font-normal">(keywords that help us match you to the right mentees)</span></label>
@@ -249,7 +265,7 @@ export function ServicesManager() {
             {formError && <p className="text-sm text-red-600">{formError}</p>}
             <div className="flex gap-2">
               <Button variant="accent" onClick={createService} loading={submitting}>Save</Button>
-              <Button variant="outline" onClick={() => setCreating(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setCreating(false); setIsFreeSlot(false); }}>Cancel</Button>
             </div>
           </CardBody>
         </Card>
@@ -270,12 +286,16 @@ export function ServicesManager() {
                   <div className="flex flex-wrap gap-2">
                     {g.services.map((cat) => {
                       const added = usedTitles.has(cat.title.trim().toLowerCase());
+                      // BUG-059: the free Introductory call is a single slot - once the mentor has
+                      // any free service, the tag disables like an already-added one.
+                      const blocked = added || (cat.free && hasFreeService);
                       return (
-                        <button key={cat.code} type="button" onClick={() => pickCatalog(cat)}
+                        <button key={cat.code} type="button" onClick={() => pickCatalog(cat)} disabled={blocked}
+                          title={!added && cat.free && hasFreeService ? 'You already have a free session' : undefined}
                           className={cn(
                             'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors',
-                            added
-                              ? 'border-[--color-border] bg-neutral-100 text-muted'
+                            blocked
+                              ? 'border-[--color-border] bg-neutral-100 text-muted cursor-not-allowed'
                               : 'border-[--color-border] bg-white text-foreground hover:border-brand-500 hover:bg-brand-50',
                           )}>
                           <Plus className="h-3.5 w-3.5 text-brand-600" /> {cat.title}
