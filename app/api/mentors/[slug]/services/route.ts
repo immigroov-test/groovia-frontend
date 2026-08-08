@@ -7,8 +7,11 @@ export async function GET(
 ) {
   const { slug } = await params;
   try {
+    // No caching: prices are derived from the mentor's base rate and can change any time, so the
+    // booking page must always show the latest set_price (a stale 60s cache showed old prices right
+    // after a mentor updated their rate). The load is trivial (one mentor's few services).
     const res = await fetch(`${backendBaseUrl()}/mentor/services/public/${slug}`, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
