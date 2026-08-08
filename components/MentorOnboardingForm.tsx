@@ -595,6 +595,12 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               rates={currencyRates} onRates={setCurrencyRates}
               smartPricing={smartPricing} onSmartPricing={setSmartPricing}
             />
+            {/* BUG-103: nothing on this page is written to the server until "Submit for approval"
+                below - make that explicit here so a filled-in rate doesn't read as already saved. */}
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Your rate isn&apos;t saved yet - it&apos;s submitted together with the rest of this page when you tap
+              &quot;Submit for approval&quot; below.
+            </p>
           </CardBody>
         </Card>
 
