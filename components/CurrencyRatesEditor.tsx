@@ -94,13 +94,14 @@ export function CurrencyRatesEditor({
         )}
       </div>
 
-      {/* Smart pricing (PPP) */}
+      {/* Smart pricing - intentionally vague (point 3): don't spell out the exact method (PPP etc.),
+          just that Immigroov fine-tunes prices to stay fair + competitive without lowering the mentor's set rates. */}
       <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Smart pricing</p>
           <p className="text-xs text-muted mt-0.5">
-            Adjusts auto-converted prices to each country&apos;s cost of living (PPP), so they feel fair. Never
-            changes the rates you set.
+            Let Immigroov fine-tune each customer&apos;s price to stay fair and competitive in their market. Your set
+            rates are never lowered.
           </p>
         </div>
         <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />
