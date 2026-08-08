@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Card, CardBody } from '../../../../components/ui/Card';
@@ -9,6 +10,8 @@ import type { Mentor } from '../../../../lib/types';
 import { backendBaseUrl } from '../../../../lib/backend';
 import { countryLabel } from '../../../../lib/countries';
 import { languageLabel } from '../../../../lib/languages';
+import { richTextToPlain } from '../../../../lib/sanitizeHtml';
+import { SITE_URL } from '../../../../lib/site';
 
 interface ServiceItem { id: string; title: string; duration: number; set_price: number; set_currency: string; }
 
@@ -18,6 +21,37 @@ async function fetchMentor(slug: string): Promise<Mentor | null> {
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; }
+}
+
+// BUG-058: every mentor page previously fell back to the site's generic default title/description
+// (app/layout.tsx) and had no Open Graph data at all - identical metadata across every mentor made
+// them indistinguishable to search engines and to link previews shared in chat/social.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const mentor = await fetchMentor(slug);
+  if (!mentor) return {};
+  const title = `${mentor.display_name}${mentor.headline ? ` - ${mentor.headline}` : ''} - Immigroov Mentor`;
+  const description = (mentor.bio ? richTextToPlain(mentor.bio) : '').slice(0, 160)
+    || `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`;
+  const url = `${SITE_URL}/mentors/${mentor.slug}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'profile', title, description, url,
+      images: mentor.photo_url ? [{ url: mentor.photo_url }] : undefined,
+    },
+    twitter: {
+      card: mentor.photo_url ? 'summary' : 'summary_large_image',
+      title, description,
+      images: mentor.photo_url ? [mentor.photo_url] : undefined,
+    },
+  };
 }
 
 async function fetchServices(slug: string): Promise<ServiceItem[]> {
@@ -108,10 +142,16 @@ export default async function MentorProfilePage({
             avg_rating:   mentor.avg_rating ?? null,
             review_count: mentor.review_count ?? null,
             smart_pricing: mentor.smart_pricing ?? false,
+            // BUG-100: previously dropped entirely for mentors with direct booking.
+            home_country_code: mentor.home_country_code ?? null,
+            years_lived_experience: mentor.years_lived_experience ?? null,
+            languages: mentor.languages,
+            professional_domains: mentor.professional_domains,
+            expertise_country_codes: mentor.expertise_country_codes,
           }}
         />
 
-        <section className="mt-10">
+        <section id="reviews" className="mt-10 scroll-mt-24">
           <h2 className="text-lg font-semibold text-foreground mb-4">Reviews</h2>
           <ReviewsList mentorId={mentor.id} />
         </section>

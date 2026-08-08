@@ -245,9 +245,13 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
 
       {deadline === 'late' && (
         <div className="mt-6 flex flex-col gap-3">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            This session is within 24 hours, so a reschedule needs your mentor’s approval. Send a request and they’ll
-            propose new times (it auto-approves if they don’t respond in time).
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+            <span>
+              {deadline === 'buffer'
+                ? "This session starts within 2 hours, so a reschedule needs the mentor's approval right away - they may not have time to respond."
+                : "This session is within 24 hours, so a reschedule needs your mentor's approval. Send a request and they'll propose new times (it auto-approves if they don't respond in time)."}
+            </span>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button onClick={sendRequest} loading={submitting} className="self-start">Send reschedule request</Button>

@@ -1,7 +1,8 @@
 'use client';
 import { Plus, Trash2 } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
-import { CURRENCIES, currencySymbol, type CurrencyRate } from '../lib/pricing';
+import { Flag } from './ui/Flag';
+import { CURRENCIES, TOP_CURRENCIES, currencySymbol, type CurrencyRate } from '../lib/pricing';
 
 // Multi-currency rate setup (BUG-042): a base currency (default INR) + base hourly rate, an optional
 // list of additional-currency rates for foreign customers, and the smart-pricing (PPP) toggle. Each
@@ -31,6 +32,10 @@ export function CurrencyRatesEditor({
     const next = available[0];
     if (next) onRates([...rates, { currency: next.code, hourly_rate: 0 }]);
   }
+  function addTopCurrency(code: string) {
+    if (used.has(code)) return;
+    onRates([...rates, { currency: code, hourly_rate: 0 }]);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -56,6 +61,24 @@ export function CurrencyRatesEditor({
         Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it directly;
         everyone else&apos;s price is calculated from it, split by session length.
       </p>
+
+      {/* Top 5 markets: one click adds a fixed rate for that currency below, instead of hunting
+          through the full "Add another currency" dropdown. */}
+      {TOP_CURRENCIES.some((t) => !used.has(t.currency)) && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-muted">Quick add: top markets</span>
+          <div className="flex flex-wrap gap-2">
+            {TOP_CURRENCIES.filter((t) => !used.has(t.currency)).map((t) => (
+              <button key={t.currency} type="button" onClick={() => addTopCurrency(t.currency)}
+                className="flex items-center gap-1.5 h-9 pl-2 pr-3 rounded-full bg-white text-sm font-medium text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.08)] hover:shadow-[0_0_0_1px_rgba(29,78,216,0.4)]">
+                <Flag code={t.country} className="w-4 h-auto rounded-[1px]" />
+                {t.currency}
+                <Plus className="h-3.5 w-3.5 text-muted" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Additional currencies for foreign customers. */}
       <div className="flex flex-col gap-2">

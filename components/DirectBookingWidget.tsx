@@ -17,6 +17,7 @@ import { startPaidCheckout } from '../lib/checkout';
 import { detectCountry, pricingCountry } from '../lib/geo';
 import { tzShort, tzCity, tzOffset, userDisplayTz, mentorDisplayTz } from '../lib/timezone';
 import { countryLabel } from '../lib/countries';
+import { languageLabel } from '../lib/languages';
 import { BookingAccountPrompt } from './BookingAccountPrompt';
 import { cn } from '../lib/utils';
 
@@ -92,6 +93,12 @@ interface MentorInfo {
   avg_rating?: number | null;
   review_count?: number | null;
   smart_pricing?: boolean | null;
+  // BUG-100: profile facts the booking page was missing entirely for mentors with direct booking.
+  home_country_code?: string | null;
+  years_lived_experience?: number | null;
+  languages?: string[];
+  professional_domains?: string[];
+  expertise_country_codes?: string[];
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmed';
@@ -941,11 +948,12 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
               <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-brand-900 break-words">{mentor.display_name}</h1>
               {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 shrink-0">
+                // BUG-100: the rating jumps straight to where reviews are written, not just displayed.
+                <a href="#reviews" className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 shrink-0 hover:underline">
                   <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                   {mentor.avg_rating.toFixed(1)}
                   <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
-                </span>
+                </a>
               )}
             </div>
             {mentor.headline && <p className="text-sm text-muted mt-1 break-words">{mentor.headline}</p>}
@@ -956,6 +964,52 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             )}
           </div>
         </div>
+
+        {/* BUG-100: profile facts (home country, years abroad, domain expertise, destination
+            countries, languages) - previously missing entirely from the direct-booking page. */}
+        {(mentor.home_country_code || mentor.years_lived_experience
+          || (mentor.professional_domains?.length ?? 0) > 0
+          || (mentor.expertise_country_codes?.length ?? 0) > 0
+          || (mentor.languages?.length ?? 0) > 0) && (
+          <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-col gap-2 text-xs text-muted">
+            {(mentor.home_country_code || mentor.years_lived_experience) && (
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                {mentor.home_country_code && (
+                  <span>From <span className="font-semibold text-foreground">{countryLabel(mentor.home_country_code)}</span></span>
+                )}
+                {mentor.home_country_code && mentor.years_lived_experience ? <span>·</span> : null}
+                {!!mentor.years_lived_experience && (
+                  <span>{mentor.years_lived_experience} yr{mentor.years_lived_experience === 1 ? '' : 's'} lived abroad</span>
+                )}
+              </div>
+            )}
+            {(mentor.professional_domains?.length ?? 0) > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="shrink-0">Domain expertise</span>
+                {mentor.professional_domains!.map((d) => (
+                  <span key={d} className="rounded-full bg-neutral-100 text-foreground px-2 py-0.5 font-medium">{d}</span>
+                ))}
+              </div>
+            )}
+            {(mentor.expertise_country_codes?.length ?? 0) > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="shrink-0">Guides moves to</span>
+                {mentor.expertise_country_codes!.map((c) => (
+                  <span key={c} className="rounded-full bg-brand-50 text-brand-700 px-2 py-0.5 font-medium">{countryLabel(c)}</span>
+                ))}
+              </div>
+            )}
+            {(mentor.languages?.length ?? 0) > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="shrink-0">Speaks</span>
+                {mentor.languages!.map((l) => (
+                  <span key={l} className="rounded-full bg-neutral-100 text-foreground px-2 py-0.5 font-medium">{languageLabel(l)}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Timezones on their own row so they never squeeze the name/headline on mobile. */}
         <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
           <span>Your time <span className="font-semibold text-foreground">{tzShort(userTz)}</span></span>
