@@ -503,13 +503,22 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </div>
         )}
 
-        {/* Reschedule + cancel (active, not in buffer, not a live proposal/request) */}
-        {(isCandidate || isMentor) && d.paid && !d.is_past && !mentorProposal && !pendingReq && (
+        {/* Reschedule + cancel (active, not past). BUG-081: cancel used to be hidden here too
+            whenever a proposal/request was already in flight, which meant a mentor lost their own
+            cancel button the moment THEY sent a proposal. Only "start a new negotiation" (propose/
+            reschedule) needs to wait for the current one to resolve - cancel always stays available. */}
+        {(isCandidate || isMentor) && d.paid && !d.is_past && (
           <div className="flex flex-col gap-3 border-t border-[--color-border] pt-4">
             {d.deadline_state === 'buffer' && (
-              <p className="text-xs text-muted">Within 2 hours of the session, changes are locked. Contact the other party directly.</p>
+              // BUG-084: cancelling this close to the session no longer qualifies for a refund, so the
+              // cancel button is hidden (can_cancel excludes buffer) - but a reschedule can still be
+              // requested and just needs the other side's approval, so that stays available below.
+              <p className="text-xs text-muted">
+                Within 2 hours of the session, cancelling here isn&apos;t available and wouldn&apos;t qualify for a refund.
+                You can still request a reschedule below.
+              </p>
             )}
-            {d.can_reschedule && (
+            {!mentorProposal && !pendingReq && d.can_reschedule && (
               isMentor ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-xs font-medium text-foreground">Propose a new time range</p>
