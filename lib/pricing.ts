@@ -7,7 +7,10 @@ export interface CurrencyRate {
   hourly_rate: number;
 }
 
-// Currencies the backend FX engine supports (must stay a subset of _FX_BASE_SYMBOLS in db/pricing.py).
+// Currencies the backend FX engine supports: most are live-quoted (Frankfurter/ECB,
+// _FX_BASE_SYMBOLS in db/pricing.py); a few (AED, SAR, ...) Frankfurter doesn't publish and are
+// kept fresh as stable manual EUR-pivot rates instead (_MANUAL_FX in db/pricing.py) - both are
+// fully priceable, this list just isn't a 1:1 subset of either one.
 export const CURRENCIES: { code: string; symbol: string; name: string }[] = [
   { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
   { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -24,6 +27,7 @@ export const CURRENCIES: { code: string; symbol: string; name: string }[] = [
   { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
   { code: 'DKK', symbol: 'kr', name: 'Danish Krone' },
   { code: 'AED', symbol: 'AED', name: 'UAE Dirham' },
+  { code: 'SAR', symbol: 'SAR', name: 'Saudi Riyal' },
   { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
   { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
   { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
@@ -36,6 +40,18 @@ export const CURRENCIES: { code: string; symbol: string; name: string }[] = [
 export function currencySymbol(code: string): string {
   return CURRENCIES.find((c) => c.code === code)?.symbol ?? code;
 }
+
+// BUG-062: the 5 most common additional-currency markets, offered as one-click shortcuts below
+// the base rate so a mentor doesn't have to hunt through the full currency dropdown one row at a
+// time. Each still lands as a normal, editable row in `rates` - same fixed-rate behavior as any
+// currency added via "Add another currency".
+export const TOP_CURRENCIES: { country: string; currency: string }[] = [
+  { country: 'IN', currency: 'INR' },
+  { country: 'AU', currency: 'AUD' },
+  { country: 'SG', currency: 'SGD' },
+  { country: 'SA', currency: 'SAR' },
+  { country: 'US', currency: 'USD' },
+];
 
 // Price prorated from an hourly rate for a given duration (2dp).
 export function proratePrice(hourlyRate: number | undefined, duration: number): number {
