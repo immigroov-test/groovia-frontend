@@ -524,7 +524,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
                     })}>Send proposal</Button>
                 </div>
               ) : (
-                <Link href={`/account/sessions/${d.id}/reschedule`}><Button variant="outline" className="w-full sm:w-auto">Reschedule</Button></Link>
+                <Link href={`/session/${d.id}/reschedule`}><Button variant="outline" className="w-full sm:w-auto">Reschedule</Button></Link>
               )
             )}
             {d.can_report_no_show && (

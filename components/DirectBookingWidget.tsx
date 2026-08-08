@@ -889,7 +889,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 <Link href={`/meeting/${bookingId}`} className="flex-1"><Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button></Link>
               )}
               {bookingId && (
-                <Link href={`/account/sessions/${bookingId}/reschedule`} className="flex-1"><Button variant="outline" className="w-full">Reschedule</Button></Link>
+                <Link href={`/session/${bookingId}/reschedule`} className="flex-1"><Button variant="outline" className="w-full">Reschedule</Button></Link>
               )}
             </div>
             <div className="mt-3 text-center">
