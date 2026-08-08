@@ -236,14 +236,10 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
         </p>
       )}
 
-      {deadline === 'buffer' && (
-        <div className="mt-6 rounded-xl border border-[--color-border] bg-brand-50/50 p-4 text-sm text-muted flex items-start gap-2">
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
-          Changes are locked within 2 hours of the session. Please contact the other party directly.
-        </div>
-      )}
-
-      {deadline === 'late' && (
+      {/* BUG-084: under 2h a direct/instant pick is still blocked (no guarantee the mentor can
+          accommodate it in time), but a request needing their approval is allowed, same as 2-24h -
+          it's cancelling (no refund this close) that's actually locked, not rescheduling. */}
+      {(deadline === 'late' || deadline === 'buffer') && (
         <div className="mt-6 flex flex-col gap-3">
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
