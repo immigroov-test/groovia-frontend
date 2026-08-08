@@ -13,7 +13,9 @@ export default async function MentorOnboardingPage() {
     redirect('/mentor?auth=open&role=mentor');
   }
 
-  const r = await serverGet('/mentor/me', token);
+  // Extra retries here (BUG-067): "join as a mentor" is a common first hit after idle, so it's the
+  // most likely to catch a cold-starting backend. serverGet retries status-0 failures before failing.
+  const r = await serverGet('/mentor/me', token, 12000, 2);
   // Already a mentor -> hub. Backend down (status 0) -> retry, don't show a form that
   // can't submit. A 404 (no mentor yet) is the normal path to the onboarding form.
   if (r.ok) {

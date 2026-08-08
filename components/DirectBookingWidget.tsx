@@ -612,7 +612,12 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   function proceedToLogin() {
     setShowAccountPrompt(false);
     setPendingBook(true);
-    router.push(`${pathname}?auth=open&email=${encodeURIComponent(email.trim())}`);
+    // BUG-078: carry `next` = this booking page. Email login already stays here, but SIGNUP (a new
+    // email) and Google OAuth fully navigate away and otherwise default to /home, which dropped the
+    // in-progress booking. With `next` set they return to this page and the saved draft (service +
+    // slot) restores, so the customer never loses their steps or lands on the home page.
+    const back = encodeURIComponent(pathname);
+    router.push(`${pathname}?auth=open&email=${encodeURIComponent(email.trim())}&next=${back}`);
   }
 
   // Existing-account prompt: user chose to change the email. Close the prompt and return to the

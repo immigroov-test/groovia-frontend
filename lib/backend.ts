@@ -31,19 +31,27 @@ export async function serverGet<T = unknown>(
   path: string,
   token: string | null,
   timeoutMs = 12000,
+  retries = 1,
 ): Promise<ServerGetResult<T>> {
   if (!token) return { ok: false, status: 401, data: null };
-  try {
-    const res = await fetch(`${backendBaseUrl()}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store',
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    let data: T | null = null;
-    try { data = (await res.json()) as T; } catch { /* empty/non-JSON body */ }
-    return { ok: res.ok, status: res.status, data };
-  } catch {
-    return { ok: false, status: 0, data: null };
+  // BUG-067: a cold-starting backend (Render spins down when idle) fails the FIRST request, then
+  // succeeds - which is why the page "couldn't load" but a reload worked. Retry transient failures
+  // (status 0 = network error / timeout) a couple of times with a short backoff BEFORE surfacing the
+  // error page, so the user rarely has to reload manually. A real HTTP status (404 etc.) never retries.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(`${backendBaseUrl()}${path}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      let data: T | null = null;
+      try { data = (await res.json()) as T; } catch { /* empty/non-JSON body */ }
+      return { ok: res.ok, status: res.status, data };
+    } catch {
+      if (attempt >= retries) return { ok: false, status: 0, data: null };
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    }
   }
 }
 
