@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Bell, CalendarClock, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
+  Bell, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
 } from 'lucide-react';
+import { REMINDER_NOTICE } from '../lib/content';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -874,10 +875,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         {/* What happens next - BUG-080: reassure the customer and set expectations. */}
         <div className="mt-8 rounded-2xl border border-[--color-border] bg-brand-50/50 p-4">
           <p className="text-[11px] font-medium uppercase tracking-wider text-muted">What happens next</p>
+          {/* Only the two facts the actions below don't already state (no repetition). Reminder timing
+              comes from REMINDER_NOTICE so it stays in sync with the actual schedule. */}
           <ul className="mt-2 flex flex-col gap-2 text-sm text-foreground">
-            <li className="flex items-start gap-2"><Bell className="h-4 w-4 mt-0.5 shrink-0 text-brand-700" /> We&apos;ll send a reminder 24 hours and 1 hour before it starts.</li>
+            <li className="flex items-start gap-2"><Bell className="h-4 w-4 mt-0.5 shrink-0 text-brand-700" /> We&apos;ll send a reminder {REMINDER_NOTICE} before it starts.</li>
             <li className="flex items-start gap-2"><Video className="h-4 w-4 mt-0.5 shrink-0 text-brand-700" /> Your Join button opens 5 minutes before the start time.</li>
-            <li className="flex items-start gap-2"><CalendarClock className="h-4 w-4 mt-0.5 shrink-0 text-brand-700" /> {isLoggedIn ? 'Need a change? Reschedule or cancel anytime from your sessions.' : 'Create your free account below to join, reschedule, or cancel.'}</li>
           </ul>
         </div>
 

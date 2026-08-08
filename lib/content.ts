@@ -281,6 +281,10 @@ export const SERVICE_CATEGORIES = [
 
 // Starter template pre-filled into a new session's description (rich text). Mentors
 // edit the sections; a fuller "choose a template" picker can build on this later.
+// When session reminders are sent, in one place so the confirmation page + any other copy stay in
+// sync with the actual reminder schedule (backend services/notifications.py _REMINDER_WINDOWS).
+export const REMINDER_NOTICE = '24 hours and 30 minutes';
+
 export const SERVICE_DESCRIPTION_TEMPLATE =
   "<p><strong>What we&rsquo;ll cover</strong></p>" +
   "<ul><li>First thing you&rsquo;ll help with</li><li>Second thing</li></ul>" +
