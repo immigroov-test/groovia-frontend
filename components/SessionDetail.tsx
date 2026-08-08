@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, ArrowLeft, Check, CreditCard, Loader2, Video,
+  AlertTriangle, ArrowLeft, CalendarClock, Check, CreditCard, Loader2, Video,
 } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
@@ -18,7 +18,6 @@ interface Offer {
   range_start: string | null; range_end: string | null;
   requested_date?: string | null; selected_time?: string | null;
 }
-interface PSlot { slot_start: string; slot_end: string; }
 interface Req {
   id: string; kind: string; initiated_by: string; status: string; respond_by: string | null;
 }
@@ -108,13 +107,8 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [slotTaken, setSlotTaken] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
-  // Mentor-proposal (accept) picker + counter-offer date.
-  const [pSlots, setPSlots] = useState<PSlot[] | null>(null);
-  const [selPSlot, setSelPSlot] = useState<string>('');
-  const [askDate, setAskDate] = useState('');
 
   const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const supabase = createClient();
@@ -140,23 +134,6 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   }, [authedFetch, bookingId]);
 
   useEffect(() => { load(); }, [load]);
-
-  // When the mentor has an open proposal, load the REAL bookable slots inside its range so the
-  // customer picks a valid time (BUG-085) instead of typing one that fails the availability check.
-  useEffect(() => {
-    const off = d?.offer;
-    const isMentorProposal = !!off && off.proposed_by === 'mentor' && off.status === 'pending';
-    if (!d || d.role !== 'candidate' || !isMentorProposal) { setPSlots(null); return; }
-    let active = true;
-    (async () => {
-      try {
-        const res = await authedFetch(`/api/booking/${bookingId}/proposal-slots`);
-        const data = await res.json().catch(() => ({}));
-        if (active) setPSlots(res.ok ? (data.slots ?? []) : []);
-      } catch { if (active) setPSlots([]); }
-    })();
-    return () => { active = false; };
-  }, [d, authedFetch, bookingId]);
 
   async function act(url: string, body: Record<string, unknown>, successMsg?: string) {
     setBusy(true); setActionError(null); setActionSuccess(null);
@@ -251,7 +228,6 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   }
 
   const mentorProposal = d.offer && d.offer.proposed_by === 'mentor' && d.offer.status === 'pending';
-  const userCounterOffer = d.offer && d.offer.proposed_by === 'user' && d.offer.status === 'pending';
   const pendingReq = d.request && d.request.status === 'pending';
   const toIso = (local: string) => new Date(local).toISOString();
 
@@ -393,77 +369,26 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </div>
         )}
 
-        {/* Mentee: mentor proposed a new time - Accept a real slot / Ask another date / Reject */}
+        {/* Mentee: mentor proposed a new time -> go to the reschedule page to pick a slot (the mentor's
+            proposed frame by default, or all their free times). No reject; cancelling is separate. */}
         {isCandidate && mentorProposal && d.offer && (
           <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 flex flex-col gap-3">
             <p className="text-sm text-violet-900">
-              Your mentor proposed a new time between <strong>{fmtInTz(d.offer.range_start, BROWSER_TZ)}</strong> and <strong>{fmtInTz(d.offer.range_end, BROWSER_TZ)}</strong>.
+              Your mentor proposed a new time{d.offer.range_start && d.offer.range_end ? <> between <strong>{fmtInTz(d.offer.range_start, BROWSER_TZ)}</strong> and <strong>{fmtInTz(d.offer.range_end, BROWSER_TZ)}</strong></> : null}. Pick a slot that works, no extra payment, your session is already paid.
             </p>
-
-            {/* 1. Accept a real, bookable slot inside the range */}
-            <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium text-violet-900">Pick a time that works</p>
-              {pSlots === null ? (
-                <p className="text-xs text-violet-800 flex items-center gap-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading open times…</p>
-              ) : pSlots.length === 0 ? (
-                <p className="text-xs text-violet-800">No open times in that range right now. Ask for another date, or reject the proposal.</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {pSlots.map((s) => {
-                    const active = selPSlot === s.slot_start;
-                    return (
-                      <button key={s.slot_start} type="button" onClick={() => setSelPSlot(s.slot_start)}
-                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${active ? 'border-brand-900 bg-brand-900 text-white' : 'border-violet-200 bg-white hover:border-brand-500'}`}>
-                        {fmtInTz(s.slot_start, BROWSER_TZ)}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <Button variant="primary" loading={busy} disabled={!selPSlot} className="self-start"
-                onClick={() => act('/api/booking/reschedule/accept', { offer_id: d.offer!.id, slot_time: selPSlot }, 'Your session is rescheduled to the new time.')}>
-                Accept this time
-              </Button>
-            </div>
-
-            {/* 2. Counter-offer: ask for a different day */}
-            <div className="flex flex-col gap-2 border-t border-violet-200 pt-3">
-              <p className="text-xs font-medium text-violet-900">None of these work? Ask your mentor for a different day</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <input type="date" value={askDate} onChange={(e) => setAskDate(e.target.value)}
-                  className="h-9 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
-                <Button variant="outline" loading={busy} disabled={!askDate}
-                  onClick={() => act('/api/booking/reschedule/request-date', { booking_id: d.id, requested_date: askDate }, 'Sent. Your mentor will propose times for that day.')}>
-                  Ask for this date
-                </Button>
-              </div>
-            </div>
-
-            {/* 3. Reject - explicitly cancels the session */}
-            <div className="border-t border-violet-200 pt-3">
-              <button type="button" onClick={() => setShowRejectConfirm(true)}
-                className="text-xs font-medium text-red-600 hover:underline">
-                Reject the proposal (this cancels the session)
-              </button>
-            </div>
+            <Link href={`/session/${d.id}/reschedule`}>
+              <Button variant="primary" className="w-full sm:w-auto"><CalendarClock className="h-4 w-4" /> Pick your new time</Button>
+            </Link>
+            <button type="button" onClick={() => setShowCancelConfirm(true)} className="text-xs font-medium text-red-600 hover:underline self-start">
+              Or cancel this session instead
+            </button>
           </div>
         )}
 
-        {/* Mentee: their counter-offer is pending - waiting for the mentor to propose times */}
-        {isCandidate && userCounterOffer && d.offer && (
+        {/* Mentor: you proposed a new time; waiting for the attendee to choose. */}
+        {isMentor && mentorProposal && d.offer && (
           <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-            <p className="text-sm text-violet-900">
-              You asked for a different day{d.offer.requested_date ? <> (<strong>{dateLong(`${d.offer.requested_date}T12:00:00`)}</strong>)</> : null}. Waiting for {d.mentor_name ?? 'your mentor'} to propose times. We&apos;ll email you when they do.
-            </p>
-          </div>
-        )}
-
-        {/* Mentor: the attendee asked for another day - propose times below */}
-        {isMentor && userCounterOffer && d.offer && (
-          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-            <p className="text-sm text-violet-900">
-              The attendee asked for a different day{d.offer.requested_date ? <> (<strong>{dateLong(`${d.offer.requested_date}T12:00:00`)}</strong>)</> : null}. Propose times you can offer using the reschedule option below.
-            </p>
+            <p className="text-sm text-violet-900">You proposed a new time. Waiting for the attendee to pick a slot; we&apos;ll email you once they do.</p>
           </div>
         )}
 
@@ -586,31 +511,6 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </div>
         );
       })()}
-
-      {/* Reject-proposal confirmation - rejecting cancels the session (policy Diagram 3) */}
-      {showRejectConfirm && d.offer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowRejectConfirm(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold text-brand-900">Reject and cancel the session?</h3>
-            <p className="mt-2 text-sm text-muted leading-relaxed">
-              {(d.deadline_state === 'free'
-                ? "Rejecting cancels this session. You'll receive the full amount as wallet credit (no cash refund)."
-                : "Rejecting cancels this session. You'll be refunded in full.")
-                + ' To keep the session and change the time instead, use the Ask for a different day option above.'}
-            </p>
-            <div className="mt-6 flex flex-col gap-2.5">
-              <Button variant="ghost" className="text-red-600 hover:bg-red-50" loading={busy}
-                onClick={async () => { setShowRejectConfirm(false); await act('/api/booking/reschedule/reject', { offer_id: d.offer!.id }, 'The proposal was rejected and the session cancelled.'); }}>
-                Reject &amp; cancel
-              </Button>
-              <Button variant="primary" onClick={() => setShowRejectConfirm(false)}>Go back</Button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
