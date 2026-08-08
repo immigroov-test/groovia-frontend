@@ -108,10 +108,16 @@ export default async function MentorProfilePage({
             avg_rating:   mentor.avg_rating ?? null,
             review_count: mentor.review_count ?? null,
             smart_pricing: mentor.smart_pricing ?? false,
+            // BUG-100: previously dropped entirely for mentors with direct booking.
+            home_country_code: mentor.home_country_code ?? null,
+            years_lived_experience: mentor.years_lived_experience ?? null,
+            languages: mentor.languages,
+            professional_domains: mentor.professional_domains,
+            expertise_country_codes: mentor.expertise_country_codes,
           }}
         />
 
-        <section className="mt-10">
+        <section id="reviews" className="mt-10 scroll-mt-24">
           <h2 className="text-lg font-semibold text-foreground mb-4">Reviews</h2>
           <ReviewsList mentorId={mentor.id} />
         </section>
