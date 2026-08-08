@@ -96,8 +96,8 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
           {tab === 'services' && (
             <section className="flex flex-col gap-4">
               <h2 className="text-base font-semibold text-foreground">Session types</h2>
-              <p className="text-sm text-muted -mt-2">The sessions a mentee can book with you. Prices come from your hourly rate on the Profile tab.</p>
-              <ServicesManager />
+              <p className="text-sm text-muted -mt-2">The sessions a mentee can book with you. Prices come from your base rate on the Profile tab.</p>
+              <ServicesManager hourlyRate={mentor.hourly_rate ?? undefined} currency={mentor.currency ?? undefined} />
             </section>
           )}
           {tab === 'availability' && (
