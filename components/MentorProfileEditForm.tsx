@@ -209,7 +209,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
 
   const submitLabel = onboarding
     ? 'Save & continue'
-    : isApproved ? 'Submit changes for approval' : 'Resubmit for approval';
+    : isApproved ? 'Save changes' : 'Resubmit for approval';
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
@@ -396,10 +396,10 @@ function StatusNotice({ status, note, hasPendingRevision }: {
   if (hasPendingRevision) {
     return (
       <Card><CardBody className="pt-6">
-        <h2 className="text-base font-semibold text-foreground">Changes awaiting review</h2>
+        <h2 className="text-base font-semibold text-foreground">Name or country change awaiting review</h2>
         <p className="text-sm text-muted mt-1">
-          Your live profile is unchanged and still bookable. Your edits below will replace it once an admin approves them.
-          You can keep editing and re-submit.
+          Most edits go live right away. A change to your <span className="font-medium text-foreground">name</span> or
+          {' '}<span className="font-medium text-foreground">country</span> needs an admin&apos;s approval first, so that part is pending.
         </p>
       </CardBody></Card>
     );
@@ -421,7 +421,8 @@ function StatusNotice({ status, note, hasPendingRevision }: {
   return (
     <div className="rounded-lg border border-[--color-border] bg-brand-50/40 p-3">
       <p className="text-sm text-muted">
-        Your profile is live. Edits here are reviewed by our team before they replace your public profile.
+        Your profile is live. Edits here go live right away, except a change to your <span className="font-medium text-foreground">name</span> or
+        {' '}<span className="font-medium text-foreground">country</span>, which needs an admin&apos;s approval first.
       </p>
     </div>
   );

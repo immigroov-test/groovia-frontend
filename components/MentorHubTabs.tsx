@@ -6,7 +6,7 @@ import { Card, CardBody } from './ui/Card';
 import { ServicesManager } from './ServicesManager';
 import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
-import { SmartPricingToggle } from './SmartPricingToggle';
+import { MentorPricingEditor } from './MentorPricingEditor';
 import { MentorBankCard } from './MentorBankCard';
 import { MentorReferrals } from './MentorReferrals';
 import { MigrationWelcomeModal } from './MigrationWelcomeModal';
@@ -29,25 +29,31 @@ export interface HubMentor {
   bio?: string | null;
   photo_url?: string | null;
   country?: string | null;
+  home_country_code?: string | null;
   city?: string | null;
   languages?: string[];
   expertise_country_codes?: string[];
   professional_domains?: string[];
+  specializations?: string[];
   years_lived_experience?: number | null;
+  years_professional_experience?: number | null;
   public_notes?: string | null;
   smart_pricing?: boolean;
   hourly_rate?: number | null;
+  currency?: string | null;
+  currency_rates?: { currency: string; hourly_rate: number }[];
   needs_onboarding?: boolean;
 }
 
-type TabId = 'profile' | 'availability' | 'sessions' | 'payments' | 'referrals' | 'webinars';
+type TabId = 'profile' | 'services' | 'availability' | 'bookings' | 'payments' | 'referrals' | 'webinars';
 
 export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMentor; legacySessions?: LegacySession[] }) {
   const approved = mentor.status === 'approved';
   const tabs: { id: TabId; label: string }[] = [
     { id: 'profile', label: 'Profile' },
+    { id: 'services', label: 'Services' },
     { id: 'availability', label: 'Availability' },
-    { id: 'sessions', label: 'Sessions' },
+    { id: 'bookings', label: 'Bookings' },
     { id: 'payments', label: 'Payments' },
     { id: 'referrals', label: 'Referrals' },
     { id: 'webinars', label: 'Webinars' },
@@ -87,23 +93,21 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
 
         <div className="mt-6">
           {tab === 'profile' && <ProfileTab mentor={mentor} />}
-          {tab === 'availability' && (
-            <div className="flex flex-col gap-8">
-              <section className="flex flex-col gap-4">
-                <h2 className="text-base font-semibold text-foreground">Pricing</h2>
-                <SmartPricingToggle initial={!!mentor.smart_pricing} />
-              </section>
-              <section className="flex flex-col gap-4">
-                <h2 className="text-base font-semibold text-foreground">Session types</h2>
-                <ServicesManager />
-              </section>
-              <section className="flex flex-col gap-4">
-                <h2 className="text-base font-semibold text-foreground">Schedule</h2>
-                <AvailabilityManagerV2 />
-              </section>
-            </div>
+          {tab === 'services' && (
+            <section className="flex flex-col gap-4">
+              <h2 className="text-base font-semibold text-foreground">Session types</h2>
+              <p className="text-sm text-muted -mt-2">The sessions a mentee can book with you. Prices come from your hourly rate on the Profile tab.</p>
+              <ServicesManager />
+            </section>
           )}
-          {tab === 'sessions' && (
+          {tab === 'availability' && (
+            <section className="flex flex-col gap-4">
+              <h2 className="text-base font-semibold text-foreground">Schedule</h2>
+              <p className="text-sm text-muted -mt-2">When you&apos;re available for sessions.</p>
+              <AvailabilityManagerV2 />
+            </section>
+          )}
+          {tab === 'bookings' && (
             <div className="flex flex-col gap-8">
               {approved
                 ? <BookingManager role="mentor" />
@@ -152,7 +156,7 @@ function StatusBanner({ mentor }: { mentor: HubMentor }) {
         )}
         <p className="text-sm text-muted mt-3">
           Update your <Link href="/mentor/profile" className="text-brand-700 hover:underline">profile</Link>,
-          and your session types and schedule in the <span className="font-medium text-foreground">Availability</span> tab below, then re-submit for approval.
+          and your session types in the <span className="font-medium text-foreground">Services</span> tab and schedule in the <span className="font-medium text-foreground">Availability</span> tab below, then re-submit for approval.
         </p>
       </CardBody></Card>
     );
@@ -219,44 +223,77 @@ function StatusBanner({ mentor }: { mentor: HubMentor }) {
 }
 
 function ProfileTab({ mentor }: { mentor: HubMentor }) {
+  const approved = mentor.status === 'approved';
+  const rateStr = mentor.hourly_rate != null && mentor.hourly_rate > 0
+    ? `${mentor.currency ?? ''} ${mentor.hourly_rate}/hour`.trim() : null;
   return (
-    <Card>
-      <CardBody className="pt-6 flex flex-col gap-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            {mentor.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mentor.photo_url} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-brand-100" />
-            ) : (
-              <div className="w-16 h-16 rounded-full bg-brand-100" />
-            )}
-            <div>
-              <p className="text-base font-semibold text-foreground">{mentor.display_name}</p>
-              {mentor.headline && <p className="text-sm text-muted">{mentor.headline}</p>}
+    <div className="flex flex-col gap-6">
+      {/* All profile information (BUG-075: the Profile section shows everything) */}
+      <Card>
+        <CardBody className="pt-6 flex flex-col gap-5">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-4">
+              {mentor.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={mentor.photo_url} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-brand-100" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-brand-100" />
+              )}
+              <div>
+                <p className="text-base font-semibold text-foreground">{mentor.display_name}</p>
+                {mentor.headline && <p className="text-sm text-muted">{mentor.headline}</p>}
+              </div>
             </div>
+            <Link href="/mentor/profile" className="inline-flex items-center h-9 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors">
+              Edit profile
+            </Link>
           </div>
-          <Link href="/mentor/profile" className="inline-flex items-center h-9 px-4 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors">
-            Edit profile
-          </Link>
-        </div>
 
-        {mentor.bio && (
-          <Field label="About">
-            <RichText html={mentor.bio} />
-          </Field>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-          {(mentor.country || mentor.city) && (
-            <Field label="Location">{[mentor.city, mentor.country ? (COUNTRY_MAP[mentor.country] ?? mentor.country) : null].filter(Boolean).join(', ')}</Field>
+          {mentor.bio && (
+            <Field label="About">
+              <RichText html={mentor.bio} />
+            </Field>
           )}
-          {mentor.languages?.length ? <Field label="Languages">{mentor.languages.map((l) => LANGUAGE_MAP[l] ?? l).join(', ')}</Field> : null}
-          {mentor.expertise_country_codes?.length ? <Field label="Countries of expertise">{mentor.expertise_country_codes.map((c) => COUNTRY_MAP[c] ?? c).join(', ')}</Field> : null}
-          {mentor.years_lived_experience != null && <Field label="Years lived abroad">{mentor.years_lived_experience}</Field>}
-          {mentor.professional_domains?.length ? <Field label="Domains of expertise">{mentor.professional_domains.join(', ')}</Field> : null}
-        </div>
-        {mentor.public_notes && <Field label="Public notes"><p className="whitespace-pre-line">{mentor.public_notes}</p></Field>}
-      </CardBody>
-    </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+            {(mentor.country || mentor.city) && (
+              <Field label="Location">{[mentor.city, mentor.country ? (COUNTRY_MAP[mentor.country] ?? mentor.country) : null].filter(Boolean).join(', ')}</Field>
+            )}
+            {mentor.home_country_code ? <Field label="From">{COUNTRY_MAP[mentor.home_country_code] ?? mentor.home_country_code}</Field> : null}
+            {mentor.languages?.length ? <Field label="Languages">{mentor.languages.map((l) => LANGUAGE_MAP[l] ?? l).join(', ')}</Field> : null}
+            {mentor.expertise_country_codes?.length ? <Field label="Countries of expertise">{mentor.expertise_country_codes.map((c) => COUNTRY_MAP[c] ?? c).join(', ')}</Field> : null}
+            {mentor.years_lived_experience != null && <Field label="Years in current country">{mentor.years_lived_experience}</Field>}
+            {mentor.years_professional_experience != null && <Field label="Years of experience">{mentor.years_professional_experience}</Field>}
+            {mentor.professional_domains?.length ? <Field label="Domains of expertise">{mentor.professional_domains.join(', ')}</Field> : null}
+            {mentor.specializations?.length ? <Field label="Specializations">{mentor.specializations.join(', ')}</Field> : null}
+          </div>
+          {mentor.public_notes && <Field label="Public notes"><p className="whitespace-pre-line">{mentor.public_notes}</p></Field>}
+        </CardBody>
+      </Card>
+
+      {/* Pricing (moved here from Availability - BUG-075) + add currencies after going live (BUG-074) */}
+      <Card>
+        <CardBody className="pt-6 flex flex-col gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Pricing</h2>
+            <p className="text-sm text-muted mt-0.5">
+              Your hourly rate sets the price of every paid session. Add currencies so mentees see their own, and turn on fair pricing to adjust by country.
+            </p>
+          </div>
+          {approved ? (
+            <MentorPricingEditor
+              initialCurrency={mentor.currency ?? 'USD'}
+              initialRate={mentor.hourly_rate != null ? String(mentor.hourly_rate) : ''}
+              initialRates={mentor.currency_rates ?? []}
+              initialSmartPricing={!!mentor.smart_pricing}
+            />
+          ) : (
+            <p className="text-sm text-muted">
+              {rateStr ? `Current rate: ${rateStr}. ` : ''}You can edit your rate and currencies once your profile is approved.
+            </p>
+          )}
+        </CardBody>
+      </Card>
+    </div>
   );
 }
 
