@@ -11,18 +11,17 @@ import { PhoneInput } from './ui/PhoneInput';
 import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
 import { CountrySelect } from './ui/CountrySelect';
+import { ServedCountriesEditor, servedCountriesPayload, type ServedCountry } from './ServedCountriesEditor';
 import { TimezoneSelect } from './ui/TimezoneSelect';
 import { RichTextEditor } from './ui/RichTextEditor';
-import { Flag } from './ui/Flag';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
-import { COUNTRIES } from '../lib/countries';
+import { countryLabel } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
 import { validateCityName } from '../lib/validators';
 import { suggestHeadline } from '../lib/headline';
 
-const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name, icon: <Flag code={c.code} /> }));
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
 const DOMAIN_OPTIONS = [
   'Software Engineering', 'Product Management', 'Data Science & AI', 'Design (UX/UI)',
@@ -42,6 +41,7 @@ interface EditableFields {
   bio?: string | null;
   country?: string | null;
   home_country_code?: string | null;
+  served_countries?: { code: string; years?: number | null }[] | null;
   city?: string | null;
   timezone?: string | null;
   languages?: string[] | null;
@@ -97,13 +97,16 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   const [phone, setPhone] = useState(src.phone ?? '');
   const [bio, setBio] = useState(src.bio ?? '');
   const [country, setCountry] = useState(src.country ?? '');
-  const [homeCountry, setHomeCountry] = useState(src.home_country_code ?? '');
+  // BUG-065: "Home country" is retired in favor of servedCountries below (a mentor can keep an
+  // existing legacy value without it being editable here - it's simply no longer collected).
+  const [servedCountries, setServedCountries] = useState<ServedCountry[]>(
+    (src.served_countries ?? []).map((c) => ({ code: c.code, years: c.years != null ? String(c.years) : '' })),
+  );
   const [city, setCity] = useState(src.city ?? '');
   const [timezone, setTimezone] = useState(src.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [languages, setLanguages] = useState<string[]>(src.languages ?? []);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(src.social_links ?? []);
   const [publicNotes, setPublicNotes] = useState(src.public_notes ?? '');
-  const [expertiseCountries, setExpertiseCountries] = useState<string[]>(src.expertise_country_codes ?? []);
   // Expertise categories are no longer asked for (they're derived from configured services), but we
   // keep the existing value so saving the profile never wipes a legacy mentor's stored categories.
   const [categories] = useState<string[]>(src.expertise_categories ?? []);
@@ -124,17 +127,22 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
 
   const effectiveHeadline = headlineEdited ? headline : suggestHeadline({ domain: domains[0], country });
 
+  // BUG-065: mentees find a mentor by current country + these - matches the backend's
+  // _derive_expertise (routers/mentor.py), so this preview always agrees with what's saved.
+  const derivedExpertise = Array.from(new Set([country, ...servedCountries.map((c) => c.code)].filter(Boolean)));
+
   function validate(): string | null {
     if (!displayName.trim()) return 'Full name is required.';
     if (!effectiveHeadline.trim()) return 'Headline is required.';
     if (!country) return 'Please select your current country.';
-    if (!homeCountry) return 'Please select your home country.';
     if (languages.length === 0) return 'Select at least one language.';
-    if (expertiseCountries.length === 0) return 'Select at least one country of expertise.';
-    if (expertiseCountries.length > 2) return 'You can select a maximum of 2 countries of expertise.';
+    for (const c of servedCountries) {
+      if (!c.code) return 'Pick a country for each additional-country row, or remove it.';
+      if (c.years) { const y = parseInt(c.years, 10); if (isNaN(y) || y < 0 || y > 60) return 'Years lived must be between 0 and 60.'; }
+    }
     const profYears = parseInt(yearsProfExp, 10);
     if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) return 'Enter your years of professional experience (0-60).';
-    if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) return 'Years lived abroad must be between 0 and 60.'; }
+    if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) return 'Years in your current country must be between 0 and 60.'; }
     const cityErr = validateCityName(city);
     if (cityErr) return cityErr;
     return null;
@@ -160,13 +168,13 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
           phone: phone || null,
           bio: isRichTextEmpty(bio) ? null : bio,
           country,
-          home_country_code: homeCountry || null,
+          served_countries: servedCountriesPayload(servedCountries),
           city: city.trim() || null,
           timezone,
           languages,
           social_links: socialLinks,
           public_notes: publicNotes.trim() || null,
-          expertise_country_codes: expertiseCountries,
+          // expertise_country_codes is derived server-side from country + served_countries.
           expertise_categories: categories,
           years_lived_experience: yearsExp ? parseInt(yearsExp, 10) : null,
           years_professional_experience: parseInt(yearsProfExp, 10),
@@ -258,15 +266,15 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <CountrySelect label="Current country *" value={country} onChange={onCountryChange} required
               placeholder="Where you live now" hint="Country you currently live in." />
-            <CountrySelect label="Home country *" value={homeCountry} onChange={setHomeCountry} required
-              placeholder="Where you're originally from" hint="Shown to mentees as where you're from." />
+            <Input label="How long have you lived in your current country?" type="number" min={0} max={60} value={yearsExp}
+              onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5" hint="Optional." />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
-              onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8" hint="Total years in your profession." />
-            <Input label="Years lived abroad" type="number" min={0} max={60} value={yearsExp}
-              onChange={(e) => setYearsExp(e.target.value)} placeholder="e.g. 5" hint="Optional. Leave blank if you're a local." />
-          </div>
+          <ServedCountriesEditor currentCountry={country} value={servedCountries} onChange={setServedCountries} />
+          {derivedExpertise.length > 0 && (
+            <p className="text-xs text-muted -mt-1">
+              Mentees can find you under: <span className="font-medium text-foreground">{derivedExpertise.map(countryLabel).join(', ')}</span>
+            </p>
+          )}
           <Input label="City" value={city} onChange={(e) => setCity(e.target.value)}
             placeholder={country ? 'e.g. Amsterdam' : 'Select a country first'} disabled={!country}
             autoComplete="address-level2" hint="Optional, shown on your public profile." />
@@ -292,9 +300,8 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
             <h2 className="text-base font-semibold text-foreground">Expertise</h2>
             <p className="text-sm text-muted mt-0.5">Determines which mentees you can best serve.</p>
           </div>
-          <MultiSelect label="Countries of Expertise * (max 2)" options={COUNTRY_OPTIONS} value={expertiseCountries}
-            onChange={setExpertiseCountries} placeholder="Type to search, press Enter to add" maxSelected={2}
-            hint="Countries you have direct immigration or career experience in." />
+          <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
+            onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8" hint="Total years in your profession." />
           <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
             placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
         </CardBody>
