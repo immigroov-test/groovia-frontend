@@ -12,12 +12,14 @@ import { type CurrencyRate } from '../lib/pricing';
 // unlock the "Finish setup" button.
 export function MentorRateEditor({
   initialCurrency = 'INR', initialRate = '', initialRates = [], initialSmartPricing = false, onSaved,
+  mentorCountry,
 }: {
   initialCurrency?: string;
   initialRate?: string;
   initialRates?: CurrencyRate[];
   initialSmartPricing?: boolean;
   onSaved?: (saved: boolean) => void;
+  mentorCountry?: string;
 }) {
   const [currency, setCurrency] = useState(initialCurrency);
   const [baseRate, setBaseRate] = useState(initialRate);
@@ -62,6 +64,7 @@ export function MentorRateEditor({
         baseRate={baseRate} onBaseRate={(v) => { markDirty(); setBaseRate(v); }}
         rates={rates} onRates={(r) => { markDirty(); setRates(r); }}
         smartPricing={smartPricing} onSmartPricing={(v) => { markDirty(); setSmartPricing(v); }}
+        mentorCountry={mentorCountry}
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex items-center gap-3">

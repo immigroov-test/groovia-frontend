@@ -16,6 +16,7 @@ interface OnboardingMentor {
   hourly_rate?: number | null;
   currency_rates?: CurrencyRate[] | null;
   smart_pricing?: boolean | null;
+  country?: string | null;
 }
 
 // Step 2 of the migrated-mentor first-login flow (reached from the profile step). Collects the rate
@@ -65,6 +66,7 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
           initialRates={mentor.currency_rates ?? []}
           initialSmartPricing={!!mentor.smart_pricing}
           onSaved={setRateSaved}
+          mentorCountry={mentor.country ?? undefined}
         />
       </Section>
 

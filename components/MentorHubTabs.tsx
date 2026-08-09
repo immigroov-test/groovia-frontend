@@ -285,6 +285,7 @@ function ProfileTab({ mentor }: { mentor: HubMentor }) {
               initialRate={mentor.hourly_rate != null ? String(mentor.hourly_rate) : ''}
               initialRates={mentor.currency_rates ?? []}
               initialSmartPricing={!!mentor.smart_pricing}
+              mentorCountry={mentor.country ?? undefined}
             />
           ) : (
             <p className="text-sm text-muted">

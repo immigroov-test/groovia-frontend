@@ -16,6 +16,7 @@ interface AvailMentor {
   hourly_rate?: number | null;
   currency_rates?: CurrencyRate[] | null;
   smart_pricing?: boolean | null;
+  country?: string | null;
 }
 
 export default async function MentorAvailabilityPage() {

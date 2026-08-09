@@ -594,6 +594,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               baseRate={hourlyRate} onBaseRate={setHourlyRate}
               rates={currencyRates} onRates={setCurrencyRates}
               smartPricing={smartPricing} onSmartPricing={setSmartPricing}
+              mentorCountry={country}
             />
             {/* BUG-103: nothing on this page is written to the server until "Submit for approval"
                 below - make that explicit here so a filled-in rate doesn't read as already saved. */}
