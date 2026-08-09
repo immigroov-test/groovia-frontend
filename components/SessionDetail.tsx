@@ -50,6 +50,8 @@ interface Detail {
   candidate_name?: string | null;
   candidate_email?: string | null;
   candidate_phone?: string | null;
+  notes?: string | null;
+  answers?: { question: string; answer: string }[];
   payment?: PaymentInfo;
   pay_context?: { mentor_id: string; service_id: string; mentor_slug: string | null; phone: string };
   can_pay: boolean;
@@ -298,6 +300,23 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </div>
         )}
       </div>
+
+      {/* BUG-113: the customer's prep note + intake answers - mentor sees "what to prepare",
+          the customer sees a copy of what they submitted. */}
+      {(d.notes || (d.answers?.length ?? 0) > 0) && (
+        <div className="mt-6 rounded-2xl border border-[--color-border] bg-brand-50/40 p-4">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+            {isCandidate ? 'What you shared with your mentor' : 'What to prepare'}
+          </p>
+          {d.notes && <p className="mt-2 text-sm text-foreground whitespace-pre-line break-words">{d.notes}</p>}
+          {(d.answers ?? []).map((a, i) => (
+            <div key={i} className="mt-3">
+              <p className="text-xs font-semibold text-brand-900 break-words">{a.question}</p>
+              <p className="text-sm text-foreground whitespace-pre-line break-words">{a.answer}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Details: airy label/value pairs, no boxes */}
       <dl className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
