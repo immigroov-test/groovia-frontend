@@ -101,7 +101,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const categories: string[] = [];   // expertise categories are now derived from configured services, not asked here
   const [yearsExp, setYearsExp] = useState('');           // years in the current country (optional)
   const [yearsProfExp, setYearsProfExp] = useState('');   // years of professional experience (required)
-  const [domains, setDomains] = useState<string[]>([]);
+  const [primaryDomain, setPrimaryDomain] = useState('');            // BUG-107: primary expertise (drives headline)
+  const [additionalDomains, setAdditionalDomains] = useState<string[]>([]);
+  const allDomains = Array.from(new Set([primaryDomain, ...additionalDomains].filter(Boolean)));
   const [specializations, setSpecializations] = useState<string[]>([]);   // free-text specifics under domains
 
   // Step 2 - availability + sessions
@@ -148,7 +150,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   // (headlineEdited), after which their text wins. "Suggest" clears the flag to re-derive.
   const effectiveHeadline = headlineEdited
     ? professionalTitle
-    : suggestHeadline({ domain: domains[0], category: categories[0], country });
+    : suggestHeadline({ domain: primaryDomain, category: categories[0], country });
 
   function onCountryChange(code: string) {
     setCountry(code);
@@ -177,6 +179,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (!effectiveHeadline.trim()) e.headline = 'Headline is required.';
     if (!country) e.country = 'Please select your current country.';
     if (languages.length === 0) e.languages = 'Select at least one language.';
+    if (!primaryDomain) e.primaryDomain = 'Pick your primary expertise.';
     const profYears = parseInt(yearsProfExp, 10);
     if (!yearsProfExp || isNaN(profYears) || profYears < 0 || profYears > 60) e.yearsProfExp = 'Enter your years of professional experience (0-60).';
     if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) e.yearsExp = 'Must be between 0 and 60.'; }
@@ -263,7 +266,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           expertise_categories: categories,
           years_lived_experience: yearsExp ? parseInt(yearsExp, 10) : null,
           years_professional_experience: parseInt(yearsProfExp, 10),
-          professional_domains: domains,
+          professional_domains: allDomains,
           specializations,
           agreed_to_mentor_terms: true,
           hourly_rate: parseFloat(hourlyRate) || null,
@@ -467,10 +470,6 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               <p className="text-sm text-muted mt-0.5">Used to match you with the right mentees. Changes need re-approval.</p>
             </div>
 
-            <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
-              onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8"
-              hint="Total years in your profession." error={fieldErrors.yearsProfExp} />
-
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Countries you can be found under</label>
               {expertiseCountries.length ? (
@@ -486,8 +485,28 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               )}
             </div>
 
-            <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
-              placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
+            {/* BUG-107: one PRIMARY expertise (drives the headline) with years of experience alongside it,
+                then additional domains separately. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Primary expertise *</label>
+                <select value={primaryDomain} onChange={(e) => setPrimaryDomain(e.target.value)}
+                  className="h-11 px-3 rounded-xl bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
+                  <option value="">Select your main field</option>
+                  {DOMAIN_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+                {fieldErrors.primaryDomain
+                  ? <FieldError msg={fieldErrors.primaryDomain} />
+                  : <p className="text-xs text-muted">Your main field. It drives your headline.</p>}
+              </div>
+              <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
+                onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8"
+                hint="Total years in your profession." error={fieldErrors.yearsProfExp} />
+            </div>
+
+            <MultiSelect label="Additional domains" options={DOMAIN_OPTIONS.filter((d) => d.value !== primaryDomain)}
+              value={additionalDomains} onChange={setAdditionalDomains}
+              placeholder="Type to search, press Enter to add" hint="Other industries or roles you can advise on." />
 
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">
@@ -496,9 +515,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               <TagInput value={specializations} onChange={setSpecializations} max={12}
                 placeholder="e.g. ML in production, computer vision, model deployment" />
               {(() => {
-                // Auto-suggested tags from what they've already entered (domains + countries). One tap
-                // adds one; they stay fully editable. These feed the mentor-listing search.
-                const suggestions = suggestTags({ domains, country })
+                // BUG-107: specialization EXAMPLES for the primary domain (not a repeat of the chosen
+                // domains/countries). One tap adds one; they stay fully editable and feed listing search.
+                const suggestions = suggestTags({ domains: allDomains })
                   .filter((t) => !specializations.some((s) => s.toLowerCase() === t.toLowerCase()));
                 if (suggestions.length === 0 || specializations.length >= 12) return null;
                 return (
