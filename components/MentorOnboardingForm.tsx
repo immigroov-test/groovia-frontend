@@ -199,12 +199,11 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const sessionError = activeServiceCount(services) < 1
     ? 'Turn on at least one service.'
     : services.some((s) => !s.title.trim()) ? 'Give every service a title, or remove it.' : null;
-  const rulesError = (() => {
-    if (!(daysAhead >= 1 && daysAhead <= 90)) return 'Set how many days ahead mentees can book (1-90).';
-    if (!(minNotice >= 0 && minNotice <= 24)) return 'Set a valid minimum booking notice (0-24 hours).';
-    if (!(cancelHours >= 2 && cancelHours <= 48)) return 'Set a valid cancellation/rescheduling notice (2-48 hours).';
-    return null;
-  })();
+  // BUG-045: validate each booking rule's range LIVE (shown inline under each field), not only on save.
+  const daysErr = daysAhead >= 1 && daysAhead <= 90 ? null : 'Enter 1-90 days.';
+  const noticeErr = minNotice >= 2 && minNotice <= 24 ? null : 'Enter 2-24 hours.';
+  const cancelErr = cancelHours >= 2 && cancelHours <= 48 ? null : 'Enter 2-48 hours.';
+  const rulesError = daysErr || noticeErr || cancelErr;
   const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
   const bankError = validateBank(bank).length > 0 ? 'Add your payout bank details.' : null;
   const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentor;
@@ -622,22 +621,25 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             </div>
             <div className="flex flex-wrap gap-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted">Book up to (days ahead, max 90)</span>
-                <input type="number" min={1} max={90} value={daysAhead}
+                <span className="text-xs font-medium text-muted">Book up to (days ahead, 1-90)</span>
+                <input type="number" min={1} max={90} value={daysAhead} aria-invalid={!!daysErr}
                   onChange={(e) => setDaysAhead(parseInt(e.target.value) || 0)}
-                  className="h-11 w-40 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                  className={`h-11 w-40 px-3 rounded-xl bg-white text-sm focus:outline-none ${daysErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
+                {daysErr && <span className="text-xs text-red-600">{daysErr}</span>}
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted">Minimum booking notice (hrs, max 24)</span>
-                <input type="number" min={0} max={24} step={0.5} value={minNotice}
+                <span className="text-xs font-medium text-muted">Minimum booking notice (hrs, 2-24)</span>
+                <input type="number" min={2} max={24} step={0.5} value={minNotice} aria-invalid={!!noticeErr}
                   onChange={(e) => setMinNotice(parseFloat(e.target.value) || 0)}
-                  className="h-11 w-44 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                  className={`h-11 w-44 px-3 rounded-xl bg-white text-sm focus:outline-none ${noticeErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
+                {noticeErr && <span className="text-xs text-red-600">{noticeErr}</span>}
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted">Cancellation / reschedule notice (hrs, 2-48)</span>
-                <input type="number" min={2} max={48} value={cancelHours}
+                <span className="text-xs font-medium text-muted">Cancellation / rescheduling time (hrs, 2-48)</span>
+                <input type="number" min={2} max={48} value={cancelHours} aria-invalid={!!cancelErr}
                   onChange={(e) => setCancelHours(parseInt(e.target.value) || 0)}
-                  className="h-11 w-40 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                  className={`h-11 w-40 px-3 rounded-xl bg-white text-sm focus:outline-none ${cancelErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
+                {cancelErr && <span className="text-xs text-red-600">{cancelErr}</span>}
               </label>
             </div>
           </CardBody>
