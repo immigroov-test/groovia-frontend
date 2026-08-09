@@ -31,11 +31,17 @@ function ConfirmInner() {
     }
     setBusy(true);
     setError(null);
-    const { error: err } = await createClient().auth.verifyOtp({ token_hash: tokenHash, type });
+    const supabase = createClient();
+    const { error: err } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
     if (err) {
-      setError('This link has expired or was already used. Please head back and request a new sign-in email.');
-      setBusy(false);
-      return;
+      // The token may have been consumed elsewhere (a second tab, or a link scanner) while a valid
+      // session was still established. Only fail when there is genuinely no session (BUG-066).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError('This link has expired or was already used. Please head back and request a new sign-in email.');
+        setBusy(false);
+        return;
+      }
     }
     // Session is set client-side now; AuthStateSync links a pre-approved mentor + guest bookings.
     router.replace(next);

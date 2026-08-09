@@ -32,21 +32,24 @@ export function AuthCallbackClient({
     ran.current = true;
     (async () => {
       const supabase = createClient();
-      const { error } = code
-        ? await supabase.auth.exchangeCodeForSession(code)
+      await (code
+        ? supabase.auth.exchangeCodeForSession(code)
         : tokenHash && type
-          ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType })
-          : { error: new Error('Missing code') };
-      if (error) { setFailed(true); return; }
+          ? supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as EmailOtpType })
+          : Promise.resolve({ error: new Error('Missing code') }));
+      // BUG-066/109/067: decide on the SESSION, not the exchange error. A valid session often already
+      // exists even when exchangeCodeForSession errors - the Supabase client's detectSessionInUrl
+      // auto-consumes the OAuth code before this runs, and corporate link-scanners prefetch the URL and
+      // use the one-time code. Treating that error as failure showed "sign-in link didn't work" to a
+      // user who was actually signed in. Only fail when there is genuinely no session.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { setFailed(true); return; }
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          await fetch('/api/auth/sync', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${session.access_token}` },
-            signal: AbortSignal.timeout(4000),
-          });
-        }
+        await fetch('/api/auth/sync', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          signal: AbortSignal.timeout(4000),
+        });
       } catch { /* best-effort, never blocks sign-in */ }
       router.replace(next);
     })();
