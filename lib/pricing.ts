@@ -11,34 +11,43 @@ export interface CurrencyRate {
 // _FX_BASE_SYMBOLS in db/pricing.py); a few (AED, SAR, ...) Frankfurter doesn't publish and are
 // kept fresh as stable manual EUR-pivot rates instead (_MANUAL_FX in db/pricing.py) - both are
 // fully priceable, this list just isn't a 1:1 subset of either one.
-export const CURRENCIES: { code: string; symbol: string; name: string }[] = [
-  { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' },
-  { code: 'NZD', symbol: 'NZ$', name: 'New Zealand Dollar' },
-  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar' },
-  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen' },
-  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar' },
-  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona' },
-  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone' },
-  { code: 'DKK', symbol: 'kr', name: 'Danish Krone' },
-  { code: 'AED', symbol: 'AED', name: 'UAE Dirham' },
-  { code: 'SAR', symbol: 'SAR', name: 'Saudi Riyal' },
-  { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
-  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real' },
-  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit' },
-  { code: 'PHP', symbol: '₱', name: 'Philippine Peso' },
-  { code: 'THB', symbol: '฿', name: 'Thai Baht' },
-  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
-  { code: 'PLN', symbol: 'zł', name: 'Polish Zloty' },
+export const CURRENCIES: { code: string; symbol: string; name: string; country: string }[] = [
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee', country: 'IN' },
+  { code: 'USD', symbol: '$', name: 'US Dollar', country: 'US' },
+  { code: 'EUR', symbol: '€', name: 'Euro', country: 'EU' },
+  { code: 'GBP', symbol: '£', name: 'British Pound', country: 'GB' },
+  { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', country: 'CA' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', country: 'AU' },
+  { code: 'NZD', symbol: 'NZ$', name: 'New Zealand Dollar', country: 'NZ' },
+  { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', country: 'SG' },
+  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc', country: 'CH' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen', country: 'JP' },
+  { code: 'HKD', symbol: 'HK$', name: 'Hong Kong Dollar', country: 'HK' },
+  { code: 'SEK', symbol: 'kr', name: 'Swedish Krona', country: 'SE' },
+  { code: 'NOK', symbol: 'kr', name: 'Norwegian Krone', country: 'NO' },
+  { code: 'DKK', symbol: 'kr', name: 'Danish Krone', country: 'DK' },
+  { code: 'AED', symbol: 'AED', name: 'UAE Dirham', country: 'AE' },
+  { code: 'SAR', symbol: 'SAR', name: 'Saudi Riyal', country: 'SA' },
+  { code: 'ZAR', symbol: 'R', name: 'South African Rand', country: 'ZA' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', country: 'BR' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', country: 'MY' },
+  { code: 'PHP', symbol: '₱', name: 'Philippine Peso', country: 'PH' },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht', country: 'TH' },
+  { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', country: 'ID' },
+  { code: 'PLN', symbol: 'zł', name: 'Polish Zloty', country: 'PL' },
 ];
 
 export function currencySymbol(code: string): string {
   return CURRENCIES.find((c) => c.code === code)?.symbol ?? code;
+}
+
+export function currencyName(code: string): string {
+  return CURRENCIES.find((c) => c.code === code)?.name ?? code;
+}
+
+// ISO-2 country for a currency's flag (EUR -> EU). Falls back to the code so <Flag> just renders blank.
+export function currencyCountry(code: string): string {
+  return CURRENCIES.find((c) => c.code === code)?.country ?? code;
 }
 
 // BUG-062: the 5 most common additional-currency markets, offered as one-click shortcuts below

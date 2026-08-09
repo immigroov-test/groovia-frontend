@@ -2,16 +2,12 @@
 import { useEffect, useState } from 'react';
 import { Info } from 'lucide-react';
 import { Flag } from './ui/Flag';
-import { currencySymbol } from '../lib/pricing';
+import { currencySymbol, currencyName, currencyCountry } from '../lib/pricing';
 
 // BUG-62: shows the mentor what a customer in each key market sees for their base rate. FX + PPP
 // (anchored to the pricing currency) when Smart Pricing is on; plain FX when off. No column headers,
-// just tiles; recomputes as the rate, currency, or SP toggle change. Responsive (2 cols on phones,
-// 3 on wider screens) so it never looks out of place.
-const MARKET_NAMES: Record<string, string> = {
-  IN: 'India', AU: 'Australia', SG: 'Singapore', SA: 'Saudi Arabia', AE: 'UAE', US: 'United States',
-};
-
+// just tiles (flag + currency full name + price); recomputes as the rate, currency, or SP toggle
+// change. Responsive (2 cols on phones, 3 on wider screens) so it never looks out of place.
 interface Market { country_code: string; currency: string; price: number; fx_ok: boolean; }
 
 export function PricePreviewTable({ baseRate, currency, smartPricing }: {
@@ -55,9 +51,9 @@ export function PricePreviewTable({ baseRate, currency, smartPricing }: {
         {markets.map((m) => (
           <div key={m.country_code}
             className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
-            <Flag code={m.country_code} />
+            <Flag code={currencyCountry(m.currency)} className="w-5 h-auto rounded-[2px] shrink-0" />
             <div className="min-w-0">
-              <p className="text-[11px] text-muted leading-tight truncate">{MARKET_NAMES[m.country_code] ?? m.country_code}</p>
+              <p className="text-[11px] text-muted leading-tight truncate">{currencyName(m.currency)}</p>
               <p className="text-sm font-semibold text-brand-900 leading-tight">
                 {currencySymbol(m.currency)}{m.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </p>
