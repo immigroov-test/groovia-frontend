@@ -35,6 +35,8 @@ export interface AdminRevision {
   display_name: string;
   headline: string | null;
   photo_url: string | null;
+  phone: string | null;
+  country: string | null;
   email: string | null;
   full_name: string | null;
   pending_submitted_at: string | null;
@@ -42,8 +44,8 @@ export interface AdminRevision {
 }
 
 const FIELD_LABELS: Record<keyof ProposedChanges, string> = {
-  display_name: 'Full name', headline: 'Headline', photo_url: 'Photo', phone: 'Phone',
-  bio: 'Bio', country: 'Country', city: 'City', timezone: 'Timezone', languages: 'Languages',
+  display_name: 'Name', headline: 'Headline', photo_url: 'Photo', phone: 'Phone Number',
+  bio: 'Bio', country: 'Service Country', city: 'City', timezone: 'Timezone', languages: 'Languages',
   social_links: 'Social links', public_notes: 'Public notes',
   expertise_country_codes: 'Countries of expertise', professional_domains: 'Professional domains',
   years_lived_experience: 'Years lived abroad',
@@ -90,6 +92,12 @@ export function AdminRevisionList({ initialRevisions }: { initialRevisions: Admi
       {revisions.map((rev) => {
         const changes = rev.pending_changes ?? {};
         const keys = (Object.keys(changes) as (keyof ProposedChanges)[]).filter((k) => FIELD_LABELS[k]);
+        // Every currently-staged field is approval-gated (Name/Phone/Photo/Service Country), so the
+        // mentor's still-live row IS the "old" value - it's never touched until an admin approves.
+        const currentValues: Partial<ProposedChanges> = {
+          display_name: rev.display_name, headline: rev.headline, photo_url: rev.photo_url,
+          phone: rev.phone, country: rev.country,
+        };
         return (
           <Card key={rev.id}>
             <CardBody className="pt-6">
@@ -145,7 +153,20 @@ export function AdminRevisionList({ initialRevisions }: { initialRevisions: Admi
                     {keys.map((k) => (
                       <div key={k} className={k === 'bio' || k === 'public_notes' || k === 'social_links' ? 'sm:col-span-2' : ''}>
                         <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">{FIELD_LABELS[k]}</p>
-                        <FieldValue field={k} value={changes[k]} />
+                        {k in currentValues ? (
+                          <div className="flex flex-col gap-2">
+                            <div>
+                              <p className="text-[10px] font-medium text-muted uppercase tracking-wide mb-0.5">Current</p>
+                              <FieldValue field={k} value={currentValues[k]} />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-medium text-muted uppercase tracking-wide mb-0.5">Proposed</p>
+                              <FieldValue field={k} value={changes[k]} />
+                            </div>
+                          </div>
+                        ) : (
+                          <FieldValue field={k} value={changes[k]} />
+                        )}
                       </div>
                     ))}
                   </div>
