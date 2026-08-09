@@ -1,13 +1,13 @@
 'use client';
 import { Plus, Trash2, Info } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
-import { Flag } from './ui/Flag';
-import { CURRENCIES, TOP_CURRENCIES, currencySymbol, type CurrencyRate } from '../lib/pricing';
+import { CURRENCIES, currencySymbol, type CurrencyRate } from '../lib/pricing';
 import { PricePreviewTable } from './PricePreviewTable';
 
 // Multi-currency rate setup (BUG-042): a base currency (default INR) + base hourly rate, an optional
-// list of additional-currency rates for foreign customers, and the smart-pricing (PPP) toggle. Each
-// service's price is derived from these by duration. Shared by onboarding + hub + profile edit.
+// list of exact per-currency rates, and the smart-pricing (PPP) toggle. Each service's price is derived
+// from these by duration. Shared by onboarding + hub + profile edit. Flow (BUG-62): base rate ->
+// smart pricing -> live market preview -> optional exact per-currency overrides.
 export function CurrencyRatesEditor({
   primaryCurrency, onPrimaryCurrency, baseRate, onBaseRate, rates, onRates, smartPricing, onSmartPricing,
 }: {
@@ -33,19 +33,15 @@ export function CurrencyRatesEditor({
     const next = available[0];
     if (next) onRates([...rates, { currency: next.code, hourly_rate: 0 }]);
   }
-  function addTopCurrency(code: string) {
-    if (used.has(code)) return;
-    onRates([...rates, { currency: code, hourly_rate: 0 }]);
-  }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Base currency FIRST, then the base rate. */}
+      {/* Base currency, then base rate. */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base currency</label>
           <select value={primaryCurrency} onChange={(e) => onPrimaryCurrency(e.target.value)} className={selectCls}>
-            {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>)}
+            {CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.symbol}  {c.name}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -60,42 +56,41 @@ export function CurrencyRatesEditor({
 
       <p className="text-xs text-muted leading-relaxed">
         Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it directly;
-        everyone else&apos;s price is calculated from it, split by session length.
+        everyone else&apos;s price is worked out from it, split by session length.
       </p>
 
-      {/* Top 5 markets: one click adds a fixed rate for that currency below, instead of hunting
-          through the full "Add another currency" dropdown. */}
-      {TOP_CURRENCIES.some((t) => !used.has(t.currency)) && (
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted">Quick add: top markets</span>
-          <div className="flex flex-wrap gap-2">
-            {TOP_CURRENCIES.filter((t) => !used.has(t.currency)).map((t) => (
-              <button key={t.currency} type="button" onClick={() => addTopCurrency(t.currency)}
-                className="flex items-center gap-1.5 h-9 pl-2 pr-3 rounded-full bg-white text-sm font-medium text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.08)] hover:shadow-[0_0_0_1px_rgba(29,78,216,0.4)]">
-                <Flag code={t.country} className="w-4 h-auto rounded-[1px]" />
-                {t.currency}
-                <Plus className="h-3.5 w-3.5 text-muted" />
-              </button>
-            ))}
-          </div>
+      {/* Smart pricing - controls the market preview below. Intentionally vague on the method. */}
+      <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">Smart pricing</p>
+          <p className="text-xs text-muted mt-0.5">
+            Let Immigroov adjust what customers pay based on their market, helping more of them book you.
+          </p>
+          <p className="text-xs text-muted mt-1 flex items-start gap-1.5">
+            <Info className="h-3.5 w-3.5 mt-px shrink-0 text-brand-500" aria-hidden="true" />
+            <span>Your session rate is never lowered, it stays fixed in the currency you set it in.</span>
+          </p>
         </div>
-      )}
+        <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />
+      </label>
 
-      {/* Additional currencies for foreign customers. */}
+      {/* BUG-62: live preview of what customers in our key markets see for this rate. */}
+      <PricePreviewTable baseRate={baseRate} currency={primaryCurrency} smartPricing={smartPricing} />
+
+      {/* Optional: fix an exact amount for a specific currency instead of the smart-pricing estimate. */}
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-foreground">
-          Other currencies <span className="font-normal text-muted">(optional)</span>
+          Set an exact price for another currency <span className="font-normal text-muted">(optional)</span>
         </span>
         <p className="text-xs text-muted leading-relaxed">
-          Set an exact rate for another currency&apos;s customers. Anyone whose currency you don&apos;t set is priced
-          from your base {primaryCurrency} rate.
+          Want to fix an exact amount for a currency instead of the estimate above? Add it here. Anyone whose
+          currency you don&apos;t set stays priced from your base {primaryCurrency} rate.
         </p>
         {rates.map((r, i) => (
           <div key={i} className="flex items-end gap-2">
             <select value={r.currency} onChange={(e) => setRate(i, { currency: e.target.value })} className={selectCls}>
-              {/* the row's own currency + any not-yet-used ones */}
               {CURRENCIES.filter((c) => c.code === r.currency || !used.has(c.code)).map((c) => (
-                <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
+                <option key={c.code} value={c.code}>{c.symbol}  {c.name}</option>
               ))}
             </select>
             <div className="flex items-center gap-2">
@@ -117,26 +112,6 @@ export function CurrencyRatesEditor({
           </button>
         )}
       </div>
-
-      {/* Smart pricing - intentionally vague (point 3): don't spell out the exact method (PPP etc.),
-          just that Immigroov fine-tunes prices to stay fair + competitive without lowering the mentor's set rates. */}
-      <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-foreground">Smart pricing</p>
-          <p className="text-xs text-muted mt-0.5">
-            Let Immigroov adjust what customers pay based on their market, helping more of them book you.
-          </p>
-          <p className="text-xs text-muted mt-1 flex items-start gap-1.5">
-            <Info className="h-3.5 w-3.5 mt-px shrink-0 text-brand-500" aria-hidden="true" />
-            <span>Your session rate is never lowered, it stays fixed in the currency you set it in.</span>
-          </p>
-        </div>
-        <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />
-      </label>
-
-      {/* BUG-62: live preview of what customers in our key markets see for this base rate (FX + PPP
-          when Smart Pricing is on; FX only when off). */}
-      <PricePreviewTable baseRate={baseRate} currency={primaryCurrency} smartPricing={smartPricing} />
     </div>
   );
 }

@@ -68,7 +68,7 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
         />
       </Section>
 
-      <Section title="Your sessions" subtitle="Add template sessions if you like; new ones need a quick review.">
+      <Section title="Your sessions">
         <ServicesManager />
       </Section>
 
