@@ -3,6 +3,7 @@ import { Plus, Trash2, Info } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { Flag } from './ui/Flag';
 import { CURRENCIES, TOP_CURRENCIES, currencySymbol, type CurrencyRate } from '../lib/pricing';
+import { PricePreviewTable } from './PricePreviewTable';
 
 // Multi-currency rate setup (BUG-042): a base currency (default INR) + base hourly rate, an optional
 // list of additional-currency rates for foreign customers, and the smart-pricing (PPP) toggle. Each
@@ -132,6 +133,10 @@ export function CurrencyRatesEditor({
         </div>
         <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />
       </label>
+
+      {/* BUG-62: live preview of what customers in our key markets see for this base rate (FX + PPP
+          when Smart Pricing is on; FX only when off). */}
+      <PricePreviewTable baseRate={baseRate} currency={primaryCurrency} smartPricing={smartPricing} />
     </div>
   );
 }
