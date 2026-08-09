@@ -26,10 +26,12 @@ interface OnboardingMentor {
 // whole time.
 export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMentor }) {
   const router = useRouter();
-  // Prefer the backend's session-derived prefill over the stored mentor row, whose currency the import
-  // left wrong on many mentors (showing a currency they never picked).
-  const prefillCurrency = mentor.rate_prefill?.currency ?? mentor.currency ?? 'INR';
-  const prefillRate = mentor.rate_prefill?.hourly_rate ?? mentor.hourly_rate;
+  // The backend's prefill wins outright when present (derived from the mentor's own sessions); the
+  // stored mentor row is only a last resort, since the import left its currency wrong on many mentors.
+  // A prefill with a null rate is deliberate (no session to derive from): leave the amount blank.
+  const prefill = mentor.rate_prefill;
+  const prefillCurrency = prefill?.currency ?? mentor.currency ?? 'INR';
+  const prefillRate = prefill ? prefill.hourly_rate : mentor.hourly_rate;
   const [rateSaved, setRateSaved] = useState(!!prefillRate && Number(prefillRate) > 0);
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
