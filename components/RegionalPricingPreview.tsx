@@ -36,12 +36,11 @@ function formatPrice(amount: number, currency: string): string {
 // the SAME PPP+FX engine as checkout (via /pricing/preview-regions), so it never drifts from what a
 // mentee is actually shown. Recalculates on every base price / currency / smart-pricing change.
 export function RegionalPricingPreview({
-  baseCurrency, basePrice, smartPricing, mentorCountry,
+  baseCurrency, basePrice, smartPricing,
 }: {
   baseCurrency: string;
   basePrice: string;
   smartPricing: boolean;
-  mentorCountry?: string;
 }) {
   const [regions, setRegions] = useState<RegionPrice[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -64,7 +63,6 @@ export function RegionalPricingPreview({
             base_currency: baseCurrency,
             base_price: price,
             smart_pricing: smartPricing,
-            mentor_country: mentorCountry || undefined,
           }),
         });
         if (!res.ok) { setRegions(null); return; }
@@ -78,7 +76,7 @@ export function RegionalPricingPreview({
     }, 400);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [baseCurrency, basePrice, smartPricing, mentorCountry]);
+  }, [baseCurrency, basePrice, smartPricing]);
 
   const price = parseFloat(basePrice);
   if (!price || price <= 0) return null;

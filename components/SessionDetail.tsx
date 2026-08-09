@@ -38,6 +38,7 @@ interface Detail {
   no_show_by: string | null;
   deadline_state: 'free' | 'late' | 'buffer' | null;
   opens_at: string | null;
+  closes_at: string | null;
   join_open: boolean;
   offer: Offer | null;
   request: Req | null;
@@ -50,6 +51,8 @@ interface Detail {
   candidate_name?: string | null;
   candidate_email?: string | null;
   candidate_phone?: string | null;
+  notes?: string | null;
+  answers?: { question: string; answer: string }[];
   payment?: PaymentInfo;
   pay_context?: { mentor_id: string; service_id: string; mentor_slug: string | null; phone: string };
   can_pay: boolean;
@@ -299,6 +302,23 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         )}
       </div>
 
+      {/* BUG-113: the customer's prep note + intake answers - mentor sees "what to prepare",
+          the customer sees a copy of what they submitted. */}
+      {(d.notes || (d.answers?.length ?? 0) > 0) && (
+        <div className="mt-6 rounded-2xl border border-[--color-border] bg-brand-50/40 p-4">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+            {isCandidate ? 'What you shared with your mentor' : 'What to prepare'}
+          </p>
+          {d.notes && <p className="mt-2 text-sm text-foreground whitespace-pre-line break-words">{d.notes}</p>}
+          {(d.answers ?? []).map((a, i) => (
+            <div key={i} className="mt-3">
+              <p className="text-xs font-semibold text-brand-900 break-words">{a.question}</p>
+              <p className="text-sm text-foreground whitespace-pre-line break-words">{a.answer}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Details: airy label/value pairs, no boxes */}
       <dl className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
         {detailRows.map(([k, v]) => (
@@ -353,10 +373,11 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </Button>
         )}
 
-        {/* Join (candidate + mentor) on active sessions. BUG-090: this is ALWAYS a real link to the
-            meeting (same as the email), so the customer can join from their dashboard - the /meeting
-            page shows a countdown if it isn't open yet, so we never hide the link. */}
-        {(isCandidate || isMentor) && d.paid && !d.is_past && (
+        {/* Join (candidate + mentor). BUG-090: this is ALWAYS a real link to the meeting (same as the
+            email) so it can be joined from the dashboard - the /meeting page shows a countdown if it
+            isn't open yet. BUG-105: stay visible until the session ENDS (+grace), not just until it
+            starts, so a late joiner can still get in mid-session. */}
+        {(isCandidate || isMentor) && d.paid && (!d.closes_at || new Date(d.closes_at).getTime() > Date.now()) && (
           <div className="flex flex-col gap-1.5">
             <Link href={`/meeting/${d.id}`}>
               <Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button>

@@ -10,13 +10,12 @@ import { type CurrencyRate } from '../lib/pricing';
 // currencies, and toggle fair pricing - all applied immediately via /mentor/profile (no re-approval),
 // which re-prices every paid session. Lives on the hub Profile tab.
 export function MentorPricingEditor({
-  initialCurrency = 'USD', initialRate = '', initialRates = [], initialSmartPricing = false, mentorCountry,
+  initialCurrency = 'USD', initialRate = '', initialRates = [], initialSmartPricing = false,
 }: {
   initialCurrency?: string;
   initialRate?: string;
   initialRates?: CurrencyRate[];
   initialSmartPricing?: boolean;
-  mentorCountry?: string;
 }) {
   const [currency, setCurrency] = useState(initialCurrency);
   const [baseRate, setBaseRate] = useState(initialRate);
@@ -59,7 +58,6 @@ export function MentorPricingEditor({
         baseRate={baseRate} onBaseRate={(v) => { markDirty(); setBaseRate(v); }}
         rates={rates} onRates={(r) => { markDirty(); setRates(r); }}
         smartPricing={smartPricing} onSmartPricing={(v) => { markDirty(); setSmartPricing(v); }}
-        mentorCountry={mentorCountry}
       />
       <p className="text-xs text-muted">
         Changes apply immediately and update the price of every paid session. Your free intro call stays free.

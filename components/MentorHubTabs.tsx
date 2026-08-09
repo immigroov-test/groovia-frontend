@@ -8,7 +8,6 @@ import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
 import { MentorPricingEditor } from './MentorPricingEditor';
 import { MentorBankCard } from './MentorBankCard';
-import { MentorReferrals } from './MentorReferrals';
 import { MigrationWelcomeModal } from './MigrationWelcomeModal';
 import { PastSessions, type LegacySession } from './PastSessions';
 import { COUNTRIES } from '../lib/countries';
@@ -123,9 +122,7 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
             </div>
           )}
           {tab === 'referrals' && (
-            approved
-              ? <MentorReferrals />
-              : <Card><CardBody className="pt-6"><p className="text-sm text-muted">Referral codes unlock once your application is approved.</p></CardBody></Card>
+            <UnderDevelopment title="Referrals" note="Refer new mentees and earn a commission on their first session. We're putting the finishing touches on this, so it'll be available soon." />
           )}
           {tab === 'webinars' && <UnderDevelopment title="Webinars" note="Host group sessions and webinars for multiple attendees." />}
         </div>
@@ -285,7 +282,6 @@ function ProfileTab({ mentor }: { mentor: HubMentor }) {
               initialRate={mentor.hourly_rate != null ? String(mentor.hourly_rate) : ''}
               initialRates={mentor.currency_rates ?? []}
               initialSmartPricing={!!mentor.smart_pricing}
-              mentorCountry={mentor.country ?? undefined}
             />
           ) : (
             <p className="text-sm text-muted">

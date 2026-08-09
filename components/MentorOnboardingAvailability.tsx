@@ -66,7 +66,6 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
           initialRates={mentor.currency_rates ?? []}
           initialSmartPricing={!!mentor.smart_pricing}
           onSaved={setRateSaved}
-          mentorCountry={mentor.country ?? undefined}
         />
       </Section>
 

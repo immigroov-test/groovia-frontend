@@ -29,6 +29,16 @@ export interface ManagedBooking {
   payout_state?: string | null;
 }
 
+// A session stays joinable until 30 min past its end (matches the backend join window), so an
+// in-progress call still counts as "upcoming" and keeps its Join action instead of dropping to
+// "past" the moment it starts (BUG-105).
+function joinableUntilMs(b: ManagedBooking): number {
+  if (!b.slot_time) return Infinity;
+  const start = new Date(b.slot_time).getTime();
+  const end = b.slot_end ? new Date(b.slot_end).getTime() : start + (b.service_duration ?? 30) * 60_000;
+  return end + 30 * 60_000;
+}
+
 function money(amount?: number | null, currency?: string | null): string {
   if (amount == null || !currency) return '';
   try { return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(amount); }
@@ -123,7 +133,7 @@ export function BookingManager({ role }: { role: Role }) {
   const isPendingPay = (b: ManagedBooking) => b.status === 'pending';
   const isUpcoming = (b: ManagedBooking) =>
     (b.status === 'confirmed' || b.status === 'rescheduled') &&
-    (!b.slot_time || new Date(b.slot_time).getTime() > Date.now());
+    joinableUntilMs(b) > Date.now();
   const isCancelled = (b: ManagedBooking) => b.status === 'cancelled';
 
   const pending = bookings.filter(isPendingPay);
@@ -162,7 +172,7 @@ export function BookingManager({ role }: { role: Role }) {
 function BookingCard({ b, role }: { b: ManagedBooking; role: Role }) {
   const pending = b.status === 'pending';
   const active = b.status === 'confirmed' || b.status === 'rescheduled';
-  const future = b.slot_time ? new Date(b.slot_time).getTime() > Date.now() : true;
+  const future = joinableUntilMs(b) > Date.now();   // BUG-105: keep "Join" through the session's end
   // Resolve the mentor's display zone the way the booking/detail pages do: a bare 'UTC' (migrated
   // mentors who never set a real zone) falls back to their country's city instead of an opaque
   // "UTC". Show it only when it actually differs from the viewer's clock.

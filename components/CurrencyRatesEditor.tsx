@@ -1,5 +1,5 @@
 'use client';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Info } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { Flag } from './ui/Flag';
 import { RegionalPricingPreview } from './RegionalPricingPreview';
@@ -10,7 +10,6 @@ import { CURRENCIES, TOP_CURRENCIES, currencySymbol, type CurrencyRate } from '.
 // service's price is derived from these by duration. Shared by onboarding + hub + profile edit.
 export function CurrencyRatesEditor({
   primaryCurrency, onPrimaryCurrency, baseRate, onBaseRate, rates, onRates, smartPricing, onSmartPricing,
-  mentorCountry,
 }: {
   primaryCurrency: string;
   onPrimaryCurrency: (c: string) => void;
@@ -20,7 +19,6 @@ export function CurrencyRatesEditor({
   onRates: (r: CurrencyRate[]) => void;
   smartPricing: boolean;
   onSmartPricing: (v: boolean) => void;
-  mentorCountry?: string;
 }) {
   const used = new Set([primaryCurrency, ...rates.map((r) => r.currency)]);
   const available = CURRENCIES.filter((c) => !used.has(c.code));
@@ -68,7 +66,7 @@ export function CurrencyRatesEditor({
       {/* BUG-103/FEAT: regional preview lives directly below the base currency/rate inputs so a
           mentor can see the effect of a rate change on major markets before saving anything. */}
       <RegionalPricingPreview
-        baseCurrency={primaryCurrency} basePrice={baseRate} smartPricing={smartPricing} mentorCountry={mentorCountry}
+        baseCurrency={primaryCurrency} basePrice={baseRate} smartPricing={smartPricing}
       />
 
       {/* Top 5 markets: one click adds a fixed rate for that currency below, instead of hunting
@@ -132,8 +130,11 @@ export function CurrencyRatesEditor({
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Smart pricing</p>
           <p className="text-xs text-muted mt-0.5">
-            Let Immigroov fine-tune each customer&apos;s price to stay fair and competitive in their market. Your set
-            rates are never lowered.
+            Let Immigroov adjust what customers pay based on their market, helping more of them book you.
+          </p>
+          <p className="text-xs text-muted mt-1 flex items-start gap-1.5">
+            <Info className="h-3.5 w-3.5 mt-px shrink-0 text-brand-500" aria-hidden="true" />
+            <span>Your session rate is never lowered, it stays fixed in the currency you set it in.</span>
           </p>
         </div>
         <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />
