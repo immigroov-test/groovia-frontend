@@ -37,21 +37,22 @@ export function CurrencyRatesEditor({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Base currency, then base rate (symbol/flag sit in their own segment so they never overlap). */}
-      <div className="flex flex-wrap items-end gap-3">
+      {/* Base currency, then base rate (symbol/flag sit in their own segment so they never overlap).
+          Both fields share one grid so the rate box is exactly as wide as the currency box. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base currency</label>
-          <CurrencySelect value={primaryCurrency} onChange={onPrimaryCurrency} className="w-56" />
+          <CurrencySelect value={primaryCurrency} onChange={onPrimaryCurrency} className="w-full" />
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base rate (per hour)</label>
-          <div className="flex items-stretch w-44 rounded-xl bg-white overflow-hidden shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus-within:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
+          <div className="flex items-stretch w-full rounded-xl bg-white overflow-hidden shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus-within:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
             <span className="pl-2.5 pr-2.5 flex items-center gap-1.5 text-sm border-r border-[--color-border] bg-brand-50/50 select-none">
               <Flag code={currencyCountry(primaryCurrency)} className="w-4 h-auto rounded-[1px] shrink-0" />
               <span className="text-foreground">{currencySymbol(primaryCurrency)}</span>
             </span>
             <input type="number" min={0} step="0.01" inputMode="decimal" value={baseRate} onChange={(e) => onBaseRate(e.target.value)}
-              placeholder="e.g. 2000" className="flex-1 min-w-0 px-3 bg-transparent text-sm focus:outline-none" />
+              placeholder="e.g. 2000" className="flex-1 min-w-0 w-full px-3 bg-transparent text-sm focus:outline-none" />
           </div>
         </div>
       </div>

@@ -16,6 +16,8 @@ interface OnboardingMentor {
   hourly_rate?: number | null;
   currency_rates?: CurrencyRate[] | null;
   smart_pricing?: boolean | null;
+  // Backend-derived starting values for the rate form (from the mentor's own imported sessions).
+  rate_prefill?: { currency?: string | null; hourly_rate?: number | null } | null;
 }
 
 // Step 2 of the migrated-mentor first-login flow (reached from the profile step). Collects the rate
@@ -24,7 +26,11 @@ interface OnboardingMentor {
 // whole time.
 export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMentor }) {
   const router = useRouter();
-  const [rateSaved, setRateSaved] = useState(!!mentor.hourly_rate && Number(mentor.hourly_rate) > 0);
+  // Prefer the backend's session-derived prefill over the stored mentor row, whose currency the import
+  // left wrong on many mentors (showing a currency they never picked).
+  const prefillCurrency = mentor.rate_prefill?.currency ?? mentor.currency ?? 'INR';
+  const prefillRate = mentor.rate_prefill?.hourly_rate ?? mentor.hourly_rate;
+  const [rateSaved, setRateSaved] = useState(!!prefillRate && Number(prefillRate) > 0);
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,8 +66,8 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
 
       <Section title="Your rate">
         <MentorRateEditor
-          initialCurrency={mentor.currency ?? 'INR'}
-          initialRate={mentor.hourly_rate != null ? String(mentor.hourly_rate) : ''}
+          initialCurrency={prefillCurrency}
+          initialRate={prefillRate != null ? String(prefillRate) : ''}
           initialRates={mentor.currency_rates ?? []}
           initialSmartPricing={!!mentor.smart_pricing}
           onSaved={setRateSaved}
