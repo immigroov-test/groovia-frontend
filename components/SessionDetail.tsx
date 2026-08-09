@@ -38,6 +38,7 @@ interface Detail {
   no_show_by: string | null;
   deadline_state: 'free' | 'late' | 'buffer' | null;
   opens_at: string | null;
+  closes_at: string | null;
   join_open: boolean;
   offer: Offer | null;
   request: Req | null;
@@ -372,10 +373,11 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </Button>
         )}
 
-        {/* Join (candidate + mentor) on active sessions. BUG-090: this is ALWAYS a real link to the
-            meeting (same as the email), so the customer can join from their dashboard - the /meeting
-            page shows a countdown if it isn't open yet, so we never hide the link. */}
-        {(isCandidate || isMentor) && d.paid && !d.is_past && (
+        {/* Join (candidate + mentor). BUG-090: this is ALWAYS a real link to the meeting (same as the
+            email) so it can be joined from the dashboard - the /meeting page shows a countdown if it
+            isn't open yet. BUG-105: stay visible until the session ENDS (+grace), not just until it
+            starts, so a late joiner can still get in mid-session. */}
+        {(isCandidate || isMentor) && d.paid && (!d.closes_at || new Date(d.closes_at).getTime() > Date.now()) && (
           <div className="flex flex-col gap-1.5">
             <Link href={`/meeting/${d.id}`}>
               <Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button>

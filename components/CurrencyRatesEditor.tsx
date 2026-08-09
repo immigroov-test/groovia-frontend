@@ -1,5 +1,5 @@
 'use client';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Info } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { Flag } from './ui/Flag';
 import { CURRENCIES, TOP_CURRENCIES, currencySymbol, type CurrencyRate } from '../lib/pricing';
@@ -123,8 +123,11 @@ export function CurrencyRatesEditor({
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Smart pricing</p>
           <p className="text-xs text-muted mt-0.5">
-            Let Immigroov fine-tune each customer&apos;s price to stay fair and competitive in their market. Your set
-            rates are never lowered.
+            Let Immigroov adjust what customers pay based on their market, helping more of them book you.
+          </p>
+          <p className="text-xs text-muted mt-1 flex items-start gap-1.5">
+            <Info className="h-3.5 w-3.5 mt-px shrink-0 text-brand-500" aria-hidden="true" />
+            <span>Your session rate is never lowered, it stays fixed in the currency you set it in.</span>
           </p>
         </div>
         <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />
