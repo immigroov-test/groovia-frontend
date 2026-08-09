@@ -122,12 +122,10 @@ export default async function MentorProfilePage({
   if (hasDirectBooking) {
     return (
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
-        <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 mb-6">
-          ← All mentors
-        </Link>
-
-        {/* The widget renders the mentor header (identity, rating, timezones), bio,
-            stepper and the two-column booking layout. */}
+        {/* The widget renders its own top nav link (context-aware: "All mentors" on the service
+            step, "Back to service" once past it, so it never drops the user out of an in-progress
+            booking), plus the mentor header (identity, rating, timezones), bio, stepper and the
+            two-column booking layout. */}
         <DirectBookingWidget
           mentorTimezone={mentor.timezone ?? undefined}
           mentor={{

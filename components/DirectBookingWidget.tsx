@@ -839,7 +839,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
       ['Duration', `${selectedService.duration} min · ${selectedService.type === 'video' ? 'Video call' : 'Direct message'}`],
     ] : [];
     return (
-      <div className="rounded-2xl border border-[--color-border] bg-white px-6 py-10 sm:px-8 max-w-lg mx-auto">
+      <div className="flex flex-col gap-6">
+        <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 w-fit">
+          <ChevronLeft className="h-4 w-4" /> All mentors
+        </Link>
+        <div className="rounded-2xl border border-[--color-border] bg-white px-6 py-10 sm:px-8 max-w-lg mx-auto">
         <div className="text-center">
           <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
             <Check className="h-7 w-7 text-emerald-500" />
@@ -918,6 +922,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             </Button>
           </div>
         )}
+        </div>
       </div>
     );
   }
@@ -933,6 +938,22 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Top nav: context-aware, mirrors the "Back to services" button inside the datetime card
+          (both call changeService, so they behave identically). On the service step (or after a
+          booking is confirmed) it exits to the mentor directory; once the mentor has moved past
+          service selection, it stays inside THIS mentor's booking flow instead of dropping them
+          all the way out to /mentors and losing the mentor + step context. */}
+      {step === 'datetime' || step === 'form' ? (
+        <button type="button" onClick={changeService}
+          className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 w-fit">
+          <ChevronLeft className="h-4 w-4" /> Back to service
+        </button>
+      ) : (
+        <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 w-fit">
+          <ChevronLeft className="h-4 w-4" /> All mentors
+        </Link>
+      )}
+
       {/* ── Header: identity + rating + timezones ─────────────────── */}
       <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
         <div className="flex items-start gap-4">
