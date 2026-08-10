@@ -123,6 +123,16 @@ export default async function MentorProfilePage({
             ))}
           </div>
         )}
+        {/* BUG-128: the mentor's own free-text specialisations. These are the most specific thing they
+            offer, so they belong on the profile rather than only feeding search behind the scenes. */}
+        {(mentor.specializations ?? []).length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted">Specialises in</span>
+            {(mentor.specializations ?? []).map((s) => (
+              <Badge key={s} tone="neutral">{s}</Badge>
+            ))}
+          </div>
+        )}
         {mentor.languages.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted">Speaks</span>
@@ -162,6 +172,7 @@ export default async function MentorProfilePage({
             years_lived_experience: mentor.years_lived_experience ?? null,
             languages: mentor.languages,
             professional_domains: mentor.professional_domains,
+            specializations: mentor.specializations,
             expertise_country_codes: mentor.expertise_country_codes,
           }}
         />

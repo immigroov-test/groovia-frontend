@@ -99,6 +99,7 @@ interface MentorInfo {
   years_lived_experience?: number | null;
   languages?: string[];
   professional_domains?: string[];
+  specializations?: string[];
   expertise_country_codes?: string[];
 }
 
@@ -1002,6 +1003,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
             countries, languages) - previously missing entirely from the direct-booking page. */}
         {(mentor.home_country_code || mentor.years_lived_experience
           || (mentor.professional_domains?.length ?? 0) > 0
+          || (mentor.specializations?.length ?? 0) > 0
           || (mentor.expertise_country_codes?.length ?? 0) > 0
           || (mentor.languages?.length ?? 0) > 0) && (
           <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-col gap-2 text-xs text-muted">
@@ -1021,6 +1023,15 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 <span className="shrink-0">Domain expertise</span>
                 {mentor.professional_domains!.map((d) => (
                   <span key={d} className="rounded-full bg-neutral-100 text-foreground px-2 py-0.5 font-medium">{d}</span>
+                ))}
+              </div>
+            )}
+            {/* BUG-128: the mentor's own specialisations, the most specific thing they offer. */}
+            {(mentor.specializations?.length ?? 0) > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="shrink-0">Specialises in</span>
+                {mentor.specializations!.map((sp) => (
+                  <span key={sp} className="rounded-full bg-neutral-100 text-foreground px-2 py-0.5 font-medium">{sp}</span>
                 ))}
               </div>
             )}

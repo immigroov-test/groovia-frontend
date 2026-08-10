@@ -7,6 +7,8 @@ import { Card, CardBody } from './ui/Card';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { MultiSelect } from './ui/MultiSelect';
+import { TagInput } from './ui/TagInput';
+import { suggestTags } from '../lib/tags';
 import { PhoneInput } from './ui/PhoneInput';
 import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
@@ -15,6 +17,9 @@ import { ServedCountriesEditor, servedCountriesPayload, type ServedCountry } fro
 import { TimezoneSelect } from './ui/TimezoneSelect';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
+import { CurrencyRatesEditor } from './CurrencyRatesEditor';
+import { type CurrencyRate } from '../lib/pricing';
+import { DOMAIN_OPTIONS, DOMAINS } from '../lib/domains';
 import { countryLabel } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
@@ -23,15 +28,26 @@ import { validateCityName } from '../lib/validators';
 import { suggestHeadline } from '../lib/headline';
 
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
-const DOMAIN_OPTIONS = [
-  'Software Engineering', 'Product Management', 'Data Science & AI', 'Design (UX/UI)',
-  'Marketing', 'Sales', 'Finance & Banking', 'Healthcare', 'Legal', 'Education',
-  'Entrepreneurship', 'Operations', 'HR & Recruiting', 'Consulting', 'Research',
-  'Manufacturing', 'Real Estate', 'Media & Journalism', 'Government & Policy', 'Non-profit',
-].map((d) => ({ value: d, label: d }));
+
 
 const BIO_MAX = 2000;
 const NOTES_MAX = 800;
+
+// Is the stored headline still one WE drafted, rather than something the mentor wrote?
+// Only a drafted headline keeps following the primary domain (BUG-128 / BUG-130).
+function isAutoHeadline(src: { headline?: string | null }): boolean {
+  const stored = (src.headline ?? '').trim();
+  if (!stored) return false;
+  // Match the SHAPE we generate ("<domain> mentor | Helping you ...") rather than comparing against
+  // the mentor's current domain. Comparing to the current domain fails exactly when it matters: once
+  // they change the domain and save, the old drafted headline no longer matches it and gets frozen as
+  // if they had written it. The prefix must be a real domain (or our generic fallback), so a genuinely
+  // hand-written headline that happens to contain "mentor |" is left alone.
+  const m = /^(.+?) mentor \| Helping you /.exec(stored);
+  if (!m) return false;
+  const prefix = m[1];
+  return prefix === 'Immigration & career' || DOMAINS.includes(prefix);
+}
 
 interface EditableFields {
   display_name?: string;
@@ -50,13 +66,15 @@ interface EditableFields {
   expertise_country_codes?: string[] | null;
   expertise_categories?: string[] | null;
   professional_domains?: string[] | null;
+  specializations?: string[] | null;
   years_lived_experience?: number | null;
   years_professional_experience?: number | null;
   hourly_rate?: number | null;
   currency?: string | null;
+  currency_rates?: CurrencyRate[] | null;
+  smart_pricing?: boolean | null;
 }
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'NZD', 'SGD', 'AED', 'CHF'];
 
 export interface MentorProfile extends EditableFields {
   id: string;
@@ -94,16 +112,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   // expertise. Placed near the end of the form so the draft has the domain/country to work with.
   // Treat the stored headline as hand-written ONLY if it differs from what we would have drafted for
   // their current fields. An untouched auto-headline keeps following the primary domain (BUG-130).
-  const [headlineEdited, setHeadlineEdited] = useState(() => {
-    const stored = (src.headline ?? '').trim();
-    if (!stored) return false;
-    const auto = suggestHeadline({
-      domain: (src.professional_domains ?? [])[0],
-      category: (src.expertise_categories ?? [])[0],
-      country: src.country ?? undefined,
-    });
-    return stored !== auto;
-  });
+  const [headlineEdited, setHeadlineEdited] = useState(() => isAutoHeadline(src) ? false : !!(src.headline ?? '').trim());
   const [photoUrl, setPhotoUrl] = useState<string | null>(src.photo_url ?? null);
   const [phone, setPhone] = useState(src.phone ?? '');
   const [bio, setBio] = useState(src.bio ?? '');
@@ -127,8 +136,13 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   const [primaryDomain, setPrimaryDomain] = useState<string>((src.professional_domains ?? [])[0] ?? '');
   const [otherDomains, setOtherDomains] = useState<string[]>((src.professional_domains ?? []).slice(1));
   const domains = [primaryDomain, ...otherDomains].filter(Boolean);
+  // BUG-128: free-text specifics under the domains. Collected at onboarding but never editable
+  // afterwards, so a mentor could not refine the tags that drive search and mentor matching.
+  const [specializations, setSpecializations] = useState<string[]>(src.specializations ?? []);
   const [hourlyRate, setHourlyRate] = useState(src.hourly_rate != null ? String(src.hourly_rate) : '');
   const [currency, setCurrency] = useState(src.currency ?? 'USD');
+  const [currencyRates, setCurrencyRates] = useState<CurrencyRate[]>(src.currency_rates ?? []);
+  const [smartPricing, setSmartPricing] = useState(!!src.smart_pricing);
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -199,8 +213,11 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
           years_lived_experience: yearsExp ? parseInt(yearsExp, 10) : null,
           years_professional_experience: parseInt(yearsProfExp, 10),
           professional_domains: domains,
+          specializations,
           hourly_rate: parseFloat(hourlyRate) || null,
           currency,
+          currency_rates: currencyRates,
+          smart_pricing: smartPricing,
         }),
       });
       const data = await res.json();
@@ -337,6 +354,35 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
           <MultiSelect label="Additional domains" options={DOMAIN_OPTIONS.filter((d) => d.value !== primaryDomain)}
             value={otherDomains} onChange={setOtherDomains}
             placeholder="Type to search, press Enter to add" hint="Other industries or roles you can advise on." />
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">
+              Specializations <span className="text-muted font-normal">(optional)</span>
+            </label>
+            <TagInput value={specializations} onChange={setSpecializations} max={12}
+              placeholder="e.g. ML in production, computer vision, model deployment" />
+            {(() => {
+              const suggestions = suggestTags({ domains })
+                .filter((t) => !specializations.some((sp) => sp.toLowerCase() === t.toLowerCase()));
+              if (suggestions.length === 0 || specializations.length >= 12) return null;
+              return (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-muted">Suggested:</span>
+                  {suggestions.slice(0, 8).map((t) => (
+                    <button key={t} type="button"
+                      onClick={() => setSpecializations([...specializations, t].slice(0, 12))}
+                      className="rounded-full border border-dashed border-[--color-border] bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                      + {t}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+            <p className="text-xs text-muted">
+              The specific things you go deep on. These show on your profile and help mentees (and our
+              matching) find you.
+            </p>
+          </div>
         </CardBody>
       </Card>
 
@@ -350,21 +396,17 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
               You can fine-tune individual session prices under your Availability tab.
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-foreground">Hourly rate</label>
-              <input type="number" min={0} step="0.01" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)}
-                placeholder="e.g. 60"
-                className="h-10 px-3 rounded-lg bg-white text-sm border border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-300" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-foreground">Currency</label>
-              <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-                className="h-10 px-3 rounded-lg bg-white text-sm border border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-300">
-                {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
+          {/* BUG-128: this page had its own bare rate+currency pair, so a mentor editing their profile
+              could not add a second currency or turn smart pricing on - both of which exist everywhere
+              else. It now uses the SAME pricing block as onboarding and the hub, with the market
+              preview on demand since the rate already exists here. */}
+          <CurrencyRatesEditor
+            primaryCurrency={currency} onPrimaryCurrency={setCurrency}
+            baseRate={hourlyRate} onBaseRate={setHourlyRate}
+            rates={currencyRates} onRates={setCurrencyRates}
+            smartPricing={smartPricing} onSmartPricing={setSmartPricing}
+            preview="collapsed"
+          />
         </CardBody>
       </Card>
       )}
