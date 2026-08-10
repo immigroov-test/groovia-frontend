@@ -890,12 +890,17 @@ export default function ChatInterface({ authed }: Props) {
             </button>
           )}
 
+          {/* BUG-136: the composer is rendered ONLY once Q&A is actually live. Before that it sat on
+              the landing greyed out with a "you can't type yet" placeholder, which is dead weight on
+              the one screen that should be leading with the intent buttons. The account-gate and
+              rate-limit notices above stay visible either way, since those are still actionable. */}
+          {qnaActive && (
           <div
             className={cn(
               "flex items-end gap-2 rounded-2xl px-2 py-1.5",
-              (!qnaActive || rateLimited) && "opacity-60",
+              rateLimited && "opacity-60",
               // Glow only when the composer is actually usable (Q&A active, not rate-limited).
-              qnaActive && !rateLimited && "composer-glow",
+              !rateLimited && "composer-glow",
             )}
             style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
           >
@@ -946,8 +951,13 @@ export default function ChatInterface({ authed }: Props) {
               <Send className="h-4 w-4" />
             </button>
           </div>
+          )}
 
-          <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
+          {/* The AI disclaimer belongs with the composer: with nothing to type into, it has nothing
+              to disclaim and just adds a line of grey text under the intent buttons. */}
+          {qnaActive && (
+            <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
+          )}
         </div>
       </div>
 
