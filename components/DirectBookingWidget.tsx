@@ -216,6 +216,41 @@ function PriceLabel({
   );
 }
 
+// Clamps a service description to 2 lines and offers "View more/less" only when it actually
+// overflows (BUG-135) - same measure-after-paint approach as the mentor bio clamp above, but
+// scoped per-card so each service card expands/collapses independently.
+function ServiceDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setOverflows(el.scrollHeight - el.clientHeight > 2);
+    measure();
+    const raf = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(raf);
+  }, [text]);
+
+  return (
+    <div className="min-w-0">
+      <p ref={ref} className={cn('text-xs text-muted leading-relaxed whitespace-pre-line break-words', !expanded && 'line-clamp-2')}>
+        {text}
+      </p>
+      {overflows && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+          className="mt-0.5 inline-flex items-center gap-0.5 text-xs font-medium text-brand-700 hover:text-brand-900 transition-colors"
+        >
+          {expanded ? <>View less <ChevronUp className="h-3 w-3" /></> : <>View more <ChevronDown className="h-3 w-3" /></>}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Calendar panel ─────────────────────────────────────────────────────────────
 
 function CalendarPanel({
@@ -1115,8 +1150,13 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               ) : (
                 <div className="flex flex-col gap-3">
                   {services.map(svc => (
-                    <button key={svc.id} type="button" onClick={() => selectService(svc)}
-                      className="text-left rounded-xl border border-[--color-border] p-4 hover:border-brand-400 hover:bg-brand-50/60 transition-colors">
+                    // A plain <button> can't contain the "View more" toggle button (invalid nested
+                    // interactive elements, and the click would bubble into selecting the service) -
+                    // BUG-135 swaps this to a div acting as the card-level click target, with the
+                    // description toggle stopping propagation so it can expand independently.
+                    <div key={svc.id} role="button" tabIndex={0} onClick={() => selectService(svc)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectService(svc); } }}
+                      className="text-left rounded-xl border border-[--color-border] p-4 hover:border-brand-400 hover:bg-brand-50/60 transition-colors cursor-pointer">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex flex-col gap-1 flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -1125,7 +1165,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                               : <MessageSquare className="h-4 w-4 text-brand-600 shrink-0" />}
                             <span className="text-sm font-semibold text-foreground">{svc.title}</span>
                           </div>
-                          {!isRichTextEmpty(svc.description) && <p className="text-xs text-muted leading-relaxed line-clamp-2">{richTextToPlain(svc.description)}</p>}
+                          {!isRichTextEmpty(svc.description) && <ServiceDescription text={richTextToPlain(svc.description)} />}
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted">
                             <Clock className="h-3 w-3" />{svc.duration} min · {svc.type === 'video' ? 'Video call' : 'Direct message'}
                             {svc.category && <span>· {svc.category}</span>}
@@ -1133,7 +1173,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                         </div>
                         <PriceLabel service={svc} price={priceMap[svc.id]} priceReady={priceReady} className="shrink-0 text-base font-semibold text-brand-700" />
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
