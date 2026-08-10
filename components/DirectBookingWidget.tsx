@@ -15,7 +15,8 @@ import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
 import { detectCountry, pricingCountry } from '../lib/geo';
-import { tzShort, tzCity, tzOffset, userDisplayTz, mentorDisplayTz } from '../lib/timezone';
+import { tzShort, tzCity, tzOffset, userDisplayTz, mentorDisplayTz, countryTimezone } from '../lib/timezone';
+import { TimezoneSelect } from './TimezoneSelect';
 import { countryLabel } from '../lib/countries';
 import { languageLabel } from '../lib/languages';
 import { BookingAccountPrompt } from './BookingAccountPrompt';
@@ -112,8 +113,10 @@ const MONTH_NAMES = [
   'July','August','September','October','November','December',
 ];
 
-function slotDateKey(isoStr: string): string {
-  return new Date(isoStr).toLocaleDateString('en-CA', { timeZone: TZ });
+// BUG-125: every slot date/time is rendered in the customer's CHOSEN zone (defaults to the browser
+// clock), never a module-level constant, so switching zones re-buckets the calendar too.
+function slotDateKey(isoStr: string, tz: string = TZ): string {
+  return new Date(isoStr).toLocaleDateString('en-CA', { timeZone: tz });
 }
 
 function buildGrid(year: number, month: number): (Date | null)[] {
@@ -131,9 +134,9 @@ function dateKey(d: Date): string {
 
 // 24-hour clock throughout the booking flow (e.g. "14:30"), so the customer's time and the
 // mentor's time read the same way and there's no AM/PM ambiguity across zones.
-function formatSlotTime(isoStr: string): string {
+function formatSlotTime(isoStr: string, tz: string = TZ): string {
   return new Date(isoStr).toLocaleTimeString('en-GB', {
-    timeZone: TZ, hour: '2-digit', minute: '2-digit', hour12: false,
+    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
   });
 }
 
@@ -410,9 +413,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   // location city when its offset matches the browser clock, so "your time" agrees with
   // the location badge (Tilburg -> Amsterdam, not the OS's Berlin). mentorTz falls back to
   // the mentor's country when their stored zone is a bare 'UTC', so it shows a real city.
-  const userTz = userDisplayTz(TZ, userCountry);
+  // BUG-125/126: the browser clock is only a DEFAULT now. Whatever the customer confirms here is what
+  // the slots are drawn in, what we store on the booking, and what their confirmation email uses - so a
+  // customer whose device is on another zone (travelling, VPN, work laptop) is no longer silently
+  // booked into someone else's timezone.
+  const [pickedTz, setPickedTz] = useState<string | null>(null);
+  const userTz = pickedTz ?? userDisplayTz(TZ, userCountry);
   const mentorTz = mentorDisplayTz(mentorTimezone, mentor.country);
   const showMentorTz = !!mentorTz && tzOffset(mentorTz) !== tzOffset(userTz);
+  // Where we think they are, when that disagrees with the zone in use: offered as one click rather
+  // than silently overriding their clock (which would show times their own device contradicts).
+  const geoTz = countryTimezone(userCountry);
+  const suggestTz = geoTz && geoTz !== userTz && tzOffset(geoTz) !== tzOffset(userTz) ? geoTz : '';
 
   // Load services
   useEffect(() => {
@@ -760,7 +772,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
           phone:       phone.trim(),
           name:        name.trim(),
           notes:       notes.trim(),
-          timezone:    TZ,
+          timezone:    userTz,
           idempotency_key: idemKey,
           referral_code: referralCode.trim() || undefined,
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
@@ -793,7 +805,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
         name: name,
         notes: notes,
         serviceTitle: selectedService.title,
-        timezone: TZ,
+        timezone: userTz,
         referralCode: referralCode.trim() || undefined,
         answers: questions
           .map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' }))
@@ -812,7 +824,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const slotsByDate = useMemo(() => {
     const map = new Map<string, Slot[]>();
     for (const s of slots ?? []) {
-      const k = slotDateKey(s.slot_start);
+      const k = slotDateKey(s.slot_start, userTz);
       if (!map.has(k)) map.set(k, []);
       map.get(k)!.push(s);
     }
@@ -833,8 +845,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   if (step === 'confirmed') {
     const detailRows: [string, string][] = selectedService && selectedSlot ? [
       ['Session', selectedService.title],
-      ['Date', formatDate(slotDateKey(selectedSlot.slot_start))],
-      ['Your time', `${formatSlotTime(selectedSlot.slot_start)} · ${tzShort(userTz)}`],
+      ['Date', formatDate(slotDateKey(selectedSlot.slot_start, userTz))],
+      ['Your time', `${formatSlotTime(selectedSlot.slot_start, userTz)} · ${tzShort(userTz)}`],
       ...(showMentorTz ? [['Mentor\'s time', `${formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)} · ${tzShort(mentorTz)}`] as [string, string]] : []),
       ['Duration', `${selectedService.duration} min · ${selectedService.type === 'video' ? 'Video call' : 'Direct message'}`],
     ] : [];
@@ -1033,8 +1045,16 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
 
         {/* Timezones on their own row so they never squeeze the name/headline on mobile. */}
         <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
-          <span>Your time <span className="font-semibold text-foreground">{tzShort(userTz)}</span></span>
+          <span className="inline-flex items-center gap-1">
+            Your time <TimezoneSelect value={userTz} onChange={setPickedTz} />
+          </span>
           {showMentorTz && <span>Mentor&apos;s time <span className="font-semibold text-foreground">{tzShort(mentorTz)}</span></span>}
+          {suggestTz && (
+            <button type="button" onClick={() => setPickedTz(suggestTz)}
+              className="inline-flex items-center gap-1 rounded-full bg-brand-50 text-brand-700 px-2 py-0.5 font-medium hover:bg-brand-100">
+              You look like you&apos;re in {tzCity(suggestTz)} ({tzOffset(suggestTz)}) &ndash; switch
+            </button>
+          )}
           {mentor.smart_pricing && hasFairDiscount && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 font-medium">
               Fair pricing
@@ -1146,7 +1166,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                               <button key={slot.slot_start} type="button" onClick={() => selectSlot(slot)}
                                 className={cn('flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg border text-center transition-colors',
                                   sel ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600' : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50')}>
-                                <span className="text-sm font-semibold text-foreground">{formatSlotTime(slot.slot_start)}</span>
+                                <span className="text-sm font-semibold text-foreground">{formatSlotTime(slot.slot_start, userTz)}</span>
                                 {showMentorTz && (
                                   <span className="text-[11px] leading-tight text-muted">
                                     {formatSlotTimeInTz(slot.slot_start, mentorTz)} for mentor
@@ -1177,7 +1197,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 <p className="text-sm text-muted">{selectedService.duration} min · {selectedService.type === 'video' ? 'Video call' : 'Direct message'}</p>
               </div>
               <div className="border-y border-[--color-border] py-3 flex flex-col gap-1.5">
-                <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start))}, ${formatSlotTime(selectedSlot.slot_start)}` : 'Not selected yet'} />
+                <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start, userTz))}, ${formatSlotTime(selectedSlot.slot_start, userTz)}` : 'Not selected yet'} />
                 {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? `${formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)} ${tzShort(mentorTz)}` : 'Not selected yet'} />}
               </div>
               <div className="flex items-center justify-between">
@@ -1235,7 +1255,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                     </>
                   )}
 
-                  <PhoneInput label="Phone number *" value={phone} onChange={setPhone}
+                  <PhoneInput label="Phone number *" value={phone} onChange={setPhone} defaultCountry={userCountry}
                     hint="For session coordination. Include your country code." />
 
                   <div className="flex flex-col gap-1.5">
@@ -1277,7 +1297,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 <p className="text-xs font-medium uppercase tracking-wide text-muted">Review &amp; payment</p>
                 <h3 className="text-base font-semibold text-brand-900 break-words">{selectedService.title}</h3>
                 <p className="text-xs text-muted mt-1">
-                  {formatDate(slotDateKey(selectedSlot.slot_start))} · {formatSlotTime(selectedSlot.slot_start)} · {selectedService.duration} min
+                  {formatDate(slotDateKey(selectedSlot.slot_start, userTz))} · {formatSlotTime(selectedSlot.slot_start, userTz)} · {selectedService.duration} min
                 </p>
               </div>
               <button type="button" onClick={() => setShowReview(false)} aria-label="Close" className="text-muted hover:text-foreground shrink-0 text-lg leading-none">✕</button>

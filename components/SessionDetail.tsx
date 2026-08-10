@@ -117,6 +117,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [slotTaken, setSlotTaken] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');   // BUG-123: mandatory before cancelling
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
 
@@ -545,9 +546,28 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
                 {notice}{' '}
                 <Link href="/terms" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
               </p>
-              <div className="mt-6 flex flex-col gap-2.5">
+              {/* BUG-123: a reason is required from whoever cancels. It's sent to the other party and
+                  kept for any refund review, so the confirm button stays disabled until it's given. */}
+              <div className="mt-4 text-left">
+                <label className="text-sm font-medium text-foreground" htmlFor="cancel-reason">
+                  Reason for cancelling <span className="text-red-600">*</span>
+                </label>
+                <textarea id="cancel-reason" rows={3} value={cancelReason} maxLength={1000}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder={isMentor ? 'Let the attendee know why you need to cancel.' : 'Let your mentor know why you need to cancel.'}
+                  className="mt-1.5 w-full px-3 py-2 rounded-xl bg-white text-sm resize-y placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                <p className="text-xs text-muted mt-1">Shared with {isMentor ? 'the attendee' : 'your mentor'}.</p>
+              </div>
+              <div className="mt-5 flex flex-col gap-2.5">
                 <Button variant="ghost" className="text-red-600 hover:bg-red-50" loading={busy}
-                  onClick={async () => { setShowCancelConfirm(false); await act('/api/booking/cancel', { booking_id: d.id, cancelled_by: isMentor ? 'mentor' : 'user' }); }}>
+                  disabled={cancelReason.trim().length < 3}
+                  onClick={async () => {
+                    setShowCancelConfirm(false);
+                    await act('/api/booking/cancel', {
+                      booking_id: d.id, cancelled_by: isMentor ? 'mentor' : 'user', reason: cancelReason.trim(),
+                    });
+                    setCancelReason('');
+                  }}>
                   {confirmLabel}
                 </Button>
                 <Button variant="primary" onClick={() => setShowCancelConfirm(false)}>Keep session</Button>

@@ -11,11 +11,16 @@ interface Props {
   label?: string;
   required?: boolean;
   hint?: string;
+  /** ISO-2 of where the person actually is, so the dial code starts on their country (BUG-125). */
+  defaultCountry?: string | null;
 }
 
-export function PhoneInput({ value, onChange, label = 'Phone Number', required, hint }: Props) {
-  const [dialCode, setDialCode] = useState('+31');
-  const [dialIso, setDialIso] = useState('NL');
+export function PhoneInput({ value, onChange, label = 'Phone Number', required, hint, defaultCountry }: Props) {
+  // BUG-125: this used to open on +31 for everyone, so a customer in India was pre-set to a Dutch dial
+  // code. Start from the detected country instead; NL only remains as the last-resort fallback.
+  const initial = PHONE_CODES.find((c) => c.code === (defaultCountry || '').toUpperCase());
+  const [dialCode, setDialCode] = useState(initial?.dial ?? '+31');
+  const [dialIso, setDialIso] = useState(initial?.code ?? 'NL');
   const [number, setNumber] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -47,6 +52,15 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
     }
   }, [value]);
 
+  // Geo detection resolves after mount, so adopt it once it lands - but only while the field is still
+  // untouched and empty, so it can never overwrite a number the person already has or picked.
+  const touched = useRef(false);
+  useEffect(() => {
+    if (touched.current || initialized.current || value) return;
+    const c = PHONE_CODES.find((x) => x.code === (defaultCountry || '').toUpperCase());
+    if (c) { setDialCode(c.dial); setDialIso(c.code); }
+  }, [defaultCountry, value]);
+
   const filtered = filterQuery
     ? PHONE_CODES.filter(
         (c) =>
@@ -73,6 +87,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
   }, [highlight, dropdownOpen]);
 
   function select(dial: string, iso: string) {
+    touched.current = true;
     setDialCode(dial);
     setDialIso(iso);
     setDropdownOpen(false);
@@ -97,6 +112,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
   }
 
   function applyNumber(raw: string) {
+    touched.current = true;
     const n = raw.replace(/[^\d\s\-()]/g, '');
     setNumber(n);
     onChange(`${dialCode} ${n}`);
