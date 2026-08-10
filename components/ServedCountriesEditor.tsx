@@ -1,6 +1,7 @@
 'use client';
 import { Plus, Trash2 } from 'lucide-react';
 import { CountrySelect } from './ui/CountrySelect';
+import { countryLabel } from '../lib/countries';
 
 export interface ServedCountry {
   code: string;
@@ -64,6 +65,15 @@ export function ServedCountriesEditor({
           className="flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900 w-fit mt-1">
           <Plus className="h-4 w-4" /> Add a country
         </button>
+      )}
+      {/* BUG-110: the profile lists current country + these, so without showing the current one here the
+          two lists look like they disagree and mentors think countries went missing. */}
+      {currentCountry && (
+        <p className="text-xs text-muted mt-1">
+          Your profile shows these as <span className="font-medium text-foreground">Guides moves to</span>:{' '}
+          {[currentCountry, ...value.map((r) => r.code)].filter(Boolean).map(countryLabel).join(', ')}.
+          Your current country is always included.
+        </p>
       )}
     </div>
   );

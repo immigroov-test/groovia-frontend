@@ -7,9 +7,11 @@ import { RichText } from '../../../../components/ui/RichText';
 import { DirectBookingWidget } from '../../../../components/DirectBookingWidget';
 import { ReviewsList } from '../../../../components/Reviews';
 import type { Mentor } from '../../../../lib/types';
-import { backendBaseUrl } from '../../../../lib/backend';
+import { backendBaseUrl, serverGet } from '../../../../lib/backend';
+import { serverAuth } from '../../../../lib/supabase/server';
 import { countryLabel } from '../../../../lib/countries';
 import { languageLabel } from '../../../../lib/languages';
+import { currencySymbol } from '../../../../lib/pricing';
 import { richTextToPlain } from '../../../../lib/sanitizeHtml';
 import { SITE_URL } from '../../../../lib/site';
 
@@ -54,6 +56,17 @@ export async function generateMetadata({
   };
 }
 
+// True when the signed-in viewer is the mentor whose profile this is (BUG-129). Anonymous visitors
+// and non-mentors short-circuit without an extra request.
+async function viewerIsThisMentor(slug: string): Promise<boolean> {
+  try {
+    const { user, token } = await serverAuth();
+    if (!user || !token) return false;
+    const me = await serverGet<{ slug?: string | null }>('/mentor/me', token);
+    return !!(me.ok && me.data?.slug && me.data.slug === slug);
+  } catch { return false; }
+}
+
 async function fetchServices(slug: string): Promise<ServiceItem[]> {
   try {
     const res = await fetch(`${backendBaseUrl()}/mentor/services/public/${slug}`, { cache: 'no-store' });
@@ -72,7 +85,11 @@ export default async function MentorProfilePage({
   const [mentor, services] = await Promise.all([fetchMentor(slug), fetchServices(slug)]);
   if (!mentor) notFound();
 
-  const hasDirectBooking = services.length > 0;
+  // BUG-129: a mentor viewing their OWN public profile gets a read-only preview. The backend already
+  // refuses a self-booking at reserve/book, but letting them walk the whole flow only to fail at
+  // payment is misleading, so the booking UI is not offered here at all.
+  const isOwnProfile = await viewerIsThisMentor(slug);
+  const hasDirectBooking = services.length > 0 && !isOwnProfile;
 
   const profileBlock = (
     <header className="flex flex-col gap-3 mb-8">
@@ -175,14 +192,42 @@ export default async function MentorProfilePage({
         </Card>
       )}
 
-      <Card className="border-dashed">
-        <CardBody className="pt-6">
-          <h2 className="text-base font-semibold text-foreground">Book a 1-on-1 session</h2>
-          <p className="text-sm text-muted mt-1">
-            {mentor.display_name.split(' ')[0]} is setting up their calendar. Check back soon.
-          </p>
-        </CardBody>
-      </Card>
+      {isOwnProfile ? (
+        <Card className="border-dashed">
+          <CardBody className="pt-6">
+            <h2 className="text-base font-semibold text-foreground">This is your public profile</h2>
+            <p className="text-sm text-muted mt-1">
+              This is exactly how mentees see you. Booking is read-only here, since you can&apos;t book your
+              own sessions.
+            </p>
+            {services.length > 0 && (
+              <ul className="mt-4 flex flex-col gap-2">
+                {services.map((s) => (
+                  <li key={s.id} className="flex items-center justify-between gap-3 rounded-lg bg-brand-50/50 px-3 py-2">
+                    <span className="text-sm text-foreground min-w-0 truncate">{s.title}</span>
+                    <span className="text-sm text-muted shrink-0">
+                      {s.duration} min · {currencySymbol(s.set_currency)}{s.set_price.toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium">
+              <Link href="/mentor" className="text-brand-700 hover:text-brand-900">Edit your profile</Link>
+              <Link href="/mentor/availability" className="text-brand-700 hover:text-brand-900">Manage availability</Link>
+            </div>
+          </CardBody>
+        </Card>
+      ) : (
+        <Card className="border-dashed">
+          <CardBody className="pt-6">
+            <h2 className="text-base font-semibold text-foreground">Book a 1-on-1 session</h2>
+            <p className="text-sm text-muted mt-1">
+              {mentor.display_name.split(' ')[0]} is setting up their calendar. Check back soon.
+            </p>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }

@@ -107,7 +107,7 @@ export function AvailabilityManagerV2() {
   async function saveRules() {
     if (!rulesForm) return;
     const { days_ahead, min_notice_hours, cancel_hours } = rulesForm;
-    if (!(days_ahead >= 1 && days_ahead <= 90)) { setError('Book up to must be between 1 and 90 days ahead.'); return; }
+    if (!(days_ahead >= 30 && days_ahead <= 90)) { setError('Book up to must be between 30 and 90 days ahead.'); return; }
     if (!(min_notice_hours >= 2 && min_notice_hours <= 24)) { setError('Minimum booking notice must be between 2 and 24 hours.'); return; }
     if (!(cancel_hours >= 2 && cancel_hours <= 48)) { setError('Cancellation / rescheduling time must be between 2 and 48 hours.'); return; }
     setSavingRules(true); setError(null);
@@ -205,8 +205,8 @@ export function AvailabilityManagerV2() {
               slot is 2 hours from now.
             </p>
             <div className="mt-4 flex flex-wrap items-end gap-4">
-              <RuleField label="Book up to (days ahead, 1-90)" value={rulesForm.days_ahead} min={1} max={90}
-                error={rulesForm.days_ahead >= 1 && rulesForm.days_ahead <= 90 ? undefined : 'Enter 1-90 days.'}
+              <RuleField label="Book up to (days ahead, 30-90)" value={rulesForm.days_ahead} min={30} max={90}
+                error={rulesForm.days_ahead >= 30 && rulesForm.days_ahead <= 90 ? undefined : 'Enter 30-90 days.'}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, days_ahead: v || 30 } : r)} />
               <RuleField label="Minimum booking notice (hrs, 2-24)" value={rulesForm.min_notice_hours} min={2} max={24} step={0.5}
                 error={rulesForm.min_notice_hours >= 2 && rulesForm.min_notice_hours <= 24 ? undefined : 'Enter 2-24 hours.'}

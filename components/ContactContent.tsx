@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Mail, MessageCircle, Megaphone, Send, Building2, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { createClient } from '../lib/supabase/client';
 import { UI_CONTENT } from '../lib/content';
 import { Card, CardBody } from './ui/Card';
 import { Input } from './ui/Input';
@@ -102,12 +104,33 @@ function Office({ label, address }: { label: string; address: string }) {
 }
 
 function ContactForm() {
+  const params = useSearchParams();
+  // BUG-067: arriving from "Join as Mentor" with an existing customer account. We already know who
+  // they are, so the topic and a starting message are filled in; both stay editable.
+  const presetTopic = params.get('topic') ?? '';
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [topic, setTopic] = useState('');
-  const [message, setMessage] = useState('');
+  const [topic, setTopic] = useState<string>(
+    (c.topics as readonly string[]).includes(presetTopic) ? presetTopic : '');
+  const [message, setMessage] = useState(params.get('message') ?? '');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+
+  // Prefill the signed-in person's name + email so they don't retype what we already hold.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await createClient().auth.getSession();
+      const u = session?.user;
+      if (cancelled || !u) return;
+      const full = String(u.user_metadata?.full_name ?? u.user_metadata?.name ?? '').trim();
+      const [first, ...rest] = full.split(/\s+/);
+      setFirstName((v) => v || first || '');
+      setLastName((v) => v || rest.join(' '));
+      setEmail((v) => v || u.email || '');
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const wordCount = message.trim() ? message.trim().split(/\s+/).length : 0;
 

@@ -8,6 +8,7 @@ import { AvailabilityManagerV2 } from './AvailabilityManagerV2';
 import { BookingManager } from './BookingManager';
 import { MentorPricingEditor } from './MentorPricingEditor';
 import { MentorBankCard } from './MentorBankCard';
+import { MentorEarnings } from './MentorEarnings';
 import { MigrationWelcomeModal } from './MigrationWelcomeModal';
 import { PastSessions, type LegacySession } from './PastSessions';
 import { COUNTRIES } from '../lib/countries';
@@ -117,8 +118,9 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
           {tab === 'payments' && (
             <div className="flex flex-col gap-6">
               <MentorBankCard defaultCountry={mentor.country ?? ''} />
+              {/* BUG-097: per-session earnings moved off the session cards to here. */}
+              <MentorEarnings />
               {legacySessions.length > 0 && <PastSessions sessions={legacySessions} heading="Past earnings (imported)" />}
-              <UnderDevelopment title="Earnings & history" note="Your session earnings and payout history will appear here." />
             </div>
           )}
           {tab === 'referrals' && (

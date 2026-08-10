@@ -225,6 +225,7 @@ export const UI_CONTENT = {
     topics: [
       'Profile Assessment / Country Fit Help',
       'Book or Plan a Mentor Session',
+      'Join as a Mentor',            // BUG-067: where an existing customer account is sent
       'Payments and Refunds',
       'Technical Support',
       'General Inquiry',

@@ -37,6 +37,8 @@ interface Detail {
   reschedule_count: number;
   no_show_by: string | null;
   deadline_state: 'free' | 'late' | 'buffer' | null;
+  cancel_notice_hours?: number | null;   // this mentor's cancellation/reschedule notice (BUG-119)
+  buffer_hours?: number | null;          // hard cut-off before the session
   opens_at: string | null;
   closes_at: string | null;
   join_open: boolean;
@@ -76,6 +78,11 @@ function dateLong(iso: string | null): string {
   return new Date(iso).toLocaleDateString(undefined, {
     timeZone: BROWSER_TZ, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   });
+}
+// "2 hours" / "1 hour" / "1.5 hours" - the mentor's own notice window, so copy never hardcodes it.
+function hoursText(h: number): string {
+  const n = Math.round(h * 10) / 10;
+  return `${n % 1 === 0 ? n : n.toFixed(1)} ${n === 1 ? 'hour' : 'hours'}`;
 }
 function timeShort(iso: string | null, tz: string): string {
   if (!iso) return '';
@@ -434,8 +441,8 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
             <p className="text-sm text-red-900">Your mentor didn&apos;t show up. How would you like to resolve it?</p>
             <div className="flex flex-wrap gap-2">
               <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_same' }, 'Done. Your session is reinstated with the same mentor, no penalty to you.')}>Rebook same mentor</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' }, 'Done. You have been credited in full. Browse other mentors to rebook whenever you like.')}>Try a different mentor</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund' }, 'Refund requested. We will return the full amount to your original payment method.')}>Request refund</Button>
+              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' }, 'Done. A credit has been issued as per our refund policy. Browse other mentors to rebook whenever you like.')}>Try a different mentor</Button>
+              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund' }, 'Refund requested. It will be processed to your original payment method as per our refund policy.')}>Request refund</Button>
             </div>
           </div>
         )}
@@ -460,8 +467,8 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
               // cancel button is hidden (can_cancel excludes buffer) - but a reschedule can still be
               // requested and just needs the other side's approval, so that stays available below.
               <p className="text-xs text-muted">
-                Within 2 hours of the session, cancelling here isn&apos;t available and wouldn&apos;t qualify for a refund.
-                You can still request a reschedule below.
+                Within {hoursText(d.buffer_hours ?? 2)} of the session, cancelling here isn&apos;t available and
+                wouldn&apos;t qualify for a refund. You can still request a reschedule below.
               </p>
             )}
             {!mentorProposal && !pendingReq && d.can_reschedule && (
@@ -490,8 +497,9 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
                 Report a no-show
               </Button>
             )}
+            {/* BUG-127: same treatment as Reschedule - cancelling is a normal choice, not a scary one. */}
             {d.can_cancel && (
-              <Button variant="ghost" loading={busy} className="text-red-600 hover:bg-red-50 self-start"
+              <Button variant="outline" loading={busy} className="w-full sm:w-auto self-start"
                 onClick={() => setShowCancelConfirm(true)}>
                 {d.deadline_state === 'free' || isMentor ? 'Cancel session' : 'Request cancellation'}
               </Button>
@@ -513,15 +521,19 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
       {/* Cancel confirmation with the refund notice (never a silent one-click cancel) */}
       {showCancelConfirm && (() => {
         const late = d.deadline_state !== 'free';
+        const window = hoursText(d.cancel_notice_hours ?? 24);
         const title = !isMentor && late ? 'Request cancellation?' : 'Cancel this session?';
+        // BUG-122: never promise a refund "in full" - the payment gateway fee is not refundable, so we
+        // state that the refund follows the policy and link to it. BUG-119: quote this mentor's own
+        // notice window rather than a hardcoded 24 hours.
         const notice = isMentor
           ? (late
-              ? 'Late cancellation (within 24 hours): the attendee is refunded in full, and a 25% penalty applies to your payout.'
-              : 'The attendee will be refunded in full. No penalty applies.')
+              ? `Late cancellation (within ${window} of the session): the attendee is refunded as per our refund policy, and a 25% penalty applies to your payout.`
+              : 'The attendee will be refunded as per our refund policy. No penalty applies to you.')
           : (late
-              ? "This is within 24 hours of the session, so it needs your mentor's approval. If they decline, only 50% is refunded (a 50% late-cancellation fee is kept)."
-              : "You're cancelling more than 24 hours ahead, so you'll be refunded in full.");
-        const confirmLabel = isMentor ? 'Yes, cancel' : late ? 'Send request' : 'Cancel & refund';
+              ? `This is within ${window} of the session, so it needs your mentor's approval. If they decline, a 50% late-cancellation fee is kept and the remainder is refunded as per our refund policy.`
+              : `You're cancelling more than ${window} ahead, so a refund will be issued as per our refund policy.`);
+        const confirmLabel = isMentor ? 'Yes, cancel' : late ? 'Send request' : 'Cancel session';
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowCancelConfirm(false)}>
             <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
@@ -529,7 +541,10 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
               <h3 className="mt-4 text-lg font-semibold text-brand-900">{title}</h3>
-              <p className="mt-2 text-sm text-muted leading-relaxed">{notice}</p>
+              <p className="mt-2 text-sm text-muted leading-relaxed">
+                {notice}{' '}
+                <Link href="/terms" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
+              </p>
               <div className="mt-6 flex flex-col gap-2.5">
                 <Button variant="ghost" className="text-red-600 hover:bg-red-50" loading={busy}
                   onClick={async () => { setShowCancelConfirm(false); await act('/api/booking/cancel', { booking_id: d.id, cancelled_by: isMentor ? 'mentor' : 'user' }); }}>

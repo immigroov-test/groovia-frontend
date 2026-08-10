@@ -45,7 +45,9 @@ function money(amount?: number | null, currency?: string | null): string {
   catch { return `${amount.toFixed(2)} ${currency}`; }
 }
 
-// A short money line for the card: candidate sees their charge + status, mentor sees their earning.
+// A short money line for the card. Candidate sees their charge + status. BUG-097: the mentor's earning
+// is NOT shown here - a payout varies with their commission and any referral, so a per-session figure
+// on the session card is misleading. Earnings live on the Payments tab, which shows the real breakdown.
 function payLine(b: ManagedBooking, role: Role): string | null {
   if (role === 'mentee') {
     if (!b.pay_state) return null;   // free / mock session
@@ -54,10 +56,6 @@ function payLine(b: ManagedBooking, role: Role): string | null {
     if (b.pay_state === 'refunded' || b.pay_state === 'partially_refunded') return amt ? `${amt} · Refunded` : 'Refunded';
     if (b.pay_state === 'failed') return 'Payment failed';
     return amt ? `${amt} · Payment pending` : 'Payment pending';
-  }
-  if (role === 'mentor' && b.payout_amount != null) {
-    const amt = money(b.payout_amount, b.payout_currency);
-    return amt ? `You earn ${amt}${b.payout_state === 'paid' ? ' · Paid out' : ''}` : null;
   }
   return null;
 }

@@ -6,8 +6,21 @@ import { PageLoadError } from '../../../../components/PageLoadError';
 
 export const metadata = { title: 'Mentor Onboarding - Immigroov' };
 
-export default async function MentorOnboardingPage() {
+// BUG-067: an existing customer account can't also become a mentor (one email is one or the other), so
+// instead of dropping them on a signup form that can't work for them, send them to Contact with the
+// "Join as a Mentor" topic prefilled and let support convert the account. `new=1` marks the genuine
+// path: the mentor signup modal sets it right after the account is created.
+const JOIN_AS_MENTOR_CONTACT =
+  `/contact?topic=${encodeURIComponent('Join as a Mentor')}`
+  + `&message=${encodeURIComponent('I want to join as a mentor.')}`;
+
+export default async function MentorOnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ new?: string }>;
+}) {
   const { user, token } = await serverAuth();
+  const { new: isFreshSignup } = await searchParams;
 
   if (!user) {
     redirect('/mentor?auth=open&role=mentor');
@@ -23,6 +36,10 @@ export default async function MentorOnboardingPage() {
   }
   if (r.status === 0) {
     return <PageLoadError retryHref="/mentor/onboarding" />;
+  }
+  // Signed in, no mentor profile, and not arriving from the mentor signup: this is a customer account.
+  if (!isFreshSignup) {
+    redirect(JOIN_AS_MENTOR_CONTACT);
   }
 
   const defaultName: string = user.user_metadata?.full_name

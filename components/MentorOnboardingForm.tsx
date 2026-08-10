@@ -203,7 +203,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     ? 'Turn on at least one service.'
     : services.some((s) => !s.title.trim()) ? 'Give every service a title, or remove it.' : null;
   // BUG-045: validate each booking rule's range LIVE (shown inline under each field), not only on save.
-  const daysErr = daysAhead >= 1 && daysAhead <= 90 ? null : 'Enter 1-90 days.';
+  // BUG-045: mentees must be able to book at least 30 days out, so 1-29 is not a valid window.
+  const daysErr = daysAhead >= 30 && daysAhead <= 90 ? null : 'Enter 30-90 days.';
   const noticeErr = minNotice >= 2 && minNotice <= 24 ? null : 'Enter 2-24 hours.';
   const cancelErr = cancelHours >= 2 && cancelHours <= 48 ? null : 'Enter 2-48 hours.';
   const rulesError = daysErr || noticeErr || cancelErr;
@@ -640,8 +641,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             </div>
             <div className="flex flex-wrap gap-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted">Book up to (days ahead, 1-90)</span>
-                <input type="number" min={1} max={90} value={daysAhead} aria-invalid={!!daysErr}
+                <span className="text-xs font-medium text-muted">Book up to (days ahead, 30-90)</span>
+                <input type="number" min={30} max={90} value={daysAhead} aria-invalid={!!daysErr}
                   onChange={(e) => setDaysAhead(parseInt(e.target.value) || 0)}
                   className={`h-11 w-40 px-3 rounded-xl bg-white text-sm focus:outline-none ${daysErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
                 {daysErr && <span className="text-xs text-red-600">{daysErr}</span>}
