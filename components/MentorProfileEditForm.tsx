@@ -92,7 +92,18 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   const [headline, setHeadline] = useState(src.headline ?? '');
   // Existing mentors keep their own headline (edited=true); "Suggest" re-drafts it from their
   // expertise. Placed near the end of the form so the draft has the domain/country to work with.
-  const [headlineEdited, setHeadlineEdited] = useState(!!(src.headline ?? '').trim());
+  // Treat the stored headline as hand-written ONLY if it differs from what we would have drafted for
+  // their current fields. An untouched auto-headline keeps following the primary domain (BUG-130).
+  const [headlineEdited, setHeadlineEdited] = useState(() => {
+    const stored = (src.headline ?? '').trim();
+    if (!stored) return false;
+    const auto = suggestHeadline({
+      domain: (src.professional_domains ?? [])[0],
+      category: (src.expertise_categories ?? [])[0],
+      country: src.country ?? undefined,
+    });
+    return stored !== auto;
+  });
   const [photoUrl, setPhotoUrl] = useState<string | null>(src.photo_url ?? null);
   const [phone, setPhone] = useState(src.phone ?? '');
   const [bio, setBio] = useState(src.bio ?? '');
@@ -112,7 +123,10 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   const [categories] = useState<string[]>(src.expertise_categories ?? []);
   const [yearsExp, setYearsExp] = useState(src.years_lived_experience != null ? String(src.years_lived_experience) : '');
   const [yearsProfExp, setYearsProfExp] = useState(src.years_professional_experience != null ? String(src.years_professional_experience) : '');
-  const [domains, setDomains] = useState<string[]>(src.professional_domains ?? []);
+  // professional_domains is stored [primary, ...others]; split it so the primary is explicit (BUG-107).
+  const [primaryDomain, setPrimaryDomain] = useState<string>((src.professional_domains ?? [])[0] ?? '');
+  const [otherDomains, setOtherDomains] = useState<string[]>((src.professional_domains ?? []).slice(1));
+  const domains = [primaryDomain, ...otherDomains].filter(Boolean);
   const [hourlyRate, setHourlyRate] = useState(src.hourly_rate != null ? String(src.hourly_rate) : '');
   const [currency, setCurrency] = useState(src.currency ?? 'USD');
 
@@ -125,7 +139,13 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
     if (tz) setTimezone(tz);
   }
 
-  const effectiveHeadline = headlineEdited ? headline : suggestHeadline({ domain: domains[0], country });
+  // BUG-130: the headline is re-derived from the PRIMARY domain (and category/country) whenever it is
+  // still the auto-drafted one. It only stops following those fields once the mentor has actually
+  // written their own - previously `headlineEdited` was true for every existing mentor, so changing
+  // the domain left a headline advertising the old one forever.
+  const effectiveHeadline = headlineEdited
+    ? headline
+    : suggestHeadline({ domain: primaryDomain, category: categories[0], country });
 
   // BUG-065: mentees find a mentor by current country + these - matches the backend's
   // _derive_expertise (routers/mentor.py), so this preview always agrees with what's saved.
@@ -302,8 +322,21 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
           </div>
           <Input label="Years of professional experience *" type="number" min={0} max={60} value={yearsProfExp}
             onChange={(e) => setYearsProfExp(e.target.value)} placeholder="e.g. 8" hint="Total years in your profession." />
-          <MultiSelect label="Domains of Expertise" options={DOMAIN_OPTIONS} value={domains} onChange={setDomains}
-            placeholder="Type to search, press Enter to add" hint="Industries or roles you can advise on." />
+          {/* BUG-107/BUG-130: the primary domain is what drives the headline, so it gets its own control
+              instead of being an invisible "first item" of a multi-select the mentor can reorder by
+              accident. Additional domains stay free-form. */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">Primary domain of expertise</label>
+            <select value={primaryDomain} onChange={(e) => setPrimaryDomain(e.target.value)}
+              className="h-11 px-3 rounded-xl bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
+              <option value="">Select your main field</option>
+              {DOMAIN_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+            <p className="text-xs text-muted">Your main field. It drives your headline.</p>
+          </div>
+          <MultiSelect label="Additional domains" options={DOMAIN_OPTIONS.filter((d) => d.value !== primaryDomain)}
+            value={otherDomains} onChange={setOtherDomains}
+            placeholder="Type to search, press Enter to add" hint="Other industries or roles you can advise on." />
         </CardBody>
       </Card>
 
