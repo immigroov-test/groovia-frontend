@@ -58,6 +58,9 @@ export function MentorPricingEditor({
         baseRate={baseRate} onBaseRate={(v) => { markDirty(); setBaseRate(v); }}
         rates={rates} onRates={(r) => { markDirty(); setRates(r); }}
         smartPricing={smartPricing} onSmartPricing={(v) => { markDirty(); setSmartPricing(v); }}
+        // Their rate already exists here, so the market preview is available on demand rather than
+        // permanently occupying the profile tab.
+        preview="collapsed"
       />
       <p className="text-xs text-muted">
         Changes apply immediately and update the price of every paid session. Your free intro call stays free.

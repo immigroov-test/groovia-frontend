@@ -529,11 +529,20 @@ export default function ChatInterface({ authed }: Props) {
     after?.();
   }
 
-  // Guest free-question counter (its own key, so "clear chat" never resets it).
+  // Guest free-question counter (its own key, so "clear chat" never resets it). Once the person has
+  // an account the guest tier no longer applies, so signing in CLEARS it - otherwise the count stuck
+  // to the browser forever and a signed-in user could still be told they'd used their free questions
+  // (the "it says 2 used but I asked none" report).
   useEffect(() => {
+    if (authed) {
+      try { localStorage.removeItem(GQ_KEY); } catch { /* private mode */ }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setGuestQuestionsUsed(0);
+      return;
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setGuestQuestionsUsed(Number(localStorage.getItem(GQ_KEY)) || 0);
-  }, []);
+  }, [authed]);
   function bumpGuestQuestions() {
     const n = (Number(localStorage.getItem(GQ_KEY)) || 0) + 1;
     localStorage.setItem(GQ_KEY, String(n));
@@ -616,6 +625,10 @@ export default function ChatInterface({ authed }: Props) {
       setIntentSelected(true);
       setMessages((prev) => [...prev, { role: 'assistant', content: UI_CONTENT.guestLimit }]);
       setGuestGate(true);
+      // Mark the intent as pending, so the "resume Q&A once signed in" effect actually fires. Without
+      // this a guest at the limit signed in and STILL had no composer: they had to notice the intent
+      // buttons and click "Ask a question" a second time.
+      setPendingQna(true);
       return;
     }
     setPendingQna(false);
@@ -705,6 +718,11 @@ export default function ChatInterface({ authed }: Props) {
       setLoading(false);
     }
   }
+
+  // The composer belongs to the Q&A intent: live Q&A, waiting on a sign-in for it, or blocked at the
+  // guest limit. On the bare landing (or mid find-a-mentor, which is dropdown-driven) there is
+  // nothing to type into, so it stays out of the way.
+  const composerVisible = qnaActive || pendingQna || guestGate;
 
   return (
     <div className="flex flex-col h-full relative">
@@ -890,11 +908,12 @@ export default function ChatInterface({ authed }: Props) {
             </button>
           )}
 
-          {/* BUG-136: the composer is rendered ONLY once Q&A is actually live. Before that it sat on
-              the landing greyed out with a "you can't type yet" placeholder, which is dead weight on
-              the one screen that should be leading with the intent buttons. The account-gate and
-              rate-limit notices above stay visible either way, since those are still actionable. */}
-          {qnaActive && (
+          {/* BUG-136: the composer is hidden on the landing (dead weight next to the intent buttons)
+              and appears the moment the user picks the Q&A intent - including when they're at the
+              guest limit, where it shows disabled beside the sign-in prompt. Gating this on qnaActive
+              alone made it vanish entirely for a guest at the limit, since that path never activates
+              Q&A: the box has to be there for "Ask Groovia" to lead anywhere. */}
+          {composerVisible && (
           <div
             className={cn(
               "flex items-end gap-2 rounded-2xl px-2 py-1.5",
@@ -955,7 +974,7 @@ export default function ChatInterface({ authed }: Props) {
 
           {/* The AI disclaimer belongs with the composer: with nothing to type into, it has nothing
               to disclaim and just adds a line of grey text under the intent buttons. */}
-          {qnaActive && (
+          {composerVisible && (
             <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
           )}
         </div>

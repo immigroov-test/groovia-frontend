@@ -1,5 +1,6 @@
 'use client';
-import { Plus, Trash2, Info } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, Info, Eye } from 'lucide-react';
 import { Toggle } from './ui/Toggle';
 import { Flag } from './ui/Flag';
 import { CurrencySelect } from './CurrencySelect';
@@ -12,6 +13,7 @@ import { PricePreviewTable } from './PricePreviewTable';
 // rates -> live market preview -> smart pricing.
 export function CurrencyRatesEditor({
   primaryCurrency, onPrimaryCurrency, baseRate, onBaseRate, rates, onRates, smartPricing, onSmartPricing,
+  preview = 'open',
 }: {
   primaryCurrency: string;
   onPrimaryCurrency: (c: string) => void;
@@ -21,7 +23,15 @@ export function CurrencyRatesEditor({
   onRates: (r: CurrencyRate[]) => void;
   smartPricing: boolean;
   onSmartPricing: (v: boolean) => void;
+  /**
+   * How prominent the market preview is. 'open' when the mentor is deciding a rate for the first
+   * time (onboarding) and needs to see the effect; 'collapsed' on the dashboard, where they already
+   * have a rate and the 7-tile grid is noise sitting permanently under their profile; 'off' where it
+   * isn't relevant at all. One switch here rather than a different pricing block per page.
+   */
+  preview?: 'open' | 'collapsed' | 'off';
 }) {
+  const [previewOpen, setPreviewOpen] = useState(preview === 'open');
   const used = new Set([primaryCurrency, ...rates.map((r) => r.currency)]);
   const available = CURRENCIES.filter((c) => !used.has(c.code));
 
@@ -97,8 +107,17 @@ export function CurrencyRatesEditor({
       </div>
 
       {/* BUG-62: live preview of what customers in our key markets see for this base rate. Moves down as
-          exact-currency rows are added above. */}
-      <PricePreviewTable baseRate={baseRate} currency={primaryCurrency} smartPricing={smartPricing} />
+          exact-currency rows are added above. Collapsed on pages where the rate already exists. */}
+      {preview !== 'off' && (
+        preview === 'collapsed' && !previewOpen ? (
+          <button type="button" onClick={() => setPreviewOpen(true)}
+            className="flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-900 w-fit">
+            <Eye className="h-4 w-4" /> See what customers in other markets pay
+          </button>
+        ) : (
+          <PricePreviewTable baseRate={baseRate} currency={primaryCurrency} smartPricing={smartPricing} />
+        )
+      )}
 
       {/* Smart pricing - controls the market preview above. Intentionally vague on the method. */}
       <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
