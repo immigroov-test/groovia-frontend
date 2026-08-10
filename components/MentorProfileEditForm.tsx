@@ -38,15 +38,21 @@ const NOTES_MAX = 800;
 function isAutoHeadline(src: { headline?: string | null }): boolean {
   const stored = (src.headline ?? '').trim();
   if (!stored) return false;
-  // Match the SHAPE we generate ("<domain> mentor | Helping you ...") rather than comparing against
-  // the mentor's current domain. Comparing to the current domain fails exactly when it matters: once
-  // they change the domain and save, the old drafted headline no longer matches it and gets frozen as
-  // if they had written it. The prefix must be a real domain (or our generic fallback), so a genuinely
+  // Match the SHAPE we generate rather than comparing against the mentor's current domain. Comparing
+  // to the current domain fails exactly when it matters: once they change the domain and save, the old
+  // drafted headline no longer matches and gets frozen as if they had written it. Two shapes exist -
+  // "<role> mentor | Helping you ..." and, with specialisations, "<role> mentor | a, b | Helping you
+  // ...". The role must resolve to real domain(s) (or our generic fallback), so a genuinely
   // hand-written headline that happens to contain "mentor |" is left alone.
-  const m = /^(.+?) mentor \| Helping you /.exec(stored);
+  const m = /^(.+?) mentor \| (?:.+ \| )?Helping you /.exec(stored);
   if (!m) return false;
-  const prefix = m[1];
-  return prefix === 'Immigration & career' || DOMAINS.includes(prefix);
+  const role = m[1];
+  if (role === 'Immigration & career') return true;
+  // The role is either one domain or "<primary> & <secondary>". Domains contain "&" themselves
+  // ("Data Science & AI"), so test the whole string first, then the two-domain split.
+  if (DOMAINS.includes(role)) return true;
+  return DOMAINS.some((d) => ([' & ', ' + '] as const).some(
+    (j) => role.startsWith(d + j) && DOMAINS.includes(role.slice(d.length + j.length))));
 }
 
 interface EditableFields {
@@ -137,7 +143,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   const [otherDomains, setOtherDomains] = useState<string[]>((src.professional_domains ?? []).slice(1));
   const domains = [primaryDomain, ...otherDomains].filter(Boolean);
   // BUG-128: free-text specifics under the domains. Collected at onboarding but never editable
-  // afterwards, so a mentor could not refine the tags that drive search and mentor matching.
+  // afterwards, so a mentor could not refine the specifics shown on their profile.
   const [specializations, setSpecializations] = useState<string[]>(src.specializations ?? []);
   const [hourlyRate, setHourlyRate] = useState(src.hourly_rate != null ? String(src.hourly_rate) : '');
   const [currency, setCurrency] = useState(src.currency ?? 'USD');
@@ -159,7 +165,13 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   // the domain left a headline advertising the old one forever.
   const effectiveHeadline = headlineEdited
     ? headline
-    : suggestHeadline({ domain: primaryDomain, category: categories[0], country });
+    : suggestHeadline({
+        domain: primaryDomain,
+        domains: [primaryDomain, ...otherDomains],
+        specializations: specializations,
+        category: categories[0],
+        country,
+      });
 
   // BUG-065: mentees find a mentor by current country + these - matches the backend's
   // _derive_expertise (routers/mentor.py), so this preview always agrees with what's saved.
@@ -379,8 +391,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
               );
             })()}
             <p className="text-xs text-muted">
-              The specific things you go deep on. These show on your profile and help mentees (and our
-              matching) find you.
+              The specific things you go deep on. These show on your profile and help mentees find you.
             </p>
           </div>
         </CardBody>

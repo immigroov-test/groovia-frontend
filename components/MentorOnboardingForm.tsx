@@ -129,7 +129,13 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   // (headlineEdited), after which their text wins. "Suggest" clears the flag to re-derive.
   const effectiveHeadline = headlineEdited
     ? professionalTitle
-    : suggestHeadline({ domain: primaryDomain, category: categories[0], country });
+    : suggestHeadline({
+        domain: primaryDomain,
+        domains: [primaryDomain, ...additionalDomains],
+        specializations: specializations,
+        category: categories[0],
+        country,
+      });
 
   function onCountryChange(code: string) {
     setCountry(code);
