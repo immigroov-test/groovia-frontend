@@ -1163,12 +1163,20 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                           {timeSlotsForDay.map(slot => {
                             const sel = selectedSlot?.slot_start === slot.slot_start;
                             return (
+                              // BUG-133: the selected slot was only a faint tinted border, which was easy
+                              // to miss on a grid of look-alike buttons. Selection is now a solid filled
+                              // state, so which time you picked is unmistakable.
                               <button key={slot.slot_start} type="button" onClick={() => selectSlot(slot)}
+                                aria-pressed={sel}
                                 className={cn('flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg border text-center transition-colors',
-                                  sel ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600' : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50')}>
-                                <span className="text-sm font-semibold text-foreground">{formatSlotTime(slot.slot_start, userTz)}</span>
+                                  sel
+                                    ? 'border-brand-900 bg-brand-900 text-white'
+                                    : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50')}>
+                                <span className={cn('text-sm font-semibold', sel ? 'text-white' : 'text-foreground')}>
+                                  {formatSlotTime(slot.slot_start, userTz)}
+                                </span>
                                 {showMentorTz && (
-                                  <span className="text-[11px] leading-tight text-muted">
+                                  <span className={cn('text-[11px] leading-tight', sel ? 'text-white/80' : 'text-muted')}>
                                     {formatSlotTimeInTz(slot.slot_start, mentorTz)} for mentor
                                   </span>
                                 )}

@@ -214,11 +214,14 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
             <span className="text-foreground font-medium">{formatFullDateTime(offer.range_end)}</span> · {shortTz(TZ)}. No extra payment - your session is already paid.
           </p>
         )}
+        {/* BUG-132: this was a bare text link, so customers couldn't tell it was actionable and were
+            stuck believing the mentor's proposed window was their only option. Same behaviour, but it
+            now reads as the button it always was. */}
         <div className="mt-4">
-          <button type="button" onClick={() => { setShowAll(v => !v); setSelectedSlot(null); if (!showAll) setSelectedDate(null); }}
-            className="text-sm font-medium text-brand-700 hover:text-brand-900">
-            {showAll ? '← Back to the proposed time' : 'None of these work? See all my available times'}
-          </button>
+          <Button variant="outline" className="w-full sm:w-auto"
+            onClick={() => { setShowAll(v => !v); setSelectedSlot(null); if (!showAll) setSelectedDate(null); }}>
+            {showAll ? '← Back to the proposed time' : 'None of these work? See all available times'}
+          </Button>
         </div>
         {picker}
       </>
