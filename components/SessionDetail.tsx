@@ -479,6 +479,31 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           </div>
         )}
 
+        {/* BUG-140: the mentor reported as the no-show had NO block at all here - only the reverse
+            case existed - so the email telling them to "open the session and let us know" led to a
+            page with nothing to do. They can't clear their own strike (that would defeat the point),
+            so the action is to put it in front of a human, with the booking already identified. */}
+        {d.status === 'no_show' && isMentor && d.no_show_by === 'mentor' && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
+            <p className="text-sm text-red-900">
+              You were reported as not attending this session. The attendee has been refunded as per our
+              refund policy, and a no-show strike has been recorded on your account.
+            </p>
+            <p className="text-sm text-red-900">
+              If you did attend, or something prevented you from joining, tell us and we&apos;ll review it.
+            </p>
+            <div>
+              <Link
+                href={`/contact?topic=${encodeURIComponent('Session issue or dispute')}&message=${encodeURIComponent(
+                  `I was reported as a no-show for booking #${String(d.id).split('-')[0]}, but this is not correct. What happened: `,
+                )}`}
+              >
+                <Button variant="outline">This isn&apos;t right, ask us to review it</Button>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Reschedule + cancel (active, not past). BUG-081: cancel used to be hidden here too
             whenever a proposal/request was already in flight, which meant a mentor lost their own
             cancel button the moment THEY sent a proposal. Only "start a new negotiation" (propose/

@@ -111,6 +111,7 @@ export const MARKETING = {
       'Profile Assessment / Country Fit Help',
       'Book or Plan a Mentor Session',
       'Join as a Mentor',            // BUG-067: where an existing customer account is sent
+      'Session issue or dispute',    // BUG-140: a mentor contesting a no-show lands here
       'Payments and Refunds',
       'Technical Support',
       'General Inquiry',

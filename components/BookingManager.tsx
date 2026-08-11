@@ -137,10 +137,19 @@ export function BookingManager({ role }: { role: Role }) {
     joinableUntilMs(b) > Date.now();
   const isCancelled = (b: ManagedBooking) => b.status === 'cancelled';
 
-  const pending = bookings.filter(isPendingPay);
-  const upcoming = bookings.filter(isUpcoming);
-  const cancelled = bookings.filter(isCancelled);
-  const past = bookings.filter((b) => !isPendingPay(b) && !isUpcoming(b) && !isCancelled(b));
+  // BUG-138: nothing was sorted, so the order was whatever the API happened to return. What you need
+  // next belongs at the top, so anything still ahead of you reads soonest-first; anything behind you
+  // reads most-recent-first, which is how you'd look back through it.
+  const startMs = (b: ManagedBooking) => (b.slot_time ? new Date(b.slot_time).getTime() : 0);
+  const soonestFirst = (a: ManagedBooking, b: ManagedBooking) => startMs(a) - startMs(b);
+  const latestFirst = (a: ManagedBooking, b: ManagedBooking) => startMs(b) - startMs(a);
+
+  const pending = bookings.filter(isPendingPay).sort(soonestFirst);
+  const upcoming = bookings.filter(isUpcoming).sort(soonestFirst);
+  const cancelled = bookings.filter(isCancelled).sort(latestFirst);
+  const past = bookings
+    .filter((b) => !isPendingPay(b) && !isUpcoming(b) && !isCancelled(b))
+    .sort(latestFirst);
 
   const renderCard = (b: ManagedBooking) => <BookingCard key={b.id} b={b} role={role} />;
 
