@@ -12,6 +12,7 @@ interface RoomInfo {
   reason?: 'early' | 'ended';
   domain?: string;
   room?: string;
+  jwt?: string | null;   // JaaS room token; absent on the demo server (BUG-120)
   party?: 'candidate' | 'mentor';
   display_name?: string;
   other_name?: string;
@@ -80,6 +81,8 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
       if (disposed) return;
       const api = new window.JitsiMeetExternalAPI(info.domain!, {
         roomName: info.room!,
+        // Only present once JaaS is configured; the demo server rejects a token outright.
+        ...(info.jwt ? { jwt: info.jwt } : {}),
         parentNode: containerRef.current,
         width: '100%',
         height: '100%',

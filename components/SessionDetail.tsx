@@ -106,6 +106,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 // ── Component ────────────────────────────────────────────────────────────────
 export function SessionDetail({ bookingId }: { bookingId: string }) {
+  const router = useRouter();   // BUG-121: no-show actions navigate, not just message
   const [d, setD] = useState<Detail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -436,11 +437,36 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         {d.status === 'no_show' && isCandidate && d.no_show_by === 'mentor' && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
             <p className="text-sm text-red-900">Your mentor didn&apos;t show up. How would you like to resolve it?</p>
+            {/* BUG-121: each button now DOES the thing it says instead of only sending a message.
+                Rebook opens the booking page it refers to; the refund request is submitted for review
+                rather than confirmed as paid, because a human decides it. */}
             <div className="flex flex-wrap gap-2">
-              <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_same' }, 'Done. Your session is reinstated with the same mentor, no penalty to you.')}>Rebook same mentor</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' }, 'Done. A credit has been issued as per our refund policy. Browse other mentors to rebook whenever you like.')}>Try a different mentor</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund' }, 'Refund requested. It will be processed to your original payment method as per our refund policy.')}>Request refund</Button>
+              <Button variant="primary" loading={busy}
+                onClick={async () => {
+                  await act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_same' });
+                  // Straight to this mentor's booking page: the credit is already on the booking, so
+                  // picking a new time is the only step left.
+                  if (d.mentor_slug) router.push(`/mentors/${d.mentor_slug}`);
+                }}>
+                Rebook same mentor
+              </Button>
+              <Button variant="outline" loading={busy}
+                onClick={async () => {
+                  await act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' });
+                  router.push('/mentors');
+                }}>
+                Try a different mentor
+              </Button>
+              <Button variant="outline" loading={busy}
+                onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund' },
+                  'Refund request submitted. The Immigroov team will review your case and contact you, usually within 5-7 business days.')}>
+                Request refund
+              </Button>
             </div>
+            <p className="text-xs text-red-900/70">
+              Booking a different mentor at another price? Email{' '}
+              <a href="mailto:support@immigroov.com" className="underline">support@immigroov.com</a> and we&apos;ll sort the difference.
+            </p>
           </div>
         )}
         {d.status === 'no_show' && isMentor && d.no_show_by === 'user' && (
