@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarCheck, Loader2, ChevronLeft, AlertTriangle, Clock } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
+import { hoursText } from '../lib/utils';
 import { Button } from './ui/Button';
 import {
   CalendarPanel, TZ, slotDateKey, formatSlotTime, formatDate, formatFullDateTime, shortTz,
@@ -26,6 +27,10 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [currentSlot, setCurrentSlot] = useState<string | null>(null);
   const [deadline, setDeadline] = useState<string | null>(null);
+  // BUG-119: this mentor's own configured notice window, from the same source (and the same
+  // deadline_state calculation) booking_detail() uses - never a hardcoded 24, so this page can't
+  // contradict the session detail page's own copy.
+  const [noticeHours, setNoticeHours] = useState(24);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -58,6 +63,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
         setCurrentSlot(data.current_slot ?? null);
         setDeadline(data.deadline_state ?? null);
         setOffer(data.offer ?? null);
+        if (data.cancel_notice_hours) setNoticeHours(data.cancel_notice_hours);
       } catch { setLoadError('Could not load times.'); }
       finally { setLoading(false); }
     })();
@@ -189,7 +195,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
           {error && <p className="text-sm text-red-600">{error}</p>}
           {!hasProposal && needsApproval ? (
             <>
-              <p className="text-sm text-amber-900">This session is now within 24 hours, so a reschedule needs your mentor’s approval.</p>
+              <p className="text-sm text-amber-900">This session is now within {hoursText(noticeHours)}, so a reschedule needs your mentor’s approval.</p>
               <Button onClick={sendRequest} loading={submitting} className="self-start">Send reschedule request</Button>
             </>
           ) : (
@@ -249,7 +255,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
             <span>
               {deadline === 'buffer'
                 ? "This session starts within 2 hours, so a reschedule needs the mentor's approval right away - they may not have time to respond."
-                : "This session is within 24 hours, so a reschedule needs your mentor's approval. Send a request and they'll propose new times (it auto-approves if they don't respond in time)."}
+                : `This session is within ${hoursText(noticeHours)}, so a reschedule needs your mentor's approval. Send a request and they'll propose new times (it auto-approves if they don't respond in time).`}
             </span>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
