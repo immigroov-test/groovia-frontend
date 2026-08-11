@@ -221,10 +221,21 @@ export default function ChatInterface({ authed }: Props) {
       window.localStorage.setItem(LS_KEYS.threadId, JSON.stringify(fresh));
       setThreadId(fresh);
     }
+    // A stored transcript with no message FROM THE PERSON is not a conversation - it is leftover
+    // landing choreography (Groovia's welcome, "sure, what would you like to know?", or the guest
+    // limit notice). Restoring it dropped those lines onto a fresh landing, which is how "that's your
+    // 2 free questions" ended up greeting someone who had not asked anything. Only a transcript they
+    // actually took part in is worth resuming; anything else starts clean.
     const storedMessages = loadFromStorage<ChatMessage[] | null>(LS_KEYS.messages, null);
-    if (storedMessages) setMessages(storedMessages);
+    const theySpoke = !!storedMessages?.some((m) => m.role === 'user');
+    if (theySpoke) {
+      setMessages(storedMessages!);
+    } else {
+      window.localStorage.removeItem(LS_KEYS.messages);
+    }
     setResumeUploaded(loadFromStorage<boolean>(LS_KEYS.resumeUploaded, false));
-    setIntentSelected(loadFromStorage<boolean>(LS_KEYS.intentSelected, false));
+    // Same reasoning: without a turn of theirs, the intent buttons belong back on screen.
+    setIntentSelected(theySpoke && loadFromStorage<boolean>(LS_KEYS.intentSelected, false));
     setHydrated(true);
   }, [authed]);
   /* eslint-enable react-hooks/set-state-in-effect */
