@@ -313,9 +313,16 @@ function CalendarPanel({
 interface Props {
   mentor: MentorInfo;
   mentorTimezone?: string;
+  /**
+   * The signed-in viewer IS this mentor (BUG-129). The page looks exactly as a customer sees it -
+   * that is the point, a mentor should be able to check their own listing - but paying is locked.
+   * Set ONLY from the server-side "is this my own profile" check, never guessed from an email, so a
+   * normal customer can never be locked out by accident. The backend refuses a self-booking too.
+   */
+  selfBooking?: boolean;
 }
 
-export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
+export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = false }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn]       = useState(false);
@@ -1395,11 +1402,21 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
               </p>
             </div>
 
+            {selfBooking && (
+              <div className="mx-5 mb-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
+                This is your own profile, so booking is locked. Everything above is exactly what a
+                mentee sees.
+              </div>
+            )}
+
             {/* Actions: confirm, or go back to change the slot */}
             <div className="p-5 border-t border-[--color-border] flex flex-col-reverse sm:flex-row gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowReview(false); setStep('datetime'); }}>Modify booking</Button>
-              <Button variant="accent" className="flex-1" loading={submitting || paying || checkingEmail} onClick={handleConfirm}>
-                {paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
+              <Button variant="accent" className="flex-1" loading={submitting || paying || checkingEmail}
+                disabled={selfBooking} onClick={handleConfirm}>
+                {selfBooking
+                  ? 'You cannot book yourself'
+                  : paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}
               </Button>
             </div>
           </div>
