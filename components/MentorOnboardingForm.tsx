@@ -132,9 +132,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     : suggestHeadline({
         domain: primaryDomain,
         domains: [primaryDomain, ...additionalDomains],
-        specializations: specializations,
+        specializations,
+        years: yearsProfExp,
+        countries: [country, ...servedCountries.map((c) => c.code)].filter(Boolean),
         category: categories[0],
-        country,
       });
 
   function onCountryChange(code: string) {

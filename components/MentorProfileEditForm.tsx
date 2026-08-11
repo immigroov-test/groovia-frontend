@@ -44,7 +44,8 @@ function isAutoHeadline(src: { headline?: string | null }): boolean {
   // "<role> mentor | Helping you ..." and, with specialisations, "<role> mentor | a, b | Helping you
   // ...". The role must resolve to real domain(s) (or our generic fallback), so a genuinely
   // hand-written headline that happens to contain "mentor |" is left alone.
-  const m = /^(.+?) mentor \| (?:.+ \| )?Helping you /.exec(stored);
+  // Shapes we produce: "<role> mentor[ · N yrs][ | specifics] | Helping you ..."
+  const m = /^(.+?) mentor(?: · \d+ yrs)? \| (?:.+ \| )?Helping you /.exec(stored);
   if (!m) return false;
   const role = m[1];
   if (role === 'Immigration & career') return true;
@@ -159,6 +160,10 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
     if (tz) setTimezone(tz);
   }
 
+  // BUG-065: mentees find a mentor by current country + these - matches the backend's
+  // _derive_expertise (routers/mentor.py), so this preview always agrees with what's saved.
+  const derivedExpertise = Array.from(new Set([country, ...servedCountries.map((c) => c.code)].filter(Boolean)));
+
   // BUG-130: the headline is re-derived from the PRIMARY domain (and category/country) whenever it is
   // still the auto-drafted one. It only stops following those fields once the mentor has actually
   // written their own - previously `headlineEdited` was true for every existing mentor, so changing
@@ -168,14 +173,12 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
     : suggestHeadline({
         domain: primaryDomain,
         domains: [primaryDomain, ...otherDomains],
-        specializations: specializations,
+        specializations,
+        years: yearsProfExp,
+        countries: derivedExpertise,
         category: categories[0],
-        country,
       });
 
-  // BUG-065: mentees find a mentor by current country + these - matches the backend's
-  // _derive_expertise (routers/mentor.py), so this preview always agrees with what's saved.
-  const derivedExpertise = Array.from(new Set([country, ...servedCountries.map((c) => c.code)].filter(Boolean)));
 
   function validate(): string | null {
     if (!displayName.trim()) return 'Full name is required.';
