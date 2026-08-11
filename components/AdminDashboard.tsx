@@ -1,5 +1,6 @@
 'use client';
 import { useState, type ReactNode } from 'react';
+import { ADMIN } from '../lib/content';
 import { Card, CardBody } from './ui/Card';
 import { AdminMentorList } from './AdminMentorList';
 import { AdminRevisionList, type AdminRevision } from './AdminRevisionList';
@@ -92,10 +93,10 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
                 { action: 'approve', label: t.approve, variant: 'accent', loadingKey: 'approve' },
               ]} />
             </Section>
-            <Section title="Profile updates" subtitle="Edits from approved mentors. Their live profile stays up until you approve the changes.">
+            <Section title="Profile updates" subtitle={ADMIN.sections.profileUpdates}>
               <AdminRevisionList initialRevisions={revisions} />
             </Section>
-            <Section title="Session types awaiting review" subtitle="New session types added by live mentors. They only appear to users once you approve them.">
+            <Section title="Session types awaiting review" subtitle={ADMIN.sections.sessionTypes}>
               <AdminPendingServices />
             </Section>
           </div>
@@ -135,31 +136,31 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         {tab === 'payouts' && <AdminPayouts />}
 
         {tab === 'referrals' && (
-          <Section title="Referrals" subtitle="Codes by affiliate (mentors + influencers), who used them, the discount, and the commission split. Approve or reject a referral commission here; the payout appears in the Payouts tab.">
+          <Section title="Referrals" subtitle={ADMIN.sections.referrals}>
             <AdminReferrals />
           </Section>
         )}
 
         {tab === 'reviews' && (
-          <Section title="Reviews" subtitle="Mentee ratings + written reviews. Hide anything abusive; hidden reviews drop out of the mentor's public rating.">
+          <Section title="Reviews" subtitle={ADMIN.sections.reviews}>
             <AdminReviews />
           </Section>
         )}
 
         {tab === 'activity' && (
-          <Section title="Activity" subtitle="A traceable, admin-only log of everything on the platform: bookings and status changes, payments, payouts, money-ledger movements, referral commissions, and pricing / commission changes. Filter by a booking id to follow one booking end to end.">
+          <Section title="Activity" subtitle={ADMIN.sections.activity}>
             <AdminActivity />
           </Section>
         )}
 
         {tab === 'ops' && (
-          <Section title="No-show strikes" subtitle="Mentors with accrued no-show strikes. Reset if a dispute is resolved in their favour.">
+          <Section title="No-show strikes" subtitle={ADMIN.sections.strikes}>
             <AdminOps />
           </Section>
         )}
 
         {tab === 'pricing' && (
-          <Section title="Pricing & commission" subtitle="Platform fee + tax are charged to the customer on top of the mentor's session price, by the customer's country (DEFAULT is the fallback). The general mentor commission is internal, taken out of the mentor's price; a per-mentor override or a referral code can lower it per booking.">
+          <Section title="Pricing & commission" subtitle={ADMIN.sections.pricing}>
             <AdminPricing />
           </Section>
         )}

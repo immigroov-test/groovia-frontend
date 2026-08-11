@@ -23,11 +23,39 @@ import { AiAvatar } from './AiAvatar';
 // survive "clear chat" - which wipes every LS_KEYS entry.
 const RL_KEY = 'groovia.rateLimitedUntil';
 
-// Guest free tier: a few short questions before Groovia asks them to sign in. The counter is a
-// standalone localStorage key (not in LS_KEYS) so "clear chat" never resets it.
+// Guest free tier: a few short questions before Groovia asks them to sign in. Its own localStorage
+// key (not in LS_KEYS) so "clear chat" doesn't hand out a fresh allowance; see readGuestQuestions
+// for the daily window.
 const GUEST_FREE_QUESTIONS = 2;
 const GUEST_WORD_LIMIT = 50;
 const GQ_KEY = 'groovia.guestQuestions';
+
+// The guest free-question allowance RESETS EACH DAY.
+//
+// It used to be a bare count that lived in the browser forever, so someone who tried two questions
+// once was told "that's your 2 free questions" on every visit after that - months later, and with no
+// way to clear it ("clear chat" deliberately skips this key). That reads as a bug to the person, who
+// remembers asking nothing today, and it turns a taster into a permanent lockout. A rolling daily
+// window keeps the limit meaningful without punishing a returning visitor. Old bare-number values are
+// read as "no date" and so start fresh.
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function readGuestQuestions(): number {
+  try {
+    const raw = localStorage.getItem(GQ_KEY);
+    if (!raw) return 0;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed === 'object' && parsed !== null && 'n' in parsed && 'd' in parsed) {
+      const { n, d } = parsed as { n: number; d: string };
+      return d === today() ? Number(n) || 0 : 0;
+    }
+    return 0;   // legacy bare count: no day attached, so treat it as spent long ago
+  } catch {
+    return 0;
+  }
+}
 
 interface Props {
   authed: boolean;
@@ -541,11 +569,11 @@ export default function ChatInterface({ authed }: Props) {
       return;
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setGuestQuestionsUsed(Number(localStorage.getItem(GQ_KEY)) || 0);
+    setGuestQuestionsUsed(readGuestQuestions());
   }, [authed]);
   function bumpGuestQuestions() {
-    const n = (Number(localStorage.getItem(GQ_KEY)) || 0) + 1;
-    localStorage.setItem(GQ_KEY, String(n));
+    const n = readGuestQuestions() + 1;
+    try { localStorage.setItem(GQ_KEY, JSON.stringify({ n, d: today() })); } catch { /* private mode */ }
     setGuestQuestionsUsed(n);
   }
 
@@ -783,7 +811,12 @@ export default function ChatInterface({ authed }: Props) {
         {/* The landing: one tight, choreographed column (headline -> boxes -> Chat with
             Groovia -> ticker -> arrows -> first message). Shown only before the chat begins;
             once a resume is attached the real conversation takes over below. */}
-        {!resumeUploaded && messages.length === 0 && (
+        {/* Stays mounted until the visitor actually SAYS something. Unmounting on `messages.length`
+            meant picking "Ask a question" wiped the intro instantly, because that appends Groovia's
+            own prompt as a message - so the brand intro, the three boxes and the ticker all vanished
+            before the person had typed a word, and the back-to-top arrow had nothing left to scroll
+            to. A reply from Groovia is not the conversation starting; their first message is. */}
+        {!resumeUploaded && !messages.some((m) => m.role === 'user') && (
           <LandingIntro
             hideGif={isMobile && scrolledOnce}
             showWelcome={welcomeRevealed}

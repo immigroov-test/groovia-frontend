@@ -11,6 +11,7 @@ import { MentorBankCard } from './MentorBankCard';
 import { MentorEarnings } from './MentorEarnings';
 import { MigrationWelcomeModal } from './MigrationWelcomeModal';
 import { PastSessions, type LegacySession } from './PastSessions';
+import { MENTOR_HUB } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
@@ -124,9 +125,9 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
             </div>
           )}
           {tab === 'referrals' && (
-            <UnderDevelopment title="Referrals" note="Refer new mentees and earn a commission on their first session. We're putting the finishing touches on this, so it'll be available soon." />
+            <UnderDevelopment title="Referrals" note={MENTOR_HUB.referralsSoon} />
           )}
-          {tab === 'webinars' && <UnderDevelopment title="Webinars" note="Host group sessions and webinars for multiple attendees." />}
+          {tab === 'webinars' && <UnderDevelopment title="Webinars" note={MENTOR_HUB.webinarsSoon} />}
         </div>
       </div>
     </div>
