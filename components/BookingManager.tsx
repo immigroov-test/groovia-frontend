@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, CreditCard, Loader2, Video } from 'lucide-react';
+import { ChevronRight, CreditCard, Loader2, Star, Video } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Badge } from './ui/Badge';
 import { cn } from '../lib/utils';
@@ -27,6 +27,9 @@ export interface ManagedBooking {
   payout_amount?: number | null;
   payout_currency?: string | null;
   payout_state?: string | null;
+  // BUG-139: whether the mentee has already left a review for this (completed) session. Lets the
+  // dashboard show "Leave a review" vs "Edit your review" without an extra per-row API call.
+  reviewed?: boolean | null;
 }
 
 // A session stays joinable until 30 min past its end (matches the backend join window), so an
@@ -177,11 +180,18 @@ function BookingCard({ b, role }: { b: ManagedBooking; role: Role }) {
   const mentorTz = mentorDisplayTz(b.mentor_tz ?? undefined, b.mentor_country ?? undefined) || b.mentor_tz || 'UTC';
   const showMentorTz = role === 'mentee' && !!b.slot_time && !!b.mentor_tz && tzOffset(mentorTz) !== tzOffset(TZ);
 
+  // BUG-139: a completed session the mentee hasn't reviewed yet gets a "Leave a review" nudge
+  // instead of the generic "View details" hint - same link (/session/[id]), where the rating +
+  // review form lives, just made visible from the list instead of only on the detail page.
+  const canReview = role === 'mentee' && b.status === 'completed' && !b.reviewed;
+
   const hint = pending
     ? { label: 'Complete payment', icon: CreditCard, cls: 'text-amber-700' }
     : active && future
       ? { label: 'View · Join', icon: Video, cls: 'text-brand-700' }
-      : { label: 'View details', icon: null, cls: 'text-muted' };
+      : canReview
+        ? { label: 'Leave a review', icon: Star, cls: 'text-amber-600' }
+        : { label: 'View details', icon: null, cls: 'text-muted' };
   const HintIcon = hint.icon;
 
   return (
