@@ -13,6 +13,8 @@ interface RoomInfo {
   domain?: string;
   room?: string;
   jwt?: string | null;   // JaaS room token; absent on the demo server (BUG-120)
+  embed?: boolean;       // false on the public server, where an embedded call is cut at 5 minutes
+  join_url?: string;     // the room opened directly, with no embed time cap
   party?: 'candidate' | 'mentor';
   display_name?: string;
   other_name?: string;
@@ -64,9 +66,13 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     return () => clearInterval(t);
   }, [state, checkRoom]);
 
-  // Embed Jitsi once the room is open.
+  // Embed Jitsi once the room is open - but ONLY where embedding is actually allowed to run full
+  // length. The public meet.jit.si server hangs up an EMBEDDED call after 5 minutes ("Embedding
+  // meet.jit.si is only meant for demo purposes"), which killed every 30-minute session mid-call
+  // (BUG-120). That cap does not apply to the same room opened directly, so without JaaS we hand the
+  // call over to a normal tab instead of embedding a call we know will drop.
   useEffect(() => {
-    if (state !== 'open' || !info?.room || !info.domain || !containerRef.current) return;
+    if (state !== 'open' || !info?.embed || !info?.room || !info.domain || !containerRef.current) return;
     let disposed = false;
     let onHide: (() => void) | null = null;
     (async () => {
@@ -111,7 +117,7 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     };
   }, [state, info, bookingId, router]);
 
-  if (state === 'open') {
+  if (state === 'open' && info?.embed) {
     // Fill the viewport below the fixed top nav.
     return <div ref={containerRef} className="fixed inset-x-0 bottom-0 top-16 bg-black" />;
   }
@@ -124,6 +130,27 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
       <div className="mt-6"><Link href="/account/sessions"><Button variant="outline">Back to my sessions</Button></Link></div>
     </div>
   );
+
+  // No embedding allowed (public server): launch the room in its own tab, which has no time cap.
+  if (state === 'open') {
+    const url = info?.join_url ?? '';
+    return (
+      <Shell icon={<Video className="h-7 w-7" />} title="Your video call is ready">
+        <p className="text-sm text-muted mt-2 leading-relaxed">
+          The call opens in a new tab. Keep this page open, and come back here afterwards.
+        </p>
+        <div className="mt-6">
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            onClick={() => { void fetch(`/api/booking/${bookingId}/attendance`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ event: 'joined' }),
+            }).catch(() => {}); }}>
+            <Button>Join the call</Button>
+          </a>
+        </div>
+      </Shell>
+    );
+  }
 
   if (state === 'loading') {
     return <Shell icon={<Loader2 className="h-7 w-7 animate-spin" />} title="Opening your video call…"><p className="text-sm text-muted mt-2">One moment.</p></Shell>;
