@@ -174,6 +174,9 @@ export default async function MentorProfilePage({
             professional_domains: mentor.professional_domains,
             specializations: mentor.specializations,
             expertise_country_codes: mentor.expertise_country_codes,
+            // BUG-134: this mentor's own cancel/reschedule notice window, shown to the customer
+            // before they pay instead of generic "cancel anytime" copy.
+            cancel_notice_hours: mentor.cancel_notice_hours ?? null,
           }}
         />
 

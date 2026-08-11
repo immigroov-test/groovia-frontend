@@ -1,16 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Loader2, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Plus, Trash2, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Toggle } from './ui/Toggle';
 import { Card, CardBody } from './ui/Card';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { TagInput } from './ui/TagInput';
+import { ExpandableRichText } from './ui/ExpandableRichText';
 import { SERVICE_CATEGORIES, SERVICE_DESCRIPTION_TEMPLATE } from '../lib/content';
 import { SERVICE_CATALOG, catalogByCategory, type CatalogService } from '../lib/serviceCatalog';
 import { proratePrice } from './ServiceListEditor';
-import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
+import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { cn } from '../lib/utils';
 
 interface Service {
@@ -25,6 +26,7 @@ interface Service {
   is_active: boolean;
   is_ppp: boolean;
   status?: string;   // 'pending' | 'approved' | 'rejected'
+  tags?: string[];
 }
 
 interface Question {
@@ -32,6 +34,19 @@ interface Question {
   question_text: string;
   is_required: boolean;
   question_type: string;
+}
+
+// A draft being reviewed before it's actually submitted - shared shape for both "tap a catalogue
+// tag" and "add your own session" (BUG-137). `code` distinguishes a catalogue-backed draft (its
+// title/description came from a template, still fully editable) from a custom one.
+interface Draft {
+  code: string | null;
+  title: string;
+  description: string;
+  category: string;
+  duration: number;
+  tags: string[];
+  free: boolean;
 }
 
 // A mentor offers at most one service per duration. These are the only lengths.
@@ -63,14 +78,22 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   const [services, setServices]     = useState<Service[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
-  const [customOpen, setCustomOpen] = useState(false);
-  const [busyTag, setBusyTag]       = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [questions, setQuestions]   = useState<Record<string, Question[]>>({});
 
-  const [form, setForm] = useState({ title: '', description: SERVICE_DESCRIPTION_TEMPLATE, type: 'video', duration: 30, category: '', tags: [] as string[] });
-  const [formError, setFormError]     = useState<string | null>(null);
-  const [submitting, setSubmitting]   = useState(false);
+  // BUG-137: tapping a catalogue tag (or "Add your own session") opens this editable draft
+  // instead of posting immediately - nothing is created, and the service does NOT enter the admin
+  // approval queue, until the mentor explicitly confirms it below.
+  const [draft, setDraft]           = useState<Draft | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // BUG-137: inline edit of an EXISTING service's text/details (title, description, category, tags).
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [editForm, setEditForm]     = useState<{ title: string; description: string; category: string; tags: string[] } | null>(null);
+  const [editError, setEditError]   = useState<string | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const [newQuestion, setNewQuestion] = useState<Record<string, { text: string; required: boolean }>>({});
 
   const hasRate = !!hourlyRate && hourlyRate > 0;
@@ -95,10 +118,15 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     if (!questions[id]) loadQuestions(id);
   }
 
-  const usedDurations = new Set(services.map((s) => s.duration));
+  // BUG-137: a REJECTED service is dead - it will never become bookable - so it must not go on
+  // permanently occupying its duration slot / title. Only active (pending or approved) services
+  // count against the one-per-duration limit and the "you already added this" catalogue filter;
+  // this is what was silently hiding "more services" once a rejection had happened.
+  const liveServices = services.filter(s => s.status !== 'rejected');
+  const usedDurations = new Set(liveServices.map((s) => s.duration));
   const availableDurations = DURATION_OPTIONS.filter((d) => !usedDurations.has(d));
-  const usedTitles = new Set(services.map((s) => s.title.trim().toLowerCase()));
-  const hasFree = services.some((s) => s.set_price === 0);
+  const usedTitles = new Set(liveServices.map((s) => s.title.trim().toLowerCase()));
+  const hasFree = liveServices.some((s) => s.set_price === 0);
 
   function derivedPrice(duration: number, free: boolean): number {
     return free || !hasRate ? 0 : proratePrice(hourlyRate, duration);
@@ -109,42 +137,44 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     return `${currency} ${proratePrice(hourlyRate, duration)}`;
   }
 
-  // Create a service (from a catalogue tag or the custom form). The picker stays open, so the mentor
-  // can keep adding; the new session drops into "Your sessions" below.
-  async function createService(p: { title: string; description: string; type?: string; duration: number; category: string | null; free: boolean; tags: string[] }) {
-    if (!p.free && !hasRate) { setError('Set your base rate on the Profile tab first, then add paid sessions.'); return; }
+  // ── Add flow: tap a tag or "Add your own" opens a draft; nothing is submitted until Confirm ──
+
+  function openDraftFromCatalog(cat: CatalogService) {
+    const duration = (availableDurations as readonly number[]).includes(cat.duration) ? cat.duration : (availableDurations[0] ?? cat.duration);
+    setDraftError(null);
+    setDraft({ code: cat.code, title: cat.title, description: cat.description, category: cat.category, duration, tags: [], free: !!cat.free });
+  }
+  function openCustomDraft() {
+    setDraftError(null);
+    setDraft({ code: null, title: '', description: SERVICE_DESCRIPTION_TEMPLATE, category: '', duration: availableDurations[0] ?? 30, tags: [], free: false });
+  }
+  function cancelDraft() { setDraft(null); setDraftError(null); }
+
+  // The actual submission - only reached after the mentor reviews the draft and confirms. This is
+  // the ONLY place a service is created; from here it goes into the normal pending/admin-review
+  // flow exactly as it always has (BUG-137 only moves WHEN this fires, not what happens after).
+  async function confirmDraft() {
+    if (!draft) return;
+    if (!draft.title.trim()) { setDraftError('Give the session a title.'); return; }
+    if (!draft.free && !hasRate) { setDraftError('Set your base rate on the Profile tab first, then add paid sessions.'); return; }
+    if (usedDurations.has(draft.duration)) { setDraftError('You already have a session of this length.'); return; }
+    setDraftError(null); setSubmitting(true);
     try {
       await apiFetch('/api/mentor/services', 'POST', {
-        title: p.title.trim(),
-        description: isRichTextEmpty(p.description) ? null : p.description,
-        type: p.type ?? 'video',
-        duration: p.duration,
-        category: p.category || null,
-        set_price: derivedPrice(p.duration, p.free),
+        title: draft.title.trim(),
+        description: isRichTextEmpty(draft.description) ? null : draft.description,
+        type: 'video',
+        duration: draft.duration,
+        category: draft.category || null,
+        set_price: derivedPrice(draft.duration, draft.free),
         is_active: true,
         is_ppp: false,
-        tags: p.tags,
+        tags: draft.tags,
       });
       await load();
-    } catch (e) { setError(e instanceof Error ? e.message : 'Could not add the session.'); }
-  }
-
-  async function addFromCatalog(cat: CatalogService) {
-    const duration = (availableDurations as readonly number[]).includes(cat.duration) ? cat.duration : availableDurations[0];
-    if (duration == null) { setError('You already have a session for every length (15/30/45/60 min).'); return; }
-    setBusyTag(cat.code);
-    await createService({ title: cat.title, description: cat.description, duration, category: cat.category, free: !!cat.free, tags: [] });
-    setBusyTag(null);
-  }
-
-  async function saveCustom() {
-    if (!form.title.trim()) { setFormError('Give the session a title.'); return; }
-    if (availableDurations.length === 0) { setFormError('You already have a session for every length.'); return; }
-    setFormError(null); setSubmitting(true);
-    await createService({ title: form.title, description: form.description, type: form.type, duration: form.duration, category: form.category || null, free: false, tags: form.tags });
-    setSubmitting(false);
-    setCustomOpen(false);
-    setForm({ title: '', description: SERVICE_DESCRIPTION_TEMPLATE, type: 'video', duration: availableDurations[1] ?? 30, category: '', tags: [] });
+      setDraft(null);
+    } catch (e) { setDraftError(e instanceof Error ? e.message : 'Could not add the session.'); }
+    finally { setSubmitting(false); }
   }
 
   async function toggleActive(id: string, current: boolean) {
@@ -158,8 +188,43 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     try {
       await apiFetch(`/api/mentor/services/${id}/delete`, 'POST');
       setServices(s => s.filter(svc => svc.id !== id));
+      if (editingId === id) { setEditingId(null); setEditForm(null); }
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not delete the session.'); }
   }
+
+  // ── Edit an EXISTING service's title/description/category/tags (BUG-137) ────────────────────
+
+  function startEdit(svc: Service) {
+    setExpandedId(svc.id);
+    setEditingId(svc.id);
+    setEditError(null);
+    setEditForm({
+      title: svc.title,
+      description: svc.description ?? '',
+      category: svc.category ?? '',
+      tags: svc.tags ?? [],
+    });
+  }
+  function cancelEdit() { setEditingId(null); setEditForm(null); setEditError(null); }
+  async function saveEdit(id: string) {
+    if (!editForm) return;
+    if (!editForm.title.trim()) { setEditError('Give the session a title.'); return; }
+    setEditError(null); setSavingEdit(true);
+    try {
+      await apiFetch(`/api/mentor/services/${id}/update`, 'POST', {
+        title: editForm.title.trim(),
+        description: isRichTextEmpty(editForm.description) ? null : editForm.description,
+        category: editForm.category || null,
+        tags: editForm.tags,
+      });
+      setServices(s => s.map(svc => svc.id === id
+        ? { ...svc, title: editForm.title.trim(), description: isRichTextEmpty(editForm.description) ? null : editForm.description, category: editForm.category || null, tags: editForm.tags }
+        : svc));
+      setEditingId(null); setEditForm(null);
+    } catch (e) { setEditError(e instanceof Error ? e.message : 'Could not save changes.'); }
+    finally { setSavingEdit(false); }
+  }
+
   async function addQuestion(serviceId: string) {
     const q = newQuestion[serviceId];
     if (!q?.text?.trim()) return;
@@ -191,18 +256,21 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     <div className="flex flex-col gap-6">
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {/* ── Add another session (picker) - ABOVE the list (BUG-070). Tapping a tag adds it and the
-             picker STAYS OPEN so you can keep adding (point 1). ───────────────────────────────── */}
+      {/* ── Add another session (picker) - ABOVE the list (BUG-070). Tapping a tag opens an
+             editable draft below (BUG-137) - nothing is created until it's confirmed. ─────────── */}
       <div className="flex flex-col gap-4">
         <div>
           <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">
             {services.length > 0 ? 'Add another session' : 'Add your sessions'}
           </h3>
-          <p className="text-xs text-muted mt-0.5">Tap one to add it. Prices come from your base rate, by length.</p>
+          <p className="text-xs text-muted mt-0.5">Tap one to review it before adding. Prices come from your base rate, by length.</p>
         </div>
 
         {!canAddMore ? (
-          <p className="text-xs text-muted">You have a session for every length (15, 30, 45, 60 min).</p>
+          <p className="text-xs text-muted">
+            You have a session for every length (15, 30, 45, 60 min). Delete one first, or a
+            rejected session no longer counts and frees up its length automatically.
+          </p>
         ) : (
           <div className="flex flex-col gap-4">
             {/* Free intro call - its own category, only one allowed (BUG-059). */}
@@ -213,9 +281,9 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {freeTags.map((cat) => (
-                    <button key={cat.code} type="button" disabled={!!busyTag} onClick={() => addFromCatalog(cat)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800 hover:border-emerald-400 hover:bg-emerald-100 disabled:opacity-50 transition-colors">
-                      {busyTag === cat.code ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} {cat.title}
+                    <button key={cat.code} type="button" onClick={() => openDraftFromCatalog(cat)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800 hover:border-emerald-400 hover:bg-emerald-100 transition-colors">
+                      <Plus className="h-3.5 w-3.5" /> {cat.title}
                     </button>
                   ))}
                 </div>
@@ -229,9 +297,9 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                   <p className="text-sm font-semibold text-foreground mb-2">{g.category}</p>
                   <div className="flex flex-wrap gap-2">
                     {tags.map((cat) => (
-                      <button key={cat.code} type="button" disabled={!!busyTag} onClick={() => addFromCatalog(cat)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 disabled:opacity-50 transition-colors">
-                        {busyTag === cat.code ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5 text-brand-600" />} {cat.title}
+                      <button key={cat.code} type="button" onClick={() => openDraftFromCatalog(cat)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                        <Plus className="h-3.5 w-3.5 text-brand-600" /> {cat.title}
                       </button>
                     ))}
                   </div>
@@ -240,7 +308,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
             })}
             <div>
               <p className="text-xs font-medium text-muted mb-1.5">Something else</p>
-              <button type="button" onClick={() => { setForm(f => ({ ...f, duration: availableDurations[0] ?? 30 })); setCustomOpen(true); }}
+              <button type="button" onClick={openCustomDraft}
                 className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
                 <Plus className="h-3.5 w-3.5" /> Add your own session
               </button>
@@ -248,28 +316,32 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
           </div>
         )}
 
-        {/* Custom-session form */}
-        {customOpen && (
+        {/* Draft review - BUG-137: whether it started from a catalogue tag or "add your own", the
+            mentor reviews/edits every field here and must press "Add session" to actually create
+            it (and only then does it enter the admin approval workflow). */}
+        {draft && (
           <Card>
             <CardBody className="pt-5 flex flex-col gap-4">
-              <h3 className="text-sm font-semibold text-foreground">Your own session</h3>
-              <Input label="Title *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Portfolio review" />
+              <h3 className="text-sm font-semibold text-foreground">
+                {draft.code ? 'Review before adding' : 'Your own session'}
+              </h3>
+              <Input label="Title *" value={draft.title} onChange={e => setDraft(d => d && ({ ...d, title: e.target.value }))} placeholder="e.g. Portfolio review" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-foreground">Duration *</label>
-                  <select value={String(form.duration)} onChange={e => setForm(f => ({ ...f, duration: parseInt(e.target.value) }))}
+                  <select value={String(draft.duration)} onChange={e => setDraft(d => d && ({ ...d, duration: parseInt(e.target.value) }))}
                     className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                    {availableDurations.map(d => <option key={d} value={d}>{d} minutes</option>)}
+                    {(usedDurations.has(draft.duration) ? [draft.duration, ...availableDurations] : availableDurations).map(d => <option key={d} value={d}>{d} minutes</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-foreground">Price</span>
-                  <span className="h-10 flex items-center text-sm text-muted">{priceText(form.duration, false)}</span>
+                  <span className="h-10 flex items-center text-sm text-muted">{priceText(draft.duration, draft.free)}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Category</label>
-                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                <select value={draft.category} onChange={e => setDraft(d => d && ({ ...d, category: e.target.value }))}
                   className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
                   <option value="">Select a category</option>
                   {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -277,17 +349,17 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Description</label>
-                <RichTextEditor value={form.description} onChange={(html) => setForm(f => ({ ...f, description: html }))} maxChars={1000}
+                <RichTextEditor value={draft.description} onChange={(html) => setDraft(d => d && ({ ...d, description: html }))} maxChars={1000}
                   placeholder="Describe what this session covers and who it's for." />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Tags <span className="text-muted font-normal">(keywords that help match you to mentees)</span></label>
-                <TagInput value={form.tags} onChange={(tags) => setForm(f => ({ ...f, tags }))} max={5} placeholder="e.g. CV review, Dutch market" />
+                <TagInput value={draft.tags} onChange={(tags) => setDraft(d => d && ({ ...d, tags }))} max={5} placeholder="e.g. CV review, Dutch market" />
               </div>
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
+              {draftError && <p className="text-sm text-red-600">{draftError}</p>}
               <div className="flex gap-2">
-                <Button variant="accent" onClick={saveCustom} loading={submitting}>Add session</Button>
-                <Button variant="outline" onClick={() => { setCustomOpen(false); setFormError(null); }}>Cancel</Button>
+                <Button variant="accent" onClick={confirmDraft} loading={submitting}>Add session</Button>
+                <Button variant="outline" onClick={cancelDraft}>Cancel</Button>
               </div>
             </CardBody>
           </Card>
@@ -316,15 +388,22 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                   </div>
                   <p className="text-xs text-muted">
                     {svc.duration}m · {svc.type === 'video' ? 'Video' : 'DM'} · {svc.set_price === 0 ? 'Free' : `${svc.set_currency} ${svc.set_price}`}
+                    {svc.category && <> · {svc.category}</>}
                   </p>
-                  {!isRichTextEmpty(svc.description) && (
-                    <p className="text-xs text-muted mt-1 line-clamp-2">{richTextToPlain(svc.description)}</p>
+                  {/* BUG-137: full rich text (same component the customer sees), not a truncated
+                      plain-text preview - a mentor must be able to read their own listing in full. */}
+                  {editingId !== svc.id && !isRichTextEmpty(svc.description) && (
+                    <ExpandableRichText html={svc.description ?? ''} />
                   )}
                 </div>
                 {/* A proper switch (point 2), same control as Smart pricing - big enough to see + tap. */}
                 <div className="flex items-center gap-2 shrink-0">
                   <Toggle checked={svc.is_active} onChange={() => toggleActive(svc.id, svc.is_active)}
                     aria-label={svc.is_active ? 'Deactivate session' : 'Activate session'} />
+                  <button onClick={() => startEdit(svc)} title="Edit session"
+                    className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-brand-700 hover:bg-brand-50 transition-colors">
+                    <Pencil className="h-4 w-4" />
+                  </button>
                   <button onClick={() => deleteService(svc.id)} title="Delete"
                     className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-red-600 hover:bg-red-50 transition-colors">
                     <Trash2 className="h-5 w-5" />
@@ -337,29 +416,69 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
               </div>
 
               {expandedId === svc.id && (
-                <div className="border-t border-[--color-border] bg-neutral-50/60 p-4 flex flex-col gap-3">
-                  <p className="text-xs font-medium text-muted uppercase tracking-wide">Intake questions</p>
-                  {(questions[svc.id] ?? []).map(q => (
-                    <div key={q.id} className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-foreground">{q.question_text}</p>
-                        <p className="text-xs text-muted">{q.is_required ? 'Required' : 'Optional'}</p>
+                <div className="border-t border-[--color-border] bg-neutral-50/60 p-4 flex flex-col gap-4">
+                  {editingId === svc.id && editForm ? (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-xs font-medium text-muted uppercase tracking-wide">Edit session</p>
+                      <Input label="Title *" value={editForm.title}
+                        onChange={e => setEditForm(f => f && ({ ...f, title: e.target.value }))} />
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-foreground">Category</label>
+                        <select value={editForm.category} onChange={e => setEditForm(f => f && ({ ...f, category: e.target.value }))}
+                          className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                          <option value="">Select a category</option>
+                          {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
                       </div>
-                      <button onClick={() => deleteQuestion(svc.id, q.id)} className="p-1 text-muted hover:text-red-600 transition-colors shrink-0">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-foreground">Description</label>
+                        <RichTextEditor value={editForm.description} onChange={(html) => setEditForm(f => f && ({ ...f, description: html }))} maxChars={1000}
+                          placeholder="Describe what this session covers and who it's for." />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-foreground">Tags</label>
+                        <TagInput value={editForm.tags} onChange={(tags) => setEditForm(f => f && ({ ...f, tags }))} max={5} placeholder="e.g. CV review, Dutch market" />
+                      </div>
+                      <p className="text-xs text-muted">
+                        Duration and price aren&apos;t editable here - delete and re-add the session to change its length.
+                      </p>
+                      {editError && <p className="text-xs text-red-600">{editError}</p>}
+                      <div className="flex gap-2">
+                        <Button variant="accent" size="sm" onClick={() => saveEdit(svc.id)} loading={savingEdit}>Save changes</Button>
+                        <Button variant="ghost" size="sm" onClick={cancelEdit}>Cancel</Button>
+                      </div>
                     </div>
-                  ))}
-                  <div className="flex gap-2 mt-1">
-                    <input type="text" placeholder="Add a question…" value={newQuestion[svc.id]?.text ?? ''}
-                      onChange={e => setNewQuestion(nq => ({ ...nq, [svc.id]: { ...nq[svc.id], text: e.target.value, required: nq[svc.id]?.required ?? false } }))}
-                      className="flex-1 h-8 px-3 text-xs rounded-lg border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
-                    <label className="flex items-center gap-1 text-xs text-muted cursor-pointer whitespace-nowrap">
-                      <input type="checkbox" checked={newQuestion[svc.id]?.required ?? false}
-                        onChange={e => setNewQuestion(nq => ({ ...nq, [svc.id]: { ...nq[svc.id], required: e.target.checked, text: nq[svc.id]?.text ?? '' } }))} />
-                      Required
-                    </label>
-                    <Button variant="outline" onClick={() => addQuestion(svc.id)} className="h-8 px-3 text-xs">Add</Button>
+                  ) : (
+                    <button type="button" onClick={() => startEdit(svc)}
+                      className="self-start text-xs font-medium text-brand-700 hover:text-brand-900 inline-flex items-center gap-1">
+                      <Pencil className="h-3 w-3" /> Edit this session
+                    </button>
+                  )}
+
+                  <div className="flex flex-col gap-3 border-t border-[--color-border] pt-4">
+                    <p className="text-xs font-medium text-muted uppercase tracking-wide">Intake questions</p>
+                    {(questions[svc.id] ?? []).map(q => (
+                      <div key={q.id} className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-foreground">{q.question_text}</p>
+                          <p className="text-xs text-muted">{q.is_required ? 'Required' : 'Optional'}</p>
+                        </div>
+                        <button onClick={() => deleteQuestion(svc.id, q.id)} className="p-1 text-muted hover:text-red-600 transition-colors shrink-0">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2 mt-1">
+                      <input type="text" placeholder="Add a question…" value={newQuestion[svc.id]?.text ?? ''}
+                        onChange={e => setNewQuestion(nq => ({ ...nq, [svc.id]: { ...nq[svc.id], text: e.target.value, required: nq[svc.id]?.required ?? false } }))}
+                        className="flex-1 h-8 px-3 text-xs rounded-lg border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+                      <label className="flex items-center gap-1 text-xs text-muted cursor-pointer whitespace-nowrap">
+                        <input type="checkbox" checked={newQuestion[svc.id]?.required ?? false}
+                          onChange={e => setNewQuestion(nq => ({ ...nq, [svc.id]: { ...nq[svc.id], required: e.target.checked, text: nq[svc.id]?.text ?? '' } }))} />
+                        Required
+                      </label>
+                      <Button variant="outline" onClick={() => addQuestion(svc.id)} className="h-8 px-3 text-xs">Add</Button>
+                    </div>
                   </div>
                 </div>
               )}

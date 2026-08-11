@@ -26,6 +26,10 @@ export interface Mentor {
   price_currency?: string | null;
   min_price_service_id?: string | null;   // cheapest paid service, priced via the checkout engine
   has_free_session?: boolean | null;   // mentor also offers a free (intro) session
+  // BUG-134: this mentor's own free cancel/reschedule notice window (hours before the session) -
+  // same field the backend actually enforces (cancel_booking / customer_reschedule SQL RPCs via
+  // booking_deadline_state). Null/legacy rows default to 24, matching the backend's own COALESCE.
+  cancel_notice_hours?: number | null;
 }
 
 export interface AvailabilitySlot {

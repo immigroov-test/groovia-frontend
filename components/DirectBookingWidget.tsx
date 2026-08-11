@@ -11,7 +11,8 @@ import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { PhoneInput } from './ui/PhoneInput';
 import { RichText } from './ui/RichText';
-import { isRichTextEmpty, richTextToPlain } from '../lib/sanitizeHtml';
+import { ExpandableRichText } from './ui/ExpandableRichText';
+import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
 import { detectCountry, pricingCountry } from '../lib/geo';
@@ -20,7 +21,7 @@ import { TimezoneSelect } from './TimezoneSelect';
 import { countryLabel } from '../lib/countries';
 import { languageLabel } from '../lib/languages';
 import { BookingAccountPrompt } from './BookingAccountPrompt';
-import { cn } from '../lib/utils';
+import { cn, hoursText } from '../lib/utils';
 
 const NOTES_MAX = 500;
 
@@ -101,6 +102,10 @@ interface MentorInfo {
   professional_domains?: string[];
   specializations?: string[];
   expertise_country_codes?: string[];
+  // BUG-134: this mentor's own free cancel/reschedule notice window (hours before the session) -
+  // the same field the backend enforces (cancel_booking / customer_reschedule via
+  // booking_deadline_state). Null/legacy mentors default to 24, matching the backend's COALESCE.
+  cancel_notice_hours?: number | null;
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmed';
@@ -213,41 +218,6 @@ function PriceLabel({
       )}
       <span>{formatPrice(price.discounted, price.currency)}</span>
     </span>
-  );
-}
-
-// Clamps a service description to 2 lines and offers "View more/less" only when it actually
-// overflows (BUG-135) - same measure-after-paint approach as the mentor bio clamp above, but
-// scoped per-card so each service card expands/collapses independently.
-function ServiceDescription({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const [overflows, setOverflows] = useState(false);
-  const ref = useRef<HTMLParagraphElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => setOverflows(el.scrollHeight - el.clientHeight > 2);
-    measure();
-    const raf = requestAnimationFrame(measure);
-    return () => cancelAnimationFrame(raf);
-  }, [text]);
-
-  return (
-    <div className="min-w-0">
-      <p ref={ref} className={cn('text-xs text-muted leading-relaxed whitespace-pre-line break-words', !expanded && 'line-clamp-2')}>
-        {text}
-      </p>
-      {overflows && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
-          className="mt-0.5 inline-flex items-center gap-0.5 text-xs font-medium text-brand-700 hover:text-brand-900 transition-colors"
-        >
-          {expanded ? <>View less <ChevronUp className="h-3 w-3" /></> : <>View more <ChevronDown className="h-3 w-3" /></>}
-        </button>
-      )}
-    </div>
   );
 }
 
@@ -457,6 +427,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
   const userTz = pickedTz ?? userDisplayTz(TZ, userCountry);
   const mentorTz = mentorDisplayTz(mentorTimezone, mentor.country);
   const showMentorTz = !!mentorTz && tzOffset(mentorTz) !== tzOffset(userTz);
+  // BUG-134: this mentor's own free cancel/reschedule notice window, shown to the customer before
+  // they pay instead of generic "cancel anytime" copy. Same default (24h) the backend falls back
+  // to for legacy mentors with no configured value (cancel_booking / customer_reschedule SQL).
+  const cancelNoticeText = hoursText(mentor.cancel_notice_hours ?? 24);
   // Where we think they are, when that disagrees with the zone in use: offered as one click rather
   // than silently overriding their clock (which would show times their own device contradicts).
   const geoTz = countryTimezone(userCountry);
@@ -1165,7 +1139,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                               : <MessageSquare className="h-4 w-4 text-brand-600 shrink-0" />}
                             <span className="text-sm font-semibold text-foreground">{svc.title}</span>
                           </div>
-                          {!isRichTextEmpty(svc.description) && <ServiceDescription text={richTextToPlain(svc.description)} />}
+                          {!isRichTextEmpty(svc.description) && <ExpandableRichText html={svc.description ?? ''} />}
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted">
                             <Clock className="h-3 w-3" />{svc.duration} min · {svc.type === 'video' ? 'Video call' : 'Direct message'}
                             {svc.category && <span>· {svc.category}</span>}
@@ -1340,7 +1314,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                       You&apos;ll be asked to log in or create a free account to complete your booking.
                     </p>
                   )}
-                  <p className="text-[11px] text-muted text-center">You can cancel anytime · confirmation emailed</p>
+                  {/* BUG-134: this mentor's own notice window, not a generic "cancel anytime" -
+                      matches what cancel_booking/customer_reschedule actually enforce. */}
+                  <p className="text-[11px] text-muted text-center">
+                    Free cancellation or reschedule up to {cancelNoticeText} before your session · confirmation emailed
+                  </p>
                 </div>
               )}
             </>
@@ -1410,6 +1388,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone }: Props) {
                 </div>
               )}
               {formError && <p className="text-sm text-red-600 mt-1">{formError}</p>}
+              {/* BUG-134: restate this mentor's actual notice window right before payment, not a
+                  generic promise - matches cancel_booking/customer_reschedule enforcement. */}
+              <p className="text-[11px] text-muted mt-1">
+                Free cancellation or reschedule up to {cancelNoticeText} before your session.
+              </p>
             </div>
 
             {/* Actions: confirm, or go back to change the slot */}
