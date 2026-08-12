@@ -40,6 +40,8 @@ interface Detail {
   deadline_state: 'free' | 'late' | 'buffer' | null;
   cancel_notice_hours?: number | null;   // this mentor's cancellation/reschedule notice (BUG-119)
   buffer_hours?: number | null;          // hard cut-off before the session
+  late_cancel_fee_pct?: number | null;   // kept if the mentor declines a late cancellation
+  mentor_penalty_pct?: number | null;    // payout penalty for a late mentor cancellation
   opens_at: string | null;
   closes_at: string | null;
   join_open: boolean;
@@ -576,10 +578,10 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         // notice window rather than a hardcoded 24 hours.
         const notice = isMentor
           ? (late
-              ? `Late cancellation (within ${window} of the session): the attendee is refunded as per our refund policy, and a 25% penalty applies to your payout.`
+              ? `Late cancellation (within ${window} of the session): the attendee is refunded as per our refund policy, and a ${d.mentor_penalty_pct ?? 25}% penalty applies to your payout.`
               : 'The attendee will be refunded as per our refund policy. No penalty applies to you.')
           : (late
-              ? `This is within ${window} of the session, so it needs your mentor's approval. If they decline, a 50% late-cancellation fee is kept and the remainder is refunded as per our refund policy.`
+              ? `This is within ${window} of the session, so it needs your mentor's approval. If they decline, a ${d.late_cancel_fee_pct ?? 50}% late-cancellation fee is kept and the remainder is refunded as per our refund policy.`
               : `You're cancelling more than ${window} ahead, so a refund will be issued as per our refund policy.`);
         const confirmLabel = isMentor ? 'Yes, cancel' : late ? 'Send request' : 'Cancel session';
         return (
