@@ -1,52 +1,33 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { RichText } from './RichText';
+import { richTextToPlain } from '../../lib/sanitizeHtml';
 import { cn } from '../../lib/utils';
 
-// Clamps a rich-text block to 2 lines and offers "View more/less" only when it actually overflows
-// (BUG-135). Renders the real rich text (same content shown in the RichTextEditor when adding/
-// editing) instead of a plain-text flattened preview, with the toggle on its own right-aligned row
-// so it reads as a distinct control rather than more description text. Shared by the customer
-// booking flow (DirectBookingWidget) and the mentor's own service list (ServicesManager, BUG-137)
-// so both show the identical full text - a mentor should never see a MORE truncated version of
-// their own listing than the customer does.
+// Roughly what fits in the 2-line clamp at this size. Past it, there is text the reader cannot see.
+const CLAMP_CHARS = 110;
+
+// Clamps a rich-text block to 2 lines and offers "View more/less" when there is more to read
+// (BUG-135 / BUG-137). Shared by the customer booking flow and the mentor's own service list, so a
+// mentor never sees a MORE truncated version of their own listing than the customer does.
+//
+// Whether to offer the toggle is decided from the CONTENT, not by measuring the rendered box. The
+// measured version was unreliable in exactly the place it mattered: RichText sanitises and injects
+// its HTML in its own effect, so the element is empty when a mount-time measure runs, and any
+// re-measure that lands while the card is collapsed, re-laid-out or off-screen can read zero
+// overflow and silently drop the button - leaving a clamped description with no way to open it,
+// which is precisely what the mentor saw. Text length is known before render and cannot race.
 export function ExpandableRichText({ html, textClassName }: { html: string; textClassName?: string }) {
   const [expanded, setExpanded] = useState(false);
-  const [overflows, setOverflows] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  // Read inside the measure callback instead of closing over `expanded` (the effect only depends
-  // on `html`, so a closure would keep the stale initial value forever).
-  const expandedRef = useRef(expanded);
-  useEffect(() => { expandedRef.current = expanded; }, [expanded]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      // Once expanded, the box is never clamped, so it never "overflows" - measuring then would
-      // wrongly flip this back to false and yank the toggle away with no way back to collapse it.
-      // Overflow is only a meaningful question while collapsed; the flag just needs to have been
-      // set true once, from that state.
-      if (expandedRef.current) return;
-      setOverflows(el.scrollHeight - el.clientHeight > 2);
-    };
-    measure();
-    const raf = requestAnimationFrame(measure);
-    // RichText sanitizes (DOMPurify) and injects its HTML in ITS OWN effect, asynchronously after
-    // this component mounts - a plain measure-on-mount can run before that content actually lands
-    // in the DOM and always see an empty box (no overflow). Re-measure whenever the content
-    // actually changes, whatever triggers it.
-    const observer = new MutationObserver(measure);
-    observer.observe(el, { childList: true, subtree: true, characterData: true });
-    return () => { cancelAnimationFrame(raf); observer.disconnect(); };
-  }, [html]);
+  const canExpand = richTextToPlain(html ?? '').trim().length > CLAMP_CHARS;
 
   return (
     <div className="min-w-0">
-      <RichText ref={ref} html={html}
-        className={cn('text-xs text-muted leading-relaxed [&_p]:my-0.5 [&_p:empty]:hidden', !expanded && 'line-clamp-2', textClassName)} />
-      {overflows && (
+      <RichText html={html}
+        className={cn('text-xs text-muted leading-relaxed [&_p]:my-0.5 [&_p:empty]:hidden',
+          !expanded && 'line-clamp-2', textClassName)} />
+      {canExpand && (
         <div className="flex justify-end">
           <button
             type="button"
