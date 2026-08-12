@@ -8,6 +8,7 @@ import { Card, CardBody } from './ui/Card';
 import { RichTextEditor } from './ui/RichTextEditor';
 import { TagInput } from './ui/TagInput';
 import { ExpandableRichText } from './ui/ExpandableRichText';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { SERVICE_CATEGORIES, SERVICE_DESCRIPTION_TEMPLATE } from '../lib/content';
 import { SERVICE_CATALOG, catalogByCategory, type CatalogService } from '../lib/serviceCatalog';
 import { proratePrice } from './ServiceListEditor';
@@ -90,6 +91,9 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
 
   // BUG-137: inline edit of an EXISTING service's text/details (title, description, category, tags).
   const [editingId, setEditingId]   = useState<string | null>(null);
+  // Deleting a session type is permanent and used to go through the browser's native confirm().
+  // Deactivating keeps it and just hides it, which is what most people actually want.
+  const [pendingDelete, setPendingDelete] = useState<Service | null>(null);
   const [editForm, setEditForm]     = useState<{ title: string; description: string; category: string; tags: string[] } | null>(null);
   const [editError, setEditError]   = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
@@ -184,7 +188,6 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not update the session.'); }
   }
   async function deleteService(id: string) {
-    if (!confirm('Delete this session? This cannot be undone.')) return;
     try {
       await apiFetch(`/api/mentor/services/${id}/delete`, 'POST');
       setServices(s => s.filter(svc => svc.id !== id));
@@ -253,6 +256,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   const canAddMore = availableDurations.length > 0;
 
   return (
+
     <div className="flex flex-col gap-6">
       {error && <p className="text-sm text-red-600">{error}</p>}
 
@@ -404,7 +408,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                     className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-brand-700 hover:bg-brand-50 transition-colors">
                     <Pencil className="h-4 w-4" />
                   </button>
-                  <button onClick={() => deleteService(svc.id)} title="Delete"
+                  <button onClick={() => setPendingDelete(svc)} title="Delete"
                     className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-red-600 hover:bg-red-50 transition-colors">
                     <Trash2 className="h-5 w-5" />
                   </button>
@@ -487,6 +491,25 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
         </div>
       )}
 
+      <ConfirmDialog
+        open={!!pendingDelete} onClose={() => setPendingDelete(null)}
+        title="Delete this session type?"
+        body={<>This removes <strong>{pendingDelete?.title}</strong> permanently. Existing bookings are
+          unaffected, but mentees can no longer book it. Deactivating hides it instead and keeps it for
+          later.</>}
+        confirmLabel="Yes, delete it"
+        alternateLabel="Deactivate instead"
+        onAlternate={async () => {
+          const svc = pendingDelete;
+          setPendingDelete(null);
+          if (svc?.is_active) await toggleActive(svc.id, svc.is_active);
+        }}
+        onConfirm={async () => {
+          const svc = pendingDelete;
+          setPendingDelete(null);
+          if (svc) await deleteService(svc.id);
+        }}
+      />
     </div>
   );
 }

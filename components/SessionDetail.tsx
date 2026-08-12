@@ -11,6 +11,7 @@ import { mentorDisplayTz, tzShort } from '../lib/timezone';
 import { hoursText } from '../lib/utils';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { ReviewForm } from './Reviews';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -117,6 +118,10 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const [slotTaken, setSlotTaken] = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');   // BUG-123: mandatory before cancelling
+  // Every irreversible action confirms first, and offers the better alternative rather than a bare
+  // "Cancel": refunding forfeits a rebook, reporting a no-show puts a strike on someone, closing a
+  // disputed session ends it. One piece of state drives them all.
+  const [confirming, setConfirming] = useState<null | 'refund' | 'different' | 'noshow' | 'close' | 'decline'>(null);
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
 
@@ -452,16 +457,10 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
                 }}>
                 Rebook same mentor
               </Button>
-              <Button variant="outline" loading={busy}
-                onClick={async () => {
-                  await act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' });
-                  router.push('/mentors');
-                }}>
+              <Button variant="outline" loading={busy} onClick={() => setConfirming('different')}>
                 Try a different mentor
               </Button>
-              <Button variant="outline" loading={busy}
-                onClick={() => act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund' },
-                  'Refund request submitted. The Immigroov team will review your case and contact you, usually within 5-7 business days.')}>
+              <Button variant="outline" loading={busy} onClick={() => setConfirming('refund')}>
                 Request refund
               </Button>
             </div>
@@ -476,7 +475,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
             <p className="text-sm text-red-900">The attendee was marked as a no-show.</p>
             <div className="flex flex-wrap gap-2">
               <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'accept_rebook' }, 'Rebook offered. The session is reinstated for the attendee.')}>Offer a rebook</Button>
-              <Button variant="outline" loading={busy} onClick={() => act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'reject' }, 'Session closed. It is marked complete and your payout stands.')}>Close session</Button>
+              <Button variant="outline" loading={busy} onClick={() => setConfirming('close')}>Close session</Button>
             </div>
           </div>
         )}
@@ -542,8 +541,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
               )
             )}
             {d.can_report_no_show && (
-              <Button variant="outline" loading={busy}
-                onClick={() => act('/api/booking/no-show/flag', { booking_id: d.id, no_show_party: isCandidate ? 'mentor' : 'user' }, 'No-show reported. We have emailed a confirmation to both of you. Choose how to resolve it below.')}>
+              <Button variant="outline" loading={busy} onClick={() => setConfirming('noshow')}>
                 Report a no-show
               </Button>
             )}
@@ -559,14 +557,90 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
 
         {/* Report no-show even when reschedule/cancel are hidden (past start) */}
         {(isCandidate || isMentor) && d.paid && d.can_report_no_show && d.is_past && (
-          <Button variant="outline" loading={busy}
-            onClick={() => act('/api/booking/no-show/flag', { booking_id: d.id, no_show_party: isCandidate ? 'mentor' : 'user' })}>
+          <Button variant="outline" loading={busy} onClick={() => setConfirming('noshow')}>
             Report a no-show
           </Button>
         )}
       </div>
 
       </div>{/* end card */}
+
+      {/* Each of these is irreversible, so each confirms - and the second button is the better path
+          they may not have considered, not a dead "Cancel". */}
+      <ConfirmDialog
+        open={confirming === 'refund'} busy={busy} onClose={() => setConfirming(null)}
+        title="Request a refund?"
+        body={<>Your refund request goes to the Immigroov team for review, and they&apos;ll come back to
+          you within 5-7 business days. Rebooking with this mentor is usually faster.</>}
+        confirmLabel="Yes, request a refund"
+        alternateLabel="Rebook with this mentor instead"
+        onAlternate={async () => {
+          setConfirming(null);
+          await act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_same' });
+          if (d.mentor_slug) router.push(`/mentors/${d.mentor_slug}`);
+        }}
+        reason={{ label: 'Why are you asking for a refund?', required: true,
+                  placeholder: 'Tell us what happened so we can review it quickly.',
+                  hint: 'Shared with the Immigroov team reviewing your request.' }}
+        onConfirm={async (reason) => {
+          setConfirming(null);
+          await act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'refund', reason },
+            'Refund request submitted. The Immigroov team will review your case and contact you, usually within 5-7 business days.');
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirming === 'different'} busy={busy} onClose={() => setConfirming(null)}
+        title="Try a different mentor?"
+        body={<>This closes the booking with this mentor and credits you. If the new mentor charges a
+          different rate, email support@immigroov.com and we&apos;ll sort the difference.</>}
+        confirmLabel="Yes, browse other mentors"
+        alternateLabel="Keep this booking"
+        onConfirm={async () => {
+          setConfirming(null);
+          await act('/api/booking/no-show/resolve-mentor', { booking_id: d.id, choice: 'rebook_different' });
+          router.push('/mentors');
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirming === 'noshow'} busy={busy} onClose={() => setConfirming(null)}
+        title="Report a no-show?"
+        body={isCandidate
+          ? <>This records that your mentor didn&apos;t attend. It counts as a strike against them, so
+              only report it if they genuinely didn&apos;t join.</>
+          : <>This records that the attendee didn&apos;t join. If you&apos;d rather give them another
+              chance, offer a reschedule instead.</>}
+        confirmLabel="Yes, report a no-show"
+        alternateLabel={d.can_reschedule ? 'Reschedule instead' : 'Not now'}
+        onAlternate={d.can_reschedule && isCandidate
+          ? () => { setConfirming(null); router.push(`/session/${d.id}/reschedule`); }
+          : undefined}
+        onConfirm={async () => {
+          setConfirming(null);
+          await act('/api/booking/no-show/flag', { booking_id: d.id, no_show_party: isCandidate ? 'mentor' : 'user' },
+            'No-show reported. We have emailed a confirmation to both of you. Choose how to resolve it below.');
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirming === 'close'} busy={busy} onClose={() => setConfirming(null)}
+        title="Close this session?"
+        body={<>The session is marked complete and your payout stands. The attendee will not get
+          another chance to rebook this one.</>}
+        confirmLabel="Yes, close it"
+        alternateLabel="Offer a rebook instead"
+        onAlternate={async () => {
+          setConfirming(null);
+          await act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'accept_rebook' },
+            'Rebook offered. The session is reinstated for the attendee.');
+        }}
+        onConfirm={async () => {
+          setConfirming(null);
+          await act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'reject' },
+            'Session closed. It is marked complete and your payout stands.');
+        }}
+      />
 
       {/* Cancel confirmation with the refund notice (never a silent one-click cancel) */}
       {showCancelConfirm && (() => {
