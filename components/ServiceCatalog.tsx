@@ -43,6 +43,14 @@ export function ServiceCatalog({
   value: DraftService[]; onChange: (s: DraftService[]) => void; hourlyRate?: number; currency?: string; categories?: string[];
 }) {
   const byCode = new Map(value.map((v) => [v.code ?? '', v]));
+  // A mentor offers at most one service per duration - the same rule ServicesManager.tsx enforces on
+  // the ongoing dashboard. The BUG-043 tag redesign dropped this (the older ServiceListEditor it
+  // replaced had it), so a new mentor tapping several catalogue tags at signup - most of which default
+  // to 30 or 45 min - could silently fill all 4 duration slots before ever reaching their dashboard,
+  // where "Add a session" then disappears entirely with no explanation.
+  const usedDurations = new Set(value.map((v) => v.duration));
+  const availableDurations = DURATIONS.filter((d) => !usedDurations.has(d));
+  const canAddMore = availableDurations.length > 0;
   // Only one service is expanded at a time; the rest collapse to a compact card (name + toggle +
   // delete). Adding a new one expands it and collapses the others.
   const [expandedCode, setExpandedCode] = useState<string | null>(null);
@@ -61,19 +69,24 @@ export function ServiceCatalog({
   // Tap a catalogue tag -> add it as an active block, prefilled from the template, and expand it
   // (collapsing whatever was open).
   function addCatalog(cat: CatalogService) {
-    if (byCode.has(cat.code)) return;
+    if (byCode.has(cat.code) || !canAddMore) return;
+    // If the template's default length is already taken, fall back to the next open one - same
+    // remap ServicesManager.tsx does when a catalogue tag collides with an existing duration.
+    const duration = (availableDurations as readonly number[]).includes(cat.duration) ? cat.duration : availableDurations[0];
     onChange([...value, {
-      code: cat.code, title: cat.title, duration: cat.duration, active: true,
-      price: cat.free ? 0 : proratePrice(hourlyRate, cat.duration),
+      code: cat.code, title: cat.title, duration, active: true,
+      price: cat.free ? 0 : proratePrice(hourlyRate, duration),
       description: cat.description, category: cat.category, tags: [], free: !!cat.free,
     }]);
     setExpandedCode(cat.code);
   }
   function addCustom() {
+    if (!canAddMore) return;
     const code = `custom-${crypto.randomUUID()}`;
+    const duration = availableDurations[0] ?? 30;
     onChange([...value, {
-      code, title: '', duration: 30, active: true,
-      price: proratePrice(hourlyRate, 30), description: '', category: 'General Guidance', tags: [], free: false,
+      code, title: '', duration, active: true,
+      price: proratePrice(hourlyRate, duration), description: '', category: 'General Guidance', tags: [], free: false,
     }]);
     setExpandedCode(code);
   }
@@ -127,7 +140,10 @@ export function ServiceCatalog({
                 <select value={String(s.duration)}
                   onChange={(e) => { const d = parseInt(e.target.value); patch(s.code!, { duration: d, price: s.free ? 0 : proratePrice(hourlyRate, d) }); }}
                   className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                  {DURATIONS.map((d) => <option key={d} value={d}>{d} minutes</option>)}
+                  {/* Only lengths not already used by another session, plus this session's own current
+                      one - otherwise switching a service's length here could collide with another. */}
+                  {[...new Set([s.duration, ...availableDurations])].sort((a, b) => a - b)
+                    .map((d) => <option key={d} value={d}>{d} minutes</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -154,6 +170,12 @@ export function ServiceCatalog({
         <h3 className="text-xs font-semibold text-muted uppercase tracking-wide mb-1">
           {value.length > 0 ? 'Add another session' : 'Choose the sessions you offer'}
         </h3>
+        {!canAddMore ? (
+          <p className="text-xs text-muted">
+            You have a session for every length (15, 30, 45, 60 min). Remove one first to add a
+            different one.
+          </p>
+        ) : (
         <div className="flex flex-col gap-4">
           {/* The single free session (Introductory call) is offered as its own category; it is the
               only free service a mentor can add (BUG-059). */}
@@ -201,6 +223,7 @@ export function ServiceCatalog({
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* Selected services -> editable blocks, listed BELOW the picker (BUG-070) */}
