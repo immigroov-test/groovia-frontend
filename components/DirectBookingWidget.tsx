@@ -387,6 +387,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
   const [name, setName]             = useState('');
   const [email, setEmail]           = useState('');
   const [phone, setPhone]           = useState('');
+  // BUG-142: the CUSTOMER terms have to be accepted before paying - actively ticked, never
+  // pre-ticked, so it is a real decision and we can say the customer agreed to them.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [notes, setNotes]           = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError]   = useState<string | null>(null);
@@ -1402,6 +1405,19 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
               </p>
             </div>
 
+            <label className="mx-5 mb-3 flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded accent-brand-700" />
+              <span className="text-xs text-muted leading-relaxed">
+                I agree to Immigroov&apos;s{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer"
+                  className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                  Terms for customers
+                </a>{' '}
+                and this mentor&apos;s cancellation and rescheduling policy shown above.
+              </span>
+            </label>
+
             {selfBooking && (
               <div className="mx-5 mb-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
                 This is your own profile, so booking is locked. Everything above is exactly what a
@@ -1413,7 +1429,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
             <div className="p-5 border-t border-[--color-border] flex flex-col-reverse sm:flex-row gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowReview(false); setStep('datetime'); }}>Modify booking</Button>
               <Button variant="accent" className="flex-1" loading={submitting || paying || checkingEmail}
-                disabled={selfBooking} onClick={handleConfirm}>
+                disabled={selfBooking || !acceptedTerms} onClick={handleConfirm}>
                 {selfBooking
                   ? 'You cannot book yourself'
                   : paymentsEnabled && selectedService.set_price > 0 ? 'Pay & confirm' : 'Confirm booking'}

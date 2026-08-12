@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Lato, Roboto_Serif, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { SITE_URL } from '../lib/site';
+import { SITE_URL, IS_PUBLIC_SITE, GOOGLE_SITE_VERIFICATION } from '../lib/site';
 
 // Odyssey-style pairing: serif headings (Roboto Serif) + clean sans body (Lato).
 const lato = Lato({ variable: '--font-lato', subsets: ['latin'], weight: ['300', '400', '700'] });
@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   // title.template here: every existing page already appends its own "- Immigroov" suffix by hand
   // (see e.g. app/(shell)/mentors/page.tsx), and a template would double that up on all of them.
   metadataBase: new URL(SITE_URL),
+  // BUG-144: state indexing explicitly rather than leaving it to a crawler's default, and keep
+  // non-production deployments out of the index entirely.
+  robots: IS_PUBLIC_SITE
+    ? { index: true, follow: true }
+    : { index: false, follow: false, nocache: true },
+  ...(GOOGLE_SITE_VERIFICATION ? { verification: { google: GOOGLE_SITE_VERIFICATION } } : {}),
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
   icons: { icon: '/favicon.ico' },

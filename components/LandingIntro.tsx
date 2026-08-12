@@ -30,7 +30,10 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
   const b = UI_CONTENT.brandIntro;
   const hero = UI_CONTENT.hero;
 
-  // step: 1 headline, 2 box0, 3 box1, 4 box2, 5 "Chat with Groovia?" + ticker.
+  // step: 1 headline, 2 everything else (the three boxes AND "Chat with Groovia?" together).
+  // BUG-141: this used to be five steps spread over ~10s - headline, then each box one at a time,
+  // then the Groovia block - so the page was still assembling itself long after someone was ready to
+  // act. The staged reveal only needs to separate the brand line from the offer.
   const [step, setStep] = useState(0);
   const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
   const grooviaRef = useRef<HTMLDivElement>(null);
@@ -39,15 +42,10 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
   useEffect(() => {
     // Wait out the one-time logo splash on a first visit.
     const splashPending = !window.localStorage.getItem('groovia.introSeen');
-    const base = splashPending ? 2300 : 300;
-    // Slower, readable pacing: each box holds ~1.6s so it can actually be read (esp. on mobile),
-    // and box 1 waits for the headline to finish typing first.
+    const base = splashPending ? 1500 : 200;
     const timers = [
       window.setTimeout(() => setStep(1), base),          // headline + globe
-      window.setTimeout(() => setStep(2), base + 3200),   // box 1 (after headline types)
-      window.setTimeout(() => setStep(3), base + 4800),   // box 2
-      window.setTimeout(() => setStep(4), base + 6400),   // box 3
-      window.setTimeout(() => setStep(5), base + 8200),   // Try Groovia? + ticker
+      window.setTimeout(() => setStep(2), base + 1500),   // boxes + "Chat with Groovia?" together
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -56,8 +54,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
   // and stopping right at it. scrollIntoView is a no-op when it already fits.
   const follow = (el: HTMLElement | null) => el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   useEffect(() => {
-    if (step >= 2 && step <= 4) follow(boxRefs.current[step - 2]);
-    if (step === 5) follow(grooviaRef.current);
+    if (step === 2) follow(grooviaRef.current);
   }, [step]);
   useEffect(() => {
     if (!showWelcome) return;
@@ -68,7 +65,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
   const rise = (on: boolean, delay = 0) => ({
     initial: { opacity: 0, y: 22 },
     animate: on ? { opacity: 1, y: 0 } : { opacity: 0, y: 22 },
-    transition: { duration: 0.7, delay, ease: EASE },
+    transition: { duration: 0.5, delay, ease: EASE },
   });
 
   return (
@@ -85,7 +82,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
         {b.cards.map((text, i) => {
           const Icon = CARD_ICONS[i % CARD_ICONS.length];
           return (
-            <motion.div key={text} ref={(el) => { boxRefs.current[i] = el; }} {...rise(step >= 2 + i)}>
+            <motion.div key={text} ref={(el) => { boxRefs.current[i] = el; }} {...rise(step >= 2)}>
               <div className="group h-full rounded-2xl p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
                 <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-4 sm:py-5 flex flex-row sm:flex-col items-center text-left sm:text-center gap-3 sm:gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">
                   <span className="h-9 w-9 shrink-0 rounded-lg bg-gradient-to-br from-brand-700 to-accent-500 text-white flex items-center justify-center shadow-[0_4px_14px_-4px_rgba(245,158,11,0.5)]">
@@ -101,17 +98,17 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
 
       {/* Step 5: "Try Groovia?" - a clean black (odyssey) pill with the shine sweep, that
           reveals the first message. */}
-      <motion.div ref={grooviaRef} {...rise(step >= 5)} className="mt-10 w-full flex flex-col items-center">
+      <motion.div ref={grooviaRef} {...rise(step >= 2)} className="mt-10 w-full flex flex-col items-center">
         <button
           type="button"
           onClick={onReveal}
           aria-label="Reveal the first message"
           className="btn-shine rounded-full bg-black hover:bg-neutral-800 px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-bold text-white shadow-lg cursor-pointer active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
-          <TypeText text={hero.title} active={step >= 5} speed={60} />
+          <TypeText text={hero.title} active={step >= 2} speed={60} />
         </button>
         <div className="mt-4 w-full">
-          <CyclingText lines={hero.features} active={step >= 5} className="h-8 sm:h-9" />
+          <CyclingText lines={hero.features} active={step >= 2} className="h-8 sm:h-9" />
         </div>
       </motion.div>
 
