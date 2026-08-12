@@ -88,6 +88,10 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   const [draft, setDraft]           = useState<Draft | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // A second, explicit "yes, add it" step after "Add session" - reviewing the draft isn't itself a
+  // commitment (a mentor can edit fields and change their mind mid-review), so the actual submit gets
+  // its own confirmation instead of firing the moment the button is clicked.
+  const [confirmingAdd, setConfirmingAdd] = useState(false);
 
   // BUG-137: inline edit of an EXISTING service's text/details (title, description, category, tags).
   const [editingId, setEditingId]   = useState<string | null>(null);
@@ -152,17 +156,26 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     setDraftError(null);
     setDraft({ code: null, title: '', description: SERVICE_DESCRIPTION_TEMPLATE, category: '', duration: availableDurations[0] ?? 30, tags: [], free: false });
   }
-  function cancelDraft() { setDraft(null); setDraftError(null); }
+  function cancelDraft() { setDraft(null); setDraftError(null); setConfirmingAdd(false); }
 
-  // The actual submission - only reached after the mentor reviews the draft and confirms. This is
-  // the ONLY place a service is created; from here it goes into the normal pending/admin-review
-  // flow exactly as it always has (BUG-137 only moves WHEN this fires, not what happens after).
-  async function confirmDraft() {
+  // "Add session" validates the draft and, if it's good, opens the "add this service?" step below -
+  // it does NOT submit by itself. Reviewing/editing a draft isn't a commitment; the mentor can still
+  // back out here without anything being created.
+  function requestConfirmAdd() {
     if (!draft) return;
     if (!draft.title.trim()) { setDraftError('Give the session a title.'); return; }
     if (!draft.free && !hasRate) { setDraftError('Set your base rate on the Profile tab first, then add paid sessions.'); return; }
     if (usedDurations.has(draft.duration)) { setDraftError('You already have a session of this length.'); return; }
-    setDraftError(null); setSubmitting(true);
+    setDraftError(null);
+    setConfirmingAdd(true);
+  }
+
+  // The actual submission - only reached after the mentor reviews the draft AND explicitly confirms
+  // "yes, add it" below. This is the ONLY place a service is created; from here it goes into the
+  // normal pending/admin-review flow exactly as it always has.
+  async function confirmDraft() {
+    if (!draft) return;
+    setSubmitting(true);
     try {
       await apiFetch('/api/mentor/services', 'POST', {
         title: draft.title.trim(),
@@ -177,7 +190,11 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
       });
       await load();
       setDraft(null);
-    } catch (e) { setDraftError(e instanceof Error ? e.message : 'Could not add the session.'); }
+      setConfirmingAdd(false);
+    } catch (e) {
+      setConfirmingAdd(false);
+      setDraftError(e instanceof Error ? e.message : 'Could not add the session.');
+    }
     finally { setSubmitting(false); }
   }
 
@@ -362,9 +379,25 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
               </div>
               {draftError && <p className="text-sm text-red-600">{draftError}</p>}
               <div className="flex gap-2">
-                <Button variant="accent" onClick={confirmDraft} loading={submitting}>Add session</Button>
+                <Button variant="accent" onClick={requestConfirmAdd} loading={submitting}>Add session</Button>
                 <Button variant="outline" onClick={cancelDraft}>Cancel</Button>
               </div>
+
+              {/* Explicit "yes, add it" step (point 2): the draft above is still just a review - this
+                  is the actual commit, so it gets its own plain-language confirmation instead of firing
+                  the moment "Add session" is clicked. */}
+              {confirmingAdd && (
+                <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4 flex flex-col gap-3">
+                  <p className="text-sm text-foreground">
+                    Add <strong>{draft.title.trim()}</strong> ({draft.duration} min · {priceText(draft.duration, draft.free)})?
+                    It will be submitted for admin approval before it&apos;s bookable.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="accent" size="sm" onClick={confirmDraft} loading={submitting}>Yes, add it</Button>
+                    <Button variant="outline" size="sm" onClick={() => setConfirmingAdd(false)} disabled={submitting}>Cancel</Button>
+                  </div>
+                </div>
+              )}
             </CardBody>
           </Card>
         )}
