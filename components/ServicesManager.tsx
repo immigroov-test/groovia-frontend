@@ -24,6 +24,8 @@ interface Service {
   category: string | null;
   set_price: number;
   set_currency: string;
+  /** What the mentor's additional-currency rates come to for this length, written by the backend. */
+  currency_prices?: { currency: string; base_price: number }[] | null;
   is_active: boolean;
   is_ppp: boolean;
   status?: string;   // 'pending' | 'approved' | 'rejected'
@@ -440,6 +442,17 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                   </div>
                   <p className="text-xs text-muted">
                     {svc.duration}m · {svc.type === 'video' ? 'Video' : 'DM'} · {svc.set_price === 0 ? 'Free' : `${svc.set_currency} ${svc.set_price}`}
+                    {svc.set_price > 0 && (
+                      <>
+                        <span className="text-muted"> (shown to customers worldwide)</span>
+                        {(svc.currency_prices ?? []).filter(cp => cp.base_price > 0).map(cp => (
+                          <span key={cp.currency} className="block">
+                            {cp.currency} {cp.base_price}
+                            <span className="text-muted"> (shown to customers paying in {cp.currency})</span>
+                          </span>
+                        ))}
+                      </>
+                    )}
                     {svc.category && <> · {svc.category}</>}
                   </p>
                   {/* BUG-137: full rich text (same component the customer sees), not a truncated
