@@ -11,6 +11,7 @@ import { type CurrencyRate } from '../lib/pricing';
 // are gone. Calls onSaved(true) once a valid rate is stored so the parent can unlock "Finish setup".
 export function MentorRateEditor({
   initialCurrency = 'INR', initialRate = '', initialRates = [], initialSmartPricing = true, onSaved,
+  autosaveInitial = false,
 }: {
   initialCurrency?: string;
   initialRate?: string;
@@ -18,6 +19,10 @@ export function MentorRateEditor({
   initialSmartPricing?: boolean;
   /** Reports the stored rate, not just that one exists, so a parent can price things with it. */
   onSaved?: (saved: boolean, rate?: number, currency?: string) => void;
+  /** Persist the prefilled rate on mount instead of waiting for an edit. Used for migrated mentors,
+   *  whose starting rate is derived from their imported sessions: if they never touch the field, the
+   *  number they were shown was never actually stored and their sessions stay unpriced. */
+  autosaveInitial?: boolean;
 }) {
   const [currency, setCurrency] = useState(initialCurrency);
   const [baseRate, setBaseRate] = useState(initialRate);
@@ -38,10 +43,15 @@ export function MentorRateEditor({
   useEffect(() => {
     if (firstRun.current) {
       firstRun.current = false;
-      lastRateSig.current = rateSig();
       const r0 = parseFloat(baseRate);
-      onSavedRef.current?.(!!r0 && r0 > 0, r0 || undefined, currency);   // a seeded valid rate already unlocks "Finish setup"
-      return;
+      // Normally the first render only reports what is already stored. With autosaveInitial we fall
+      // through to the save below instead, so a derived prefill is committed without the mentor
+      // having to retype the same number. lastRateSig stays empty so it counts as a change.
+      if (!(autosaveInitial && r0 > 0)) {
+        lastRateSig.current = rateSig();
+        onSavedRef.current?.(!!r0 && r0 > 0, r0 || undefined, currency);   // a seeded valid rate already unlocks "Finish setup"
+        return;
+      }
     }
     const rate = parseFloat(baseRate);
     if (!rate || rate <= 0) { setStatus('idle'); onSavedRef.current?.(false); return; }

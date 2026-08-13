@@ -77,6 +77,7 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
           initialRate={prefillRate != null ? String(prefillRate) : ''}
           initialRates={mentor.currency_rates ?? []}
           initialSmartPricing={!!mentor.smart_pricing}
+          autosaveInitial={!mentor.hourly_rate}
           onSaved={(saved, r, c) => {
             setRateSaved(saved);
             if (saved && r) { setSavedRate(r); if (c) setSavedCurrency(c); }
