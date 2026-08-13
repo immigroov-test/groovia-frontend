@@ -47,9 +47,11 @@ export function CurrencyRatesEditor({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Base currency, then base rate (symbol/flag sit in their own segment so they never overlap).
-          Both fields share one grid so the rate box is exactly as wide as the currency box. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+      {/* Rate on the left, live market preview on the right, so the mentor sets a number and sees what
+          it becomes elsewhere without scrolling between the two. Stacks on phones, preview underneath.
+          Currency and rate sit in one column so they are necessarily the same width. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] gap-4 lg:gap-6 items-start">
+        <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base currency</label>
           <CurrencySelect value={primaryCurrency} onChange={onPrimaryCurrency} className="w-full" />
@@ -65,12 +67,24 @@ export function CurrencyRatesEditor({
               placeholder="e.g. 2000" className="flex-1 min-w-0 w-full px-3 bg-transparent text-sm focus:outline-none" />
           </div>
         </div>
-      </div>
+        <p className="text-xs text-muted leading-relaxed">
+          Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it
+          directly; everyone else&apos;s price is worked out from it, split by session length.
+        </p>
+        </div>
 
-      <p className="text-xs text-muted leading-relaxed">
-        Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it directly;
-        everyone else&apos;s price is worked out from it, split by session length.
-      </p>
+        {/* Right column on desktop, below the rate on phones. */}
+        {preview !== 'off' && (
+          preview === 'collapsed' && !previewOpen ? (
+            <button type="button" onClick={() => setPreviewOpen(true)}
+              className="flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-900 w-fit">
+              <Eye className="h-4 w-4" /> See what customers in other markets pay
+            </button>
+          ) : (
+            <PricePreviewTable baseRate={baseRate} currency={primaryCurrency} smartPricing={smartPricing} />
+          )
+        )}
+      </div>
 
       {/* Optional: fix an exact amount for a specific currency instead of the smart-pricing estimate. */}
       <div className="flex flex-col gap-2">
@@ -78,7 +92,7 @@ export function CurrencyRatesEditor({
           Set an exact price for another currency <span className="font-normal text-muted">(optional)</span>
         </span>
         <p className="text-xs text-muted leading-relaxed">
-          Want to fix an exact amount for a currency instead of the estimate below? Add it here. Anyone whose
+          Want to fix an exact amount for a currency instead of the estimate shown? Add it here. Anyone whose
           currency you don&apos;t set stays priced from your base {primaryCurrency} rate.
         </p>
         {rates.map((r, i) => (
@@ -105,19 +119,6 @@ export function CurrencyRatesEditor({
           </button>
         )}
       </div>
-
-      {/* BUG-62: live preview of what customers in our key markets see for this base rate. Moves down as
-          exact-currency rows are added above. Collapsed on pages where the rate already exists. */}
-      {preview !== 'off' && (
-        preview === 'collapsed' && !previewOpen ? (
-          <button type="button" onClick={() => setPreviewOpen(true)}
-            className="flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:text-brand-900 w-fit">
-            <Eye className="h-4 w-4" /> See what customers in other markets pay
-          </button>
-        ) : (
-          <PricePreviewTable baseRate={baseRate} currency={primaryCurrency} smartPricing={smartPricing} />
-        )
-      )}
 
       {/* Smart pricing - controls the market preview above. Intentionally vague on the method. */}
       <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">

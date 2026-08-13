@@ -47,7 +47,7 @@ export function PricePreviewTable({ baseRate, currency, smartPricing }: {
           {loading && <span className="opacity-60"> updating…</span>}
         </span>
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-2">
         {markets.map((m) => (
           <div key={m.country_code}
             className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
