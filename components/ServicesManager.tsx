@@ -520,9 +520,6 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                         <label className="text-sm font-medium text-foreground">Tags</label>
                         <TagInput value={editForm.tags} onChange={(tags) => setEditForm(f => f && ({ ...f, tags }))} max={5} placeholder="e.g. CV review, Dutch market" />
                       </div>
-                      <p className="text-xs text-muted">
-                        Duration and price aren&apos;t editable here - delete and re-add the session to change its length.
-                      </p>
                       {editError && <p className="text-xs text-red-600">{editError}</p>}
                       <div className="flex gap-2">
                         <Button variant="accent" size="sm" onClick={() => saveEdit(svc.id)} loading={savingEdit}>Save changes</Button>
