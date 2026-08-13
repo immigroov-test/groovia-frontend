@@ -6,6 +6,7 @@ import { Flag } from './ui/Flag';
 import { CurrencySelect } from './CurrencySelect';
 import { CURRENCIES, currencySymbol, currencyCountry, type CurrencyRate } from '../lib/pricing';
 import { PricePreviewTable } from './PricePreviewTable';
+import { useMinRates } from '../lib/useMinRates';
 
 // Multi-currency rate setup (BUG-042): a base currency + base hourly rate, an optional list of exact
 // per-currency rates, and the smart-pricing (PPP) toggle. Each service's price is derived from these by
@@ -45,6 +46,14 @@ export function CurrencyRatesEditor({
     if (next) onRates([...rates, { currency: next.code, hourly_rate: 0 }]);
   }
 
+  // Floor per currency, fetched from the backend so the form agrees with what the server enforces.
+  const mins = useMinRates([primaryCurrency, ...rates.map((r) => r.currency)]);
+  const belowMin = (ccy: string, amount: number) => {
+    const m = mins[ccy.toUpperCase()];
+    return m != null && amount > 0 && amount < m;
+  };
+  const baseTooLow = belowMin(primaryCurrency, parseFloat(baseRate) || 0);
+
   return (
     <div className="flex flex-col gap-4">
       {/* Rate on the left, live market preview on the right, so the mentor sets a number and sees what
@@ -67,6 +76,11 @@ export function CurrencyRatesEditor({
               placeholder="e.g. 2000" className="flex-1 min-w-0 w-full px-3 bg-transparent text-sm focus:outline-none" />
           </div>
         </div>
+        {baseTooLow && (
+          <p className="text-xs text-red-600 leading-relaxed">
+            Base rate is too low. Enter at least {mins[primaryCurrency.toUpperCase()]} {primaryCurrency} per hour.
+          </p>
+        )}
         <p className="text-xs text-muted leading-relaxed">
           Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it
           directly; everyone else&apos;s price is worked out from it, split by session length.
@@ -106,6 +120,11 @@ export function CurrencyRatesEditor({
                 onChange={(e) => setRate(i, { hourly_rate: parseFloat(e.target.value) || 0 })}
                 placeholder="per hour" className={`${rateInput} w-28`} />
             </div>
+            {belowMin(r.currency, r.hourly_rate) && (
+              <span className="text-xs text-red-600 self-center">
+                min {mins[r.currency.toUpperCase()]}
+              </span>
+            )}
             <button type="button" onClick={() => onRates(rates.filter((_, idx) => idx !== i))} aria-label="Remove currency"
               className="h-11 w-11 flex items-center justify-center rounded-xl text-muted hover:text-red-600 hover:bg-red-50">
               <Trash2 className="h-5 w-5" />
