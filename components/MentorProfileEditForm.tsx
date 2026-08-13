@@ -182,6 +182,10 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
 
   function validate(): string | null {
     if (!displayName.trim()) return 'Full name is required.';
+    // A mentor card with a blank avatar reads as broken, and 26 of the migrated mentors arrived with
+    // no photo. Required on BOTH paths (first-login and registration) since they share this form.
+    // An existing photo loads into state, so a mentor who already has one is never asked again.
+    if (!photoUrl) return 'Please add a profile photo - mentees pick who to book partly on this.';
     if (!effectiveHeadline.trim()) return 'Headline is required.';
     if (!country) return 'Please select your current country.';
     if (languages.length === 0) return 'Select at least one language.';

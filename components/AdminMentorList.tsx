@@ -94,6 +94,13 @@ interface MentorDetail extends AdminMentor {
   years_lived_experience?: number | null;
   years_professional_experience?: number | null;
   public_notes?: string | null;
+  session_duration_minutes?: number | null;
+  app_buffertime?: string | null;
+  app_cancellation_policy?: string | null;
+  app_reschedule_policy?: string | null;
+  booking_url?: string | null;
+  avg_rating?: number | null;
+  review_count?: number | null;
   social_links?: SocialLink[];
   weekly_availability?: WeeklySlot[];
   services?: ServiceItem[];
@@ -111,6 +118,12 @@ interface Props {
 const fmtTime = (t?: string | null) => (t ? t.slice(0, 5) : '');
 const fmtDate = (d: string) =>
   new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+// Postgres INTERVAL comes back as 'HH:MM:SS' (or plain text) — show it as minutes.
+const fmtInterval = (v?: string | null) => {
+  if (!v) return '';
+  const m = /^(\d{1,2}):(\d{2}):(\d{2})$/.exec(v);
+  return m ? `${+m[1] * 60 + +m[2]} min` : v;
+};
 
 export function AdminMentorList({ initialMentors, actions, removeOnAction = true }: Props) {
   const router = useRouter();
@@ -407,6 +420,21 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
           {detail.expertise_categories?.length ? (
             <Field label="Expertise categories">{detail.expertise_categories.join(', ')}</Field>
           ) : null}
+          {detail.session_duration_minutes != null && (
+            <Field label="Default session length">{detail.session_duration_minutes} min</Field>
+          )}
+          {detail.avg_rating != null && (detail.review_count ?? 0) > 0 ? (
+            <Field label="Rating">
+              {detail.avg_rating.toFixed(1)} ({detail.review_count} review{detail.review_count !== 1 ? 's' : ''})
+            </Field>
+          ) : null}
+          {detail.booking_url && (
+            <Field label="External booking link">
+              <a href={detail.booking_url} target="_blank" rel="noopener noreferrer" className="text-brand-700 hover:underline break-all">
+                {detail.booking_url}
+              </a>
+            </Field>
+          )}
         </div>
         {socials.length > 0 && (
           <Field label="Social links" full className="mt-4">
@@ -484,6 +512,26 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
             {rules.min_notice_hours != null && <Field label="Minimum notice">{rules.min_notice_hours} hr</Field>}
             {rules.cancel_hours != null && <Field label="Cancellation notice">{rules.cancel_hours} hr</Field>}
           </div>
+        </section>
+      )}
+
+      {/* Policies the mentor set at registration */}
+      {(detail.app_buffertime || detail.app_cancellation_policy || detail.app_reschedule_policy) && (
+        <section>
+          <SectionLabel>Policies</SectionLabel>
+          {detail.app_buffertime && (
+            <Field label="Buffer between sessions">{fmtInterval(detail.app_buffertime)}</Field>
+          )}
+          {detail.app_cancellation_policy && (
+            <Field label="Cancellation policy" full className="mt-4">
+              <p className="whitespace-pre-line text-foreground">{detail.app_cancellation_policy}</p>
+            </Field>
+          )}
+          {detail.app_reschedule_policy && (
+            <Field label="Reschedule policy" full className="mt-4">
+              <p className="whitespace-pre-line text-foreground">{detail.app_reschedule_policy}</p>
+            </Field>
+          )}
         </section>
       )}
 

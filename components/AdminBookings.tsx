@@ -12,8 +12,21 @@ interface Booking {
   mentor_name: string | null; reschedule_count: number; no_show_by: string | null; created_at: string;
 }
 interface Detail extends Booking {
+  service_title?: string | null;
+  service_duration?: number | null;
   requests?: { kind: string; initiated_by: string; status: string; respond_by: string | null; created_at: string }[];
   offers?: { status: string; was_late: boolean; created_at: string }[];
+  intake_answers?: { question: string; answer: string | null }[];
+  payments?: {
+    amount: number; currency: string; state: string; provider?: string | null;
+    provider_order_id?: string | null; provider_payment_id?: string | null;
+    provider_error_description?: string | null; created_at: string;
+  }[];
+  pricing?: {
+    customer_currency?: string | null; mentor_currency?: string | null;
+    gross_customer?: number | null; fee_pct?: number | null; fee_amount?: number | null;
+    net_customer?: number | null; net_mentor?: number | null;
+  } | null;
 }
 interface LegacyRow {
   id: string; status: string | null; service_title: string | null; customer_name: string | null;
@@ -38,7 +51,7 @@ function fmt(iso: string | null): string {
   return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 function money(total?: number | null, currency?: string | null): string {
-  if (!total || !currency) return '';
+  if (total == null || !currency) return '';
   try { return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(total); }
   catch { return `${total} ${currency}`; }
 }
@@ -186,9 +199,41 @@ export function AdminBookings() {
                               <div className="flex flex-col gap-2 text-xs text-muted">
                                 <div className="flex flex-wrap gap-x-6 gap-y-1">
                                   <span>Booked <b className="text-foreground">{fmt(b.created_at)}</b></span>
+                                  {details[b.id]?.service_title && (
+                                    <span>Session <b className="text-foreground">{details[b.id]!.service_title}</b>
+                                      {details[b.id]?.service_duration ? ` · ${details[b.id]!.service_duration} min` : ''}</span>
+                                  )}
                                   {b.no_show_by && <span>No-show by <b className="text-foreground">{b.no_show_by}</b></span>}
                                   <span>Booking ID <code>{b.id}</code></span>
                                 </div>
+                                {details[b.id]?.pricing && (
+                                  <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                    {details[b.id]!.pricing!.gross_customer != null &&
+                                      <span>Customer paid <b className="text-foreground">{money(details[b.id]!.pricing!.gross_customer, details[b.id]!.pricing!.customer_currency)}</b></span>}
+                                    {details[b.id]!.pricing!.fee_amount != null &&
+                                      <span>Platform fee <b className="text-foreground">{money(details[b.id]!.pricing!.fee_amount, details[b.id]!.pricing!.customer_currency)}{details[b.id]!.pricing!.fee_pct != null ? ` (${details[b.id]!.pricing!.fee_pct}%)` : ''}</b></span>}
+                                    {details[b.id]!.pricing!.net_mentor != null &&
+                                      <span>Mentor net <b className="text-foreground">{money(details[b.id]!.pricing!.net_mentor, details[b.id]!.pricing!.mentor_currency)}</b></span>}
+                                  </div>
+                                )}
+                                {(details[b.id]?.payments?.length ?? 0) > 0 && (
+                                  <div>
+                                    <p className="font-medium text-foreground mb-1">Payments</p>
+                                    {details[b.id]!.payments!.map((p, i) => (
+                                      <p key={i}>· <b className="text-foreground">{money(p.amount, p.currency)}</b> — {p.state}
+                                        {p.provider ? ` (${p.provider})` : ''}{p.provider_payment_id ? ` · ${p.provider_payment_id}` : ''}
+                                        {p.provider_error_description ? ` — ${p.provider_error_description}` : ''}</p>
+                                    ))}
+                                  </div>
+                                )}
+                                {(details[b.id]?.intake_answers?.length ?? 0) > 0 && (
+                                  <div>
+                                    <p className="font-medium text-foreground mb-1">Intake answers</p>
+                                    {details[b.id]!.intake_answers!.map((a, i) => (
+                                      <p key={i}><span className="text-muted">{a.question}</span> — <b className="text-foreground">{a.answer || '-'}</b></p>
+                                    ))}
+                                  </div>
+                                )}
                                 {(details[b.id]?.requests?.length ?? 0) > 0 && (
                                   <div>
                                     <p className="font-medium text-foreground mb-1">Requests</p>

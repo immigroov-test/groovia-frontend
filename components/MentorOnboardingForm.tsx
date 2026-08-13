@@ -162,6 +162,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   function collectDetailErrors(): Record<string, string> {
     const e: Record<string, string> = {};
     if (!displayName.trim()) e.displayName = 'Display name is required.';
+    // Required for new mentors too, not just the migrated first-login flow: a blank avatar on a
+    // mentor card reads as broken, and this is the cheapest moment to insist.
+    if (!photoUrl) e.photoUrl = 'A profile photo is required - mentees pick who to book partly on this.';
     if (!effectiveHeadline.trim()) e.headline = 'Headline is required.';
     if (!country) e.country = 'Please select your current country.';
     if (languages.length === 0) e.languages = 'Select at least one language.';
@@ -366,6 +369,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 <span className="text-xs text-muted">(Recommended)</span>
               </div>
               <PhotoUpload value={photoUrl} onChange={setPhotoUrl} userId={userId} />
+              <FieldError msg={fieldErrors.photoUrl} />
             </div>
 
             <Input label="Full name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
