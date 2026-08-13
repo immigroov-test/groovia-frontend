@@ -33,6 +33,11 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
   const prefillCurrency = prefill?.currency ?? mentor.currency ?? 'INR';
   const prefillRate = prefill ? prefill.hourly_rate : mentor.hourly_rate;
   const [rateSaved, setRateSaved] = useState(!!prefillRate && Number(prefillRate) > 0);
+  // ServicesManager used to be rendered here with no rate at all, so it always believed no base rate
+  // existed and refused to add a paid session right after one had been saved on this very page.
+  const [savedRate, setSavedRate] = useState<number | undefined>(
+    prefillRate != null && Number(prefillRate) > 0 ? Number(prefillRate) : undefined);
+  const [savedCurrency, setSavedCurrency] = useState<string>(prefillCurrency);
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,12 +77,15 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
           initialRate={prefillRate != null ? String(prefillRate) : ''}
           initialRates={mentor.currency_rates ?? []}
           initialSmartPricing={!!mentor.smart_pricing}
-          onSaved={setRateSaved}
+          onSaved={(saved, r, c) => {
+            setRateSaved(saved);
+            if (saved && r) { setSavedRate(r); if (c) setSavedCurrency(c); }
+          }}
         />
       </Section>
 
       <Section title="Your sessions">
-        <ServicesManager />
+        <ServicesManager hourlyRate={savedRate} currency={savedCurrency} />
       </Section>
 
       <Section title="Your schedule" subtitle="When mentees can book you.">

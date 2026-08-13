@@ -16,7 +16,8 @@ export function MentorRateEditor({
   initialRate?: string;
   initialRates?: CurrencyRate[];
   initialSmartPricing?: boolean;
-  onSaved?: (saved: boolean) => void;
+  /** Reports the stored rate, not just that one exists, so a parent can price things with it. */
+  onSaved?: (saved: boolean, rate?: number, currency?: string) => void;
 }) {
   const [currency, setCurrency] = useState(initialCurrency);
   const [baseRate, setBaseRate] = useState(initialRate);
@@ -39,7 +40,7 @@ export function MentorRateEditor({
       firstRun.current = false;
       lastRateSig.current = rateSig();
       const r0 = parseFloat(baseRate);
-      onSavedRef.current?.(!!r0 && r0 > 0);   // a seeded valid rate already unlocks "Finish setup"
+      onSavedRef.current?.(!!r0 && r0 > 0, r0 || undefined, currency);   // a seeded valid rate already unlocks "Finish setup"
       return;
     }
     const rate = parseFloat(baseRate);
@@ -67,7 +68,7 @@ export function MentorRateEditor({
           return;
         }
         lastRateSig.current = sig;
-        setError(null); setStatus('saved'); onSavedRef.current?.(true);
+        setError(null); setStatus('saved'); onSavedRef.current?.(true, rate, currency);
       } catch {
         if (!cancelled) { setError('Could not reach the server. Please try again.'); setStatus('error'); onSavedRef.current?.(false); }
       }

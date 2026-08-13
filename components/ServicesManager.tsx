@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, Plus, Trash2, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
@@ -87,6 +87,16 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   // approval queue, until the mentor explicitly confirms it below.
   const [draft, setDraft]           = useState<Draft | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
+  // The draft form renders below the whole session list, so on a mentor with several sessions the
+  // "add" button appeared to do nothing: the form opened off-screen. Bring it into view instead.
+  const draftRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!draft) return;
+    // rAF so the form has laid out before we measure where to scroll to.
+    const id = requestAnimationFrame(() =>
+      draftRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    return () => cancelAnimationFrame(id);
+  }, [draft]);
   const [submitting, setSubmitting] = useState(false);
   // A second, explicit "yes, add it" step after "Add session" - reviewing the draft isn't itself a
   // commitment (a mentor can edit fields and change their mind mid-review), so the actual submit gets
@@ -341,6 +351,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
             mentor reviews/edits every field here and must press "Add session" to actually create
             it (and only then does it enter the admin approval workflow). */}
         {draft && (
+          <div ref={draftRef}>
           <Card>
             <CardBody className="pt-5 flex flex-col gap-4">
               <h3 className="text-sm font-semibold text-foreground">
@@ -400,6 +411,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
               )}
             </CardBody>
           </Card>
+          </div>
         )}
       </div>
 
