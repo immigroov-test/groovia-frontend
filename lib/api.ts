@@ -1,4 +1,5 @@
 import { createClient } from './supabase/client';
+import { trackWake } from './backendWake';
 
 // Client-side fetch that attaches the current Supabase session token. Every component
 // was repeating: getSession() -> build Authorization header -> fetch -> res.json().
@@ -30,7 +31,9 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiOptions = {})
     finalHeaders['Content-Type'] = 'application/json';
   }
 
-  const res = await fetch(path, { ...rest, headers: finalHeaders, body });
+  // trackWake raises the cold-start overlay if this call stays unanswered past the threshold, and
+  // lowers it however the call ends. Wrapping here covers every caller at once.
+  const res = await trackWake(() => fetch(path, { ...rest, headers: finalHeaders, body }));
   let parsed: unknown = null;
   try { parsed = await res.json(); } catch { /* empty/non-JSON response */ }
   return { ok: res.ok, status: res.status, data: parsed as T };

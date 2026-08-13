@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Lato, Roboto_Serif, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SITE_URL, IS_PUBLIC_SITE, GOOGLE_SITE_VERIFICATION } from '../lib/site';
+import { BackendWakeOverlay } from '@/components/ui/BackendWakeOverlay';
 
 // Odyssey-style pairing: serif headings (Roboto Serif) + clean sans body (Lato).
 const lato = Lato({ variable: '--font-lato', subsets: ['latin'], weight: ['300', '400', '700'] });
@@ -51,7 +52,11 @@ export default function RootLayout({
       lang="en"
       className={`${lato.variable} ${robotoSerif.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        {/* Mounted once for the whole app: apiFetch raises it, so no page needs its own. */}
+        <BackendWakeOverlay />
+      </body>
     </html>
   );
 }
