@@ -6,9 +6,10 @@ import { CurrencyRatesEditor } from './CurrencyRatesEditor';
 import { type CurrencyRate } from '../lib/pricing';
 
 // Per-hour rate + currencies + smart pricing, for a migrated mentor's first-login onboarding. There are
-// NO buttons: changes auto-save (debounced) via /mentor/setup-rate, and when the RATE changes the
-// sessions are re-priced automatically (apply_to_sessions), so "Save rate" / "Update my session prices"
-// are gone. Calls onSaved(true) once a valid rate is stored so the parent can unlock "Finish setup".
+// NO buttons: changes auto-save (debounced) via /mentor/setup-rate. That endpoint decides for itself
+// whether the rate actually moved and reprices the mentor's sessions when it did, so this component
+// neither tracks nor reports that. Calls onSaved(true) once a valid rate is stored, so the parent can
+// unlock "Finish setup".
 export function MentorRateEditor({
   initialCurrency = 'INR', initialRate = '', initialRates = [], initialSmartPricing = true, onSaved,
   autosaveInitial = false,
@@ -33,8 +34,6 @@ export function MentorRateEditor({
   const [error, setError] = useState<string | null>(null);
 
   const firstRun = useRef(true);
-  const rateSig = () => JSON.stringify([baseRate, currency, rates]);   // the "rate" part (not the SP flag)
-  const lastRateSig = useRef<string | null>(null);
   const onSavedRef = useRef(onSaved);
   useEffect(() => { onSavedRef.current = onSaved; });
 
@@ -46,17 +45,14 @@ export function MentorRateEditor({
       const r0 = parseFloat(baseRate);
       // Normally the first render only reports what is already stored. With autosaveInitial we fall
       // through to the save below instead, so a derived prefill is committed without the mentor
-      // having to retype the same number. lastRateSig stays empty so it counts as a change.
+      // having to retype the same number.
       if (!(autosaveInitial && r0 > 0)) {
-        lastRateSig.current = rateSig();
         onSavedRef.current?.(!!r0 && r0 > 0, r0 || undefined, currency);   // a seeded valid rate already unlocks "Finish setup"
         return;
       }
     }
     const rate = parseFloat(baseRate);
     if (!rate || rate <= 0) { setStatus('idle'); onSavedRef.current?.(false); return; }
-    const sig = rateSig();
-    const rateChanged = sig !== lastRateSig.current;
     let cancelled = false;
     setStatus('saving'); onSavedRef.current?.(false);
     const t = setTimeout(async () => {
@@ -67,7 +63,6 @@ export function MentorRateEditor({
           headers: { Authorization: `Bearer ${session?.access_token ?? ''}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             hourly_rate: rate, currency, currency_rates: rates, smart_pricing: smartPricing,
-            apply_to_sessions: rateChanged,
           }),
         });
         if (cancelled) return;
@@ -77,7 +72,6 @@ export function MentorRateEditor({
           setStatus('error'); onSavedRef.current?.(false);
           return;
         }
-        lastRateSig.current = sig;
         setError(null); setStatus('saved'); onSavedRef.current?.(true, rate, currency);
       } catch {
         if (!cancelled) { setError('Could not reach the server. Please try again.'); setStatus('error'); onSavedRef.current?.(false); }
