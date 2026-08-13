@@ -108,7 +108,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   // Deleting a session type is permanent and used to go through the browser's native confirm().
   // Deactivating keeps it and just hides it, which is what most people actually want.
   const [pendingDelete, setPendingDelete] = useState<Service | null>(null);
-  const [editForm, setEditForm]     = useState<{ title: string; description: string; category: string; tags: string[] } | null>(null);
+  const [editForm, setEditForm]     = useState<{ title: string; description: string; category: string; tags: string[]; duration: number } | null>(null);
   const [editError, setEditError]   = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -233,6 +233,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
       description: svc.description ?? '',
       category: svc.category ?? '',
       tags: svc.tags ?? [],
+      duration: svc.duration,
     });
   }
   function cancelEdit() { setEditingId(null); setEditForm(null); setEditError(null); }
@@ -246,9 +247,11 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
         description: isRichTextEmpty(editForm.description) ? null : editForm.description,
         category: editForm.category || null,
         tags: editForm.tags,
+        duration: editForm.duration,
       });
       setServices(s => s.map(svc => svc.id === id
-        ? { ...svc, title: editForm.title.trim(), description: isRichTextEmpty(editForm.description) ? null : editForm.description, category: editForm.category || null, tags: editForm.tags }
+        ? { ...svc, title: editForm.title.trim(), description: isRichTextEmpty(editForm.description) ? null : editForm.description, category: editForm.category || null, tags: editForm.tags, duration: editForm.duration,
+            set_price: svc.set_price > 0 ? derivedPrice(editForm.duration, false) : svc.set_price }
         : svc));
       setEditingId(null); setEditForm(null);
     } catch (e) { setEditError(e instanceof Error ? e.message : 'Could not save changes.'); }
@@ -471,6 +474,22 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                       <p className="text-xs font-medium text-muted uppercase tracking-wide">Edit session</p>
                       <Input label="Title *" value={editForm.title}
                         onChange={e => setEditForm(f => f && ({ ...f, title: e.target.value }))} />
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-foreground">Length</label>
+                        {/* Lengths already taken by the mentor's OTHER sessions are excluded; this
+                            session's own current length always stays selectable. */}
+                        <select value={String(editForm.duration)}
+                          onChange={e => setEditForm(f => f && ({ ...f, duration: parseInt(e.target.value) }))}
+                          className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                          {DURATION_OPTIONS.filter(d => d === svc.duration || !usedDurations.has(d))
+                            .map(d => <option key={d} value={d}>{d} minutes</option>)}
+                        </select>
+                        {svc.set_price > 0 && editForm.duration !== svc.duration && (
+                          <p className="text-xs text-muted">
+                            Price becomes {priceText(editForm.duration, false)} when you save.
+                          </p>
+                        )}
+                      </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium text-foreground">Category</label>
                         <select value={editForm.category} onChange={e => setEditForm(f => f && ({ ...f, category: e.target.value }))}
