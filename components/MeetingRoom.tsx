@@ -137,12 +137,23 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     return <div ref={containerRef} className="fixed inset-x-0 bottom-0 top-16 bg-black" />;
   }
 
-  const Shell = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
-    <div className="mx-auto max-w-lg px-4 py-20 text-center">
-      <div className="mx-auto h-14 w-14 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 mb-4">{icon}</div>
-      <h1 className="text-2xl font-semibold tracking-tight text-brand-900">{title}</h1>
-      {children}
-      <div className="mt-6"><Link href="/account/sessions"><Button variant="outline">Back to my sessions</Button></Link></div>
+  // The header stays centred (it is a status), the body can be left-aligned. Centred text is fine for
+  // a one-line message and wrong for a form: it breaks the label/value column and leaves the actions
+  // floating with nothing to align to.
+  const Shell = ({ icon, title, children, body = 'center' }: {
+    icon: ReactNode; title: string; children: ReactNode; body?: 'center' | 'left';
+  }) => (
+    <div className="mx-auto max-w-lg px-4 py-10 sm:py-14">
+      <div className="text-center">
+        <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 mb-4">{icon}</div>
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-balance">{title}</h1>
+      </div>
+      <div className={body === 'left' ? 'text-left' : 'text-center'}>{children}</div>
+      <div className="mt-10 pt-6 border-t border-[--color-border] text-center">
+        <Link href="/account/sessions" className="text-sm font-medium text-brand-700 hover:text-brand-900">
+          Back to my sessions
+        </Link>
+      </div>
     </div>
   );
 
@@ -164,46 +175,40 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     };
     const canAct = joined || info?.i_joined;
     return (
-      <Shell icon={<Video className="h-7 w-7" />} title="Your video call is ready">
+      <Shell icon={<Video className="h-6 w-6" />} title="Your video call is ready" body="left">
         {/* The same facts as the confirmation email, so nobody has to cross-reference their inbox.
             Definition list rather than a table: it stacks cleanly on a phone. */}
-        <dl className="mt-5 text-left rounded-xl bg-brand-50/50 divide-y divide-[--color-border]">
-          {info?.service_title && (
-            <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
-              <dt className="text-xs text-muted w-28 shrink-0">Session</dt>
-              <dd className="text-sm text-foreground font-medium min-w-0">{info.service_title}</dd>
+        <dl className="mt-6 rounded-xl bg-brand-50/50 divide-y divide-[--color-border] overflow-hidden">
+          {([
+            info?.service_title && ['Session', <span key="s" className="font-medium">{info.service_title}</span>],
+            ['Scheduled for', `${fmt(info?.slot_time)}${info?.duration ? ` · ${info.duration} min` : ''}`],
+            [isCandidate ? 'Your mentor' : 'Attendee', info?.other_name],
+            ['Reference', <span key="r" className="font-mono text-xs text-muted">{bookingId.slice(0, 8)}</span>],
+          ].filter(Boolean) as [string, ReactNode][]).map(([label, value]) => (
+            // grid, not flex-wrap: the label keeps its own column at every width instead of dropping
+            // onto the line above the value, which is what made this look ragged.
+            <div key={label} className="grid grid-cols-[6.5rem_1fr] gap-x-3 px-4 py-3 items-baseline">
+              <dt className="text-xs text-muted">{label}</dt>
+              <dd className="text-sm text-foreground min-w-0 break-words">{value}</dd>
             </div>
-          )}
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
-            <dt className="text-xs text-muted w-28 shrink-0">Scheduled for</dt>
-            <dd className="text-sm text-foreground min-w-0">
-              {fmt(info?.slot_time)}{info?.duration ? ` · ${info.duration} min` : ''}
-            </dd>
-          </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
-            <dt className="text-xs text-muted w-28 shrink-0">{isCandidate ? 'Your mentor' : 'Attendee'}</dt>
-            <dd className="text-sm text-foreground min-w-0">{info?.other_name}</dd>
-          </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
-            <dt className="text-xs text-muted w-28 shrink-0">Reference</dt>
-            <dd className="text-sm text-muted font-mono text-xs break-all min-w-0">{bookingId.slice(0, 8)}</dd>
-          </div>
+          ))}
         </dl>
 
-        <p className="text-sm text-muted mt-5 leading-relaxed">
-          The call opens in a new tab. Keep this page open so you can come back here afterwards.
-        </p>
-        <div className="mt-4">
-          <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => { void recordJoin(); }}>
-            <Button>Join the call</Button>
+        <div className="mt-6">
+          <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => { void recordJoin(); }}
+            className="block sm:inline-block">
+            <Button className="w-full sm:w-auto">Join the call</Button>
           </a>
+          <p className="text-xs text-muted mt-2.5 leading-relaxed">
+            Opens in a new tab. Keep this page open to come back here afterwards.
+          </p>
         </div>
 
         {/* Post-call actions, so nobody has to find the session detail page. Only after Join: reporting
             a no-show puts a strike on a mentor, so it must not be available to someone who never
             opened the call themselves. */}
         {canAct && (
-          <div className="mt-8 pt-6 border-t border-[--color-border] text-left">
+          <div className="mt-8 pt-6 border-t border-[--color-border]">
             <p className="text-xs font-medium text-muted uppercase tracking-wide">After your call</p>
 
             {noShowDone ? (
