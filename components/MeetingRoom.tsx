@@ -26,6 +26,8 @@ interface RoomInfo {
   display_name?: string;
   other_name?: string;
   slot_time?: string;
+  service_title?: string;
+  duration?: number;
   opens_at?: string;
 }
 
@@ -163,10 +165,35 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     const canAct = joined || info?.i_joined;
     return (
       <Shell icon={<Video className="h-7 w-7" />} title="Your video call is ready">
-        <p className="text-sm text-muted mt-2 leading-relaxed">
-          The call opens in a new tab. Keep this page open so you can come back to it after the call.
+        {/* The same facts as the confirmation email, so nobody has to cross-reference their inbox.
+            Definition list rather than a table: it stacks cleanly on a phone. */}
+        <dl className="mt-5 text-left rounded-xl bg-brand-50/50 divide-y divide-[--color-border]">
+          {info?.service_title && (
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
+              <dt className="text-xs text-muted w-28 shrink-0">Session</dt>
+              <dd className="text-sm text-foreground font-medium min-w-0">{info.service_title}</dd>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
+            <dt className="text-xs text-muted w-28 shrink-0">Scheduled for</dt>
+            <dd className="text-sm text-foreground min-w-0">
+              {fmt(info?.slot_time)}{info?.duration ? ` · ${info.duration} min` : ''}
+            </dd>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
+            <dt className="text-xs text-muted w-28 shrink-0">{isCandidate ? 'Your mentor' : 'Attendee'}</dt>
+            <dd className="text-sm text-foreground min-w-0">{info?.other_name}</dd>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 py-2.5">
+            <dt className="text-xs text-muted w-28 shrink-0">Reference</dt>
+            <dd className="text-sm text-muted font-mono text-xs break-all min-w-0">{bookingId.slice(0, 8)}</dd>
+          </div>
+        </dl>
+
+        <p className="text-sm text-muted mt-5 leading-relaxed">
+          The call opens in a new tab. Keep this page open so you can come back here afterwards.
         </p>
-        <div className="mt-6">
+        <div className="mt-4">
           <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => { void recordJoin(); }}>
             <Button>Join the call</Button>
           </a>
@@ -180,26 +207,31 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
             <p className="text-xs font-medium text-muted uppercase tracking-wide">After your call</p>
 
             {noShowDone ? (
-              <p className="text-sm text-emerald-700 mt-3">
+              <p className="text-sm text-emerald-700 mt-3 leading-relaxed">
                 No-show reported. We have emailed both of you, and you can resolve it from your sessions.
               </p>
             ) : (
               <div className="mt-3">
-                <Button variant="ghost" className="text-red-600 hover:bg-red-50"
-                  onClick={() => setReportingNoShow(true)}>
-                  {isCandidate ? `${info?.other_name} didn't join` : 'The attendee didn’t join'}
-                </Button>
-                {info?.they_joined === false && (
-                  <p className="text-xs text-muted mt-1">
-                    We have no record of {info?.other_name} opening the call.
-                  </p>
-                )}
+                {/* The name stays out of the control: a button that reads like an accusation is easy to
+                    press by accident. State the situation, then offer the action. */}
+                <p className="text-sm text-foreground">
+                  {isCandidate
+                    ? 'The mentor did not show up for the meeting?'
+                    : 'The attendee did not show up for the meeting?'}
+                </p>
+                <div className="mt-2">
+                  <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50"
+                    onClick={() => setReportingNoShow(true)}>
+                    Report no-show
+                  </Button>
+                </div>
               </div>
             )}
 
             {isCandidate && (
-              <div className="mt-6">
-                <p className="text-sm font-medium text-foreground mb-2">How was your session?</p>
+              <div className="mt-8 pt-6 border-t border-[--color-border]">
+                <p className="text-sm font-medium text-foreground">How was your session?</p>
+                <p className="text-xs text-muted mt-1 mb-3">Only the overall rating is required.</p>
                 <ReviewForm bookingId={bookingId} />
               </div>
             )}
@@ -211,12 +243,17 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
           onClose={() => setReportingNoShow(false)}
           title={isCandidate ? 'Report that your mentor did not join?' : 'Report that the attendee did not join?'}
           body={isCandidate
-            ? <>We will email you both and open a resolution: a refund or a rebook. This also counts
-                against the mentor, so only report it if they genuinely did not attend.</>
-            : <>We will email you both. If they simply ran late, giving them a moment is usually
-                better than reporting it.</>}
-          confirmLabel="Yes, report it"
-          alternateLabel="Wait a little longer"
+            ? <><strong>Please wait 5 to 10 minutes past the start time first.</strong> People are often
+                a few minutes late, and the room stays open for 30 minutes after the session ends.
+                <br /><br />
+                If you report it, we email you both and open a resolution: a refund or a rebook. It also
+                counts against the mentor, so only report a genuine no-show.</>
+            : <><strong>Please wait 5 to 10 minutes past the start time first.</strong> People are often
+                a few minutes late, and the room stays open for 30 minutes after the session ends.
+                <br /><br />
+                If you report it, we email you both and open a resolution.</>}
+          confirmLabel="Yes, report a no-show"
+          alternateLabel="I&rsquo;ll wait a bit longer"
           reason={{ label: 'What happened?', placeholder: 'e.g. waited 15 minutes, nobody joined', required: true }}
           onConfirm={async (reason) => {
             setNoShowBusy(true);
