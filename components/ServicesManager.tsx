@@ -52,8 +52,11 @@ interface Draft {
   free: boolean;
 }
 
-// A mentor offers at most one service per duration. These are the only lengths.
-const DURATION_OPTIONS = [15, 30, 45, 60] as const;
+// Duration is a free-form number of minutes, independent of how many services a mentor has -
+// there is no fixed set of lengths and no cap on how many services can share a length.
+const MIN_DURATION_MINUTES = 5;
+const MAX_DURATION_MINUTES = 480;
+const DEFAULT_DURATION_MINUTES = 30;
 
 async function apiFetch(path: string, method = 'GET', body?: object) {
   const supabase = (await import('../lib/supabase/client')).createClient();
@@ -139,12 +142,10 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   }
 
   // BUG-137: a REJECTED service is dead - it will never become bookable - so it must not go on
-  // permanently occupying its duration slot / title. Only active (pending or approved) services
-  // count against the one-per-duration limit and the "you already added this" catalogue filter;
-  // this is what was silently hiding "more services" once a rejection had happened.
+  // permanently occupying its title. Only active (pending or approved) services count against the
+  // "you already added this" catalogue filter; this is what was silently hiding "more services"
+  // once a rejection had happened.
   const liveServices = services.filter(s => s.status !== 'rejected');
-  const usedDurations = new Set(liveServices.map((s) => s.duration));
-  const availableDurations = DURATION_OPTIONS.filter((d) => !usedDurations.has(d));
   const usedTitles = new Set(liveServices.map((s) => s.title.trim().toLowerCase()));
   const hasFree = liveServices.some((s) => s.set_price === 0);
 
@@ -160,13 +161,12 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   // ── Add flow: tap a tag or "Add your own" opens a draft; nothing is submitted until Confirm ──
 
   function openDraftFromCatalog(cat: CatalogService) {
-    const duration = (availableDurations as readonly number[]).includes(cat.duration) ? cat.duration : (availableDurations[0] ?? cat.duration);
     setDraftError(null);
-    setDraft({ code: cat.code, title: cat.title, description: cat.description, category: cat.category, duration, tags: [], free: !!cat.free });
+    setDraft({ code: cat.code, title: cat.title, description: cat.description, category: cat.category, duration: cat.duration, tags: [], free: !!cat.free });
   }
   function openCustomDraft() {
     setDraftError(null);
-    setDraft({ code: null, title: '', description: SERVICE_DESCRIPTION_TEMPLATE, category: '', duration: availableDurations[0] ?? 30, tags: [], free: false });
+    setDraft({ code: null, title: '', description: SERVICE_DESCRIPTION_TEMPLATE, category: '', duration: DEFAULT_DURATION_MINUTES, tags: [], free: false });
   }
   function cancelDraft() { setDraft(null); setDraftError(null); setConfirmingAdd(false); }
 
@@ -177,7 +177,10 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     if (!draft) return;
     if (!draft.title.trim()) { setDraftError('Give the session a title.'); return; }
     if (!draft.free && !hasRate) { setDraftError('Set your base rate on the Profile tab first, then add paid sessions.'); return; }
-    if (usedDurations.has(draft.duration)) { setDraftError('You already have a session of this length.'); return; }
+    if (!Number.isFinite(draft.duration) || draft.duration < MIN_DURATION_MINUTES || draft.duration > MAX_DURATION_MINUTES) {
+      setDraftError(`Duration must be between ${MIN_DURATION_MINUTES} and ${MAX_DURATION_MINUTES} minutes.`);
+      return;
+    }
     setDraftError(null);
     setConfirmingAdd(true);
   }
@@ -242,6 +245,10 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   async function saveEdit(id: string) {
     if (!editForm) return;
     if (!editForm.title.trim()) { setEditError('Give the session a title.'); return; }
+    if (!Number.isFinite(editForm.duration) || editForm.duration < MIN_DURATION_MINUTES || editForm.duration > MAX_DURATION_MINUTES) {
+      setEditError(`Duration must be between ${MIN_DURATION_MINUTES} and ${MAX_DURATION_MINUTES} minutes.`);
+      return;
+    }
     setEditError(null); setSavingEdit(true);
     try {
       await apiFetch(`/api/mentor/services/${id}/update`, 'POST', {
@@ -285,7 +292,6 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   );
 
   const freeTags = hasFree ? [] : SERVICE_CATALOG.filter((c) => c.free && !usedTitles.has(c.title.trim().toLowerCase()));
-  const canAddMore = availableDurations.length > 0;
 
   return (
 
@@ -302,55 +308,48 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
           <p className="text-xs text-muted mt-0.5">Tap one to review it before adding. Prices come from your base rate, by length.</p>
         </div>
 
-        {!canAddMore ? (
-          <p className="text-xs text-muted">
-            You have a session for every length (15, 30, 45, 60 min). Delete one first, or a
-            rejected session no longer counts and frees up its length automatically.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {/* Free intro call - its own category, only one allowed (BUG-059). */}
-            {freeTags.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-2">
-                  Introductory call <span className="text-xs font-normal text-emerald-700">· free</span>
-                </p>
+        <div className="flex flex-col gap-4">
+          {/* Free intro call - its own category, only one allowed (BUG-059). */}
+          {freeTags.length > 0 && (
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">
+                Introductory call <span className="text-xs font-normal text-emerald-700">· free</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {freeTags.map((cat) => (
+                  <button key={cat.code} type="button" onClick={() => openDraftFromCatalog(cat)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800 hover:border-emerald-400 hover:bg-emerald-100 transition-colors">
+                    <Plus className="h-3.5 w-3.5" /> {cat.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {catalogByCategory(SERVICE_CATEGORIES).map((g) => {
+            const tags = g.services.filter((cat) => !cat.free && !usedTitles.has(cat.title.trim().toLowerCase()));
+            if (tags.length === 0) return null;
+            return (
+              <div key={g.category}>
+                <p className="text-sm font-semibold text-foreground mb-2">{g.category}</p>
                 <div className="flex flex-wrap gap-2">
-                  {freeTags.map((cat) => (
+                  {tags.map((cat) => (
                     <button key={cat.code} type="button" onClick={() => openDraftFromCatalog(cat)}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800 hover:border-emerald-400 hover:bg-emerald-100 transition-colors">
-                      <Plus className="h-3.5 w-3.5" /> {cat.title}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                      <Plus className="h-3.5 w-3.5 text-brand-600" /> {cat.title}
                     </button>
                   ))}
                 </div>
               </div>
-            )}
-            {catalogByCategory(SERVICE_CATEGORIES).map((g) => {
-              const tags = g.services.filter((cat) => !cat.free && !usedTitles.has(cat.title.trim().toLowerCase()));
-              if (tags.length === 0) return null;
-              return (
-                <div key={g.category}>
-                  <p className="text-sm font-semibold text-foreground mb-2">{g.category}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((cat) => (
-                      <button key={cat.code} type="button" onClick={() => openDraftFromCatalog(cat)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
-                        <Plus className="h-3.5 w-3.5 text-brand-600" /> {cat.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-            <div>
-              <p className="text-xs font-medium text-muted mb-1.5">Something else</p>
-              <button type="button" onClick={openCustomDraft}
-                className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
-                <Plus className="h-3.5 w-3.5" /> Add your own session
-              </button>
-            </div>
+            );
+          })}
+          <div>
+            <p className="text-xs font-medium text-muted mb-1.5">Something else</p>
+            <button type="button" onClick={openCustomDraft}
+              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+              <Plus className="h-3.5 w-3.5" /> Add your own session
+            </button>
           </div>
-        )}
+        </div>
 
         {/* Draft review - BUG-137: whether it started from a catalogue tag or "add your own", the
             mentor reviews/edits every field here and must press "Add session" to actually create
@@ -365,11 +364,11 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
               <Input label="Title *" value={draft.title} onChange={e => setDraft(d => d && ({ ...d, title: e.target.value }))} placeholder="e.g. Portfolio review" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-foreground">Duration *</label>
-                  <select value={String(draft.duration)} onChange={e => setDraft(d => d && ({ ...d, duration: parseInt(e.target.value) }))}
-                    className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                    {(usedDurations.has(draft.duration) ? [draft.duration, ...availableDurations] : availableDurations).map(d => <option key={d} value={d}>{d} minutes</option>)}
-                  </select>
+                  <label className="text-sm font-medium text-foreground">Duration (minutes) *</label>
+                  <input type="number" inputMode="numeric" min={MIN_DURATION_MINUTES} max={MAX_DURATION_MINUTES} step={5}
+                    value={draft.duration}
+                    onChange={e => setDraft(d => d && ({ ...d, duration: parseInt(e.target.value) || 0 }))}
+                    className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-foreground">Price</span>
@@ -488,15 +487,11 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                       <Input label="Title *" value={editForm.title}
                         onChange={e => setEditForm(f => f && ({ ...f, title: e.target.value }))} />
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-sm font-medium text-foreground">Length</label>
-                        {/* Lengths already taken by the mentor's OTHER sessions are excluded; this
-                            session's own current length always stays selectable. */}
-                        <select value={String(editForm.duration)}
-                          onChange={e => setEditForm(f => f && ({ ...f, duration: parseInt(e.target.value) }))}
-                          className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                          {DURATION_OPTIONS.filter(d => d === svc.duration || !usedDurations.has(d))
-                            .map(d => <option key={d} value={d}>{d} minutes</option>)}
-                        </select>
+                        <label className="text-sm font-medium text-foreground">Length (minutes)</label>
+                        <input type="number" inputMode="numeric" min={MIN_DURATION_MINUTES} max={MAX_DURATION_MINUTES} step={5}
+                          value={editForm.duration}
+                          onChange={e => setEditForm(f => f && ({ ...f, duration: parseInt(e.target.value) || 0 }))}
+                          className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
                         {svc.set_price > 0 && editForm.duration !== svc.duration && (
                           <p className="text-xs text-muted">
                             Price becomes {priceText(editForm.duration, false)} when you save.
