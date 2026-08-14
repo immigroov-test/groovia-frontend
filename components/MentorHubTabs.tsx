@@ -61,6 +61,19 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
   ];
   const [tab, setTab] = useState<TabId>('profile');
 
+  // Suspension is checked FIRST, before anything else. It used to sit below the onboarding gate, so a
+  // suspended mentor who had not finished first-login was told their account was suspended and asked
+  // to set an hourly rate in the same breath - and could still walk the whole setup flow for an
+  // account that cannot take bookings.
+  if (mentor.status === 'suspended') {
+    return (
+      <Card><CardBody className="pt-6">
+        <h2 className="text-base font-semibold text-foreground">Account suspended</h2>
+        <p className="text-sm text-muted mt-1">Your mentor account is currently suspended. Please contact support.</p>
+      </CardBody></Card>
+    );
+  }
+
   // Migrated mentors arrive with no per-hour rate. The hub stays locked behind a mandatory
   // first-login flow (welcome popup -> review profile -> set rate + confirm sessions) until they
   // finish it. The gate is the server-side needs_onboarding flag, so closing the tab mid-way just
@@ -172,14 +185,6 @@ function StatusBanner({ mentor }: { mentor: HubMentor }) {
           </div>
         )}
         <p className="text-sm text-muted mt-3">Update your profile and re-apply, or contact support.</p>
-      </CardBody></Card>
-    );
-  }
-  if (mentor.status === 'suspended') {
-    return (
-      <Card><CardBody className="pt-6">
-        <h2 className="text-base font-semibold text-foreground">Account suspended</h2>
-        <p className="text-sm text-muted mt-1">Your mentor account is currently suspended. Please contact support.</p>
       </CardBody></Card>
     );
   }
