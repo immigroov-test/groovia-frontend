@@ -6,6 +6,8 @@ import { Loader2, Video, Clock } from 'lucide-react';
 import { Button } from './ui/Button';
 import { createClient } from '../lib/supabase/client';
 import { loadJitsi, type JitsiApi } from '../lib/jitsi';
+import { ReviewForm } from './Reviews';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 
 interface RoomInfo {
   open: boolean;
@@ -42,6 +44,12 @@ function fmt(iso?: string): string {
 
 export function MeetingRoom({ bookingId }: { bookingId: string }) {
   const router = useRouter();
+  // Set the moment Join is clicked, and seeded from i_joined on load so the actions survive a refresh
+  // or a second visit. Clicking Join is what proves attendance, so nothing below unlocks before it.
+  const [joined, setJoined] = useState(false);
+  const [reportingNoShow, setReportingNoShow] = useState(false);
+  const [noShowBusy, setNoShowBusy] = useState(false);
+  const [noShowDone, setNoShowDone] = useState(false);
   const [state, setState] = useState<State>('loading');
   const [info, setInfo] = useState<RoomInfo | null>(null);
   const [errMsg, setErrMsg] = useState('');
@@ -139,20 +147,93 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
   // No embedding allowed (public server): launch the room in its own tab, which has no time cap.
   if (state === 'open') {
     const url = info?.join_url ?? '';
+    const isCandidate = info?.party === 'candidate';
+    // Attendance is what no-show detection reads, so it must be recorded with the auth header. The
+    // plain fetch here had none, which meant the stamp was silently dropped on the tab path.
+    const recordJoin = async () => {
+      setJoined(true);
+      try {
+        await fetch(`/api/booking/${bookingId}/attendance`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+          body: JSON.stringify({ event: 'joined' }),
+        });
+      } catch { /* the call still matters more than the stamp */ }
+    };
+    const canAct = joined || info?.i_joined;
     return (
       <Shell icon={<Video className="h-7 w-7" />} title="Your video call is ready">
         <p className="text-sm text-muted mt-2 leading-relaxed">
           The call opens in a new tab. Keep this page open so you can come back to it after the call.
         </p>
         <div className="mt-6">
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            onClick={() => { void fetch(`/api/booking/${bookingId}/attendance`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ event: 'joined' }),
-            }).catch(() => {}); }}>
+          <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => { void recordJoin(); }}>
             <Button>Join the call</Button>
           </a>
         </div>
+
+        {/* Post-call actions, so nobody has to find the session detail page. Only after Join: reporting
+            a no-show puts a strike on a mentor, so it must not be available to someone who never
+            opened the call themselves. */}
+        {canAct && (
+          <div className="mt-8 pt-6 border-t border-[--color-border] text-left">
+            <p className="text-xs font-medium text-muted uppercase tracking-wide">After your call</p>
+
+            {noShowDone ? (
+              <p className="text-sm text-emerald-700 mt-3">
+                No-show reported. We have emailed both of you, and you can resolve it from your sessions.
+              </p>
+            ) : (
+              <div className="mt-3">
+                <Button variant="ghost" className="text-red-600 hover:bg-red-50"
+                  onClick={() => setReportingNoShow(true)}>
+                  {isCandidate ? `${info?.other_name} didn't join` : 'The attendee didn’t join'}
+                </Button>
+                {info?.they_joined === false && (
+                  <p className="text-xs text-muted mt-1">
+                    We have no record of {info?.other_name} opening the call.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {isCandidate && (
+              <div className="mt-6">
+                <p className="text-sm font-medium text-foreground mb-2">How was your session?</p>
+                <ReviewForm bookingId={bookingId} />
+              </div>
+            )}
+          </div>
+        )}
+
+        <ConfirmDialog
+          open={reportingNoShow} busy={noShowBusy}
+          onClose={() => setReportingNoShow(false)}
+          title={isCandidate ? 'Report that your mentor did not join?' : 'Report that the attendee did not join?'}
+          body={isCandidate
+            ? <>We will email you both and open a resolution: a refund or a rebook. This also counts
+                against the mentor, so only report it if they genuinely did not attend.</>
+            : <>We will email you both. If they simply ran late, giving them a moment is usually
+                better than reporting it.</>}
+          confirmLabel="Yes, report it"
+          alternateLabel="Wait a little longer"
+          reason={{ label: 'What happened?', placeholder: 'e.g. waited 15 minutes, nobody joined', required: true }}
+          onConfirm={async (reason) => {
+            setNoShowBusy(true);
+            try {
+              const res = await fetch('/api/booking/no-show/flag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+                body: JSON.stringify({ booking_id: bookingId,
+                                       no_show_party: isCandidate ? 'mentor' : 'user',
+                                       reason }),
+              });
+              if (res.ok) { setNoShowDone(true); setReportingNoShow(false); }
+              else { setErrMsg('Could not report that. Please try from your sessions page.'); }
+            } catch { setErrMsg('Could not report that. Please try from your sessions page.'); }
+            finally { setNoShowBusy(false); }
+          }}
+        />
       </Shell>
     );
   }
