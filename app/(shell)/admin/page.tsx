@@ -29,6 +29,7 @@ interface AdminStats {
   pending_mentor_count: number;
   approved_mentor_count: number;
   active_mentor_count: number;
+  suspended_mentor_count: number;
   inactive_mentor_count: number;
   no_service_mentor_count: number;
   pending_service_count: number;
@@ -75,6 +76,7 @@ export default async function AdminPage() {
     active_mentor_count: approved.length,
     inactive_mentor_count: 0,
     no_service_mentor_count: 0,
+    suspended_mentor_count: suspended.length,
     pending_service_count: 0,
     total_bookings: 0,
   };

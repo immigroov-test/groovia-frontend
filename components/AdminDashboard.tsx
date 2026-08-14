@@ -20,7 +20,7 @@ type MentorFilter = 'all' | 'active' | 'inactive' | 'no_service';
 const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
-interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; pending_service_count: number; total_bookings: number; }
+interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; suspended_mentor_count: number; pending_service_count: number; total_bookings: number; }
 type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
@@ -59,6 +59,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         <StatCard n={stats.active_mentor_count} label="Active mentors" hint="visible to users" />
         <StatCard n={stats.inactive_mentor_count} label="Inactive" hint="hidden by admin" />
         <StatCard n={stats.no_service_mentor_count} label="No services" hint="nothing to book yet" />
+        <StatCard n={stats.suspended_mentor_count} label="Suspended" hint="blocked from signing in" />
         <StatCard n={stats.total_bookings} label="Total bookings" />
       </div>
 
