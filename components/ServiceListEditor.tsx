@@ -16,7 +16,9 @@ export interface DraftService {
   free?: boolean;   // offered free (price 0 regardless of the base rate)
 }
 
-const DURATIONS = [15, 30, 45, 60] as const;
+const MIN_DURATION_MINUTES = 5;
+const MAX_DURATION_MINUTES = 480;
+const DEFAULT_DURATION_MINUTES = 30;
 
 export function activeServiceCount(list: DraftService[]): number {
   return list.filter((s) => s.active).length;
@@ -28,34 +30,35 @@ export function proratePrice(hourlyRate: number | undefined, duration: number): 
   return Math.round(hourlyRate * (duration / 60) * 100) / 100;
 }
 
-// Local session-type builder used in the onboarding wizard. Each duration is offered
-// once. Each session's price defaults to the mentor's hourly rate prorated by its
-// length, and stays editable per session.
+// Local session-type builder used in the onboarding wizard. Duration is a free-form number of
+// minutes - a mentor can add any number of sessions and multiple sessions can share a length.
+// Each session's price defaults to the mentor's hourly rate prorated by its length, and stays
+// editable per session.
 export function ServiceListEditor({
   value, onChange, hourlyRate, currency = 'USD',
 }: {
   value: DraftService[]; onChange: (s: DraftService[]) => void; hourlyRate?: number; currency?: string;
 }) {
-  const used = new Set(value.map((s) => s.duration));
-  const available = DURATIONS.filter((d) => !used.has(d));
-
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState('');
-  const [duration, setDuration] = useState<number>(available[0] ?? 30);
-  const [price, setPrice] = useState<number>(proratePrice(hourlyRate, available[0] ?? 30));
+  const [duration, setDuration] = useState<number>(DEFAULT_DURATION_MINUTES);
+  const [price, setPrice] = useState<number>(proratePrice(hourlyRate, DEFAULT_DURATION_MINUTES));
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   function startAdd() {
-    const d = available[0] ?? 30;
+    const d = DEFAULT_DURATION_MINUTES;
     setTitle(''); setDuration(d); setPrice(proratePrice(hourlyRate, d));
     setDescription(SERVICE_DESCRIPTION_TEMPLATE); setCategory(''); setTags([]); setErr(null); setAdding(true);
   }
   function save() {
     if (!title.trim()) { setErr('Give the session a title.'); return; }
-    if (used.has(duration)) { setErr('You already have a session of this length.'); return; }
+    if (!Number.isFinite(duration) || duration < MIN_DURATION_MINUTES || duration > MAX_DURATION_MINUTES) {
+      setErr(`Duration must be between ${MIN_DURATION_MINUTES} and ${MAX_DURATION_MINUTES} minutes.`);
+      return;
+    }
     onChange([...value, {
       title: title.trim(), duration, active: true, price: Math.max(0, price || 0),
       description: isRichTextEmpty(description) ? '' : description, category, tags,
@@ -101,11 +104,11 @@ export function ServiceListEditor({
           <Input label="Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Quick career chat" autoFocus />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-foreground">Duration *</label>
-              <select value={String(duration)} onChange={(e) => { const d = parseInt(e.target.value); setDuration(d); setPrice(proratePrice(hourlyRate, d)); }}
-                className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                {available.map((d) => <option key={d} value={d}>{d} minutes</option>)}
-              </select>
+              <label className="text-sm font-medium text-foreground">Duration (minutes) *</label>
+              <input type="number" inputMode="numeric" min={MIN_DURATION_MINUTES} max={MAX_DURATION_MINUTES} step={5}
+                value={duration}
+                onChange={(e) => { const d = parseInt(e.target.value) || 0; setDuration(d); setPrice(proratePrice(hourlyRate, d)); }}
+                className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Price ({currency})</label>
@@ -136,13 +139,11 @@ export function ServiceListEditor({
             <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(false)}>Cancel</Button>
           </div>
         </div>
-      ) : available.length > 0 ? (
+      ) : (
         <button type="button" onClick={startAdd}
           className="flex items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900 transition-colors">
           <Plus className="h-4 w-4" /> Add session type
         </button>
-      ) : (
-        <p className="text-xs text-muted">You have a session type for every length (15, 30, 45, 60 min).</p>
       )}
     </div>
   );
