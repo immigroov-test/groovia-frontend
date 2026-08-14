@@ -143,8 +143,13 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   // count against the one-per-duration limit and the "you already added this" catalogue filter;
   // this is what was silently hiding "more services" once a rejection had happened.
   const liveServices = services.filter(s => s.status !== 'rejected');
-  const usedDurations = new Set(liveServices.map((s) => s.duration));
-  const availableDurations = DURATION_OPTIONS.filter((d) => !usedDurations.has(d));
+  // Every length stays selectable, always. This used to filter out durations already in use, on a
+  // one-service-per-duration rule that exists NOWHERE else: no DB constraint, no check in
+  // create_service. The imported data contradicts it outright - arun-thanigaivel has four 45-minute
+  // sessions, vasanth-leyo has six 30-minute ones - so mentors were left with one or two lengths to
+  // choose from, and could not even keep a session's own length when editing it. Mentors legitimately
+  // offer several sessions of the same length on different topics.
+  const availableDurations = DURATION_OPTIONS;
   const usedTitles = new Set(liveServices.map((s) => s.title.trim().toLowerCase()));
   const hasFree = liveServices.some((s) => s.set_price === 0);
 
@@ -160,7 +165,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   // ── Add flow: tap a tag or "Add your own" opens a draft; nothing is submitted until Confirm ──
 
   function openDraftFromCatalog(cat: CatalogService) {
-    const duration = (availableDurations as readonly number[]).includes(cat.duration) ? cat.duration : (availableDurations[0] ?? cat.duration);
+    const duration = cat.duration;
     setDraftError(null);
     setDraft({ code: cat.code, title: cat.title, description: cat.description, category: cat.category, duration, tags: [], free: !!cat.free });
   }
@@ -177,7 +182,6 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     if (!draft) return;
     if (!draft.title.trim()) { setDraftError('Give the session a title.'); return; }
     if (!draft.free && !hasRate) { setDraftError('Set your base rate on the Profile tab first, then add paid sessions.'); return; }
-    if (usedDurations.has(draft.duration)) { setDraftError('You already have a session of this length.'); return; }
     setDraftError(null);
     setConfirmingAdd(true);
   }
@@ -285,7 +289,6 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
   );
 
   const freeTags = hasFree ? [] : SERVICE_CATALOG.filter((c) => c.free && !usedTitles.has(c.title.trim().toLowerCase()));
-  const canAddMore = availableDurations.length > 0;
 
   return (
 
@@ -302,12 +305,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
           <p className="text-xs text-muted mt-0.5">Tap one to review it before adding. Prices come from your base rate, by length.</p>
         </div>
 
-        {!canAddMore ? (
-          <p className="text-xs text-muted">
-            You have a session for every length (15, 30, 45, 60 min). Delete one first, or a
-            rejected session no longer counts and frees up its length automatically.
-          </p>
-        ) : (
+        {(
           <div className="flex flex-col gap-4">
             {/* Free intro call - its own category, only one allowed (BUG-059). */}
             {freeTags.length > 0 && (
@@ -368,7 +366,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                   <label className="text-sm font-medium text-foreground">Duration *</label>
                   <select value={String(draft.duration)} onChange={e => setDraft(d => d && ({ ...d, duration: parseInt(e.target.value) }))}
                     className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                    {(usedDurations.has(draft.duration) ? [draft.duration, ...availableDurations] : availableDurations).map(d => <option key={d} value={d}>{d} minutes</option>)}
+                    {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} minutes</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -494,7 +492,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
                         <select value={String(editForm.duration)}
                           onChange={e => setEditForm(f => f && ({ ...f, duration: parseInt(e.target.value) }))}
                           className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
-                          {DURATION_OPTIONS.filter(d => d === svc.duration || !usedDurations.has(d))
+                          {DURATION_OPTIONS
                             .map(d => <option key={d} value={d}>{d} minutes</option>)}
                         </select>
                         {svc.set_price > 0 && editForm.duration !== svc.duration && (
