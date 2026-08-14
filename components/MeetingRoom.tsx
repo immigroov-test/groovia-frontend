@@ -16,6 +16,11 @@ interface RoomInfo {
   embed?: boolean;       // false on the public server, where an embedded call is cut at 5 minutes
   join_url?: string;     // the room opened directly, with no embed time cap
   party?: 'candidate' | 'mentor';
+  /** Whether the viewer clicked Join. Post-call actions (review, no-show) unlock only once true, so
+   *  nobody can report a no-show for a call they never opened themselves. */
+  i_joined?: boolean;
+  /** Whether the OTHER party joined, so the page can name who was missing rather than ask. */
+  they_joined?: boolean;
   display_name?: string;
   other_name?: string;
   slot_time?: string;
@@ -137,7 +142,7 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     return (
       <Shell icon={<Video className="h-7 w-7" />} title="Your video call is ready">
         <p className="text-sm text-muted mt-2 leading-relaxed">
-          The call opens in a new tab. Keep this page open, and come back here afterwards.
+          The call opens in a new tab. Keep this page open so you can come back to it after the call.
         </p>
         <div className="mt-6">
           <a href={url} target="_blank" rel="noopener noreferrer"
@@ -169,7 +174,19 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     );
   }
   if (state === 'ended') {
-    return <Shell icon={<Video className="h-7 w-7" />} title="This session has ended"><p className="text-sm text-muted mt-2">The video room for this session is closed.</p></Shell>;
+    // TODO(next): the review and no-show actions from the session detail page belong here, gated on
+    // info.i_joined, with info.they_joined used to pre-empt who was missing. Until they are wired,
+    // this at least stops being a dead end and points at the page that does have them.
+    return (
+      <Shell icon={<Video className="h-7 w-7" />} title="This session has ended">
+        <p className="text-sm text-muted mt-2 leading-relaxed">
+          {info?.i_joined && info?.they_joined === false
+            ? <>It looks like {info.other_name} didn&apos;t join. You can report that from your sessions.</>
+            : <>The video room for this session is closed.</>}
+        </p>
+        <div className="mt-6"><Link href="/account/sessions"><Button>Go to my sessions</Button></Link></div>
+      </Shell>
+    );
   }
   return <Shell icon={<Video className="h-7 w-7" />} title="Can’t open this session"><p className="text-sm text-red-600 mt-2">{errMsg}</p></Shell>;
 }
