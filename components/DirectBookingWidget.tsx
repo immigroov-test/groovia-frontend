@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Bell, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
 } from 'lucide-react';
+import { ShareButton } from './ui/ShareButton';
 import { REMINDER_NOTICE } from '../lib/content';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import { Button } from './ui/Button';
@@ -1015,6 +1016,19 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 <MapPin className="h-3.5 w-3.5 shrink-0" /> {mentorLocation}
               </p>
             )}
+            {/* Built from the live origin rather than an env constant, so the link a mentor shares is
+                always the host they are on. The page already carries OpenGraph tags including the
+                mentor's photo, so a pasted link renders as a card rather than bare text. */}
+            <div className="mt-3">
+              <ShareButton
+                url={typeof window !== 'undefined' ? window.location.href : ''}
+                title={`${mentor.display_name} on Immigroov`}
+                text={mentor.headline
+                  ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
+                  : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
+                label="Share profile"
+              />
+            </div>
           </div>
         </div>
 
