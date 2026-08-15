@@ -1,11 +1,13 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus, X, Ban, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, X, Ban, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardBody } from './ui/Card';
 import { cn } from '../lib/utils';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+const WEEKDAYS: Day[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const WEEKEND:  Day[] = ['Saturday', 'Sunday'];
 const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 type Day = typeof DAYS[number];
@@ -47,6 +49,7 @@ export function AvailabilityManagerV2() {
   const [error, setError] = useState<string | null>(null);
 
   // Per-day "add hours" inline editor
+  const [copyOpen, setCopyOpen] = useState<Day | null>(null);
   const [addDay, setAddDay] = useState<Day | null>(null);
   const [addFrom, setAddFrom] = useState('09:00');
   const [addTo, setAddTo] = useState('17:00');
@@ -92,12 +95,48 @@ export function AvailabilityManagerV2() {
     return daysWithHours.has(dayNameOf(d)) ? 'weekly' : 'none';
   }
 
+  // BUG-157 / BUG-112: two overlapping windows on one day were accepted silently, which produced
+  // duplicate slots at the same time on the booking page. Times are "HH:MM", so string comparison is
+  // chronological and no parsing is needed. Touching ends (09:00-10:00 then 10:00-11:00) is allowed:
+  // that is contiguous, not overlapping, and the server merges it into one window.
+  function overlaps(day: Day, from: string, to: string, ignoreId?: string): string | null {
+    const clash = (weeklyByDay[day] ?? []).find((s) =>
+      s.id !== ignoreId && from < hhmm(s.end_time) && to > hhmm(s.start_time));
+    return clash ? `That overlaps ${hhmm(clash.start_time)}-${hhmm(clash.end_time)} on ${day}.` : null;
+  }
+
   async function addHours(day: Day) {
     if (addTo <= addFrom) { setError('End must be after start.'); return; }
+    const clash = overlaps(day, addFrom, addTo);
+    if (clash) { setError(clash); return; }
     setBusy(true); setError(null);
     try {
       await apiFetch(`${API}/weekly`, 'POST', { weekday: day, start_time: addFrom, end_time: addTo });
       setAddDay(null); await load();
+    } catch (e: any) { setError(e.message); } finally { setBusy(false); }
+  }
+
+  // BUG-157 / BUG-112: setting the same hours seven times over was the single most tedious part of
+  // onboarding. Days that would clash are skipped rather than failing the whole action, and the
+  // result says how many were applied and how many were already covered.
+  async function copyHoursTo(source: Day, targets: Day[]) {
+    const windows = weeklyByDay[source] ?? [];
+    if (windows.length === 0) { setError(`${source} has no hours to copy.`); return; }
+    setBusy(true); setError(null);
+    let applied = 0, skipped = 0;
+    try {
+      for (const day of targets) {
+        for (const w of windows) {
+          const from = hhmm(w.start_time), to = hhmm(w.end_time);
+          if (overlaps(day, from, to)) { skipped += 1; continue; }
+          await apiFetch(`${API}/weekly`, 'POST', { weekday: day, start_time: from, end_time: to });
+          applied += 1;
+        }
+      }
+      await load();
+      setCopyOpen(null);
+      if (applied === 0) setError('Those days already have these hours.');
+      else if (skipped > 0) setError(`Added ${applied}. Skipped ${skipped} that already overlapped.`);
     } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   }
   async function delWeekly(id: string) {
@@ -183,10 +222,33 @@ export function AvailabilityManagerV2() {
                     <button onClick={() => setAddDay(null)} className="text-xs text-muted hover:text-foreground px-1">Cancel</button>
                   </div>
                 ) : (
-                  <button onClick={() => { setAddDay(day); setError(null); }}
-                    className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-[--color-border] text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors shrink-0">
-                    <Plus className="h-3.5 w-3.5" /> Add hours
-                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => { setAddDay(day); setError(null); }}
+                      className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-[--color-border] text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors">
+                      <Plus className="h-3.5 w-3.5" /> Add hours
+                    </button>
+                    {/* Only offered on days that HAVE hours: copying nothing is the most common way to
+                        press this by mistake. */}
+                    {weeklyByDay[day].length > 0 && (
+                      <button onClick={() => { setCopyOpen(copyOpen === day ? null : day); setError(null); }}
+                        className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-[--color-border] text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors">
+                        <Copy className="h-3.5 w-3.5" /> Copy to
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {copyOpen === day && (
+                  <div className="w-full mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-brand-50/60 p-2">
+                    <span className="text-xs text-muted mr-1">Copy {day}&apos;s hours to</span>
+                    <Button size="sm" variant="outline" loading={busy}
+                      onClick={() => copyHoursTo(day, DAYS.filter((d) => d !== day))}>All days</Button>
+                    <Button size="sm" variant="outline" loading={busy}
+                      onClick={() => copyHoursTo(day, WEEKDAYS.filter((d) => d !== day))}>Weekdays</Button>
+                    <Button size="sm" variant="outline" loading={busy}
+                      onClick={() => copyHoursTo(day, WEEKEND.filter((d) => d !== day))}>Weekend</Button>
+                    <button onClick={() => setCopyOpen(null)} className="text-xs text-muted hover:text-foreground px-1">Cancel</button>
+                  </div>
                 )}
               </div>
             ))}

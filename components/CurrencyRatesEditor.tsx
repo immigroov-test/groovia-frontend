@@ -144,11 +144,11 @@ export function CurrencyRatesEditor({
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Smart pricing</p>
           <p className="text-xs text-muted mt-0.5">
-            Let Immigroov adjust what customers pay based on their market, helping more of them book you.
+            Let Immigroov adjust what customers pay based on their market &mdash; helping more of them book you.
           </p>
           <p className="text-xs text-muted mt-1 flex items-start gap-1.5">
             <Info className="h-3.5 w-3.5 mt-px shrink-0 text-brand-500" aria-hidden="true" />
-            <span>Your session rate is never lowered, it stays fixed in the currency you set it in.</span>
+            <span>Your session rate is never lowered. Your rate stays fixed in the currency you set it in.</span>
           </p>
         </div>
         <Toggle checked={smartPricing} onChange={onSmartPricing} aria-label="Smart pricing" />
