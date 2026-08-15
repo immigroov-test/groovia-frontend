@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Check, Loader2 } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { CurrencyRatesEditor } from './CurrencyRatesEditor';
@@ -29,6 +30,7 @@ export function MentorRateEditor({
   const [baseRate, setBaseRate] = useState(initialRate);
   const [rates, setRates] = useState<CurrencyRate[]>(initialRates);
   const [smartPricing, setSmartPricing] = useState(initialSmartPricing);
+  const router = useRouter();
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
     !!initialRate && parseFloat(initialRate) > 0 ? 'saved' : 'idle');
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +75,11 @@ export function MentorRateEditor({
           return;
         }
         setError(null); setStatus('saved'); onSavedRef.current?.(true, rate, currency);
+        // The hub's `mentor` comes from a SERVER component and the tabs are client state, so moving
+        // to Sessions and back re-mounts this editor with the pre-save rate still in its props. Only
+        // a browser refresh fixed it. router.refresh() re-runs the server component so the prop
+        // catches up with what was just saved; it also picks up the session prices repriced from it.
+        router.refresh();
       } catch {
         if (!cancelled) { setError('Could not reach the server. Please try again.'); setStatus('error'); onSavedRef.current?.(false); }
       }
