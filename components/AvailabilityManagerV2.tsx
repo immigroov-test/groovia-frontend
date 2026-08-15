@@ -194,6 +194,16 @@ export function AvailabilityManagerV2() {
       <Card>
         <CardBody className="pt-5">
           <h3 className="text-base font-semibold text-brand-900">Weekly hours <span className="text-xs font-normal text-muted">· {tz}</span></h3>
+          {/* BUG-091: these times are stored and shown in the mentor's own timezone, taken from their
+              profile. 9 of the migrated mentors arrived with no timezone and fell back to UTC, so the
+              hours they set read as UTC and their real availability is hours off. There is no way to
+              change it from this page, so point at the one place that can. */}
+          {tz === 'UTC' && (
+            <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mt-2">
+              Your timezone is set to UTC, so the hours below are read as UTC times. If that is not
+              where you are, set your timezone on the <strong>Profile</strong> tab and these will follow.
+            </p>
+          )}
           <div className="mt-4 flex flex-col divide-y divide-[--color-border]">
             {DAYS.map((day, i) => (
               <div key={day} className="flex flex-wrap items-center gap-2 py-3">
