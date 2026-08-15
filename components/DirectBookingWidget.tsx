@@ -1016,20 +1016,35 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 <MapPin className="h-3.5 w-3.5 shrink-0" /> {mentorLocation}
               </p>
             )}
-            {/* Built from the live origin rather than an env constant, so the link a mentor shares is
-                always the host they are on. The page already carries OpenGraph tags including the
-                mentor's photo, so a pasted link renders as a card rather than bare text. */}
-            <div className="mt-3">
-              <ShareButton
-                url={typeof window !== 'undefined' ? window.location.href : ''}
-                title={`${mentor.display_name} on Immigroov`}
-                text={mentor.headline
-                  ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
-                  : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
-                label="Share profile"
-              />
-            </div>
           </div>
+
+          {/* Top-right of the card, in the space the name leaves. shrink-0 so a long name wraps
+              rather than squeezing the button, and self-start so it stays level with the name however
+              tall the text column grows. Below sm it drops under the header and spans the width,
+              because at phone widths there is no blank space to sit in and a 100px pill beside a
+              wrapping name just makes both cramped. */}
+          <ShareButton
+            url={typeof window !== 'undefined' ? window.location.href : ''}
+            title={`${mentor.display_name} on Immigroov`}
+            text={mentor.headline
+              ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
+              : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
+            label="Share profile"
+            className="hidden sm:inline-flex shrink-0 self-start"
+          />
+        </div>
+
+        {/* Phone: full-width under the header, where it does not compete with the name. */}
+        <div className="sm:hidden mt-3">
+          <ShareButton
+            url={typeof window !== 'undefined' ? window.location.href : ''}
+            title={`${mentor.display_name} on Immigroov`}
+            text={mentor.headline
+              ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
+              : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
+            label="Share profile"
+            className="w-full justify-center"
+          />
         </div>
 
         {/* BUG-100: profile facts (home country, years abroad, domain expertise, destination
