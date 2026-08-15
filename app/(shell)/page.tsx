@@ -1,8 +1,5 @@
-import { redirect } from 'next/navigation';
-
-// Everyone (guests included) lands on /home; middleware already redirects / -> /home.
-// This is the belt-and-suspenders fallback so the route stays valid without the old
-// marketing UI, which is no longer used.
-export default function Home() {
-  redirect('/home');
-}
+// The home page is served at BOTH '/' and '/home', from one component, so a bare immigroov.com is
+// a real page rather than a redirect. '/home' is kept because email CTAs, OAuth returns and any
+// link shared before this change all point at it.
+export { metadata } from './home/page';
+export { default } from './home/page';

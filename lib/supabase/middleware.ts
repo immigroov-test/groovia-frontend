@@ -48,12 +48,10 @@ async function refreshSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // Everyone - including guests - lands on /home. / redirects there.
-  if (path === '/') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/home';
-    return NextResponse.redirect(url);
-  }
+  // '/' SERVES the home page rather than redirecting to /home. A bare immigroov.com is what gets
+  // pasted into social posts and messages, and a redirect hop costs link previews: some scrapers do
+  // not follow it, and those that do fetch the destination's tags rather than the URL the user sees.
+  // /home stays a working route, so existing links and email CTAs are unaffected.
 
   // /account is auth-only. /mentor is public - guests see the "Join as Mentor" signup form.
   if (!user && path.startsWith('/account')) {

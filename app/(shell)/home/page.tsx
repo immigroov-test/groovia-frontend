@@ -2,7 +2,10 @@ import { redirect } from 'next/navigation';
 import ChatInterface from '../../../components/ChatInterface';
 import { createClient } from '../../../lib/supabase/server';
 
-export const metadata = { title: 'Immigroov' };
+// Canonical is '/', not '/home': the same page is served at both, and without this they compete as
+// duplicate content and Google may index whichever it saw first. metadataBase in the root layout
+// resolves the relative path against SITE_URL.
+export const metadata = { title: 'Immigroov', alternates: { canonical: '/' } };
 
 export default async function HomePage({
   searchParams,
