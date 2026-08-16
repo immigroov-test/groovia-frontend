@@ -41,3 +41,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Legacy AWS database archive: production customer PII (emails, phones, payments).
+# Never commit, wherever it is placed.
+legacy-archive/
+immigroov-legacy-archive/
+*.parquet
