@@ -6,10 +6,20 @@ export const metadata = { title: 'Session - Immigroov' };
 
 // Authorization (candidate / mentor / admin) is enforced by the backend detail
 // endpoint; this just ensures the visitor is signed in before mounting the page.
-export default async function SessionPage({ params }: { params: Promise<{ bookingId: string }> }) {
+export default async function SessionPage({
+  params, searchParams,
+}: {
+  params: Promise<{ bookingId: string }>;
+  searchParams: Promise<{ t?: string }>;
+}) {
   const { bookingId } = await params;
+  const { t } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/login?next=/session/${bookingId}`);
-  return <SessionDetail bookingId={bookingId} />;
+  // A signed token from the confirmation email stands in for a session. Guests have no account, so
+  // without this they were redirected to /login and could not open a booking they had paid for. The
+  // token is verified on the BACKEND; skipping the redirect here only avoids bouncing them before the
+  // real check runs, and an invalid token still yields 403 from the API.
+  if (!user && !t) redirect(`/login?next=/session/${bookingId}`);
+  return <SessionDetail bookingId={bookingId} accessToken={t} />;
 }

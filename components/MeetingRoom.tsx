@@ -44,7 +44,12 @@ function fmt(iso?: string): string {
   catch { return iso; }
 }
 
-export function MeetingRoom({ bookingId }: { bookingId: string }) {
+export function MeetingRoom({ bookingId, accessToken }: {
+  bookingId: string;
+  /** Signed token from the confirmation email; present for guests, absent for signed-in users. */
+  accessToken?: string;
+}) {
+  const tq = accessToken ? `?t=${encodeURIComponent(accessToken)}` : '';
   const router = useRouter();
   // Set the moment Join is clicked, and seeded from i_joined on load so the actions survive a refresh
   // or a second visit. Clicking Join is what proves attendance, so nothing below unlocks before it.
@@ -60,7 +65,7 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
 
   const checkRoom = useCallback(async () => {
     try {
-      const res = await fetch(`/api/booking/${bookingId}/room`, { headers: await authHeaders(), cache: 'no-store' });
+      const res = await fetch(`/api/booking/${bookingId}/room${tq}`, { headers: await authHeaders(), cache: 'no-store' });
       if (res.status === 401) { router.push(`/login?next=/meeting/${bookingId}`); return; }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setErrMsg(data.detail || 'This session can’t be opened.'); setState('error'); return; }
@@ -113,7 +118,7 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
       });
       apiRef.current = api;
       const post = (event: 'joined' | 'left') => {
-        fetch(`/api/booking/${bookingId}/attendance`, {
+        fetch(`/api/booking/${bookingId}/attendance${tq}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
           body: JSON.stringify({ event }), keepalive: true,
         }).catch(() => {});
@@ -166,7 +171,7 @@ export function MeetingRoom({ bookingId }: { bookingId: string }) {
     const recordJoin = async () => {
       setJoined(true);
       try {
-        await fetch(`/api/booking/${bookingId}/attendance`, {
+        await fetch(`/api/booking/${bookingId}/attendance${tq}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
           body: JSON.stringify({ event: 'joined' }),

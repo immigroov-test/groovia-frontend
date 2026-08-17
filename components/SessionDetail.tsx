@@ -108,7 +108,13 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
-export function SessionDetail({ bookingId }: { bookingId: string }) {
+export function SessionDetail({ bookingId, accessToken }: {
+  bookingId: string;
+  /** Signed token from the confirmation email. Present for guests, absent for signed-in users. */
+  accessToken?: string;
+}) {
+  // Appended to every backend call so a guest is authorised on this one booking.
+  const tq = accessToken ? `?t=${encodeURIComponent(accessToken)}` : '';
   const router = useRouter();   // BUG-121: no-show actions navigate, not just message
   const [d, setD] = useState<Detail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -141,12 +147,12 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const load = useCallback(async () => {
     setLoadError(null);
     try {
-      const res = await authedFetch(`/api/booking/${bookingId}/detail`);
+      const res = await authedFetch(`/api/booking/${bookingId}/detail${tq}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setLoadError(data.detail || 'Could not load this session.'); return; }
       setD(data);
     } catch { setLoadError('Could not load this session.'); }
-  }, [authedFetch, bookingId]);
+  }, [authedFetch, bookingId, tq]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -391,7 +397,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
             starts, so a late joiner can still get in mid-session. */}
         {(isCandidate || isMentor) && d.paid && (!d.closes_at || new Date(d.closes_at).getTime() > Date.now()) && (
           <div className="flex flex-col gap-1.5">
-            <Link href={`/meeting/${d.id}`}>
+            <Link href={`/meeting/${d.id}${tq}`}>
               <Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button>
             </Link>
             {!d.join_open && d.opens_at && (
