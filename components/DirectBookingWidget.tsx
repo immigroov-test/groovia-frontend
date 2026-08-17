@@ -1220,8 +1220,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                       <>
                         <h4 className="text-sm font-semibold text-brand-900">{formatDate(selectedDate)}</h4>
                         <p className="text-xs text-muted mb-3">
-                          {timeSlotsForDay.length} open · your time
-                          {showMentorTz && <> · mentor&apos;s time in {tzCity(mentorTz)}</>}
+                          {timeSlotsForDay.length} available slot{timeSlotsForDay.length === 1 ? '' : 's'}
                         </p>
                         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-[360px] overflow-y-auto pr-1">
                           {timeSlotsForDay.map(slot => {
