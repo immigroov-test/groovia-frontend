@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, Video, Clock } from 'lucide-react';
 import { Button } from './ui/Button';
+import { Logo } from './ui/Logo';
 import { createClient } from '../lib/supabase/client';
 import { loadJitsi, type JitsiApi } from '../lib/jitsi';
 import { ReviewForm } from './Reviews';
@@ -142,22 +143,50 @@ export function MeetingRoom({ bookingId, accessToken }: {
     return <div ref={containerRef} className="fixed inset-x-0 bottom-0 top-16 bg-black" />;
   }
 
-  // The header stays centred (it is a status), the body can be left-aligned. Centred text is fine for
-  // a one-line message and wrong for a form: it breaks the label/value column and leaves the actions
-  // floating with nothing to align to.
+  // Guests reach this page straight from their confirmation email with no account, so it has to stand
+  // on its own: branded, self-explanatory, and never offering a dashboard they cannot open. The header
+  // stays centred (it is a status); the body opts into left alignment, because centred text breaks the
+  // label/value column and leaves form actions with nothing to align to.
+  const isGuest = !!accessToken;
   const Shell = ({ icon, title, children, body = 'center' }: {
     icon: ReactNode; title: string; children: ReactNode; body?: 'center' | 'left';
   }) => (
-    <div className="mx-auto max-w-lg px-4 py-10 sm:py-14">
+    <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-14">
+      {/* Branding: for a guest this page may be their only view of Immigroov outside an email. */}
+      <div className="flex justify-center mb-8">
+        <Link href="/" aria-label="Immigroov home">
+          <Logo className="h-7 w-auto" />
+        </Link>
+      </div>
+
       <div className="text-center">
         <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 mb-4">{icon}</div>
         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-balance">{title}</h1>
       </div>
       <div className={body === 'left' ? 'text-left' : 'text-center'}>{children}</div>
+
       <div className="mt-10 pt-6 border-t border-[--color-border] text-center">
-        <Link href="/account/sessions" className="text-sm font-medium text-brand-700 hover:text-brand-900">
-          Back to my sessions
-        </Link>
+        {isGuest ? (
+          // A guest has no /account/sessions to go back to. Offer the thing that would actually help:
+          // an account tied to the email they already booked with.
+          <>
+            <p className="text-xs text-muted leading-relaxed">
+              You booked as a guest. Create a free account with the same email to manage this session
+              and see it alongside any others.
+            </p>
+            <Link href="/home?auth=open"
+              className="inline-block mt-3 text-sm font-medium text-brand-700 hover:text-brand-900">
+              Create a free account
+            </Link>
+          </>
+        ) : (
+          <Link href="/account/sessions" className="text-sm font-medium text-brand-700 hover:text-brand-900">
+            Back to my sessions
+          </Link>
+        )}
+        <p className="mt-6 text-[11px] text-muted">
+          Need help? <a href="mailto:support@immigroov.com" className="underline">support@immigroov.com</a>
+        </p>
       </div>
     </div>
   );
@@ -201,11 +230,14 @@ export function MeetingRoom({ bookingId, accessToken }: {
 
         <div className="mt-6">
           <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => { void recordJoin(); }}
-            className="block sm:inline-block">
-            <Button className="w-full sm:w-auto">Join the call</Button>
+            className="block">
+            <Button size="lg" className="w-full justify-center">
+              <Video className="h-4 w-4" /> Join the call
+            </Button>
           </a>
           <p className="text-xs text-muted mt-2.5 leading-relaxed">
             Opens in a new tab. Keep this page open to come back here afterwards.
+            {joined && ' You can rejoin from this button at any time during the session.'}
           </p>
         </div>
 
@@ -213,8 +245,11 @@ export function MeetingRoom({ bookingId, accessToken }: {
             a no-show puts a strike on a mentor, so it must not be available to someone who never
             opened the call themselves. */}
         {canAct && (
-          <div className="mt-8 pt-6 border-t border-[--color-border]">
-            <p className="text-xs font-medium text-muted uppercase tracking-wide">After your call</p>
+          <div className="mt-10 pt-6 border-t border-[--color-border]">
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">After your call</p>
+            <p className="text-xs text-muted mt-1 mb-4 leading-relaxed">
+              These become useful once the session is over. Nothing here is sent until you choose it.
+            </p>
 
             {noShowDone ? (
               <p className="text-sm text-emerald-700 mt-3 leading-relaxed">
