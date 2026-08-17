@@ -147,7 +147,15 @@ export function MeetingRoom({ bookingId, accessToken }: {
   // on its own: branded, self-explanatory, and never offering a dashboard they cannot open. The header
   // stays centred (it is a status); the body opts into left alignment, because centred text breaks the
   // label/value column and leaves form actions with nothing to align to.
-  const isGuest = !!accessToken;
+  // A token does NOT mean "guest": the mentor's emailed link carries one too, and treating them as a
+  // guest showed them a "create a free account" prompt for an account they already have. Only the
+  // customer side can be a guest, and only when they are not signed in.
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
+  useEffect(() => {
+    createClient().auth.getSession().then(({ data }) => setHasSession(!!data.session));
+  }, []);
+  const isGuest = !!accessToken && info?.party === 'candidate' && hasSession === false;
+  const isMentor = info?.party === 'mentor';
   const Shell = ({ icon, title, children, body = 'center' }: {
     icon: ReactNode; title: string; children: ReactNode; body?: 'center' | 'left';
   }) => (
@@ -166,7 +174,11 @@ export function MeetingRoom({ bookingId, accessToken }: {
       <div className={body === 'left' ? 'text-left' : 'text-center'}>{children}</div>
 
       <div className="mt-10 pt-6 border-t border-[--color-border] text-center">
-        {isGuest ? (
+        {isMentor ? (
+          <Link href="/mentor" className="text-sm font-medium text-brand-700 hover:text-brand-900">
+            Back to my mentor dashboard
+          </Link>
+        ) : isGuest ? (
           // A guest has no /account/sessions to go back to. Offer the thing that would actually help:
           // an account tied to the email they already booked with.
           <>
@@ -208,6 +220,10 @@ export function MeetingRoom({ bookingId, accessToken }: {
       } catch { /* the call still matters more than the stamp */ }
     };
     const canAct = joined || info?.i_joined;
+    const endsAt = info?.slot_time && info?.duration
+      ? new Date(new Date(info.slot_time).getTime() + info.duration * 60_000)
+      : null;
+    const sessionEnded = !!endsAt && Date.now() >= endsAt.getTime();
     return (
       <Shell icon={<Video className="h-6 w-6" />} title="Your video call is ready" body="left">
         {/* The same facts as the confirmation email, so nobody has to cross-reference their inbox.
@@ -273,7 +289,9 @@ export function MeetingRoom({ bookingId, accessToken }: {
               </div>
             )}
 
-            {isCandidate && (
+            {/* Only after the session has actually ENDED. It used to appear the moment Join was
+                clicked, inviting someone to review a call that had not happened yet. */}
+            {isCandidate && sessionEnded && (
               <div className="mt-8 pt-6 border-t border-[--color-border]">
                 <p className="text-sm font-medium text-foreground">How was your session?</p>
                 <p className="text-xs text-muted mt-1 mb-3">Only the overall rating is required.</p>
