@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { isValidPhoneNumber } from 'libphonenumber-js';
+
 import { createClient } from '../lib/supabase/client';
 import { Card, CardBody } from './ui/Card';
 import { Input } from './ui/Input';
@@ -26,7 +26,7 @@ import { deriveCurrencyPrices, type CurrencyRate } from '../lib/pricing';
 import { DateOverridesEditor, type DateOverride } from './DateOverridesEditor';
 import { BankDetailsFields } from './BankDetailsFields';
 import { emptyBank, validateBank, toBankPayload, type BankValue } from '../lib/bank';
-import { validateCityName } from '../lib/validators';
+import { validateCityName, validatePhone } from '../lib/validators';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { DOMAIN_OPTIONS } from '../lib/domains';
 import { COUNTRIES } from '../lib/countries';
@@ -175,11 +175,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) e.yearsExp = 'Must be between 0 and 60.'; }
     // Per-country phone validity (only when a number was entered, so this never newly blocks a mentor
     // who left the optional field blank).
-    if (phone.trim()) {
-      let phoneOk = false;
-      try { phoneOk = isValidPhoneNumber(phone); } catch { phoneOk = false; }
-      if (!phoneOk) e.phone = 'Enter a valid phone number for the selected country.';
-    }
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) e.phone = phoneErr;
     servedCountries.forEach((sc, i) => {
       if (sc.years) { const y = parseInt(sc.years, 10); if (isNaN(y) || y < 0 || y > 60) e[`served_${i}`] = 'Years must be 0-60.'; }
     });
@@ -379,7 +376,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             {/* BUG-125 + BUG-068: neither prop was passed, so the picker opened on +31 for everyone
                 and a number from any country counted as valid. Both now follow the profile country. */}
             <PhoneInput label="Phone Number" value={phone} onChange={setPhone} required
-              defaultCountry={country} expectedCountry={country}
+              defaultCountry={country}
               hint="Used for session coordination. Not shown to users." />
           </CardBody>
         </Card>

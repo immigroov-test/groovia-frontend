@@ -13,18 +13,14 @@ interface Props {
   hint?: string;
   /** ISO-2 of where the person actually is, so the dial code starts on their country (BUG-125). */
   defaultCountry?: string | null;
-  /** ISO-2 the number MUST belong to. Set it and a number from anywhere else is an error (BUG-068).
-   *  Distinct from defaultCountry, which only decides where the picker opens. */
-  expectedCountry?: string | null;
 }
 
-export function PhoneInput({ value, onChange, label = 'Phone Number', required, hint, defaultCountry, expectedCountry }: Props) {
-  // BUG-125: this used to open on +31 for everyone, so a customer in India was pre-set to a Dutch dial
-  // code. Start from the detected country instead; NL only remains as the last-resort fallback.
-  // No hardcoded fallback. The old '+31'/'NL' default meant a mentor in India was silently assigned a
-  // Dutch dial code, and because the number itself was then "valid for the Netherlands" nothing
-  // complained. Empty until we actually know: from the profile country, from a stored number, or
-  // from the person choosing. An unset code with digits typed is an error, not a guess.
+export function PhoneInput({ value, onChange, label = 'Phone Number', required, hint, defaultCountry }: Props) {
+  // BUG-125: no hardcoded fallback. This used to open on '+31'/'NL' for everyone, so a mentor in
+  // India was silently given a Dutch dial code, and since the number was then judged against the
+  // Netherlands it could pass as valid. A guess that looks like an answer is worse than no answer.
+  // Empty until it is actually known: from the profile or detected country, from a stored number
+  // that names its own, or from the person choosing. Digits with no code selected is an error.
   const initial = PHONE_CODES.find((c) => c.code === (defaultCountry || '').toUpperCase());
   const [dialCode, setDialCode] = useState(initial?.dial ?? '');
   const [dialIso, setDialIso] = useState(initial?.code ?? '');
@@ -35,10 +31,9 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const initialized = useRef(false);
-  // Did the dial code come from the number itself, or is it just the fallback? A stored value like
-  // "616802002" carries no country, so the picker kept whatever it started on (+31) and a mentor in
-  // India was told their own number was not an IN number. When the value cannot say which country it
-  // belongs to, the profile country is the only real answer, so adopt it.
+  // Did the dial code come from the number itself, or is it still unset? A stored value like
+  // "616802002" names no country, so before this the picker kept whatever it started on. When the
+  // value cannot say which country it belongs to, the profile country is the only real answer.
   const dialFromValue = useRef(false);
   const userPicked = useRef(false);
 
@@ -156,13 +151,10 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
   // country and not another. Say so rather than silently accepting it.
   const noCountry = hasDigits && !dialIso;
   const badFormat = hasDigits && !!dialIso && !isValidPhoneNumber(number, dialIso as CountryCode);
-  // BUG-068: a +91 number on a Netherlands profile passed silently, because this only ever asked
-  // "is it valid for its own dial code", and it was: valid for India. The profile's country was
-  // never part of the question. Checked on first render as well as on change, so a prefilled number
-  // that already disagrees shows the error immediately rather than only once someone edits it.
-  const wrongCountry = hasDigits && !!expectedCountry
-    && dialIso.toUpperCase() !== expectedCountry.toUpperCase();
-  const invalid = noCountry || badFormat || wrongCountry;
+  // The number is judged against its own dial code only. A mentor in the Netherlands with an Indian
+  // number is not an error: keeping your old number after moving is normal, and on a platform for
+  // migrants it is close to the default. Tying the two rejected correct data.
+  const invalid = noCountry || badFormat;
 
   return (
     <div className="flex flex-col gap-1.5" ref={containerRef}>
@@ -248,8 +240,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
       {invalid
         ? <p className="text-xs text-red-600">{
             noCountry ? 'Choose your country code first.'
-            : wrongCountry ? 'This number does not match the country on your profile.'
-            : 'Enter a valid phone number for the selected country.'}</p>
+            : 'Enter a valid phone number for the selected country code.'}</p>
         : hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
   );
