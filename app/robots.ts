@@ -18,7 +18,14 @@ export default function robots(): MetadataRoute.Robots {
       // allow overrides the broader /mentor disallow below for that one path.
       allow: ['/', '/mentor/register'],
       disallow: [
-        '/api/', '/auth/', '/account/', '/admin', '/mentor', '/session/', '/meeting/', '/preview/',
+        // BUG-144: '/mentor' without the trailing slash is a PREFIX match, so it also blocked
+        // /mentors and every /mentors/[slug] profile: the exact pages sitemap.ts advertises and the
+        // most valuable content we have for search. Google would have reported them as blocked by
+        // robots.txt. '/mentor/' blocks only the signed-in subroutes (onboarding, availability,
+        // profile editor), while /mentor itself stays crawlable because for a logged-out visitor it
+        // IS the public become-a-mentor page. /mentor/register keeps its own Allow above, which wins
+        // on longest match.
+        '/api/', '/auth/', '/account/', '/admin', '/mentor/', '/session/', '/meeting/', '/preview/',
         '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email',
       ],
     },
