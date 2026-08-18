@@ -376,7 +376,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
             <Input label="Full name *" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. Priya Nair" autoComplete="name" required error={fieldErrors.displayName} />
 
+            {/* BUG-125 + BUG-068: neither prop was passed, so the picker opened on +31 for everyone
+                and a number from any country counted as valid. Both now follow the profile country. */}
             <PhoneInput label="Phone Number" value={phone} onChange={setPhone} required
+              defaultCountry={country} expectedCountry={country}
               hint="Used for session coordination. Not shown to users." />
           </CardBody>
         </Card>
