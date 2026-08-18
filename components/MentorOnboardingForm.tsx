@@ -7,6 +7,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import { createClient } from '../lib/supabase/client';
 import { Card, CardBody } from './ui/Card';
 import { Input } from './ui/Input';
+import { CitySelect } from './ui/CitySelect';
 import { Button } from './ui/Button';
 import { MultiSelect } from './ui/MultiSelect';
 import { TagInput } from './ui/TagInput';
@@ -432,9 +433,12 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               )}
             </div>
 
-            <Input label="City" value={city} onChange={(e) => setCity(e.target.value)}
-              placeholder={country ? 'e.g. Amsterdam' : 'Select a country first'} disabled={!country}
-              autoComplete="address-level2" hint="Optional, shown on your public profile." error={fieldErrors.city} />
+            {/* BUG-004: free text let "Coimbatore" be saved against the Netherlands. The list is
+                scoped to the chosen country, and "My city isn't listed" keeps a mentor from a place
+                too small for the dataset from being blocked. The stored value is still the plain
+                city name, so nothing downstream changes. */}
+            <CitySelect label="City" countryCode={country} value={city} onChange={setCity}
+              hint="Optional, shown on your public profile." error={fieldErrors.city} />
 
             <div className="flex flex-col gap-1.5">
               <MultiSelect label="Languages Spoken *" options={LANGUAGE_OPTIONS} value={languages} onChange={setLanguages}
