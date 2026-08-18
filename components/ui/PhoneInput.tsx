@@ -31,6 +31,12 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const initialized = useRef(false);
+  // Did the dial code come from the number itself, or is it just the fallback? A stored value like
+  // "616802002" carries no country, so the picker kept whatever it started on (+31) and a mentor in
+  // India was told their own number was not an IN number. When the value cannot say which country it
+  // belongs to, the profile country is the only real answer, so adopt it.
+  const dialFromValue = useRef(false);
+  const userPicked = useRef(false);
 
   // Initialize the picker + number from an incoming value once (e.g. a profile
   // phone prefilled at booking, or the mentor's saved phone on the edit form).
@@ -43,6 +49,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
       setDialCode(`+${parsed.countryCallingCode}`);
       if (parsed.country) setDialIso(parsed.country);
       setNumber(parsed.nationalNumber);
+      dialFromValue.current = true;
       return;
     }
     const trimmed = value.trim();
@@ -50,10 +57,22 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
       const [d, ...rest] = trimmed.split(' ');
       setDialCode(d);
       setNumber(rest.join(' '));
+      dialFromValue.current = true;
     } else {
       setNumber(trimmed);
     }
   }, [value]);
+
+  // Adopt the profile country whenever the number itself does not name one. Reading defaultCountry
+  // only in the useState initialisers was not enough: the profile loads after the first render, so
+  // the prop arrived too late and the picker stayed on the fallback for good.
+  useEffect(() => {
+    if (dialFromValue.current || userPicked.current || !defaultCountry) return;
+    const match = PHONE_CODES.find((c) => c.code === defaultCountry.toUpperCase());
+    if (!match) return;
+    setDialCode(match.dial);
+    setDialIso(match.code);
+  }, [defaultCountry]);
 
   // Geo detection resolves after mount, so adopt it once it lands - but only while the field is still
   // untouched and empty, so it can never overwrite a number the person already has or picked.
@@ -91,6 +110,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
 
   function select(dial: string, iso: string) {
     touched.current = true;
+    userPicked.current = true;   // an explicit choice outranks the profile country
     setDialCode(dial);
     setDialIso(iso);
     setDropdownOpen(false);
@@ -218,7 +238,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
       </div>
       {invalid
         ? <p className="text-xs text-red-600">{wrongCountry
-            ? `This number is not a ${(expectedCountry || '').toUpperCase()} number. Use a phone number from the country on your profile.`
+            ? 'This number does not match the country on your profile.'
             : 'Enter a valid phone number for the selected country.'}</p>
         : hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
