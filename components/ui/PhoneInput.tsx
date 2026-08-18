@@ -21,9 +21,13 @@ interface Props {
 export function PhoneInput({ value, onChange, label = 'Phone Number', required, hint, defaultCountry, expectedCountry }: Props) {
   // BUG-125: this used to open on +31 for everyone, so a customer in India was pre-set to a Dutch dial
   // code. Start from the detected country instead; NL only remains as the last-resort fallback.
+  // No hardcoded fallback. The old '+31'/'NL' default meant a mentor in India was silently assigned a
+  // Dutch dial code, and because the number itself was then "valid for the Netherlands" nothing
+  // complained. Empty until we actually know: from the profile country, from a stored number, or
+  // from the person choosing. An unset code with digits typed is an error, not a guess.
   const initial = PHONE_CODES.find((c) => c.code === (defaultCountry || '').toUpperCase());
-  const [dialCode, setDialCode] = useState(initial?.dial ?? '+31');
-  const [dialIso, setDialIso] = useState(initial?.code ?? 'NL');
+  const [dialCode, setDialCode] = useState(initial?.dial ?? '');
+  const [dialIso, setDialIso] = useState(initial?.code ?? '');
   const [number, setNumber] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -148,14 +152,17 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
 
   // Client-side format/length check for the selected country (no SMS, no cost).
   const hasDigits = number.replace(/\D/g, '').length > 0;
-  const badFormat = hasDigits && !isValidPhoneNumber(number, dialIso as CountryCode);
+  // A number with no country code cannot be validated at all: the same digits are valid in one
+  // country and not another. Say so rather than silently accepting it.
+  const noCountry = hasDigits && !dialIso;
+  const badFormat = hasDigits && !!dialIso && !isValidPhoneNumber(number, dialIso as CountryCode);
   // BUG-068: a +91 number on a Netherlands profile passed silently, because this only ever asked
   // "is it valid for its own dial code", and it was: valid for India. The profile's country was
   // never part of the question. Checked on first render as well as on change, so a prefilled number
   // that already disagrees shows the error immediately rather than only once someone edits it.
   const wrongCountry = hasDigits && !!expectedCountry
     && dialIso.toUpperCase() !== expectedCountry.toUpperCase();
-  const invalid = badFormat || wrongCountry;
+  const invalid = noCountry || badFormat || wrongCountry;
 
   return (
     <div className="flex flex-col gap-1.5" ref={containerRef}>
@@ -176,7 +183,9 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
           )}
         >
           <Flag code={dialIso} />
-          <span className="font-medium text-foreground">{dialCode}</span>
+          <span className={cn('font-medium', dialCode ? 'text-foreground' : 'text-muted')}>
+            {dialCode || 'Code'}
+          </span>
           <svg className="h-3 w-3 text-muted ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
@@ -237,8 +246,9 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
         )}
       </div>
       {invalid
-        ? <p className="text-xs text-red-600">{wrongCountry
-            ? 'This number does not match the country on your profile.'
+        ? <p className="text-xs text-red-600">{
+            noCountry ? 'Choose your country code first.'
+            : wrongCountry ? 'This number does not match the country on your profile.'
             : 'Enter a valid phone number for the selected country.'}</p>
         : hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
