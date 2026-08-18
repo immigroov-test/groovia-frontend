@@ -13,9 +13,12 @@ interface Props {
   hint?: string;
   /** ISO-2 of where the person actually is, so the dial code starts on their country (BUG-125). */
   defaultCountry?: string | null;
+  /** ISO-2 the number MUST belong to. Set it and a number from anywhere else is an error (BUG-068).
+   *  Distinct from defaultCountry, which only decides where the picker opens. */
+  expectedCountry?: string | null;
 }
 
-export function PhoneInput({ value, onChange, label = 'Phone Number', required, hint, defaultCountry }: Props) {
+export function PhoneInput({ value, onChange, label = 'Phone Number', required, hint, defaultCountry, expectedCountry }: Props) {
   // BUG-125: this used to open on +31 for everyone, so a customer in India was pre-set to a Dutch dial
   // code. Start from the detected country instead; NL only remains as the last-resort fallback.
   const initial = PHONE_CODES.find((c) => c.code === (defaultCountry || '').toUpperCase());
@@ -124,7 +127,15 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
   }
 
   // Client-side format/length check for the selected country (no SMS, no cost).
-  const invalid = number.replace(/\D/g, '').length > 0 && !isValidPhoneNumber(number, dialIso as CountryCode);
+  const hasDigits = number.replace(/\D/g, '').length > 0;
+  const badFormat = hasDigits && !isValidPhoneNumber(number, dialIso as CountryCode);
+  // BUG-068: a +91 number on a Netherlands profile passed silently, because this only ever asked
+  // "is it valid for its own dial code", and it was: valid for India. The profile's country was
+  // never part of the question. Checked on first render as well as on change, so a prefilled number
+  // that already disagrees shows the error immediately rather than only once someone edits it.
+  const wrongCountry = hasDigits && !!expectedCountry
+    && dialIso.toUpperCase() !== expectedCountry.toUpperCase();
+  const invalid = badFormat || wrongCountry;
 
   return (
     <div className="flex flex-col gap-1.5" ref={containerRef}>
@@ -206,7 +217,9 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
         )}
       </div>
       {invalid
-        ? <p className="text-xs text-red-600">Enter a valid phone number for the selected country.</p>
+        ? <p className="text-xs text-red-600">{wrongCountry
+            ? `This number is not a ${(expectedCountry || '').toUpperCase()} number. Use a phone number from the country on your profile.`
+            : 'Enter a valid phone number for the selected country.'}</p>
         : hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
   );
