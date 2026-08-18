@@ -21,6 +21,13 @@ interface Props {
 
 // Fixed top nav: floating logo (no background) on the left, a centered links pill,
 // and auth on the right. Always visible. Mobile uses a hamburger menu.
+// Where a signed-in customer goes when they ask to become a mentor: the contact form, with the
+// topic and an opening line filled in. Support converts the account, because one email cannot be
+// both a customer and a mentor today.
+const JOIN_AS_MENTOR_CONTACT =
+  `/contact?topic=${encodeURIComponent('Join as a Mentor')}`
+  + `&message=${encodeURIComponent('I want to join as a mentor.')}`;
+
 export function TopNav({ authed, email, role, name, photoUrl }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -73,7 +80,17 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
-    ...(role !== 'admin' ? [{ href: '/mentor', label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub : UI_CONTENT.sidebar.mentorPortal, gated: false }] : []),
+    // BUG-067: decide the destination HERE, from the role we already hold, rather than sending
+    // everyone to /mentor and letting it bounce. The old path was a client-side navigation through
+    // two server redirects (/mentor -> /mentor/onboarding -> /contact), and a redirect chain is
+    // both fragile and invisible to the user. A signed-in customer now goes straight to the
+    // prefilled contact form in one hop. The server guards on those pages stay as a safety net for
+    // anyone typing the URL directly, but the normal click no longer relies on them.
+    ...(role !== 'admin' ? [{
+      href: role === 'mentor' ? '/mentor' : authed ? JOIN_AS_MENTOR_CONTACT : '/mentor',
+      label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub : UI_CONTENT.sidebar.mentorPortal,
+      gated: false,
+    }] : []),
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),
     { href: '/contact', label: UI_CONTENT.sidebar.contact, gated: false },
   ];
