@@ -134,7 +134,16 @@ export function CitySelect({
           value={open ? query : value}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => { if (!disabled) { setQuery(''); setOpen(true); } }}
-          onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
+          // Enter inside a combobox must never submit the surrounding form. Without this the
+          // onboarding form's onSubmit fired from the city field, which is why changing a value on
+          // page one could throw you onto page two.
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setOpen(false);
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (matches.length > 0) { onChange(matches[0]); setOpen(false); setQuery(''); }
+            }
+          }}
           disabled={disabled}
           placeholder={disabled ? 'Select a country first' : loading ? 'Loading cities…' : 'Start typing your city'}
           autoComplete="off"
