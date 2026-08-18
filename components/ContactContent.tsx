@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Mail, MessageCircle, Megaphone, Send, Building2, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
@@ -43,7 +43,17 @@ export function ContactContent() {
       <div className="mt-6 grid gap-6 lg:grid-cols-3 items-start">
         <Card className="lg:col-span-2">
           <CardBody className="pt-6">
-            <ContactForm />
+            {/* BUG-067: the boundary has to sit directly around the component calling
+                useSearchParams, not up at the page. Arriving here from "Join as Mentor" is a
+                client-side navigation through two server redirects (/mentor -> /mentor/onboarding
+                -> /contact). useSearchParams bails out to client rendering on that path, React
+                retries the nearest boundary, and with the boundary wrapping the whole of
+                ContactContent the retry rendered a different number of hooks: React error #310,
+                thrown from the useMemo inside useSearchParams itself. A page-level boundary with no
+                fallback also meant the crash surfaced as a dead page rather than a loading state. */}
+            <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-black/5" />}>
+              <ContactForm />
+            </Suspense>
           </CardBody>
         </Card>
 
