@@ -3,6 +3,7 @@ import { Lato, Roboto_Serif, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SITE_URL, IS_PUBLIC_SITE, GOOGLE_SITE_VERIFICATION } from '../lib/site';
 import { BackendWakeOverlay } from '@/components/ui/BackendWakeOverlay';
+import { CookieConsent } from '@/components/CookieConsent';
 
 // Odyssey-style pairing: serif headings (Roboto Serif) + clean sans body (Lato).
 const lato = Lato({ variable: '--font-lato', subsets: ['latin'], weight: ['300', '400', '700'] });
@@ -56,6 +57,9 @@ export default function RootLayout({
         {children}
         {/* Mounted once for the whole app: apiFetch raises it, so no page needs its own. */}
         <BackendWakeOverlay />
+        {/* BUG-143: renders nothing outside the regions that require it, so most visitors see no
+            banner at all. Behind NEXT_PUBLIC_FEATURE_COOKIE_CONSENT. */}
+        <CookieConsent />
       </body>
     </html>
   );
