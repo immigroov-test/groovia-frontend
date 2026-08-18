@@ -10,6 +10,7 @@ import { MultiSelect } from './ui/MultiSelect';
 import { TagInput } from './ui/TagInput';
 import { suggestTags } from '../lib/tags';
 import { PhoneInput } from './ui/PhoneInput';
+import { CitySelect } from './ui/CitySelect';
 import { PhotoUpload } from './ui/PhotoUpload';
 import { SocialLinks, type SocialLink } from './ui/SocialLinks';
 import { CountrySelect } from './ui/CountrySelect';
@@ -331,9 +332,10 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
               Mentees can find you under: <span className="font-medium text-foreground">{derivedExpertise.map(countryLabel).join(', ')}</span>
             </p>
           )}
-          <Input label="City" value={city} onChange={(e) => setCity(e.target.value)}
-            placeholder={country ? 'e.g. Amsterdam' : 'Select a country first'} disabled={!country}
-            autoComplete="address-level2" hint="Optional, shown on your public profile." />
+          {/* BUG-004: scoped to the country selected above, so a city from elsewhere cannot be
+              saved. Migrated mentors edit here rather than in the onboarding form, so both need it. */}
+          <CitySelect label="City" countryCode={country} value={city} onChange={setCity}
+            hint="Optional, shown on your public profile." />
           <TimezoneSelect value={timezone} onChange={setTimezone} />
           <MultiSelect label="Languages Spoken *" options={LANGUAGE_OPTIONS} value={languages} onChange={setLanguages}
             placeholder={'Type to search (e.g. "Ja" for Japanese)'} hint="Type and press Enter, or click to add." />
