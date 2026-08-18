@@ -26,6 +26,15 @@ export default async function MentorOnboardingPage({
     redirect('/mentor?auth=open&role=mentor');
   }
 
+  // A user with no token means the access token in the cookie has expired: serverGet answers 401
+  // without reaching the backend, and this page used to read that as "customer account" and bounce a
+  // legitimate new mentor to the Contact form. Carry new=1 through the round trip so a fresh signup
+  // does not lose its marker and get misclassified on the way back.
+  if (!token) {
+    const back = isFreshSignup ? '/mentor/onboarding?new=1' : '/mentor/onboarding';
+    redirect(`/login?next=${encodeURIComponent(back)}`);
+  }
+
   // Extra retries here (BUG-067): "join as a mentor" is a common first hit after idle, so it's the
   // most likely to catch a cold-starting backend. serverGet retries status-0 failures before failing.
   const r = await serverGet('/mentor/me', token, 12000, 2);
@@ -34,8 +43,13 @@ export default async function MentorOnboardingPage({
   if (r.ok) {
     redirect('/mentor');
   }
-  if (r.status === 0) {
-    return <PageLoadError retryHref="/mentor/onboarding" />;
+  // ONLY a 404 means "signed in, definitely not a mentor". Everything else (401 from a missing or
+  // expired token, 5xx, timeout) says nothing about whether this is a customer account, and treating
+  // it as one sent a legitimate new mentor to the contact form over a transient failure. Testing for
+  // "not 404" instead of "is 404" is what made a session problem look like a customer account.
+  if (r.status !== 404) {
+    return <PageLoadError retryHref="/mentor/onboarding" status={r.status}
+      supportEmail="support@immigroov.com" />;
   }
   // Signed in, no mentor profile, and not arriving from the mentor signup: this is a customer account.
   if (!isFreshSignup) {

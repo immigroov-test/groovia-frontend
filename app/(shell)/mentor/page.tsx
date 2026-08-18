@@ -23,12 +23,20 @@ export default async function MentorPage() {
     );
   }
 
+  // serverAuth can hand back a user with a NULL token when the access token in the cookie has
+  // expired: getUser() revalidates over the network and succeeds, while getSession() reads the
+  // cookie and comes back empty, and a server component cannot write the rotated cookie back.
+  // serverGet then returns 401 without calling the backend at all. That is a session problem, and
+  // sending the person through auth fixes it, where retrying and an error page never can. This was
+  // previously blamed on a Render cold start, which it is not: it reproduces on a warm backend.
+  if (!token) {
+    redirect(`/login?next=${encodeURIComponent('/mentor')}`);
+  }
+
   let r = await serverGet<HubMentor>('/mentor/me', token);
-  // BUG-067: a signed-in customer clicking "join as a mentor" often hit "page couldn't load", then a
-  // reload worked. That's a backend cold start (Render spin-up) making the FIRST call fail with a
-  // non-404; a single quick retry usually catches it once the server is warm, so the customer sails
-  // straight to onboarding instead of seeing an error. A genuine 404 (no mentor row) is not retried.
-  if (!r.ok && r.status !== 404) {
+  // Retry only genuinely transient failures (status 0 = network error or timeout). A real HTTP
+  // status is an answer, not a blip, so retrying it just doubles the wait before the same result.
+  if (r.status === 0) {
     await new Promise((res) => setTimeout(res, 1500));
     r = await serverGet<HubMentor>('/mentor/me', token);
   }
@@ -38,11 +46,11 @@ export default async function MentorPage() {
     redirect('/mentor/onboarding');
   }
 
-  // Still unreachable after the retry: show a retry state (never a blank screen), with a support
-  // fallback so a customer who can't get through can still ask us to enable their mentor account.
+  // Anything else: a retry state rather than a blank screen, and show the status. Without it this
+  // page reports every failure identically, which is exactly why the real cause stayed hidden.
   if (!r.ok || !r.data) {
     return <PageLoadError retryHref="/mentor" title="We couldn't load your dashboard"
-      supportEmail="support@immigroov.com" />;
+      status={r.status} supportEmail="support@immigroov.com" />;
   }
 
   const mentor = r.data;

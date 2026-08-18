@@ -5,11 +5,15 @@ export function PageLoadError({
   title = "We couldn't load this page",
   message = 'The server took too long to respond. This can happen after a period of inactivity. Please try again in a moment.',
   supportEmail,
+  status,
 }: {
   retryHref: string;
   title?: string;
   message?: string;
   supportEmail?: string;
+  /** HTTP status behind the failure. Shown small, so a screenshot of this page is diagnostic.
+   *  Without it every failure looked identical and the real cause had to be guessed at. */
+  status?: number;
 }) {
   return (
     <div className="mx-auto max-w-md px-4 sm:px-6 py-20 text-center">
@@ -27,6 +31,9 @@ export function PageLoadError({
           <a href={`mailto:${supportEmail}`} className="text-brand-700 hover:underline">{supportEmail}</a>{' '}
           and we&apos;ll get you set up.
         </p>
+      )}
+      {status !== undefined && status !== 0 && (
+        <p className="text-[11px] text-muted/70 mt-3">Reference: HTTP {status}</p>
       )}
     </div>
   );
