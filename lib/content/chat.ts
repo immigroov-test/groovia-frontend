@@ -18,6 +18,13 @@ export const CHAT = {
     why: 'We need you to sign in and share your resume so we can build your report.',
     proceed: 'Continue',
     cancel: 'Not now',
+    // BUG-143: a resume is personal data and we put it through an AI model, so the person has to
+    // agree to that specifically. The general terms accepted at signup do not cover it, and consent
+    // has to be a deliberate act rather than something inferred from carrying on.
+    consent:
+      'I agree to Immigroov analysing my resume with AI to build this report. It is stored securely '
+      + 'and used only for my report and mentor matches.',
+    consentRequired: 'Please agree before we analyse your resume.',
     needLogin: "Sign in or create a free account, then attach your resume and we'll build your report.",
     needResume: "You're signed in. Now attach your resume (PDF or DOCX) using the attach button below.",
   },

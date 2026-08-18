@@ -16,6 +16,7 @@ import { cn } from '../lib/utils';
 import { LandingIntro } from './LandingIntro';
 import { RateLimitModal } from './RateLimitModal';
 import { ReportInfoModal } from './ReportInfoModal';
+import { ResumeConsentModal } from './ResumeConsentModal';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { AiAvatar } from './AiAvatar';
 
@@ -167,6 +168,9 @@ export default function ChatInterface({ authed }: Props) {
   const [intentSelected, setIntentSelected] = useState(false);
   // Career-report intent: popup shown first, then a login -> résumé -> generate sequence.
   const [showReportModal, setShowReportModal] = useState(false);
+  // BUG-143: a resume can be attached from Groovia's chat greeting as well as through the report
+  // flow, and that path agreed to nothing. Hold the chosen file until consent is given.
+  const [pendingResumeFile, setPendingResumeFile] = useState<File | null>(null);
   const [pendingReport, setPendingReport] = useState(false);
   // Typing is BLOCKED until the user picks "Ask a Question" (or is mid Q&A). The three intent
   // buttons are the only entry until then. pendingQna resumes the Q&A intent after a guest logs in.
@@ -521,7 +525,13 @@ export default function ChatInterface({ authed }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+    // Ask before reading it. The report flow already collected consent in ReportInfoModal, so it
+    // goes straight through; the chat-greeting path stops here first.
+    if (!pendingReport) { setPendingResumeFile(file); return; }
+    await uploadResume(file);
+  }
 
+  async function uploadResume(file: File) {
     setMessages((prev) => [...prev, { role: 'user', content: UI_CONTENT.uploadIndicator }]);
     setLoading(true);
 
@@ -529,6 +539,10 @@ export default function ChatInterface({ authed }: Props) {
     formData.append('file', file);
     formData.append('message', '[SYSTEM_RESUME_UPLOADED]');
     formData.append('thread_id', threadId);
+    // BUG-143: the backend refuses a resume without this and records the grant against the thread.
+    // Reaching the attach button means the consent box in ReportInfoModal was ticked; the flag is
+    // sent so the server decides rather than trusting that the UI was followed.
+    formData.append('ai_consent', 'true');
 
     try {
       const data = await postChat(formData);
@@ -1026,6 +1040,13 @@ export default function ChatInterface({ authed }: Props) {
 
       {showReportModal && (
         <ReportInfoModal onProceed={proceedReport} onClose={() => setShowReportModal(false)} />
+      )}
+      {pendingResumeFile && (
+        <ResumeConsentModal
+          fileName={pendingResumeFile.name}
+          onCancel={() => setPendingResumeFile(null)}
+          onAgree={() => { const f = pendingResumeFile; setPendingResumeFile(null); void uploadResume(f); }}
+        />
       )}
       {showRateModal && rateLimitedUntil !== null && (
         <RateLimitModal until={rateLimitedUntil} onClose={() => setShowRateModal(false)} />
