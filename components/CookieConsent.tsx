@@ -55,13 +55,16 @@ export function CookieConsent() {
   // practice everywhere, since consent has to be withdrawable as easily as it was given.
   if (decided && !open) {
     return (
+      // A plain underlined link rather than a pill: as a button it occupied enough of a phone screen
+      // to sit on top of the chat's intent buttons, which are also bottom-anchored. It still has to
+      // be reachable from anywhere, since withdrawing consent must be as easy as giving it, so it
+      // stays fixed and simply recedes instead of competing.
       <button
         type="button"
         onClick={() => { setAnalytics(decided.analytics); setMarketing(decided.marketing); setOpen(true); }}
-        className="fixed bottom-3 left-3 z-40 inline-flex items-center gap-1.5 rounded-full border border-[--color-border] bg-card/95 px-3 py-1.5 text-xs text-muted shadow-sm backdrop-blur hover:text-brand-900"
+        className="fixed bottom-1.5 left-2.5 z-40 text-[10px] sm:text-[11px] leading-none text-muted/70 underline underline-offset-2 hover:text-brand-900"
       >
-        <Cookie className="h-3.5 w-3.5" />
-        {mode === 'optout' ? 'Do not sell or share my info' : 'Cookie settings'}
+        {mode === 'optout' ? 'Privacy choices' : 'Cookie settings'}
       </button>
     );
   }
