@@ -25,7 +25,7 @@ import { countryLabel } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { COUNTRY_TIMEZONES } from '../lib/countryTimezones';
 import { cn } from '../lib/utils';
-import { validateCityName } from '../lib/validators';
+import { validateCityName, validatePhone } from '../lib/validators';
 import { suggestHeadline } from '../lib/headline';
 
 const LANGUAGE_OPTIONS = LANGUAGES.map((l) => ({ value: l.code, label: l.name }));
@@ -199,6 +199,10 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
     if (yearsExp) { const y = parseInt(yearsExp, 10); if (isNaN(y) || y < 0 || y > 60) return 'Years in your current country must be between 0 and 60.'; }
     const cityErr = validateCityName(city);
     if (cityErr) return cityErr;
+    // BUG-068: the editor validated no phone at all, so the error PhoneInput draws was purely
+    // cosmetic here and a mismatched number saved regardless. Same rule as onboarding now.
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) return phoneErr;
     return null;
   }
 
@@ -307,7 +311,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
           {/* BUG-125 + BUG-068: neither prop was passed, so the picker opened on +31 for everyone
               and a number from any country counted as valid. Both now follow the profile country. */}
           <PhoneInput label="Phone Number" value={phone} onChange={setPhone}
-            defaultCountry={country} expectedCountry={country}
+            defaultCountry={country}
             hint="Used for session coordination. Not shown to users." />
         </CardBody>
       </Card>
