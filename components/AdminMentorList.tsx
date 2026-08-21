@@ -7,6 +7,10 @@ import { Card, CardBody } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { RichText } from './ui/RichText';
+// Session descriptions are rich text, but in a dense list full markup blows out the row height and
+// makes it harder to scan. Plain text keeps the list readable while still showing what was written.
+import { richTextToPlain } from '../lib/sanitizeHtml';
+import type { CurrencyRate } from '../lib/pricing';
 import { UI_CONTENT } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
@@ -76,7 +80,9 @@ interface MaskedBank {
 
 interface WeeklySlot { id: string; weekday: string; start_time: string; end_time: string; timezone?: string | null }
 interface DateOverride { id: string; slot_date: string; start_time: string | null; end_time: string | null; is_blackout: boolean }
-interface ServiceItem { id: string; title: string; duration: number; is_active: boolean; status: string; set_price?: number | null; set_currency?: string | null; is_ppp?: boolean }
+// FEAT-018: description was already returned by the API and simply never typed or rendered, so an
+// admin reviewing a new mentor could see a session's title and price but not what it actually offers.
+interface ServiceItem { id: string; title: string; duration: number; is_active: boolean; status: string; set_price?: number | null; set_currency?: string | null; is_ppp?: boolean; description?: string | null }
 interface AvailabilityRules { days_ahead?: number; min_notice_hours?: number; cancel_hours?: number; timezone?: string }
 interface SocialLink { type: string; url: string }
 
@@ -101,6 +107,13 @@ interface MentorDetail extends AdminMentor {
   booking_url?: string | null;
   avg_rating?: number | null;
   review_count?: number | null;
+  // BUG-146: the mentor sets these at registration and every session price is derived from them, but
+  // the admin could only see the derived per-session figures. get_mentor_full_details already returns
+  // them (it selects *), so this was purely a rendering gap.
+  hourly_rate?: number | null;
+  currency?: string | null;
+  currency_rates?: CurrencyRate[] | null;
+  smart_pricing?: boolean | null;
   social_links?: SocialLink[];
   weekly_availability?: WeeklySlot[];
   services?: ServiceItem[];
@@ -464,6 +477,41 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
 
       {/* Session types + the mentor's own price (what they set; customers pay this plus the
           platform markup and any PPP adjustment, which the mentor never sees). */}
+      {/* BUG-146: the base rate every session price below is derived from. Placed directly above the
+          sessions so the relationship is visible: the admin can see a price and see where it came
+          from, instead of only the result. */}
+      <section>
+        <SectionLabel>Base rate &amp; currencies</SectionLabel>
+        {detail.hourly_rate == null ? (
+          <p className="text-muted text-xs">No base rate set.</p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-foreground font-semibold">
+                {money(detail.hourly_rate, detail.currency)} / hour
+              </span>
+              {detail.smart_pricing
+                ? <Badge tone="accent">fair pricing on</Badge>
+                : <Badge tone="neutral">fair pricing off</Badge>}
+            </div>
+            {detail.currency_rates && detail.currency_rates.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <span className="text-muted">Also priced in:</span>
+                {detail.currency_rates.map((r) => (
+                  <span key={r.currency} className="text-foreground">
+                    {money(r.hourly_rate, r.currency)} / hour
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="text-muted text-xs mt-1">
+              Session prices are worked out from this rate by session length. Currencies not listed
+              here are converted automatically.
+            </p>
+          </div>
+        )}
+      </section>
+
       <section>
         <SectionLabel>Session types &amp; pricing</SectionLabel>
         {services.length === 0 ? (
@@ -471,13 +519,22 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
         ) : (
           <div className="flex flex-col gap-1.5">
             {services.map((s) => (
-              <div key={s.id} className="flex items-center gap-2 flex-wrap">
-                <span className="text-foreground font-medium">{s.title}</span>
-                <span className="text-muted">· {s.duration} min</span>
-                <span className="text-foreground font-semibold">· {money(s.set_price, s.set_currency)}</span>
-                {s.is_ppp && <Badge tone="accent">fair pricing</Badge>}
-                {!s.is_active && <Badge tone="neutral">inactive</Badge>}
-                {s.status && s.status !== 'approved' && <Badge tone="warning">{s.status}</Badge>}
+              <div key={s.id} className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-foreground font-medium">{s.title}</span>
+                  <span className="text-muted">· {s.duration} min</span>
+                  <span className="text-foreground font-semibold">· {money(s.set_price, s.set_currency)}</span>
+                  {s.is_ppp && <Badge tone="accent">fair pricing</Badge>}
+                  {!s.is_active && <Badge tone="neutral">inactive</Badge>}
+                  {s.status && s.status !== 'approved' && <Badge tone="warning">{s.status}</Badge>}
+                </div>
+                {/* FEAT-018: what the session actually offers. Approving a mentor on title and price
+                    alone means approving copy nobody has read. */}
+                {s.description && (
+                  <p className="text-muted text-xs leading-relaxed whitespace-pre-line">
+                    {richTextToPlain(s.description)}
+                  </p>
+                )}
               </div>
             ))}
             <p className="text-muted text-xs mt-1">Prices are the mentor&apos;s own rate. Customers are shown this plus the platform markup and any PPP adjustment.</p>

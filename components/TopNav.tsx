@@ -79,7 +79,10 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
     { href: '/home', label: UI_CONTENT.sidebar.chat, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
-    { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
+    // BUG-083: hidden for mentors. Its Profile tab repeats what they edit in the mentor hub, and its
+    // Sessions tab is scoped to role="mentee", which is empty for someone who does not book sessions.
+    // Two tabs that either duplicate or show nothing read as a broken page, not a spare one.
+    ...(role !== 'mentor' ? [{ href: '/account', label: UI_CONTENT.sidebar.account, gated: true }] : []),
     // BUG-067: decide the destination HERE, from the role we already hold, rather than sending
     // everyone to /mentor and letting it bounce. The old path was a client-side navigation through
     // two server redirects (/mentor -> /mentor/onboarding -> /contact), and a redirect chain is
