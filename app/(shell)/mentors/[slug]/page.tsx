@@ -190,8 +190,50 @@ export default async function MentorProfilePage({
   }
 
   // ── Fallback: profile view, no booking yet ───────────────────────────────────
+  // BUG-144: structured data so a mentor profile can appear as a rich result rather than a plain
+  // link. Everything here is already on the page for a human to read; this states it in the shape
+  // Google parses. AggregateRating is omitted entirely when there are no published reviews, because
+  // declaring a rating of 0 out of 0 is both meaningless and grounds for a manual penalty.
+  const jsonLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    url: `${SITE_URL}/mentors/${slug}`,
+    mainEntity: {
+      '@type': 'Person',
+      name: mentor.display_name,
+      ...(mentor.headline ? { jobTitle: mentor.headline } : {}),
+      ...(mentor.photo_url ? { image: mentor.photo_url } : {}),
+      ...(mentor.bio ? { description: richTextToPlain(mentor.bio).slice(0, 300) } : {}),
+      ...(mentor.languages?.length ? { knowsLanguage: mentor.languages.map(languageLabel) } : {}),
+      ...(mentor.city || mentor.country
+        ? {
+            address: {
+              '@type': 'PostalAddress',
+              ...(mentor.city ? { addressLocality: mentor.city } : {}),
+              ...(mentor.country ? { addressCountry: mentor.country } : {}),
+            },
+          }
+        : {}),
+      ...(mentor.avg_rating && mentor.review_count
+        ? {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: mentor.avg_rating,
+              reviewCount: mentor.review_count,
+              bestRating: 5,
+              worstRating: 1,
+            },
+          }
+        : {}),
+    },
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center mb-6">
         ← All mentors
       </Link>

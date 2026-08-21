@@ -5,7 +5,12 @@ import { AdminDashboard } from '../../../components/AdminDashboard';
 import type { AdminRevision } from '../../../components/AdminRevisionList';
 import type { CountryPricing } from '../../../components/AdminPricing';
 
-export const metadata = { title: 'Admin - Immigroov' };
+export const metadata = { title: 'Admin - Immigroov',
+  // BUG-144: private page. robots.txt stops the crawl, but a Disallow does not prevent
+  // INDEXING: Google can list a URL it found elsewhere, showing a bare result with no description.
+  // noindex is the directive that actually keeps it out.
+  robots: { index: false, follow: false },
+};
 
 export interface AdminMentor {
   id: string;
