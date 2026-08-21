@@ -2,6 +2,14 @@ import Link from 'next/link';
 import { X } from 'lucide-react';
 import { Logo } from '../../components/ui/Logo';
 
+// BUG-144: covers login, signup, verify-email and both password pages in one place, since none of
+// them declared metadata of their own. robots.txt already stops the crawl, but a Disallow does not
+// prevent INDEXING: Google can list a URL it discovered elsewhere, showing a bare result with no
+// description. noindex is the directive that actually keeps a sign-in page out of search results.
+export const metadata = {
+  robots: { index: false, follow: false },
+};
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col hero-gradient">

@@ -1,7 +1,12 @@
 import { createClient } from '../../../lib/supabase/server';
 import { AccountTabs } from '../../../components/AccountTabs';
 
-export const metadata = { title: 'Account - Immigroov' };
+export const metadata = { title: 'Account - Immigroov',
+  // BUG-144: private page. robots.txt stops the crawl, but a Disallow does not prevent
+  // INDEXING: Google can list a URL it found elsewhere, showing a bare result with no description.
+  // noindex is the directive that actually keeps it out.
+  robots: { index: false, follow: false },
+};
 
 export default async function AccountPage() {
   const supabase = await createClient();
