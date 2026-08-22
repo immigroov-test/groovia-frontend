@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Button } from './ui/Button';
@@ -24,6 +25,7 @@ export function MentorPricingEditor({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   async function save() {
     const rate = parseFloat(baseRate);
@@ -43,6 +45,11 @@ export function MentorPricingEditor({
         return;
       }
       setSaved(true);
+      // BUG-150: the hub's `mentor` comes from a SERVER component, so without this the tabs keep
+      // rendering the pre-save rate and the Services tab goes on pricing sessions from it - visible
+      // only after a browser refresh. router.refresh() re-runs the server component so the rate
+      // propagates, which in turn makes ServicesManager refetch its re-priced sessions.
+      router.refresh();
     } catch {
       setError('Could not reach the server. Please try again.');
     } finally {

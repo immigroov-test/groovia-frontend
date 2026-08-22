@@ -118,13 +118,24 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
 
   const hasRate = !!hourlyRate && hourlyRate > 0;
 
-  async function load() {
-    setLoading(true); setError(null);
+  async function load({ blocking = true }: { blocking?: boolean } = {}) {
+    if (blocking) setLoading(true);
+    setError(null);
     try { setServices(await apiFetch('/api/mentor/services')); }
     catch (e) { setError(e instanceof Error ? e.message : 'Failed to load services'); }
-    finally { setLoading(false); }
+    finally { if (blocking) setLoading(false); }
   }
-  useEffect(() => { load(); }, []);
+  // BUG-150: reload when the base rate/currency changes, not only on mount. Saving a new rate on the
+  // Profile tab re-prices every stored session server-side, and the prices listed here are the STORED
+  // ones (svc.set_price / svc.currency_prices) - not something derived from the prop - so a
+  // mount-only load left the whole list showing the old prices until a browser refresh. The refetch
+  // is non-blocking: swapping the list for a full-tab spinner every time the mentor edits their rate
+  // would be a worse flicker than the stale numbers it fixes.
+  const firstLoad = useRef(true);
+  useEffect(() => {
+    load({ blocking: firstLoad.current });
+    firstLoad.current = false;
+  }, [hourlyRate, currency]);
 
   async function loadQuestions(serviceId: string) {
     try {
