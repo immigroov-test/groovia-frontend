@@ -1,5 +1,6 @@
 'use client';
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ADMIN } from '../lib/content';
 import { Card, CardBody } from './ui/Card';
 import { AdminMentorList } from './AdminMentorList';
@@ -23,12 +24,29 @@ const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; suspended_mentor_count: number; pending_service_count: number; total_bookings: number; }
 type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing' | 'bugs';
+// BUG-047: the ?tab= value comes from the URL, so it is whatever someone typed. Validated against
+// this list before use - an unknown value falls back to 'review' rather than rendering nothing.
+const TABS: Tab[] = ['review', 'mentors', 'bookings', 'payouts', 'referrals', 'reviews', 'activity', 'ops', 'pricing', 'bugs'];
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
   countryPricing: CountryPricing[];
 }) {
-  const [tab, setTab] = useState<Tab>('review');
+  // BUG-047: the active tab lives in the URL, not in component state. As local state it created no
+  // history entry, so the browser's Back button skipped the whole panel and landed wherever the
+  // admin had been before it - usually their account page. Now Back steps between tabs, a refresh
+  // keeps you where you were, and a tab is a link you can share.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requested = searchParams.get('tab');
+  const tab: Tab = (TABS.includes(requested as Tab) ? requested : 'review') as Tab;
+  const setTab = useCallback((next: Tab) => {
+    // scroll: false - the tab strip is well down the page and jumping to the top on every switch
+    // is exactly the kind of thing BUG-158 was raised about elsewhere.
+    router.push(`${pathname}?tab=${next}`, { scroll: false });
+  }, [router, pathname]);
+
   const [mentorFilter, setMentorFilter] = useState<MentorFilter>('all');
   const t = UI_CONTENT.admin;
   const defaultFee = countryPricing.find((c) => c.country_code === 'DEFAULT')?.platform_fee_pct ?? 5;

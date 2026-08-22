@@ -85,9 +85,13 @@ export function CurrencyRatesEditor({
             Base rate is too low. Enter at least {mins[primaryCurrency.toUpperCase()]} {primaryCurrency} per hour.
           </p>
         )}
+        {/* BUG-063: this read "INRcustomers pay it directly" - JSX trims per-line whitespace on a
+            text chunk that spans a line break, so the space after {primaryCurrency} was dropped.
+            Keeping the currency and the words either side of it on ONE line is what fixes it.
+            The wording was also wrong: prices are prorated by length, not "split". */}
         <p className="text-xs text-muted leading-relaxed">
-          Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it
-          directly; everyone else&apos;s price is worked out from it, split by session length.
+          This is your <span className="font-medium text-foreground">base hourly rate</span>. Customers paying in {primaryCurrency} are charged it directly, and everyone else sees the equivalent in their own currency.
+          Each session is priced from this rate and how long it runs, so a 30-minute session costs half.
         </p>
         </div>
 
