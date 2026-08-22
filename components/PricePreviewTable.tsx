@@ -47,14 +47,26 @@ export function PricePreviewTable({ baseRate, currency, smartPricing }: {
           {loading && <span className="opacity-60"> updating…</span>}
         </span>
       </p>
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-2">
+      {/* BUG-155: fit the tiles to THIS box, not to the viewport. These used to be
+          `grid-cols-2 xl:grid-cols-3`, but the preview sits in the narrow right-hand column of the
+          pricing grid, whose width comes from the form card rather than the window - so on a wide
+          screen `xl:` fired and packed three tiles into a ~270px column. That left each tile under
+          90px, of which the flag and padding take 52, so the currency name collapsed to "U…" and,
+          worse, the price itself clipped ("$31.8") - a wrong number rather than an ugly one. A
+          bigger monitor made it worse, not better. auto-fill ties the column count to the space
+          actually available, so the tiles stay legible at every width. */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2">
         {markets.map((m) => (
           <div key={m.country_code}
-            className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
+            className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 min-w-0 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
             <Flag code={currencyCountry(m.currency)} className="w-5 h-auto rounded-[2px] shrink-0" />
             <div className="min-w-0">
-              <p className="text-[11px] text-muted leading-tight truncate">{currencyName(m.currency)}</p>
-              <p className="text-sm font-semibold text-brand-900 leading-tight">
+              {/* The name may still truncate on the narrowest tile - it is the expendable half, and
+                  the title keeps the full text reachable. The price never truncates. */}
+              <p className="text-[11px] text-muted leading-tight truncate" title={currencyName(m.currency)}>
+                {currencyName(m.currency)}
+              </p>
+              <p className="text-sm font-semibold text-brand-900 leading-tight whitespace-nowrap tabular-nums">
                 {currencySymbol(m.currency)}{m.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </p>
             </div>

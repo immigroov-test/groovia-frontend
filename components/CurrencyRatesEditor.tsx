@@ -59,7 +59,11 @@ export function CurrencyRatesEditor({
       {/* Rate on the left, live market preview on the right, so the mentor sets a number and sees what
           it becomes elsewhere without scrolling between the two. Stacks on phones, preview underneath.
           Currency and rate sit in one column so they are necessarily the same width. */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] gap-4 lg:gap-6 items-start">
+      {/* BUG-155: the rate column was 18rem, which left the preview beside it ~264px on the
+          onboarding page (max-w-2xl) - too narrow for its tiles at any column count. 15rem still
+          holds the select and the rate input comfortably and takes the preview to 312px, which fits
+          two tiles that show every currency name and price in full. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-4 lg:gap-6 items-start">
         <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base currency</label>
