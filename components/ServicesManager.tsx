@@ -224,7 +224,9 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
         category: draft.category || null,
         set_price: derivedPrice(draft.duration, draft.free),
         is_active: true,
-        is_ppp: false,
+        // is_ppp is NOT sent: fair pricing belongs to the mentor, not to one session. This used to
+        // post `false` regardless, so a mentor with fair pricing on got new sessions that quietly
+        // opted out of it. The server derives it from their smart_pricing setting.
         tags: draft.tags,
       });
       await load();
