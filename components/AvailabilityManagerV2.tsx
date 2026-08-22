@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Loader2, Plus, X, Ban, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardBody } from './ui/Card';
@@ -62,17 +62,25 @@ export function AvailabilityManagerV2() {
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
-  const [selDate, setSelDate] = useState<string | null>(null);
+  // BUG-158: a selection, not a single date. `anchor` is the last date clicked, which Shift-click
+  // ranges from.
+  const [selDates, setSelDates] = useState<string[]>([]);
+  const [anchor, setAnchor] = useState<string | null>(null);
   const [ovFrom, setOvFrom] = useState('09:00');
   const [ovTo, setOvTo] = useState('17:00');
 
-  async function load() {
-    setLoading(true); setError(null);
+  // BUG-158: `blocking` drives the full-card spinner, which REPLACES everything below (see the
+  // early return further down). Doing that after every edit is what threw the page back to the top
+  // each time a date was blocked. Only the first load blocks now; refreshes after a change swap the
+  // data underneath the calendar and leave the mentor where they were.
+  async function load({ blocking = true }: { blocking?: boolean } = {}) {
+    if (blocking) setLoading(true);
+    setError(null);
     try {
       const [w, s, r] = await Promise.all([apiFetch(`${API}/weekly`), apiFetch(`${API}/specific`), apiFetch(`${API}/rules`)]);
       setWeekly(w ?? []); setSpecific(s ?? []); setRulesForm(r);
     } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
+    finally { if (blocking) setLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
@@ -93,6 +101,43 @@ export function AvailabilityManagerV2() {
     const sp = specByDate.get(dateKey(d));
     if (sp) return sp.is_blackout ? 'blocked' : 'custom';
     return daysWithHours.has(dayNameOf(d)) ? 'weekly' : 'none';
+  }
+
+  function clearSelection() { setSelDates([]); setAnchor(null); }
+
+  // Every day from `a` to `b` inclusive, either way round, skipping days already past. Keys are
+  // YYYY-MM-DD so string comparison is chronological.
+  function datesBetween(a: string, b: string): string[] {
+    const [lo, hi] = a <= b ? [a, b] : [b, a];
+    const out: string[] = [];
+    for (const d = new Date(`${lo}T00:00:00`); dateKey(d) <= hi; d.setDate(d.getDate() + 1)) {
+      const k = dateKey(d);
+      if (k >= todayKey) out.push(k);
+      if (out.length >= 366) break;    // same ceiling the server enforces
+    }
+    return out;
+  }
+
+  // BUG-158: plain click picks one date (as before), Ctrl/Cmd-click adds or removes one, and
+  // Shift-click takes everything between the last click and this one - so blocking a two-week
+  // holiday is two clicks rather than fourteen block-and-reload cycles.
+  function pickDate(k: string, e: ReactMouseEvent) {
+    setError(null);
+    const additive = e.ctrlKey || e.metaKey;
+    if (e.shiftKey && anchor) {
+      const range = datesBetween(anchor, k);
+      // Ctrl/Cmd+Shift keeps what is already picked and adds the range; plain Shift replaces the
+      // selection with it. Same split every file manager uses, so scattered days picked one by one
+      // are not silently thrown away by a following range drag.
+      setSelDates((cur) => (additive ? [...cur, ...range.filter((d) => !cur.includes(d))] : range));
+      return;
+    }
+    if (additive) {
+      setSelDates((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
+      setAnchor(k);
+      return;
+    }
+    setSelDates([k]); setAnchor(k);
   }
 
   // BUG-157 / BUG-112: two overlapping windows on one day were accepted silently, which produced
@@ -156,14 +201,30 @@ export function AvailabilityManagerV2() {
       });
     } catch (e: any) { setError(e.message); } finally { setSavingRules(false); }
   }
-  async function blockDate(date: string) {
-    try { await apiFetch(`${API}/block-date`, 'POST', { slot_date: date }); setSelDate(null); await load(); }
-    catch (e: any) { setError(e.message); }
+  // BUG-158: one request for the whole selection instead of one per date. The endpoint writes each
+  // date independently and reports any it could not do, so a single bad date does not discard the
+  // rest - and the mentor is told which ones rather than being left guessing.
+  async function blockDates(dates: string[]) {
+    if (dates.length === 0) return;
+    setBusy(true);
+    try {
+      const res = await apiFetch(`${API}/block-dates`, 'POST', { slot_dates: dates });
+      clearSelection();
+      await load({ blocking: false });   // clears `error`, so report the partial failure after it
+      const failed: string[] = res?.failed ?? [];
+      if (failed.length) {
+        setError(`Blocked ${res?.blocked?.length ?? 0}. Could not block ${failed.length}: ${failed.join(', ')}.`);
+      }
+    } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   }
   async function overrideDate(date: string) {
     if (ovTo <= ovFrom) { setError('End must be after start.'); return; }
-    try { await apiFetch(`${API}/override-date`, 'POST', { slot_date: date, start_time: ovFrom, end_time: ovTo }); setSelDate(null); await load(); }
-    catch (e: any) { setError(e.message); }
+    setBusy(true);
+    try {
+      await apiFetch(`${API}/override-date`, 'POST', { slot_date: date, start_time: ovFrom, end_time: ovTo });
+      clearSelection();
+      await load({ blocking: false });
+    } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   }
   async function delSpecific(id: string) {
     try { await apiFetch(`${API}/specific/${id}/delete`, 'POST'); setSpecific((s) => s.filter((x) => x.id !== id)); }
@@ -184,7 +245,13 @@ export function AvailabilityManagerV2() {
   if (loading) return <div className="flex items-center gap-2 text-sm text-muted py-6"><Loader2 className="h-4 w-4 animate-spin" /> Loading availability…</div>;
 
   const tz = rulesForm?.timezone ?? 'UTC';
+  // A single selection keeps the original per-date panel; anything more gets the bulk one.
+  const selDate = selDates.length === 1 ? selDates[0] : null;
   const selStatus = selDate ? specByDate.get(selDate) : undefined;
+  // A date that is already booked must not be blacked out from under the mentee, so it is excluded
+  // from the bulk action and called out rather than silently dropped.
+  const bookedSel = selDates.filter((k) => specByDate.get(k)?.is_booked);
+  const blockableSel = selDates.filter((k) => !specByDate.get(k)?.is_booked);
 
   return (
     <div className="flex flex-col gap-6">
@@ -300,7 +367,7 @@ export function AvailabilityManagerV2() {
         <CardBody className="pt-5">
           <h3 className="text-base font-semibold text-brand-900">Date overrides</h3>
           <p className="text-xs text-muted mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            Tap a date to block it or set custom hours.
+            Tap a date to block it or set custom hours. Ctrl/Cmd-click to pick several, Shift-click for a range.
             <span className="inline-flex items-center gap-1"><Dot c="bg-emerald-500" /> weekly</span>
             <span className="inline-flex items-center gap-1"><Dot c="bg-accent-500" /> custom</span>
             <span className="inline-flex items-center gap-1"><Dot c="bg-red-500" /> blocked</span>
@@ -327,11 +394,11 @@ export function AvailabilityManagerV2() {
                   const k = dateKey(d);
                   const past = k < todayKey;
                   const status = statusOf(d);
-                  const sel = k === selDate;
+                  const sel = selDates.includes(k);
                   const dotColor = status === 'blocked' ? 'bg-red-500' : status === 'custom' ? 'bg-accent-500' : status === 'weekly' ? 'bg-emerald-500' : '';
                   return (
                     <div key={k} className="flex justify-center">
-                      <button type="button" disabled={past} onClick={() => { setSelDate(k); setError(null); }}
+                      <button type="button" disabled={past} aria-pressed={sel} onClick={(e) => pickDate(k, e)}
                         className={cn('relative w-9 h-9 rounded-lg text-sm font-medium flex flex-col items-center justify-center transition-colors',
                           past ? 'text-muted/40 cursor-not-allowed' : sel ? 'bg-brand-900 text-white' : 'text-brand-900 hover:bg-brand-50 border border-[--color-border]')}>
                         {d.getDate()}
@@ -345,8 +412,28 @@ export function AvailabilityManagerV2() {
 
             {/* Selected-date actions */}
             <div className="rounded-xl border border-[--color-border] p-4">
-              {!selDate ? (
+              {selDates.length === 0 ? (
                 <p className="text-sm text-muted">Pick a date to block it or set custom hours.</p>
+              ) : selDate === null ? (
+                /* BUG-158: two or more dates - block the lot in one go. Custom hours stay a
+                   single-date action; they are per-day values, not something to fan out. */
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm font-semibold text-brand-900">{selDates.length} dates selected</p>
+                  {bookedSel.length > 0 && (
+                    <p className="text-xs text-amber-700">
+                      {bookedSel.length} {bookedSel.length === 1 ? 'has a booking' : 'have bookings'} and will be left as
+                      {bookedSel.length === 1 ? ' it is' : ' they are'}.
+                    </p>
+                  )}
+                  <Button size="sm" variant="outline" loading={busy} disabled={blockableSel.length === 0}
+                    onClick={() => blockDates(blockableSel)}
+                    className="text-red-600 border-red-200 hover:bg-red-50">
+                    <Ban className="h-3.5 w-3.5" /> Block {blockableSel.length} date{blockableSel.length === 1 ? '' : 's'}
+                  </Button>
+                  <button onClick={clearSelection} className="text-xs text-muted hover:text-foreground self-start">
+                    Clear selection
+                  </button>
+                </div>
               ) : (
                 <div className="flex flex-col gap-3">
                   <p className="text-sm font-semibold text-brand-900">{selDate}</p>
@@ -373,7 +460,8 @@ export function AvailabilityManagerV2() {
                         <Button size="sm" variant="accent" onClick={() => overrideDate(selDate)}>Set hours</Button>
                       </div>
                       <div className="border-t border-[--color-border] pt-3">
-                        <Button size="sm" variant="outline" onClick={() => blockDate(selDate)} className="text-red-600 border-red-200 hover:bg-red-50">
+                        <Button size="sm" variant="outline" loading={busy} onClick={() => blockDates([selDate])}
+                          className="text-red-600 border-red-200 hover:bg-red-50">
                           <Ban className="h-3.5 w-3.5" /> Block this date
                         </Button>
                       </div>
