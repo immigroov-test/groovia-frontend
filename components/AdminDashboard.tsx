@@ -8,6 +8,7 @@ import { AdminBookings } from './AdminBookings';
 import { AdminPayouts } from './AdminPayouts';
 import { AdminPendingServices } from './AdminPendingServices';
 import { AdminOps } from './AdminOps';
+import { AdminBugBoard } from './AdminBugBoard';
 import { AdminPricing, type CountryPricing } from './AdminPricing';
 import { AdminReferrals } from './AdminReferrals';
 import { AdminReviews } from './AdminReviews';
@@ -21,7 +22,7 @@ const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; suspended_mentor_count: number; pending_service_count: number; total_bookings: number; }
-type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing';
+type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing' | 'bugs';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
@@ -47,6 +48,8 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
     { key: 'activity', label: 'Activity' },
     { key: 'ops', label: 'Ops' },
     { key: 'pricing', label: 'Pricing' },
+    // BUG-162: the Immigroov bug board, read from its own Supabase project.
+    { key: 'bugs', label: 'Bug board' },
   ];
 
   return (
@@ -163,6 +166,12 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         {tab === 'pricing' && (
           <Section title="Pricing & commission" subtitle={ADMIN.sections.pricing}>
             <AdminPricing />
+          </Section>
+        )}
+
+        {tab === 'bugs' && (
+          <Section title="Bug board" subtitle="Reported bugs and feature requests, and where each one has got to.">
+            <AdminBugBoard />
           </Section>
         )}
       </div>
