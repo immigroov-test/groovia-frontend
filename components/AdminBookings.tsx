@@ -7,7 +7,8 @@ import { Badge } from './ui/Badge';
 import { cn } from '../lib/utils';
 
 interface Booking {
-  id: string; status: string; slot_time: string | null;
+  /** BUG-098: short human-readable id (IMG-00001). Null only for a row that predates the backfill. */
+  id: string; reference: string | null; status: string; slot_time: string | null;
   candidate_name: string | null; candidate_email: string | null;
   mentor_name: string | null; reschedule_count: number; no_show_by: string | null; created_at: string;
 }
@@ -129,9 +130,13 @@ export function AdminBookings() {
     return x - y;
   };
 
+  // BUG-098: a booking with no reference predates the backfill; show the head of its UUID rather
+  // than an empty cell, so every row still has something quotable.
+  const refOf = (b: Booking) => b.reference ?? b.id.slice(0, 8).toUpperCase();
+
   const term = q.trim().toLowerCase();
   const live = (rows ?? []).filter((b) => inGroup(b.status, group)
-    && (!term || [b.mentor_name, b.candidate_name, b.candidate_email].some((x) => x?.toLowerCase().includes(term))))
+    && (!term || [refOf(b), b.mentor_name, b.candidate_name, b.candidate_email].some((x) => x?.toLowerCase().includes(term))))
     .sort(earliestFirst);
   const past = (pastRows ?? []).filter((s) => !term || [s.mentor_name, s.customer_name, s.service_title].some((x) => x?.toLowerCase().includes(term)));
 
@@ -166,7 +171,7 @@ export function AdminBookings() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
         <input value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder={view === 'live' ? 'Search mentor or mentee name/email…' : 'Search mentor or customer name…'}
+          placeholder={view === 'live' ? 'Search ref, mentor or mentee name/email…' : 'Search mentor or customer name…'}
           className="w-full h-10 pl-9 pr-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
       </div>
 
@@ -182,6 +187,7 @@ export function AdminBookings() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted border-b border-[--color-border]">
+                  <th className="px-4 py-2.5 font-medium">Ref</th>
                   <th className="px-4 py-2.5 font-medium">When</th>
                   <th className="px-4 py-2.5 font-medium">Mentor</th>
                   <th className="px-4 py-2.5 font-medium">Mentee</th>
@@ -193,6 +199,7 @@ export function AdminBookings() {
                 {live.map((b) => (
                   <Fragment key={b.id}>
                     <tr onClick={() => toggle(b.id)} className="border-b border-[--color-border] last:border-0 hover:bg-brand-50/50 cursor-pointer">
+                      <td className="px-4 py-2.5 whitespace-nowrap"><code className="text-xs text-muted">{refOf(b)}</code></td>
                       <td className="px-4 py-2.5 whitespace-nowrap text-foreground">{fmt(b.slot_time)}</td>
                       <td className="px-4 py-2.5 text-foreground">{b.mentor_name ?? '-'}</td>
                       <td className="px-4 py-2.5 min-w-0"><span className="text-foreground">{b.candidate_name ?? '-'}</span><span className="block text-xs text-muted truncate">{b.candidate_email}</span></td>
@@ -208,7 +215,7 @@ export function AdminBookings() {
                     </tr>
                     {openId === b.id && (
                       <tr className="bg-brand-50/30 border-b border-[--color-border]">
-                        <td colSpan={5} className="px-4 py-3">
+                        <td colSpan={6} className="px-4 py-3">
                           {details[b.id] === undefined ? <span className="text-xs text-muted">Loading…</span>
                             : details[b.id] === null ? <span className="text-xs text-red-600">Could not load details.</span>
                             : (
@@ -220,6 +227,9 @@ export function AdminBookings() {
                                       {details[b.id]?.service_duration ? ` · ${details[b.id]!.service_duration} min` : ''}</span>
                                   )}
                                   {b.no_show_by && <span>No-show by <b className="text-foreground">{b.no_show_by}</b></span>}
+                                  {/* Both: the reference is what a person quotes, the UUID is what
+                                      a query needs. */}
+                                  <span>Ref <b className="text-foreground">{refOf(b)}</b></span>
                                   <span>Booking ID <code>{b.id}</code></span>
                                 </div>
                                 {details[b.id]?.pricing && (
