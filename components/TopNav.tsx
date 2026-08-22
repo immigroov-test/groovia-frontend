@@ -217,10 +217,13 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
       {menuOpen && (
         <div ref={menuPanelRef} className="lg:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
           {/* Signed-in profile header: photo (or an "upload photo" placeholder), name, email.
-              The whole row and the placeholder lead to the account page. */}
+              The whole row and the placeholder lead to wherever that person actually edits it.
+              BUG-083: for a mentor that is their own profile form, NOT /account - hiding the
+              Account item from the nav above while this row still linked to it meant a mentor on a
+              phone tapped their avatar and landed on the redundant page anyway. */}
           {authed && (
             <Link
-              href="/account"
+              href={role === 'mentor' ? '/mentor/profile' : '/account'}
               onClick={() => setMenuOpen(false)}
               className="flex items-center gap-3 px-2 py-2 mb-1 rounded-xl hover:bg-brand-50/60"
             >
