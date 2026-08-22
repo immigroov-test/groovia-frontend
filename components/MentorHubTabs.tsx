@@ -61,6 +61,19 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
   ];
   const [tab, setTab] = useState<TabId>('profile');
 
+  // BUG-151: every input the server re-prices sessions from, in one value. hourly_rate, currency and
+  // currency_rates each trigger a full reprice; smart_pricing re-syncs is_ppp across the services.
+  // The Services tab lists the STORED prices, so it has to reload for any of them - keying that on
+  // the base rate alone (all BUG-150 fixed) left a lone added-currency or smart-pricing change
+  // showing the old numbers. `mentor` comes from the server component, so this changes as soon as
+  // the pricing editor calls router.refresh().
+  const pricingKey = JSON.stringify([
+    mentor.hourly_rate ?? null,
+    mentor.currency ?? null,
+    mentor.smart_pricing ?? null,
+    (mentor.currency_rates ?? []).map((r) => [r.currency, r.hourly_rate]),
+  ]);
+
   // Suspension is checked FIRST, before anything else. It used to sit below the onboarding gate, so a
   // suspended mentor who had not finished first-login was told their account was suspended and asked
   // to set an hourly rate in the same breath - and could still walk the whole setup flow for an
@@ -111,7 +124,8 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
             <section className="flex flex-col gap-4">
               <h2 className="text-base font-semibold text-foreground">Session types</h2>
               <p className="text-sm text-muted -mt-2">The sessions a mentee can book with you. Prices come from your base rate on the Profile tab.</p>
-              <ServicesManager hourlyRate={mentor.hourly_rate ?? undefined} currency={mentor.currency ?? undefined} />
+              <ServicesManager hourlyRate={mentor.hourly_rate ?? undefined} currency={mentor.currency ?? undefined}
+                pricingKey={pricingKey} />
             </section>
           )}
           {tab === 'availability' && (

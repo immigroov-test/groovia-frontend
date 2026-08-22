@@ -77,7 +77,18 @@ async function apiFetch(path: string, method = 'GET', body?: object) {
 // Prices are ALWAYS derived from the mentor's base hourly rate (point 4) - never hand-typed here - so
 // they stay in sync with the base rate everywhere (customer, admin). hourlyRate + currency come from
 // the mentor's Profile-tab pricing.
-export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?: number; currency?: string }) {
+export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
+  hourlyRate?: number;
+  currency?: string;
+  /**
+   * BUG-151: every pricing input the SERVER re-prices sessions from, folded into one value. The
+   * base rate alone is not enough - hourly_rate, currency AND currency_rates each trigger a
+   * reprice, and smart_pricing re-syncs is_ppp across the mentor's services - so keying the reload
+   * on the rate only (BUG-150) left an added currency or a smart-pricing flip showing stale prices.
+   * Optional: onboarding has no mentor row yet and falls back to the rate + currency it knows.
+   */
+  pricingKey?: string;
+}) {
   const [services, setServices]     = useState<Service[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -125,17 +136,18 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
     catch (e) { setError(e instanceof Error ? e.message : 'Failed to load services'); }
     finally { if (blocking) setLoading(false); }
   }
-  // BUG-150: reload when the base rate/currency changes, not only on mount. Saving a new rate on the
-  // Profile tab re-prices every stored session server-side, and the prices listed here are the STORED
-  // ones (svc.set_price / svc.currency_prices) - not something derived from the prop - so a
-  // mount-only load left the whole list showing the old prices until a browser refresh. The refetch
-  // is non-blocking: swapping the list for a full-tab spinner every time the mentor edits their rate
-  // would be a worse flicker than the stale numbers it fixes.
+  // BUG-150 / BUG-151: reload whenever the mentor's pricing changes, not only on mount. Saving on
+  // the Profile tab re-prices every stored session server-side, and the prices listed here are the
+  // STORED ones (svc.set_price / svc.currency_prices) - not something derived from the props - so a
+  // mount-only load left the whole list showing the old numbers until a browser refresh. The
+  // refetch is non-blocking: swapping the list for a full-tab spinner every time the mentor edits
+  // their pricing would be a worse flicker than the stale numbers it fixes.
+  const priceInputs = pricingKey ?? `${hourlyRate ?? ''}|${currency}`;
   const firstLoad = useRef(true);
   useEffect(() => {
     load({ blocking: firstLoad.current });
     firstLoad.current = false;
-  }, [hourlyRate, currency]);
+  }, [priceInputs]);
 
   async function loadQuestions(serviceId: string) {
     try {
