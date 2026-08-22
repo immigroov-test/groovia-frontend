@@ -114,9 +114,25 @@ export function AdminBookings() {
     } catch { setDetails((d) => ({ ...d, [id]: null })); }
   }
 
+  // BUG-095: soonest call at the top. The table used to render in whatever order the endpoint
+  // returned - newest BOOKED first - so the calls furthest in the future sat at the top and the one
+  // happening next was at the bottom. Sorted here rather than in the query on purpose: the endpoint
+  // returns the 200 most recently created bookings, so ordering by slot_time in SQL would change
+  // WHICH 200 come back (the 200 earliest-scheduled) and quietly drop recent bookings off the table.
+  // Status and search are already applied client-side for the same reason, so this sits with them.
+  const startMs = (b: Booking) => (b.slot_time ? new Date(b.slot_time).getTime() : null);
+  const earliestFirst = (a: Booking, b: Booking) => {
+    const x = startMs(a), y = startMs(b);
+    // A booking with no slot yet (awaiting payment) has no place on a timeline - park those at the
+    // end rather than letting an epoch-0 fallback pin them above every real call.
+    if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+    return x - y;
+  };
+
   const term = q.trim().toLowerCase();
   const live = (rows ?? []).filter((b) => inGroup(b.status, group)
-    && (!term || [b.mentor_name, b.candidate_name, b.candidate_email].some((x) => x?.toLowerCase().includes(term))));
+    && (!term || [b.mentor_name, b.candidate_name, b.candidate_email].some((x) => x?.toLowerCase().includes(term))))
+    .sort(earliestFirst);
   const past = (pastRows ?? []).filter((s) => !term || [s.mentor_name, s.customer_name, s.service_title].some((x) => x?.toLowerCase().includes(term)));
 
   return (
