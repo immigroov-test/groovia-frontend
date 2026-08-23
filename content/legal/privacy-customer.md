@@ -93,6 +93,15 @@ We retain your data:
 - Up to 90 days after account deletion for support or legal obligations
 - Anonymized usage and rating data may be retained for analytical purposes
 
+Conversations with Groovia are kept for a limited period and then deleted automatically:
+
+- Conversations from signed-in accounts: up to 12 months from the last message
+- Conversations started without an account: up to 90 days from the last message
+
+Conversations started without an account are held against an anonymous identifier stored in your browser rather than against you. They are deleted sooner because they are not linked to anyone, which means we would be unable to find them in order to action a deletion request. If you create an account in the same browser, an earlier conversation becomes part of your account history.
+
+Before a message is stored we automatically remove obvious identifiers such as email addresses, phone numbers, passport and ID numbers, and bank details. This reduces what is retained, but it is not a guarantee that no personal information remains, so please avoid sharing sensitive details you do not need to share.
+
 ## Data Sharing
 
 Immigroov does not sell your personal data. We may share your data with:

@@ -8,8 +8,11 @@ export const CHAT = {
   guestWordLimit: 'Free questions are limited to about 50 words. Please shorten it, or sign in to ask longer questions.',
   inputPlaceholder: 'Ask about your career...',
   inputPlaceholderBlocked: 'Pick an option above to get started…',
+  // FEAT-033: says that chats are kept, at the point where someone is about to type. Burying storage
+  // in the privacy policy alone is the thing regulators object to: the disclosure has to be where the
+  // decision is made. Kept to one added clause so the line stays readable.
   disclaimer:
-    'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions.',
+    'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions. Chats are saved to improve Groovia; please avoid sharing sensitive personal details.',
   signInToContinue: 'Sign in to continue',
   // Career-report intent: a popup explains it, then it needs sign-in + résumé.
   report: {
