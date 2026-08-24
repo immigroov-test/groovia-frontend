@@ -12,6 +12,7 @@ import { AdminPricing, type CountryPricing } from './AdminPricing';
 import { AdminReferrals } from './AdminReferrals';
 import { AdminReviews } from './AdminReviews';
 import { AdminActivity } from './AdminActivity';
+import { AdminLegalDocs } from './AdminLegalDocs';
 import { UI_CONTENT } from '../lib/content';
 import { cn } from '../lib/utils';
 import type { AdminMentor } from '../app/(shell)/admin/page';
@@ -21,7 +22,7 @@ const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; suspended_mentor_count: number; pending_service_count: number; total_bookings: number; }
-type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing';
+type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing' | 'legal';
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
@@ -47,6 +48,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
     { key: 'activity', label: 'Activity' },
     { key: 'ops', label: 'Ops' },
     { key: 'pricing', label: 'Pricing' },
+    { key: 'legal', label: 'Legal Documents' },
   ];
 
   return (
@@ -163,6 +165,12 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         {tab === 'pricing' && (
           <Section title="Pricing & commission" subtitle={ADMIN.sections.pricing}>
             <AdminPricing />
+          </Section>
+        )}
+
+        {tab === 'legal' && (
+          <Section title="Legal Documents" subtitle={ADMIN.sections.legal}>
+            <AdminLegalDocs />
           </Section>
         )}
       </div>

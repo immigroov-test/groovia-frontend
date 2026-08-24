@@ -25,8 +25,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/contact`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/mentor/register`, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
-    { url: `${SITE_URL}/terms`, changeFrequency: 'yearly', priority: 0.2 },
+    // The one public legal page - all fourteen documents. /terms is a 308 to here, so
+    // it is not listed: advertising a URL that only redirects wastes crawl budget and
+    // splits the signal between two addresses for the same content.
+    { url: `${SITE_URL}/privacy`, changeFrequency: 'monthly', priority: 0.3 },
   ];
   const mentors = await mentorSlugs();
   return [
