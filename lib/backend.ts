@@ -55,6 +55,38 @@ export async function serverGet<T = unknown>(
   }
 }
 
+// Resilient server-side GET for PUBLIC backend reads - same contract as serverGet
+// (never throws, times out, retries a cold start) but sends no Authorization header.
+// Used by the legal pages, which have to render for visitors with no account.
+export async function serverGetPublic<T = unknown>(
+  path: string,
+  timeoutMs = 12000,
+  retries = 1,
+  // Seconds to keep the response in Next's data cache. 0 = always refetch.
+  // Route-level `revalidate` is not an option for anything under the (shell) layout,
+  // which reads cookies() and so forces every page beneath it to render per request.
+  // Caching the FETCH still works there, and is what stops a crawler-heavy public page
+  // putting a backend round-trip behind every single view.
+  revalidateSeconds = 0,
+): Promise<ServerGetResult<T>> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(`${backendBaseUrl()}${path}`, {
+        ...(revalidateSeconds > 0
+          ? { next: { revalidate: revalidateSeconds } }
+          : { cache: 'no-store' as const }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      let data: T | null = null;
+      try { data = (await res.json()) as T; } catch { /* empty/non-JSON body */ }
+      return { ok: res.ok, status: res.status, data };
+    } catch {
+      if (attempt >= retries) return { ok: false, status: 0, data: null };
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    }
+  }
+}
+
 // Public (guest-allowed) forwarder: same as proxyToBackend but does NOT require an
 // auth header. If one is present it's still forwarded (so the backend can link the
 // booking to a signed-in candidate); if absent the request proceeds as a guest.

@@ -1,26 +1,13 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { LegalDoc } from '../../../components/LegalDoc';
+import { permanentRedirect } from 'next/navigation';
 
-export const metadata = { title: 'Terms of Service - Immigroov' };
-
-function read(name: string): string {
-  try {
-    return readFileSync(join(process.cwd(), 'content', 'legal', name), 'utf8');
-  } catch {
-    return '_Content coming soon._';
-  }
-}
-
+// There is one public legal page now, and it lives at /privacy. This route stays alive
+// because /terms is linked from the signup form, the mentor onboarding form, the
+// booking widget, the session detail page ("Refund policy") and the sitemap - links
+// that would otherwise 404, including ones on pages we do not control.
+//
+// permanentRedirect (308) rather than a soft redirect so search engines transfer the
+// indexing /terms has accumulated to /privacy instead of treating them as rivals for
+// the same content.
 export default function TermsPage() {
-  return (
-    <LegalDoc
-      title="Terms of Service"
-      updated="Last updated: 01 Aug 2025"
-      groups={[
-        { label: 'For Mentors', content: read('terms-mentor.md') },
-        { label: 'For Customers', content: read('terms-customer.md') },
-      ]}
-    />
-  );
+  permanentRedirect('/privacy');
 }
