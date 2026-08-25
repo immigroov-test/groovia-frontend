@@ -16,31 +16,34 @@ interface PendingUpdate {
 // Dismissing hides the notice for THIS browser session only. It is deliberately not
 // persistent: the record that matters is the acknowledgement, and someone who closes
 // the notice has not agreed to anything, so it should come back next time they sign
-// in. Acknowledging is what removes it for good - that drops the document out of
-// /legal/pending entirely.
+// in. Acknowledging is what removes it for good - that drops every acknowledged
+// document out of /legal/pending entirely.
 const DISMISSED_KEY = 'ig_legal_notice_dismissed';
 
 function readDismissed(): string[] {
   try { return JSON.parse(sessionStorage.getItem(DISMISSED_KEY) || '[]') as string[]; }
   catch { return []; }
 }
-function dismiss(versionId: string) {
+function dismiss(versionIds: string[]) {
   try {
-    const next = Array.from(new Set([...readDismissed(), versionId]));
+    const next = Array.from(new Set([...readDismissed(), ...versionIds]));
     sessionStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
   } catch { /* private mode - the notice simply reappears on navigation */ }
 }
 
-/** "Legal document updated" — shown after sign-in when a document that applies to
- *  this user has a newer version than the one they acknowledged.
+/** "Legal document updated" — shown after sign-in when one or more documents that
+ *  apply to this user have a newer version than the one they acknowledged.
  *
  *  Small and corner-anchored rather than a modal: this is a prompt to review, not a
  *  gate. Blocking the product behind it would punish people for a change they did
  *  not make, and an interstitial is exactly the pattern users dismiss without reading.
  *
+ *  However many documents are pending, Review leads to ONE page (/legal/updates)
+ *  with ONE acknowledgement covering all of them - see LegalUpdatesReview. A customer
+ *  should never be asked to click through nine separate documents one at a time.
+ *
  *  The check runs client-side after mount so it never sits in the critical path of a
- *  page render, and re-runs on navigation so acknowledging one document reveals the
- *  next one without a reload. */
+ *  page render, and re-runs on navigation so acknowledging clears it without a reload. */
 export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   const [pending, setPending] = useState<PendingUpdate[]>([]);
   const [hidden, setHidden] = useState<string[]>([]);
@@ -58,12 +61,14 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
     return () => { cancelled = true; };
   }, [authed, pathname]);
 
-  // Never stack the notice on top of the document it is asking the user to read.
-  const onThisDocument = (slug: string) => pathname === `/legal/${slug}`;
-  const next = pending.find((p) => !hidden.includes(p.version_id) && !onThisDocument(p.slug));
-  if (!authed || !next) return null;
+  // Never stack the notice on top of the review page itself.
+  if (pathname === '/legal/updates') return null;
 
-  const others = pending.filter((p) => !hidden.includes(p.version_id) && p.version_id !== next.version_id).length;
+  const shown = pending.filter((p) => !hidden.includes(p.version_id));
+  if (!authed || shown.length === 0) return null;
+
+  const first = shown[0];
+  const others = shown.length - 1;
 
   return (
     <div
@@ -79,16 +84,13 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-brand-900">Legal document updated</p>
           <p className="text-sm text-muted mt-0.5">
-            {next.title} has been updated. Please review the latest version.
+            {others === 0
+              ? <>{first.title} has been updated. Please review the latest version.</>
+              : <>{first.title} and {others} other document{others === 1 ? '' : 's'} {others === 1 ? 'has' : 'have'} been updated. Please review the latest versions.</>}
           </p>
-          {others > 0 && (
-            <p className="text-xs text-muted/80 mt-1">
-              {others} other document{others === 1 ? '' : 's'} also updated.
-            </p>
-          )}
           <button
             type="button"
-            onClick={() => router.push(`/legal/${next.slug}`)}
+            onClick={() => router.push('/legal/updates')}
             className="mt-2.5 inline-flex h-9 items-center rounded-full bg-brand-900 px-4 text-sm font-medium
                        text-white hover:bg-[#2a2e39] active:scale-[0.98] transition-colors"
           >
@@ -98,7 +100,7 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
         <button
           type="button"
           aria-label="Dismiss"
-          onClick={() => { dismiss(next.version_id); setHidden((h) => [...h, next.version_id]); }}
+          onClick={() => { const ids = shown.map((p) => p.version_id); dismiss(ids); setHidden((h) => [...h, ...ids]); }}
           className="-mr-1 -mt-1 rounded-full p-1.5 text-muted hover:bg-brand-50 hover:text-foreground"
         >
           <X className="h-4 w-4" />
