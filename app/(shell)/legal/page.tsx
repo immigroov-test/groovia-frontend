@@ -39,10 +39,13 @@ export default async function LegalIndexPage() {
   if (!user || !token) redirect('/login?next=/legal');
 
   const res = await serverGet<UserDoc[]>('/legal/documents', token);
-  // status 0 is the backend being unreachable (Render cold start), not an empty
-  // list - showing "no documents" there would be a lie about a legal obligation.
-  if (!res.ok && res.status === 0) return <PageLoadError retryHref="/legal" />;
-  const docs = res.data ?? [];
+  // A failed response is not necessarily status 0 (backend unreachable): a 500 from
+  // a genuine backend/database error still arrives as ok:false with a JSON body like
+  // {detail: "..."} - an OBJECT, not an array. Checking Array.isArray rather than just
+  // `res.data ?? []` is what stops that object reaching .reduce() below and crashing
+  // the page; any non-array response shows the same retry page as an unreachable backend.
+  if (!res.ok || !Array.isArray(res.data)) return <PageLoadError retryHref="/legal" />;
+  const docs = res.data;
 
   const groups = docs.reduce<Record<string, UserDoc[]>>((acc, d) => {
     (acc[d.audience_label] ??= []).push(d);
