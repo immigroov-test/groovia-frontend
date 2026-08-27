@@ -4,6 +4,7 @@ import { ContactContent } from '../../../components/ContactContent';
 export const metadata = {
   title: 'Contact - Immigroov',
   description: 'Get in touch with the Immigroov team.',
+  alternates: { canonical: '/contact' },
 };
 
 export default function ContactPage() {

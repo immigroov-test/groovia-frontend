@@ -18,6 +18,7 @@ async function fetchMentors(): Promise<Mentor[]> {
 export const metadata = {
   title: 'Mentors - Immigroov',
   description: 'Browse mentors who have lived your immigration journey.',
+  alternates: { canonical: '/mentors' },
 };
 
 export default async function MentorsPage() {

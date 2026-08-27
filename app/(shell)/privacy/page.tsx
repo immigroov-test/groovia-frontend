@@ -2,7 +2,10 @@ import { serverGetPublic } from '../../../lib/backend';
 import { PageLoadError } from '../../../components/PageLoadError';
 import { PublicLegalPage, type PublicLegalDocument } from '../../../components/PublicLegalPage';
 
-export const metadata = { title: 'Privacy Policy & Legal Documents - Immigroov' };
+export const metadata = {
+  title: 'Privacy Policy & Legal Documents - Immigroov',
+  alternates: { canonical: '/privacy' },
+};
 
 // The one public legal page: all fourteen documents as collapsible sections, served
 // from the Legal Documents CMS rather than from files in this repo. An admin editing
