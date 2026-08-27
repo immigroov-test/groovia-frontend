@@ -14,6 +14,8 @@ const LEGAL = [
   { href: '/privacy#website-terms-of-use', label: 'Terms of Use' },
   { href: '/privacy#cookie-policy', label: 'Cookie Policy' },
   { href: '/privacy#refund-cancellation-policy', label: 'Refund & Cancellation' },
+  { href: '/privacy#payment-terms', label: 'Payment Terms' },
+  { href: '/privacy#ai-disclosure-notice', label: 'AI Disclosure' },
   { href: '/privacy#data-subject-rights', label: 'Your Data Rights' },
 ];
 
