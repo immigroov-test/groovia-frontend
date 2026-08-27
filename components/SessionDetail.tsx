@@ -673,7 +673,7 @@ export function SessionDetail({ bookingId, accessToken }: {
               <h3 className="mt-4 text-lg font-semibold text-brand-900">{title}</h3>
               <p className="mt-2 text-sm text-muted leading-relaxed">
                 {notice}{' '}
-                <Link href="/terms" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
+                <Link href="/privacy#refund-cancellation-policy" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
               </p>
               {/* BUG-123: a reason is required from whoever cancels. It's sent to the other party and
                   kept for any refund review, so the confirm button stays disabled until it's given. */}

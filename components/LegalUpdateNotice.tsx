@@ -11,6 +11,7 @@ interface PendingUpdate {
   version_id: string;
   version: string;
   last_updated: string;
+  is_major: boolean;
 }
 
 // Dismissing hides the notice for THIS browser session only. It is deliberately not
@@ -64,11 +65,61 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   // Never stack the notice on top of the review page itself.
   if (pathname === '/legal/updates') return null;
 
-  const shown = pending.filter((p) => !hidden.includes(p.version_id));
-  if (!authed || shown.length === 0) return null;
+  // A MATERIAL revision (major version bump) to terms someone is already bound by needs
+  // their explicit acceptance, not a toast they can flick away: continuing to use the
+  // product is not agreement, and a dismissible corner card is the pattern people close
+  // without reading. Editorial revisions keep the unobtrusive notice - nagging someone
+  // over a corrected typo trains them to ignore the real ones.
+  //
+  // Dismissal deliberately does not apply to material updates. It applies to the rest.
+  const major = pending.filter((p) => p.is_major);
+  const minorShown = pending.filter((p) => !p.is_major && !hidden.includes(p.version_id));
 
-  const first = shown[0];
-  const others = shown.length - 1;
+  // Reading is never blocked. The legal pages and the public policy page stay reachable
+  // so nobody is asked to accept something they are being prevented from opening, and
+  // sign-out stays available from the nav underneath.
+  const readingLegal = pathname.startsWith('/legal') || pathname === '/privacy';
+
+  if (!authed) return null;
+
+  if (major.length > 0 && !readingLegal) {
+    const one = major.length === 1;
+    return (
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="legal-gate-title"
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-brand-900/40 backdrop-blur-sm p-4"
+      >
+        <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-card p-6 shadow-[0_8px_30px_-8px_rgba(15,23,42,0.35)]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50">
+            <FileText className="h-5 w-5 text-brand-700" />
+          </span>
+          <h2 id="legal-gate-title" className="mt-4 text-lg font-semibold text-brand-900">
+            {one ? 'An agreement has changed' : 'Your agreements have changed'}
+          </h2>
+          <p className="mt-2 text-sm text-muted leading-relaxed">
+            {one
+              ? <>We have published a new version of the <strong className="text-foreground">{major[0].title}</strong>. Please read and accept it to continue.</>
+              : <>We have published new versions of {major.length} documents that apply to your account, including the <strong className="text-foreground">{major[0].title}</strong>. Please read and accept them to continue.</>}
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push('/legal/updates')}
+            className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-full bg-brand-900 px-4
+                       text-sm font-medium text-white hover:bg-[#2a2e39] active:scale-[0.98] transition-colors"
+          >
+            Review and accept
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (minorShown.length === 0) return null;
+
+  const first = minorShown[0];
+  const others = minorShown.length - 1;
 
   return (
     <div
@@ -100,7 +151,7 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
         <button
           type="button"
           aria-label="Dismiss"
-          onClick={() => { const ids = shown.map((p) => p.version_id); dismiss(ids); setHidden((h) => [...h, ...ids]); }}
+          onClick={() => { const ids = minorShown.map((p) => p.version_id); dismiss(ids); setHidden((h) => [...h, ...ids]); }}
           className="-mr-1 -mt-1 rounded-full p-1.5 text-muted hover:bg-brand-50 hover:text-foreground"
         >
           <X className="h-4 w-4" />

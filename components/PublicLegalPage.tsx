@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -40,6 +40,40 @@ function when(ts: string): string {
 export function PublicLegalPage({ docs, openSlug }: { docs: PublicLegalDocument[]; openSlug?: string }) {
   const [open, setOpen] = useState<string | null>(openSlug ?? null);
 
+  // A link that lands on a CLOSED section has not taken the reader anywhere: the browser
+  // scrolls the title bar into view and the document they came to read is still hidden
+  // behind a click. So the hash opens its section as well as scrolling to it, and it is
+  // re-applied on hashchange - following /privacy#refund-cancellation-policy from a page
+  // that is already /privacy fires no navigation, only a hash change.
+  useEffect(() => {
+    const applyHash = () => {
+      const slug = decodeURIComponent(window.location.hash.replace(/^#/, ''));
+      if (!slug || !docs.some((d) => d.slug === slug)) return;
+      setOpen(slug);
+      // Scroll only after the section has expanded, or we measure the collapsed height
+      // and stop short of the content.
+      requestAnimationFrame(() =>
+        document.getElementById(slug)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      );
+    };
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
+  }, [docs]);
+
+  // Opening a section puts its slug in the URL so the reader can share or bookmark the
+  // exact document. replaceState rather than a hash assignment: setting location.hash
+  // would fire the listener above and fight the click that just ran.
+  const toggle = useCallback((slug: string) => {
+    setOpen((cur) => {
+      const next = cur === slug ? null : slug;
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', next ? `#${next}` : window.location.pathname);
+      }
+      return next;
+    });
+  }, []);
+
   const groups = docs.reduce<Record<string, PublicLegalDocument[]>>((acc, d) => {
     (acc[d.audience_label] ??= []).push(d);
     return acc;
@@ -70,7 +104,7 @@ export function PublicLegalPage({ docs, openSlug }: { docs: PublicLegalDocument[
                   className="rounded-2xl border border-[--color-border] bg-card overflow-hidden scroll-mt-20">
                   <button
                     type="button"
-                    onClick={() => setOpen(isOpen ? null : d.slug)}
+                    onClick={() => toggle(d.slug)}
                     aria-expanded={isOpen}
                     className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-brand-50/50 transition-colors"
                   >

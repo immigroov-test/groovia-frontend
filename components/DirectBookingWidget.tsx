@@ -1438,7 +1438,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 className="mt-0.5 h-4 w-4 shrink-0 rounded accent-brand-700" />
               <span className="text-xs text-muted leading-relaxed">
                 I agree to Immigroov&apos;s{' '}
-                <a href="/terms" target="_blank" rel="noopener noreferrer"
+                <a href={`/privacy#${userCountry === 'IN' ? 'customer-terms-india' : 'customer-terms-row'}`} target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Terms for customers
                 </a>{' '}

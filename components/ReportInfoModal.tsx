@@ -60,7 +60,7 @@ export function ReportInfoModal({ onProceed, onClose }: { onProceed: () => void;
           />
           <span className="text-xs text-muted leading-relaxed">
             {r.consent}{' '}
-            <Link href="/privacy" target="_blank" className="text-brand-700 hover:underline">
+            <Link href="/privacy#privacy-policy" target="_blank" className="text-brand-700 hover:underline">
               Privacy Policy
             </Link>
           </span>

@@ -31,8 +31,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <footer className="px-6 py-4 text-xs text-muted flex items-center justify-between">
         <span>© {new Date().getFullYear()} Immigroov</span>
         <div className="flex gap-4">
-          <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
-          <Link href="/terms" className="hover:text-foreground">Terms</Link>
+          <Link href="/privacy#privacy-policy" className="hover:text-foreground">Privacy</Link>
+          <Link href="/privacy#website-terms-of-use" className="hover:text-foreground">Terms</Link>
         </div>
       </footer>
     </div>

@@ -691,9 +691,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 onChange={(e) => setAgreedMentor(e.target.checked)} />
               <span>
                 I agree to the{' '}
-                <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Service</Link>{' '}
+                <Link href="/privacy#mentor-agreement" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Agreement</Link>{' '}
                 and{' '}
-                <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link>.
+                <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link>.
               </span>
             </label>
 

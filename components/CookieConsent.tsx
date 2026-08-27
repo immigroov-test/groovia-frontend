@@ -101,7 +101,7 @@ export function CookieConsent() {
               {optOut
                 ? 'We use cookies to run the site. You can opt out of analytics at any time.'
                 : 'We need some cookies to sign you in and keep the site secure. Analytics are optional and off until you say yes.'}{' '}
-              <Link href="/privacy" target="_blank" className="text-brand-700 hover:underline">
+              <Link href="/privacy#cookie-policy" target="_blank" className="text-brand-700 hover:underline">
                 Privacy Policy
               </Link>
             </p>

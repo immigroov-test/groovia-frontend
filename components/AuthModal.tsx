@@ -280,8 +280,8 @@ function AuthModalInner() {
                 <GoogleButton label={t.continueWithGoogle} next={next} />
                 <p className="mt-4 text-xs leading-snug text-muted">
                   {t.termsNote}{' '}
-                  <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                  <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
+                  <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                  <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
                 </p>
               </>
             )}
@@ -349,8 +349,8 @@ function AuthModalInner() {
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
                     <span>
                       I agree to Immigroov&apos;s{' '}
-                      <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                      <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
+                      <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                      <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
                     </span>
                   </label>
                   {error && <p className="text-xs text-red-600">{error}</p>}
