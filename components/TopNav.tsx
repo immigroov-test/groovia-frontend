@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, LogOut, LogIn, ChevronDown, Camera, FileText } from 'lucide-react';
+import { Menu, X, LogOut, LogIn, ChevronDown, Camera, FileText, Shield } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UI_CONTENT } from '../lib/content';
 import { clearLocalChat } from '../lib/chatStorage';
@@ -183,6 +183,13 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
                     >
                       <FileText className="h-4 w-4" /> Legal documents
                     </Link>
+                    <Link
+                      href="/legal/data-subject-request"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted hover:bg-brand-50/60 hover:text-brand-900"
+                    >
+                      <Shield className="h-4 w-4" /> Your data rights
+                    </Link>
                     <button
                       type="button"
                       onClick={handleSignOut}
@@ -272,6 +279,15 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
                 className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:bg-brand-50/60"
               >
                 <FileText className="h-4 w-4" /> Legal documents
+              </Link>
+            )}
+            {authed && (
+              <Link
+                href="/legal/data-subject-request"
+                onClick={() => setMenuOpen(false)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:bg-brand-50/60"
+              >
+                <Shield className="h-4 w-4" /> Your data rights
               </Link>
             )}
             {authed ? (

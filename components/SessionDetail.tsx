@@ -186,6 +186,10 @@ export function SessionDetail({ bookingId, accessToken }: {
         slotTime: d.slot_time,
         email, phone,
         serviceTitle: d.service_title,
+        // Completing payment on a booking that already exists (this is a signed-in retry
+        // of an unpaid hold, not a fresh checkout decision) - the Terms were already
+        // agreed to when this booking was first created.
+        acceptedTerms: true,
       },
       {
         onConfirmed: async () => { await load(); setBusy(false); },

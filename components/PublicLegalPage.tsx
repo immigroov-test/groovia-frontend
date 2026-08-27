@@ -120,6 +120,15 @@ export function PublicLegalPage({ docs, openSlug }: { docs: PublicLegalDocument[
                     <div className="px-5 pb-6 pt-1 border-t border-[--color-border]">
                       {d.summary && <p className="text-sm text-muted mt-3 mb-4">{d.summary}</p>}
                       <LegalMarkdown content={d.content} />
+                      {/* Section 7: this document explains the rights; the page that lets someone
+                          actually exercise one is separate ("not a consent doc - a rights-exercise
+                          page"), so it's linked from here rather than folded into the text. */}
+                      {d.slug === 'data-subject-rights' && (
+                        <Link href="/legal/data-subject-request"
+                          className="mt-4 inline-flex items-center rounded-full bg-brand-900 px-4 h-9 text-sm font-medium text-white hover:bg-[#2a2e39]">
+                          Submit a data subject request
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

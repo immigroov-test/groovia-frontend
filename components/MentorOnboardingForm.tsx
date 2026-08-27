@@ -97,7 +97,11 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [minNotice, setMinNotice] = useState(2);
   const [cancelHours, setCancelHours] = useState(24);
   const [overrides, setOverrides] = useState<DateOverride[]>([]);
-  const [agreedMentor, setAgreedMentor] = useState(false);
+  // Two independent checkboxes per the Consent Flow Spec: the commercial bundle, and
+  // the Data Processing Addendum - regulators expect the DPA's controller/processor
+  // consent to be distinct from the general agreement, never folded into one tick.
+  const [agreedMentorBundle, setAgreedMentorBundle] = useState(false);
+  const [agreedMentorDpa, setAgreedMentorDpa] = useState(false);
   const [bank, setBank] = useState<BankValue>(emptyBank());   // payout details (optional at signup)
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -197,7 +201,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const rulesError = daysErr || noticeErr || cancelErr;
   const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
   const bankError = validateBank(bank).length > 0 ? 'Add your payout bank details.' : null;
-  const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentor;
+  const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentorBundle && agreedMentorDpa;
 
   function goToStep2() {
     const errs = collectDetailErrors();
@@ -256,7 +260,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           years_professional_experience: parseInt(yearsProfExp, 10),
           professional_domains: allDomains,
           specializations,
-          agreed_to_mentor_terms: true,
+          agreed_to_mentor_bundle: true,
+          agreed_to_mentor_dpa: true,
           hourly_rate: parseFloat(hourlyRate) || null,
           currency,
           currency_rates: currencyRates,
@@ -687,13 +692,24 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
         <Card>
           <CardBody className="pt-6 flex flex-col gap-4">
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
-              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentor}
-                onChange={(e) => setAgreedMentor(e.target.checked)} />
+              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorBundle}
+                onChange={(e) => setAgreedMentorBundle(e.target.checked)} />
               <span>
                 I agree to the{' '}
-                <Link href="/privacy#mentor-agreement" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Agreement</Link>{' '}
-                and{' '}
-                <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link>.
+                <Link href="/privacy#mentor-agreement" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Agreement</Link>,{' '}
+                <Link href="/privacy#mentor-commission-payout" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Commission &amp; Payout Terms</Link>, and{' '}
+                <Link href="/privacy#mentor-code-of-conduct" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Code of Conduct</Link>.
+              </span>
+            </label>
+            {/* Separate from the bundle above, per spec: the DPA is a distinct legal
+                instrument (controller/processor relationship) and regulators expect
+                distinct consent, not folded into the general agreement. */}
+            <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
+              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorDpa}
+                onChange={(e) => setAgreedMentorDpa(e.target.checked)} />
+              <span>
+                I have read and agree to the{' '}
+                <Link href="/privacy#mentor-data-processing" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Data Processing Addendum</Link>.
               </span>
             </label>
 
@@ -704,7 +720,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 {sessionError && <li>· {sessionError}</li>}
                 {rulesError && <li>· {rulesError}</li>}
                 {bankError && <li>· {bankError}</li>}
-                {!agreedMentor && <li>· Accept the Mentor Agreement.</li>}
+                {!agreedMentorBundle && <li>· Accept the Mentor Agreement, Commission &amp; Payout Terms, and Code of Conduct.</li>}
+                {!agreedMentorDpa && <li>· Accept the Mentor Data Processing Addendum.</li>}
               </ul>
             )}
             {error && step === 2 && <p className="text-sm text-red-600">{error}</p>}

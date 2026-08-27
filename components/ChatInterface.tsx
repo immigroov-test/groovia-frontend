@@ -12,8 +12,11 @@ import { countryLabel, flagEmoji } from '../lib/countries';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
 import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
+import { guestConsentSessionId } from '../lib/guestSession';
+import { apiFetch } from '../lib/api';
 import { cn } from '../lib/utils';
 import { LandingIntro } from './LandingIntro';
+import { GrooviaAiTermsGate } from './GrooviaAiTermsGate';
 import { RateLimitModal } from './RateLimitModal';
 import { ReportInfoModal } from './ReportInfoModal';
 import { ResumeConsentModal } from './ResumeConsentModal';
@@ -152,6 +155,55 @@ export default function ChatInterface({ authed }: Props) {
 
   // Guests become "gated" after resume upload - input disables, AuthGateRenderer shows the modal.
   const gated = !authed;
+
+  // Groovia AI Terms - one-time gate on the first message actually sent. `current` is
+  // null until the status check resolves (so the very first send attempt awaits it
+  // rather than racing it), then true/false. Once true for this component instance it
+  // is never re-checked - the whole point of a one-time gate.
+  const grooviaAcceptedRef = useRef<boolean | null>(null);
+  const pendingGrooviaTextRef = useRef<string>('');
+  const [showGrooviaGate, setShowGrooviaGate] = useState(false);
+  const [grooviaContent, setGrooviaContent] = useState<string | null>(null);
+  const [grooviaBusy, setGrooviaBusy] = useState(false);
+  const [grooviaError, setGrooviaError] = useState<string | null>(null);
+
+  async function grooviaAlreadyAccepted(): Promise<boolean> {
+    if (grooviaAcceptedRef.current !== null) return grooviaAcceptedRef.current;
+    try {
+      const sid = authed ? '' : guestConsentSessionId();
+      const { data } = await apiFetch<{ accepted?: boolean }>(
+        `/api/legal/groovia-ai-terms/status${sid ? `?session_id=${encodeURIComponent(sid)}` : ''}`);
+      grooviaAcceptedRef.current = !!data?.accepted;
+    } catch {
+      grooviaAcceptedRef.current = false;
+    }
+    return grooviaAcceptedRef.current;
+  }
+
+  async function openGrooviaGate(pendingText: string) {
+    pendingGrooviaTextRef.current = pendingText;
+    setGrooviaError(null);
+    setShowGrooviaGate(true);
+    if (grooviaContent === null) {
+      const { ok, data } = await apiFetch<{ content?: string }>('/api/legal/public/groovia-ai-terms');
+      setGrooviaContent(ok && data?.content ? data.content : '_Could not load the Groovia AI Terms. Please try again._');
+    }
+  }
+
+  async function acceptGrooviaTerms() {
+    setGrooviaBusy(true); setGrooviaError(null);
+    const sid = authed ? undefined : guestConsentSessionId();
+    const { ok, data } = await apiFetch<{ detail?: string }>('/api/legal/groovia-ai-terms/accept', {
+      method: 'POST', json: { session_id: sid },
+    });
+    setGrooviaBusy(false);
+    if (!ok) { setGrooviaError(data?.detail || 'Could not record your acceptance. Please try again.'); return; }
+    grooviaAcceptedRef.current = true;
+    setShowGrooviaGate(false);
+    const text = pendingGrooviaTextRef.current;
+    pendingGrooviaTextRef.current = '';
+    if (text) void sendMessage(text);
+  }
 
   function openGate() {
     router.push(`${pathname}?auth=open`);
@@ -723,6 +775,15 @@ export default function ChatInterface({ authed }: Props) {
 
     if (!trimmed || loading || rateLimited) return;
 
+    // Groovia AI Terms - one-time gate on the FIRST message actually sent (registered or
+    // guest). Checked before the guest free-question count below, so being gated never
+    // consumes part of a guest's free allowance.
+    if (!(await grooviaAlreadyAccepted())) {
+      setInput('');
+      void openGrooviaGate(trimmed);
+      return;
+    }
+
     // Guest free tier: a couple of short questions, then Groovia itself (not a popup) asks them
     // to sign in. Long questions are nudged toward an account instead of spending on a big prompt.
     if (!authed) {
@@ -1035,6 +1096,18 @@ export default function ChatInterface({ authed }: Props) {
           {composerVisible && (
             <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
           )}
+          {/* AI Disclosure Notice (EU AI Act Art. 50): a persistent label at the point of AI
+              interaction, distinct from the caveat above - that one is about the content
+              ("not legal advice"); this discloses that Groovia is an AI system at all. Shown
+              wherever the composer is, not only in the footer. */}
+          {composerVisible && (
+            <p className="text-center text-[11px] text-muted/80 mt-1 px-4">
+              You&apos;re chatting with Groovia, an AI assistant.{' '}
+              <Link href="/privacy#ai-disclosure-notice" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                Learn more
+              </Link>
+            </p>
+          )}
         </div>
       </div>
 
@@ -1050,6 +1123,15 @@ export default function ChatInterface({ authed }: Props) {
       )}
       {showRateModal && rateLimitedUntil !== null && (
         <RateLimitModal until={rateLimitedUntil} onClose={() => setShowRateModal(false)} />
+      )}
+      {showGrooviaGate && (
+        <GrooviaAiTermsGate
+          content={grooviaContent ?? ''}
+          busy={grooviaBusy}
+          error={grooviaError}
+          onAccept={acceptGrooviaTerms}
+          onClose={() => { setShowGrooviaGate(false); pendingGrooviaTextRef.current = ''; }}
+        />
       )}
     </div>
   );

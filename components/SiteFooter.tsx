@@ -17,6 +17,10 @@ const LEGAL = [
   { href: '/privacy#payment-terms', label: 'Payment Terms' },
   { href: '/privacy#ai-disclosure-notice', label: 'AI Disclosure' },
   { href: '/privacy#data-subject-rights', label: 'Your Data Rights' },
+  // The document explains the rights; this is the actual rights-exercise page ("not a
+  // consent doc"), so both are linked - reading about a right and acting on it are
+  // different clicks.
+  { href: '/legal/data-subject-request', label: 'Submit a Data Request' },
 ];
 
 const COMPANY = [

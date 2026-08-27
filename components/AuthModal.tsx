@@ -13,6 +13,7 @@ import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
 import { randomQuote } from '../lib/quotes';
 import { TypeText } from './TypeText';
+import { detectCountry } from '../lib/geo';
 
 type Stage = 'email' | 'login' | 'oauth' | 'setup' | 'forgot' | 'sent';
 
@@ -40,6 +41,18 @@ function AuthModalInner() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [agreed, setAgreed] = useState(false);
+  const [marketing, setMarketing] = useState(false);
+  // Which Customer T&C document to LINK: detected client-side, same signal used for
+  // PPP pricing elsewhere. This only decides the link shown - the ACTUAL consent record
+  // is written server-side (routers/auth.py's /auth/sync) from the trusted edge geo, so
+  // a mismatch here can never corrupt what a customer is legally bound by, only what
+  // they're shown before clicking. Defaults to Rest-of-World while detection resolves.
+  const [tcSlug, setTcSlug] = useState<'customer-terms-india' | 'customer-terms-row'>('customer-terms-row');
+  useEffect(() => {
+    let cancelled = false;
+    detectCountry().then((c) => { if (!cancelled) setTcSlug(c === 'IN' ? 'customer-terms-india' : 'customer-terms-row'); });
+    return () => { cancelled = true; };
+  }, []);
   const [sentType, setSentType] = useState<'signup' | 'reset'>('signup');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,7 +67,7 @@ function AuthModalInner() {
 
   useEffect(() => {
     if (!isOpen) return;
-    setEmail(emailParam ?? ''); setFirstName(''); setLastName(''); setPassword(''); setConfirm(''); setAgreed(false); setError(null);
+    setEmail(emailParam ?? ''); setFirstName(''); setLastName(''); setPassword(''); setConfirm(''); setAgreed(false); setMarketing(false); setError(null);
     if (mode === 'setpw') {
       // Returned from the verification link → set a password. Require a real session.
       settingUp.current = true;
@@ -183,7 +196,10 @@ function AuthModalInner() {
         await fetch('/api/auth/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ full_name: fullName }),
+          // accepted_terms/marketing_consent only ever come from THIS one-time call -
+          // it's what tells the backend to actually record signup consent, rather than
+          // a routine sync (handleLogin's call above sends neither).
+          body: JSON.stringify({ full_name: fullName, accepted_terms: agreed, marketing_consent: marketing }),
         });
       }
     } catch { /* best-effort */ }
@@ -348,10 +364,17 @@ function AuthModalInner() {
                   <label className="flex items-start gap-2 text-xs leading-snug text-muted">
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
                     <span>
-                      I agree to Immigroov&apos;s{' '}
-                      <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                      <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
+                      I agree to the{' '}
+                      <Link href={`/privacy#${tcSlug}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms &amp; Conditions</Link>,{' '}
+                      <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link>, and{' '}
+                      <Link href="/privacy#payment-terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Payment Terms</Link>.
                     </span>
+                  </label>
+                  {/* Separate and unbundled from the checkbox above, per spec: marketing consent
+                      cannot be forced as part of accepting the Terms. Unchecked by default. */}
+                  <label className="flex items-start gap-2 text-xs leading-snug text-muted">
+                    <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} className="mt-0.5 accent-brand-700" />
+                    <span>(optional) Send me updates and offers from Immigroov</span>
                   </label>
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading}
