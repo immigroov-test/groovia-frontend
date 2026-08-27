@@ -6,6 +6,7 @@ import { IdleLogout } from '../../components/IdleLogout';
 import { AuthStateSync } from '../../components/AuthStateSync';
 import { IntroSplash } from '../../components/IntroSplash';
 import { LegalUpdateNotice } from '../../components/LegalUpdateNotice';
+import { LegalFooterLink } from '../../components/LegalFooterLink';
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -37,6 +38,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
       <AuthStateSync />
       <IntroSplash />
       <LegalUpdateNotice authed={!!user} />
+      <LegalFooterLink authed={!!user} />
     </div>
   );
 }

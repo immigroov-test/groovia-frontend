@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Cookie, X } from 'lucide-react';
 import { detectCountry } from '../lib/geo';
+import { guestConsentSessionId } from '../lib/guestSession';
 import { FEATURES } from '../lib/features';
 import {
   CONSENT_VERSION, consentMode, readConsent, writeConsent,
@@ -44,7 +45,10 @@ export function CookieConsent() {
     void fetch('/api/consent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'cookies', ...choice, policy_version: CONSENT_VERSION }),
+      // session_id: this call carries no auth header (a signed-in user's cookie choice
+      // is recorded the same as a guest's), so the Cookie Policy consent record below
+      // always needs a non-account identity to attach to.
+      body: JSON.stringify({ kind: 'cookies', ...choice, policy_version: CONSENT_VERSION, session_id: guestConsentSessionId() }),
     }).catch(() => {});
   }
 

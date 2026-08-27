@@ -180,6 +180,10 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         slotTime: d.slot_time,
         email, phone,
         serviceTitle: d.service_title,
+        // Completing payment on a booking that already exists (this is a signed-in retry
+        // of an unpaid hold, not a fresh checkout decision) - the Terms were already
+        // agreed to when this booking was first created.
+        acceptedTerms: true,
       },
       {
         onConfirmed: async () => { await load(); setBusy(false); },
@@ -667,7 +671,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
               <h3 className="mt-4 text-lg font-semibold text-brand-900">{title}</h3>
               <p className="mt-2 text-sm text-muted leading-relaxed">
                 {notice}{' '}
-                <Link href="/terms" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
+                <Link href="/privacy#refund-cancellation-policy" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
               </p>
               {/* BUG-123: a reason is required from whoever cancels. It's sent to the other party and
                   kept for any refund review, so the confirm button stays disabled until it's given. */}
