@@ -839,7 +839,13 @@ export default function ChatInterface({ authed }: Props) {
   const composerVisible = qnaActive || pendingQna || guestGate;
 
   return (
-    <div className="flex flex-col h-full relative">
+    // h-full alone is not safe here. The containing block is PageTransition's motion
+    // wrapper, which is display:contents and carries inline opacity/transform from the
+    // route animation; the moment that wrapper generates a box its height is auto, and a
+    // percentage height against auto resolves to ZERO - the whole page renders blank with
+    // the footer sitting under the nav. The viewport-based minimum cannot collapse, so it
+    // holds the page up whichever way the wrapper resolves. 4rem is the layout's pt-16.
+    <div className="flex flex-col h-full min-h-[calc(100dvh-4rem)] relative">
       {/* Landmarks - fixed to viewport bottom, always visible regardless of chat state.
           z-index 0 puts it above the body background but below the z-1/z-10 content layers. */}
       <div

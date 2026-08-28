@@ -14,6 +14,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
   let role: string | null = null;
   let name: string | null = null;
   let photoUrl: string | null = null;
+  let onboarding = false;
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -23,12 +24,26 @@ export default async function ShellLayout({ children }: { children: React.ReactN
     role = profile?.role ?? null;
     name = profile?.display_name ?? profile?.full_name ?? null;
     photoUrl = profile?.photo_url ?? null;
+
+    // A mentor who has not finished first-login setup gets a nav with one destination.
+    // Best-effort: if this lookup fails the nav stays full, and the server guards on
+    // /mentor and /home still enforce the flow.
+    if (role === 'mentor') {
+      try {
+        const { data: m } = await supabase
+          .from('mentors')
+          .select('needs_onboarding')
+          .eq('profile_id', user.id)
+          .maybeSingle();
+        onboarding = !!m?.needs_onboarding;
+      } catch { /* leave the nav as-is */ }
+    }
   }
 
   return (
     <div className="h-screen overflow-hidden">
       {/* TopNav is a fixed floating overlay (logo + auto-hiding nav), not in flow. */}
-      <TopNav authed={!!user} email={user?.email ?? null} role={role} name={name} photoUrl={photoUrl} />
+      <TopNav authed={!!user} email={user?.email ?? null} role={role} name={name} photoUrl={photoUrl} onboarding={onboarding} />
       {/* The footer goes INSIDE #app-scroll, not after it: the wrapper is h-screen
           overflow-hidden and this element is the only thing that scrolls, so a footer
           placed outside it would never be reachable. */}

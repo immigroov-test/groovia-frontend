@@ -17,6 +17,8 @@ interface Props {
   role?: string | null;
   name?: string | null;
   photoUrl?: string | null;
+  /** Mentor has not finished first-login setup (rate + sessions). */
+  onboarding?: boolean;
 }
 
 // Fixed top nav: floating logo (no background) on the left, a centered links pill,
@@ -28,7 +30,7 @@ const JOIN_AS_MENTOR_CONTACT =
   `/contact?topic=${encodeURIComponent('Join as a Mentor')}`
   + `&message=${encodeURIComponent('I want to join as a mentor.')}`;
 
-export function TopNav({ authed, email, role, name, photoUrl }: Props) {
+export function TopNav({ authed, email, role, name, photoUrl, onboarding }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,7 +77,14 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
     router.push(`${pathname}?auth=open&mode=login`);
   }
 
-  const nav = [
+  // A mentor mid-setup gets ONE destination. The rate and session steps are what make a
+  // profile bookable, and leaving them half-done produced a mentor who is listed but cannot
+  // be priced. Offering Home, About and Mentors during that flow invites exactly the detour
+  // that leaves it half-done, so the nav shrinks to the hub until setup is finished.
+  // /mentor and /home both re-check this server-side; this stops the click, not the route.
+  const nav = onboarding && role === 'mentor' ? [
+    { href: '/mentor', label: UI_CONTENT.sidebar.mentorHub, gated: false },
+  ] : [
     { href: '/home', label: UI_CONTENT.sidebar.chat, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
