@@ -1,75 +1,50 @@
 import Link from 'next/link';
 
-// The site-wide footer. Until now the only persistent legal links lived on the auth
-// pages, so a visitor browsing mentors, reading a profile or sitting on the home page
-// had no route to the Privacy Policy at all. A reachable-from-every-page privacy link
-// is the one placement regulators, ad platforms and app stores all check for, and it is
-// what any visitor looks for first.
+// The site-wide footer. Until this existed the only persistent legal links lived on the
+// auth pages, so a visitor browsing mentors or reading a profile had no route to the
+// Privacy Policy at all. A privacy link reachable from every page is the placement
+// regulators, ad platforms and app stores all check for.
 //
-// Each link names its section rather than pointing at the top of /privacy: that page
-// renders fourteen contracts as collapsed sections, so an unanchored link hands the
-// reader a list of titles instead of the document they asked for.
-const LEGAL = [
+// One wrapping row rather than titled columns. Two stacked columns with "Legal" and
+// "Immigroov" headings turned a set of small links into a block of page furniture taller
+// than some of the pages above it. Footer links are a reference people go looking for,
+// not a section that needs announcing, so the headings are gone and the links sit side by
+// side on one line, wrapping only when the screen is too narrow to hold them.
+const LINKS = [
   { href: '/privacy#privacy-policy', label: 'Privacy Policy' },
   { href: '/privacy#website-terms-of-use', label: 'Terms of Use' },
   { href: '/privacy#cookie-policy', label: 'Cookie Policy' },
-  { href: '/privacy#refund-cancellation-policy', label: 'Refund & Cancellation' },
+  { href: '/privacy#refund-cancellation-policy', label: 'Refunds' },
   { href: '/privacy#payment-terms', label: 'Payment Terms' },
   { href: '/privacy#ai-disclosure-notice', label: 'AI Disclosure' },
   { href: '/privacy#data-subject-rights', label: 'Your Data Rights' },
-  // The document explains the rights; this is the actual rights-exercise page ("not a
-  // consent doc"), so both are linked - reading about a right and acting on it are
-  // different clicks.
-  { href: '/legal/data-subject-request', label: 'Submit a Data Request' },
-];
-
-const COMPANY = [
+  { href: '/legal/data-subject-request', label: 'Data Request' },
+  { href: '/privacy', label: 'Terms & Policies' },
   { href: '/about', label: 'About' },
-  { href: '/mentors', label: 'Find a mentor' },
-  { href: '/mentor/register', label: 'Become a mentor' },
   { href: '/contact', label: 'Contact' },
 ];
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[--color-border] bg-card/40 mt-16">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
-        {/* One column on a phone, two from sm, so the link lists never sit in a squeezed
-            half-width column on a small screen. */}
-        <div className="grid gap-8 sm:grid-cols-2">
-          <nav aria-labelledby="footer-legal">
-            <h2 id="footer-legal" className="text-sm font-medium text-brand-900">Legal</h2>
-            <ul className="mt-3 flex flex-col gap-2">
-              {LEGAL.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-muted hover:text-foreground hover:underline">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link href="/privacy" className="text-sm text-brand-700 hover:underline">
-                  All legal documents
+    <footer className="mt-16 border-t border-[--color-border]/50">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-7">
+        <nav aria-label="Legal and company links">
+          {/* Separators are drawn on the list items rather than typed between them, so a
+              wrapped row never begins or ends with a stray divider. */}
+          <ul className="flex flex-wrap items-center justify-center gap-y-2 text-xs">
+            {LINKS.map((l) => (
+              <li
+                key={l.href}
+                className="px-3 border-r border-[--color-border] last:border-r-0 leading-none"
+              >
+                <Link href={l.href} className="text-muted hover:text-foreground hover:underline">
+                  {l.label}
                 </Link>
               </li>
-            </ul>
-          </nav>
-
-          <nav aria-labelledby="footer-company">
-            <h2 id="footer-company" className="text-sm font-medium text-brand-900">Immigroov</h2>
-            <ul className="mt-3 flex flex-col gap-2">
-              {COMPANY.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-muted hover:text-foreground hover:underline">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-
-        <p className="mt-10 pt-6 border-t border-[--color-border] text-xs text-muted">
+            ))}
+          </ul>
+        </nav>
+        <p className="mt-5 text-center text-xs text-muted/70">
           &copy; {new Date().getFullYear()} Immigroov. All rights reserved.
         </p>
       </div>

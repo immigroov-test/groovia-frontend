@@ -4,12 +4,21 @@ import { createClient } from '../lib/supabase/client';
 import { Button } from './ui/Button';
 import { FEATURES } from '../lib/features';
 
-export function GoogleButton({ label = 'Continue with Google', next }: { label?: string; next?: string }) {
+// beforeSignIn lets a caller refuse the click, which is how the sign-in modal enforces its
+// consent checkbox. It returns false to stop the redirect, so the caller can show its own
+// message instead. The button is deliberately NOT disabled in that state: a disabled
+// control explains nothing, and someone who has not noticed the checkbox is exactly the
+// person who needs telling why the click did nothing.
+export function GoogleButton(
+  { label = 'Continue with Google', next, beforeSignIn }:
+  { label?: string; next?: string; beforeSignIn?: () => boolean },
+) {
   const [loading, setLoading] = useState(false);
 
   if (!FEATURES.googleOAuth) return null;
 
   async function signIn() {
+    if (beforeSignIn && !beforeSignIn()) return;
     setLoading(true);
     const supabase = createClient();
     const redirectTo = `${window.location.origin}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`;

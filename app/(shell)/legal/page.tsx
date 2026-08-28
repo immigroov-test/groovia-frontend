@@ -54,7 +54,7 @@ export default async function LegalIndexPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Legal Documents</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Terms &amp; Policies</h1>
       <p className="text-sm text-muted mt-2">
         The current version of every document that applies to your account.
       </p>
@@ -75,7 +75,6 @@ export default async function LegalIndexPage() {
                   {d.summary && <p className="text-sm text-muted mt-0.5">{d.summary}</p>}
                   <p className="text-xs text-muted/80 mt-1 tabular-nums">
                     {d.version} · Last updated {when(d.last_updated)}
-                    {!d.acknowledged && <span className="text-amber-700"> · Not yet reviewed</span>}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 shrink-0 text-muted group-hover:text-brand-700" />

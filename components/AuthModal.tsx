@@ -41,6 +41,11 @@ function AuthModalInner() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [agreed, setAgreed] = useState(false);
+  // Consent at the FIRST step, gating both routes in. Separate from `agreed` above, which
+  // is the signup step's own checkbox: someone signing IN never reaches that step, so
+  // relying on it would take consent from new accounts only.
+  const [entryAgreed, setEntryAgreed] = useState(false);
+  const [entryConsentError, setEntryConsentError] = useState<string | null>(null);
   const [marketing, setMarketing] = useState(false);
   // Which Customer T&C document to LINK: detected client-side, same signal used for
   // PPP pricing elsewhere. This only decides the link shown - the ACTUAL consent record
@@ -115,8 +120,18 @@ function AuthModalInner() {
 
   // Step 1 - email only. Existing account with a password → login. Everyone else →
   // email a verification link (they set a password after clicking it).
+  /** Both ways in are gated on the same checkbox. Returns false and shows why when it is
+   *  unticked, rather than disabling the controls: a dead button explains nothing to the
+   *  person who has not spotted the checkbox yet. */
+  function requireEntryConsent(): boolean {
+    if (entryAgreed) return true;
+    setEntryConsentError('Please accept the Terms of Use and Privacy Policy to continue.');
+    return false;
+  }
+
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
+    if (!requireEntryConsent()) return;
     setError(null); setLoading(true);
     try {
       const res = await fetch('/api/auth/check-email', {
@@ -293,12 +308,29 @@ function AuthModalInner() {
                 <div className="my-4 flex items-center gap-3 text-sm text-muted">
                   <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
                 </div>
-                <GoogleButton label={t.continueWithGoogle} next={next} />
-                <p className="mt-4 text-xs leading-snug text-muted">
-                  {t.termsNote}{' '}
-                  <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                  <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
-                </p>
+                <GoogleButton label={t.continueWithGoogle} next={next} beforeSignIn={requireEntryConsent} />
+                {/* An actual checkbox, not the old "by continuing you agree" line. Implied
+                    consent from the act of signing in is not consent anyone can evidence
+                    later; a ticked box with a timestamp is. */}
+                <label className="mt-4 flex items-start gap-2 text-xs leading-snug text-muted cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={entryAgreed}
+                    onChange={(e) => { setEntryAgreed(e.target.checked); if (e.target.checked) setEntryConsentError(null); }}
+                    className="mt-0.5 accent-brand-700"
+                    aria-describedby={entryConsentError ? 'entry-consent-error' : undefined}
+                  />
+                  <span>
+                    I agree to the{' '}
+                    <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
+                    <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
+                  </span>
+                </label>
+                {entryConsentError && (
+                  <p id="entry-consent-error" role="alert" className="mt-2 text-xs text-red-600">
+                    {entryConsentError}
+                  </p>
+                )}
               </>
             )}
 

@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { serverGetPublic } from '../../../lib/backend';
 import { PageLoadError } from '../../../components/PageLoadError';
 import { PublicLegalPage, type PublicLegalDocument } from '../../../components/PublicLegalPage';
@@ -37,5 +38,11 @@ export default async function PrivacyPage() {
   // would be a false statement about a page people rely on.
   if (!res.ok || !Array.isArray(res.data)) return <PageLoadError retryHref="/privacy" />;
 
-  return <PublicLegalPage docs={res.data} />;
+  // Which Customer T&C binds this reader, India's or the Rest of World's. Read straight
+  // from the edge geo header rather than the cached fetch: the RESPONSE is cached for an
+  // hour and shared between visitors, so the country must be resolved per request or every
+  // reader would inherit whichever region happened to warm the cache.
+  const country = (await headers()).get('x-vercel-ip-country');
+
+  return <PublicLegalPage docs={res.data} country={country} />;
 }
