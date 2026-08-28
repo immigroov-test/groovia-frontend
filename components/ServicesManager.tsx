@@ -323,13 +323,6 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
       {/* ── Add another session (picker) - ABOVE the list (BUG-070). Tapping a tag opens an
              editable draft below (BUG-137) - nothing is created until it's confirmed. ─────────── */}
       <div className="flex flex-col gap-4">
-        <div>
-          <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">
-            {services.length > 0 ? 'Add another session' : 'Add your sessions'}
-          </h3>
-          <p className="text-xs text-muted mt-0.5">Tap one to review it before adding. Prices come from your base rate, by length.</p>
-        </div>
-
         {(
           <div className="flex flex-col gap-4">
             {/* Free intro call - its own category, only one allowed (BUG-059). */}

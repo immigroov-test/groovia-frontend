@@ -355,7 +355,7 @@ export function AvailabilityManagerV2() {
               <RuleField label="Cancellation / rescheduling time (hrs, 2-48)" value={rulesForm.cancel_hours} min={2} max={48}
                 error={rulesForm.cancel_hours >= 2 && rulesForm.cancel_hours <= 48 ? undefined : 'Enter 2-48 hours.'}
                 onChange={(v) => setRulesForm((r) => r ? { ...r, cancel_hours: v || 24 } : r)} />
-              <Button variant="accent" onClick={saveRules} loading={savingRules} className="h-11"
+              <Button variant="accent" onClick={saveRules} loading={savingRules} className="h-11 mb-5"
                 disabled={!(rulesForm.days_ahead >= 1 && rulesForm.days_ahead <= 90
                   && rulesForm.min_notice_hours >= 2 && rulesForm.min_notice_hours <= 24
                   && rulesForm.cancel_hours >= 2 && rulesForm.cancel_hours <= 48)}>Save rules</Button>
@@ -368,8 +368,12 @@ export function AvailabilityManagerV2() {
       <Card>
         <CardBody className="pt-5">
           <h3 className="text-base font-semibold text-brand-900">Date overrides</h3>
-          <p className="text-xs text-muted mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="text-xs text-muted mt-1">
             Tap a date to block it or set custom hours. Ctrl/Cmd-click to pick several, Shift-click for a range.
+          </p>
+          {/* The key belongs on its own line. Inline at the end of the sentence it read as
+              part of the instruction and wrapped into it on narrower screens. */}
+          <p className="text-xs text-muted mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex items-center gap-1"><Dot c="bg-emerald-500" /> weekly</span>
             <span className="inline-flex items-center gap-1"><Dot c="bg-accent-500" /> custom</span>
             <span className="inline-flex items-center gap-1"><Dot c="bg-red-500" /> blocked</span>
@@ -482,13 +486,18 @@ export function AvailabilityManagerV2() {
 function RuleField({ label, value, onChange, min, max, step, error }: {
   label: string; value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number; error?: string;
 }) {
+  // The row bottom-aligns its fields, so anything that changes a field's height also moves
+  // its input. The validation message did exactly that: the field showing it grew by one
+  // line and its input rose out of line with the rest, so the row was only straight while
+  // every value happened to be valid. The message is positioned out of the flow instead,
+  // which also keeps the inputs aligned when a long label wraps to two lines.
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="relative flex flex-col gap-1.5 pb-5">
       <label className="text-xs font-medium text-muted">{label}</label>
       <input type="number" value={value} min={min} max={max} step={step} aria-invalid={!!error}
         onChange={(e) => onChange(step ? parseFloat(e.target.value) : parseInt(e.target.value))}
         className={`h-11 w-40 px-3 rounded-xl bg-white text-sm focus:outline-none ${error ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="absolute left-0 bottom-0 text-xs text-red-600">{error}</span>}
     </div>
   );
 }
