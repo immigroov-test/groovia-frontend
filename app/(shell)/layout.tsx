@@ -5,7 +5,7 @@ import { PageTransition } from '../../components/PageTransition';
 import { IdleLogout } from '../../components/IdleLogout';
 import { AuthStateSync } from '../../components/AuthStateSync';
 import { IntroSplash } from '../../components/IntroSplash';
-import { SiteFooter } from '../../components/SiteFooter';
+import { FooterSlot } from '../../components/FooterSlot';
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -49,7 +49,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
           placed outside it would never be reachable. */}
       <main id="app-scroll" className="h-full overflow-y-auto pt-16">
         <PageTransition>{children}</PageTransition>
-        <SiteFooter />
+        <FooterSlot />
       </main>
       <AuthModal />
       <IdleLogout authed={!!user} />

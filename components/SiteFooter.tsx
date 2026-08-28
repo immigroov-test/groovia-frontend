@@ -2,23 +2,14 @@ import Link from 'next/link';
 
 // The site-wide footer. Until this existed the only persistent legal links lived on the
 // auth pages, so a visitor browsing mentors or reading a profile had no route to the
-// Privacy Policy at all. A privacy link reachable from every page is the placement
-// regulators, ad platforms and app stores all check for.
+// policies at all. A reachable-from-every-page link is the placement regulators, ad
+// platforms and app stores all check for.
 //
-// One wrapping row rather than titled columns. Two stacked columns with "Legal" and
-// "Immigroov" headings turned a set of small links into a block of page furniture taller
-// than some of the pages above it. Footer links are a reference people go looking for,
-// not a section that needs announcing, so the headings are gone and the links sit side by
-// side on one line, wrapping only when the screen is too narrow to hold them.
+// One link to the policies, not nine. Listing every document here duplicated the index that
+// /privacy already is, and a row of nine legal links reads as heavier and more alarming than
+// the single destination it stands for. Anyone after a specific policy reaches it in one
+// more click, from a page built to navigate them.
 const LINKS = [
-  { href: '/privacy#privacy-policy', label: 'Privacy Policy' },
-  { href: '/privacy#website-terms-of-use', label: 'Terms of Use' },
-  { href: '/privacy#cookie-policy', label: 'Cookie Policy' },
-  { href: '/privacy#refund-cancellation-policy', label: 'Refunds' },
-  { href: '/privacy#payment-terms', label: 'Payment Terms' },
-  { href: '/privacy#ai-disclosure-notice', label: 'AI Disclosure' },
-  { href: '/privacy#data-subject-rights', label: 'Your Data Rights' },
-  { href: '/legal/data-subject-request', label: 'Make a data request' },
   { href: '/privacy', label: 'Terms & Policies' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
