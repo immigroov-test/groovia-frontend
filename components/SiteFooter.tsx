@@ -17,11 +17,11 @@ const LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-16 border-t border-[--color-border]/50">
+    <footer className="mt-10">
       {/* Links left, copyright right on a wide screen; stacked and centred once the row is
           too narrow to hold both without them crowding each other. */}
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6
-                      flex flex-col items-center gap-4
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-3
+                      flex flex-col items-center gap-2
                       sm:flex-row sm:justify-between sm:gap-6">
         <nav aria-label="Legal and company links" className="min-w-0">
           {/* Separators are drawn on the list items rather than typed between them, so a
