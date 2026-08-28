@@ -185,6 +185,12 @@ function DocumentEditor({ documentId, onBack }: { documentId: string; onBack: ()
   const [content, setContent] = useState('');
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [busy, setBusy] = useState<null | 'draft' | 'publish' | 'discard'>(null);
+  // Is this revision MATERIAL? It decides the version bump (major resets the minor), and
+  // with it whether affected users are emailed and asked to accept before carrying on, or
+  // simply shown a dismissible notice. It was hardcoded false, which meant every publish
+  // after the initial v1.0 was editorial and a real change to terms could never reach
+  // anyone. Defaults to false so the heavier path is always a deliberate choice.
+  const [material, setMaterial] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -235,11 +241,14 @@ function DocumentEditor({ documentId, onBack }: { documentId: string; onBack: ()
     setBusy('publish');
     const { ok, data } = await apiFetch<{ detail?: string; version?: string }>(
       `/api/legal/admin/documents/${documentId}/publish`,
-      { method: 'POST', json: { change_note: changeNote || null, major: false } });
+      { method: 'POST', json: { change_note: changeNote || null, major: material } });
     setBusy(null);
     setConfirming(false);
     if (!ok) { setError(data?.detail || 'Could not publish the update.'); return; }
-    setNotice(`Published ${data?.version}. Affected users will be asked to review it.`);
+    setMaterial(false);
+    setNotice(material
+      ? `Published ${data?.version}. Affected users have been emailed and must accept it before continuing.`
+      : `Published ${data?.version}. Affected users will be shown a notice to review it.`);
     await load();
   }
 
@@ -333,6 +342,22 @@ function DocumentEditor({ documentId, onBack }: { documentId: string; onBack: ()
           onClick={() => setConfirming(true)}>
           Publish Official Update
         </Button>
+        <label className="flex items-start gap-2 text-sm text-muted cursor-pointer select-none basis-full sm:basis-auto">
+          <input
+            type="checkbox"
+            className="mt-0.5 accent-[--color-brand-500]"
+            checked={material}
+            disabled={!!busy}
+            onChange={(e) => setMaterial(e.target.checked)}
+          />
+          <span>
+            Material change
+            <span className="block text-xs text-muted/70">
+              Bumps the major version, emails everyone it applies to, and requires their
+              acceptance before they can continue. Leave off for wording and typo fixes.
+            </span>
+          </span>
+        </label>
         {doc.has_draft && (
           <Button variant="ghost" size="sm" loading={busy === 'discard'} disabled={!!busy}
             onClick={() => discardDraft()}>
@@ -374,7 +399,9 @@ function DocumentEditor({ documentId, onBack }: { documentId: string; onBack: ()
       <ConfirmDialog
         open={confirming}
         title="Publish official update?"
-        body="This will create a new official version and notify affected users."
+        body={material
+          ? 'This is a MATERIAL change. It creates a new major version, emails everyone the document applies to, and blocks them until they accept it.'
+          : 'This creates a new minor version. Affected users see a dismissible notice asking them to review it, and are not emailed.'}
         confirmLabel="Publish official update"
         alternateLabel="Not yet"
         busy={busy === 'publish' || busy === 'draft'}

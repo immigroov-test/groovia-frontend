@@ -19,6 +19,7 @@ export interface PendingLegalDocument {
   version: string;
   last_updated: string;
   content: string;
+  is_major: boolean;
 }
 
 function when(ts: string): string {
@@ -42,6 +43,13 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // A MATERIAL revision is gated: the user cannot carry on until they act, so the button
+  // has to say what the click actually means. "I have reviewed" records that someone read
+  // something; a change to terms they are already bound by needs agreement, and the wording
+  // is the whole difference between an acknowledgement and an acceptance. Editorial
+  // revisions keep the lighter wording, because that is genuinely all they are.
+  const material = docs.some((d) => d.is_major);
+
   async function acknowledgeAll() {
     setBusy(true); setError(null);
     const { ok, data } = await apiFetch<{ detail?: string }>('/api/legal/acknowledge-all', { method: 'POST' });
@@ -53,11 +61,17 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 pb-32">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Legal documents updated</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">
+        {material ? 'Please accept the updated terms' : 'Legal documents updated'}
+      </h1>
       <p className="text-sm text-muted mt-2">
-        {docs.length === 1
-          ? 'The following document has been updated. Please review it below.'
-          : `The following ${docs.length} documents have been updated. Please review them below.`}
+        {material
+          ? (docs.length === 1
+              ? 'The following document has changed in a way that affects your agreement with us. Please read it and accept the new version to continue.'
+              : `The following ${docs.length} documents have changed in ways that affect your agreement with us. Please read them and accept the new versions to continue.`)
+          : (docs.length === 1
+              ? 'The following document has been updated. Please review it below.'
+              : `The following ${docs.length} documents have been updated. Please review them below.`)}
       </p>
 
       <div className="mt-8 flex flex-col gap-2">
@@ -97,7 +111,9 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
         <div className="mx-auto max-w-3xl flex flex-wrap items-center gap-3">
           <Button variant="accent" loading={busy} onClick={acknowledgeAll}>
             <Check className="h-4 w-4" />
-            {docs.length === 1 ? 'I have reviewed this document' : `I have reviewed these ${docs.length} documents`}
+            {material
+              ? (docs.length === 1 ? 'I accept the updated document' : `I accept these ${docs.length} updated documents`)
+              : (docs.length === 1 ? 'I have reviewed this document' : `I have reviewed these ${docs.length} documents`)}
           </Button>
           {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
