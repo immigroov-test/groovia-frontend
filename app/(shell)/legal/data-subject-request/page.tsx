@@ -1,6 +1,6 @@
 import { DataSubjectRequestForm } from '../../../../components/DataSubjectRequestForm';
 
-export const metadata = { title: 'Data Subject Rights Request - Immigroov' };
+export const metadata = { title: 'Make a data request - Immigroov' };
 
 // Section 7 — "not a consent doc, a rights-exercise page." Public, no auth required:
 // exercising your rights must not itself require an account. Linked from the Data
@@ -10,7 +10,7 @@ export const metadata = { title: 'Data Subject Rights Request - Immigroov' };
 export default function DataSubjectRequestPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">Data Subject Rights Request</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-brand-900">Make a data request</h1>
       <p className="text-sm text-muted mt-2">
         Use this form to access, correct, delete, or export your personal data, or to exercise any
         other right described in our{' '}

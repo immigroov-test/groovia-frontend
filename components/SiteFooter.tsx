@@ -18,7 +18,7 @@ const LINKS = [
   { href: '/privacy#payment-terms', label: 'Payment Terms' },
   { href: '/privacy#ai-disclosure-notice', label: 'AI Disclosure' },
   { href: '/privacy#data-subject-rights', label: 'Your Data Rights' },
-  { href: '/legal/data-subject-request', label: 'Data Request' },
+  { href: '/legal/data-subject-request', label: 'Make a data request' },
   { href: '/privacy', label: 'Terms & Policies' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
