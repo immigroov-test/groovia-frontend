@@ -106,7 +106,7 @@ export function CookieConsent() {
                 ? 'We use cookies to run the site. You can opt out of analytics at any time.'
                 : 'We need some cookies to sign you in and keep the site secure. Analytics are optional and off until you say yes.'}{' '}
               <Link href="/privacy#cookie-policy" target="_blank" className="text-brand-700 hover:underline">
-                Privacy Policy
+                Cookie Policy
               </Link>
             </p>
           </div>
@@ -146,7 +146,7 @@ export function CookieConsent() {
           {!open && (
             <button type="button" onClick={() => setOpen(true)}
               className="text-xs text-muted hover:text-brand-900 sm:mr-auto underline underline-offset-4">
-              Manage
+              Cookie settings
             </button>
           )}
           {open ? (

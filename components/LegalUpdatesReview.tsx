@@ -42,6 +42,9 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
   const [open, setOpen] = useState<string | null>(docs[0]?.slug ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A material change needs an explicit act, not a button that happens to be the only one on
+  // screen. The tick is what the consent record stands for, so it has to be deliberate.
+  const [ticked, setTicked] = useState(false);
 
   // A MATERIAL revision is gated: the user cannot carry on until they act, so the button
   // has to say what the click actually means. "I have reviewed" records that someone read
@@ -109,10 +112,23 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
           through documents the user has already opened and closed. */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[--color-border] bg-card/95 backdrop-blur-md px-4 py-4 sm:px-6">
         <div className="mx-auto max-w-3xl flex flex-wrap items-center gap-3">
-          <Button variant="accent" loading={busy} onClick={acknowledgeAll}>
+          {material && (
+            <label className="flex items-start gap-2 text-sm text-muted cursor-pointer select-none w-full sm:w-auto sm:mr-2">
+              <input
+                type="checkbox"
+                checked={ticked}
+                onChange={(e) => { setTicked(e.target.checked); if (e.target.checked) setError(null); }}
+                className="mt-0.5 accent-brand-700"
+              />
+              <span>
+                I have read and agree to {docs.length === 1 ? 'the updated document' : `these ${docs.length} updated documents`}.
+              </span>
+            </label>
+          )}
+          <Button variant="accent" loading={busy} disabled={material && !ticked} onClick={acknowledgeAll}>
             <Check className="h-4 w-4" />
             {material
-              ? (docs.length === 1 ? 'I accept the updated document' : `I accept these ${docs.length} updated documents`)
+              ? 'Accept and continue'
               : (docs.length === 1 ? 'I have reviewed this document' : `I have reviewed these ${docs.length} documents`)}
           </Button>
           {error && <p className="text-sm text-red-600">{error}</p>}

@@ -16,6 +16,8 @@ import { TypeText } from './TypeText';
 
 type Stage = 'email' | 'login' | 'oauth' | 'setup' | 'forgot' | 'sent';
 
+const ENTRY_CONSENT_KEY = 'ig_entry_consent';
+
 function AuthModalInner() {
   const router = useRouter();
   const pathname = usePathname();
@@ -112,7 +114,12 @@ function AuthModalInner() {
    *  unticked, rather than disabling the controls: a dead button explains nothing to the
    *  person who has not spotted the checkbox yet. */
   function requireEntryConsent(): boolean {
-    if (entryAgreed) return true;
+    if (entryAgreed) {
+      // Google takes the user off-site and back to /auth/callback, where this component no
+      // longer exists. The marker is what lets the callback record the same agreement.
+      try { sessionStorage.setItem(ENTRY_CONSENT_KEY, '1'); } catch { /* private mode */ }
+      return true;
+    }
     setEntryConsentError('Please accept the Terms of Use and Privacy Policy to continue.');
     return false;
   }
@@ -165,6 +172,10 @@ function AuthModalInner() {
         const res = await fetch('/api/auth/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          // The entry checkbox was ticked to get here, so this sign-in is a consent event.
+          // The backend skips it when a live record already exists, and records it when a
+          // newer version of the policies has been published since.
+          body: JSON.stringify({ accepted_terms: true, consent_context: 'signin' }),
         });
         const d = await res.json().catch(() => ({}));
         if (d?.role === 'mentor' && d?.needs_onboarding) { router.push('/mentor'); return; }

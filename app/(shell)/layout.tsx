@@ -6,6 +6,7 @@ import { IdleLogout } from '../../components/IdleLogout';
 import { AuthStateSync } from '../../components/AuthStateSync';
 import { IntroSplash } from '../../components/IntroSplash';
 import { FooterSlot } from '../../components/FooterSlot';
+import { LegalUpdateNotice } from '../../components/LegalUpdateNotice';
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -53,6 +54,9 @@ export default async function ShellLayout({ children }: { children: React.ReactN
       </main>
       <AuthModal />
       <IdleLogout authed={!!user} />
+      {/* Material revisions only: a change to terms someone is already bound by needs
+          their agreement before they carry on. Editorial fixes show nothing. */}
+      <LegalUpdateNotice authed={!!user} />
       <AuthStateSync />
       <IntroSplash />
     </div>

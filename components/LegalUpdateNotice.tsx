@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { FileText, X } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
 interface PendingUpdate {
@@ -12,24 +12,6 @@ interface PendingUpdate {
   version: string;
   last_updated: string;
   is_major: boolean;
-}
-
-// Dismissing hides the notice for THIS browser session only. It is deliberately not
-// persistent: the record that matters is the acknowledgement, and someone who closes
-// the notice has not agreed to anything, so it should come back next time they sign
-// in. Acknowledging is what removes it for good - that drops every acknowledged
-// document out of /legal/pending entirely.
-const DISMISSED_KEY = 'ig_legal_notice_dismissed';
-
-function readDismissed(): string[] {
-  try { return JSON.parse(sessionStorage.getItem(DISMISSED_KEY) || '[]') as string[]; }
-  catch { return []; }
-}
-function dismiss(versionIds: string[]) {
-  try {
-    const next = Array.from(new Set([...readDismissed(), ...versionIds]));
-    sessionStorage.setItem(DISMISSED_KEY, JSON.stringify(next));
-  } catch { /* private mode - the notice simply reappears on navigation */ }
 }
 
 /** "Legal document updated" — shown after sign-in when one or more documents that
@@ -47,14 +29,12 @@ function dismiss(versionIds: string[]) {
  *  page render, and re-runs on navigation so acknowledging clears it without a reload. */
 export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   const [pending, setPending] = useState<PendingUpdate[]>([]);
-  const [hidden, setHidden] = useState<string[]>([]);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!authed) { setPending([]); return; }
+    if (!authed) return;
     let cancelled = false;
-    setHidden(readDismissed());
     (async () => {
       const { ok, data } = await apiFetch<PendingUpdate[]>('/api/legal/pending');
       if (!cancelled && ok && Array.isArray(data)) setPending(data);
@@ -72,8 +52,10 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   // over a corrected typo trains them to ignore the real ones.
   //
   // Dismissal deliberately does not apply to material updates. It applies to the rest.
+  // MATERIAL revisions only. An editorial fix is not worth interrupting anyone for, and
+  // prompting on every republish is how people learn to dismiss the prompt that matters.
+  // Dismissal deliberately does not apply here: this is not a notice, it is a gate.
   const major = pending.filter((p) => p.is_major);
-  const minorShown = pending.filter((p) => !p.is_major && !hidden.includes(p.version_id));
 
   // Reading is never blocked. The legal pages and the public policy page stay reachable
   // so nobody is asked to accept something they are being prevented from opening, and
@@ -116,47 +98,5 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
     );
   }
 
-  if (minorShown.length === 0) return null;
-
-  const first = minorShown[0];
-  const others = minorShown.length - 1;
-
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed bottom-4 right-4 z-40 w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-[--color-border]
-                 bg-card p-4 shadow-[0_8px_30px_-8px_rgba(15,23,42,0.25)]"
-    >
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50">
-          <FileText className="h-4 w-4 text-brand-700" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-brand-900">Legal document updated</p>
-          <p className="text-sm text-muted mt-0.5">
-            {others === 0
-              ? <>{first.title} has been updated. Please review the latest version.</>
-              : <>{first.title} and {others} other document{others === 1 ? '' : 's'} {others === 1 ? 'has' : 'have'} been updated. Please review the latest versions.</>}
-          </p>
-          <button
-            type="button"
-            onClick={() => router.push('/legal/updates')}
-            className="mt-2.5 inline-flex h-9 items-center rounded-full bg-brand-900 px-4 text-sm font-medium
-                       text-white hover:bg-[#2a2e39] active:scale-[0.98] transition-colors"
-          >
-            Review
-          </button>
-        </div>
-        <button
-          type="button"
-          aria-label="Dismiss"
-          onClick={() => { const ids = minorShown.map((p) => p.version_id); dismiss(ids); setHidden((h) => [...h, ...ids]); }}
-          className="-mr-1 -mt-1 rounded-full p-1.5 text-muted hover:bg-brand-50 hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
+  return null;
 }
