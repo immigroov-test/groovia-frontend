@@ -13,7 +13,6 @@ import { GoogleButton } from './GoogleButton';
 import { UI_CONTENT } from '../lib/content';
 import { randomQuote } from '../lib/quotes';
 import { TypeText } from './TypeText';
-import { detectCountry } from '../lib/geo';
 
 type Stage = 'email' | 'login' | 'oauth' | 'setup' | 'forgot' | 'sent';
 
@@ -47,17 +46,6 @@ function AuthModalInner() {
   const [entryAgreed, setEntryAgreed] = useState(false);
   const [entryConsentError, setEntryConsentError] = useState<string | null>(null);
   const [marketing, setMarketing] = useState(false);
-  // Which Customer T&C document to LINK: detected client-side, same signal used for
-  // PPP pricing elsewhere. This only decides the link shown - the ACTUAL consent record
-  // is written server-side (routers/auth.py's /auth/sync) from the trusted edge geo, so
-  // a mismatch here can never corrupt what a customer is legally bound by, only what
-  // they're shown before clicking. Defaults to Rest-of-World while detection resolves.
-  const [tcSlug, setTcSlug] = useState<'customer-terms-india' | 'customer-terms-row'>('customer-terms-row');
-  useEffect(() => {
-    let cancelled = false;
-    detectCountry().then((c) => { if (!cancelled) setTcSlug(c === 'IN' ? 'customer-terms-india' : 'customer-terms-row'); });
-    return () => { cancelled = true; };
-  }, []);
   const [sentType, setSentType] = useState<'signup' | 'reset'>('signup');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -322,8 +310,7 @@ function AuthModalInner() {
                   />
                   <span>
                     I agree to the{' '}
-                    <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                    <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
+                    <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms &amp; Policies</Link>.
                   </span>
                 </label>
                 {entryConsentError && (
@@ -397,9 +384,7 @@ function AuthModalInner() {
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
                     <span>
                       I agree to the{' '}
-                      <Link href={`/privacy#${tcSlug}`} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms &amp; Conditions</Link>,{' '}
-                      <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link>, and{' '}
-                      <Link href="/privacy#payment-terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Payment Terms</Link>.
+                      <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms &amp; Policies</Link>.
                     </span>
                   </label>
                   {/* Separate and unbundled from the checkbox above, per spec: marketing consent
