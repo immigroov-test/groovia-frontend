@@ -18,15 +18,20 @@ const LINKS = [
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-[--color-border]/50">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-7">
-        <nav aria-label="Legal and company links">
+      {/* Links left, copyright right on a wide screen; stacked and centred once the row is
+          too narrow to hold both without them crowding each other. */}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6
+                      flex flex-col items-center gap-4
+                      sm:flex-row sm:justify-between sm:gap-6">
+        <nav aria-label="Legal and company links" className="min-w-0">
           {/* Separators are drawn on the list items rather than typed between them, so a
               wrapped row never begins or ends with a stray divider. */}
-          <ul className="flex flex-wrap items-center justify-center gap-y-2 text-xs">
-            {LINKS.map((l) => (
+          <ul className="flex flex-wrap items-center justify-center sm:justify-start gap-y-2 text-xs">
+            {LINKS.map((l, i) => (
               <li
                 key={l.href}
-                className="px-3 border-r border-[--color-border] last:border-r-0 leading-none"
+                className={`leading-none ${i === 0 ? 'pr-3 sm:pl-0' : 'px-3'}
+                            border-r border-[--color-border] last:border-r-0`}
               >
                 <Link href={l.href} className="text-muted hover:text-foreground hover:underline">
                   {l.label}
@@ -35,7 +40,7 @@ export function SiteFooter() {
             ))}
           </ul>
         </nav>
-        <p className="mt-5 text-center text-xs text-muted/70">
+        <p className="shrink-0 text-xs text-muted/70">
           &copy; {new Date().getFullYear()} Immigroov. All rights reserved.
         </p>
       </div>

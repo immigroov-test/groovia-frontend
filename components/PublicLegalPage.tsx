@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search, X } from 'lucide-react';
+import { ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { LegalMarkdown, legalHeadings } from './LegalMarkdown';
 import { documentsForRegion } from '../lib/legal';
@@ -46,6 +46,19 @@ export function PublicLegalPage(
   const applicable = useMemo(() => documentsForRegion(docs, country), [docs, country]);
 
   const [active, setActive] = useState<string>(() => openSlug || '');
+  // Which documents show their sections. An outline whose nodes only ever open is half a
+  // control: the reader could expand a fourteen-section contract and then had no way to
+  // put it back, so the list they were navigating with kept growing.
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(openSlug ? [openSlug] : []));
+
+  const toggleExpanded = useCallback((slug: string) => {
+    setExpanded((cur) => {
+      const next = new Set(cur);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
+      return next;
+    });
+  }, []);
 
   // The hash carries two kinds of target and both have to work. /privacy#privacy-policy
   // names a DOCUMENT, and those links are already in the footer, the sign-in modal and the
@@ -72,6 +85,7 @@ export function PublicLegalPage(
 
   const select = useCallback((slug: string) => {
     setActive(slug);
+    setExpanded((cur) => new Set(cur).add(slug));
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', `#${slug}`);
       // Only pull the viewport on a narrow screen, where the content sits BELOW the index.
@@ -103,7 +117,14 @@ export function PublicLegalPage(
     return out;
   }, [matches]);
 
-  const headings = current ? legalHeadings(current.content) : [];
+  // Parsed once per document rather than per render of each row.
+  const headingsBySlug = useMemo(() => {
+    const m = new Map<string, { text: string; id: string }[]>();
+    for (const d of applicable) m.set(d.slug, legalHeadings(d.content));
+    return m;
+  }, [applicable]);
+
+  const headings = current ? headingsBySlug.get(current.slug) ?? [] : [];
 
   if (applicable.length === 0) {
     return (
@@ -174,27 +195,47 @@ export function PublicLegalPage(
                 <ul className="mt-1.5 flex flex-col gap-0.5">
                   {g.items.map((d) => {
                     const isActive = d.slug === current?.slug;
+                    const isExpanded = expanded.has(d.slug);
+                    const docHeadings = headingsBySlug.get(d.slug) ?? [];
                     return (
                       <li key={d.slug}>
-                        <button
-                          type="button"
-                          onClick={() => select(d.slug)}
-                          aria-current={isActive ? 'true' : undefined}
-                          className={cn(
-                            'w-full text-left rounded-lg px-3 py-2 text-sm transition-colors',
-                            isActive
-                              ? 'bg-brand-50 text-brand-900 font-medium'
-                              : 'text-muted hover:bg-brand-50/60 hover:text-foreground',
+                        {/* Title and disclosure are separate controls on purpose: the title
+                            opens the document, the chevron only folds its sections away, so
+                            tidying the outline never navigates you somewhere you did not ask
+                            to go. */}
+                        <div className={cn(
+                          'flex items-center rounded-lg transition-colors',
+                          isActive ? 'bg-brand-50' : 'hover:bg-brand-50/60',
+                        )}>
+                          <button
+                            type="button"
+                            onClick={() => select(d.slug)}
+                            aria-current={isActive ? 'true' : undefined}
+                            className={cn(
+                              'min-w-0 flex-1 text-left px-3 py-2 text-sm',
+                              isActive ? 'text-brand-900 font-medium' : 'text-muted hover:text-foreground',
+                            )}
+                          >
+                            {d.title}
+                          </button>
+                          {docHeadings.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpanded(d.slug)}
+                              aria-expanded={isExpanded}
+                              aria-label={`${isExpanded ? 'Hide' : 'Show'} sections of ${d.title}`}
+                              className="shrink-0 mr-1 rounded-md p-1.5 text-muted hover:text-foreground"
+                            >
+                              <ChevronDown className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')} />
+                            </button>
                           )}
-                        >
-                          {d.title}
-                        </button>
+                        </div>
 
-                        {/* The open document's sections, nested beneath it. The indent rule
-                            is what makes this read as an outline rather than a second list. */}
-                        {isActive && headings.length > 0 && (
+                        {/* Sections nested beneath their document. The indent rule is what
+                            makes this read as an outline rather than a second flat list. */}
+                        {isExpanded && docHeadings.length > 0 && (
                           <ul className="mt-1 mb-2 ml-4 flex flex-col gap-0.5 border-l border-[--color-border] pl-3">
-                            {headings.map((h) => (
+                            {docHeadings.map((h) => (
                               <li key={h.id}>
                                 <a
                                   href={`#${h.id}`}
