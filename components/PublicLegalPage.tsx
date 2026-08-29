@@ -69,7 +69,12 @@ export function PublicLegalPage(
     const applyHash = () => {
       const id = decodeURIComponent(window.location.hash.replace(/^#/, ''));
       if (!id) return;
-      if (applicable.some((d) => d.slug === id)) { setActive(id); return; }
+      // Checked against the FULL set, not just `applicable`: the region filter decides what
+      // shows up unprompted in the ambient outline, but an explicit link naming a document by
+      // slug - the other edition of the Customer T&C, shared during a support conversation or
+      // opened while QA-ing from outside its region - is a deliberate ask and should resolve,
+      // not silently fall back to whichever document happens to be first.
+      if (docs.some((d) => d.slug === id)) { setActive(id); return; }
       const owner = applicable.find((d) => legalHeadings(d.content).some((h) => h.id === id));
       if (!owner) return;
       setActive(owner.slug);
@@ -79,9 +84,12 @@ export function PublicLegalPage(
     applyHash();
     window.addEventListener('hashchange', applyHash);
     return () => window.removeEventListener('hashchange', applyHash);
-  }, [applicable]);
+  }, [docs, applicable]);
 
-  const current = applicable.find((d) => d.slug === active) ?? applicable[0];
+  // Same reasoning as the hash lookup above: an explicitly active slug resolves against every
+  // document, region-scoped or not, so a direct link never gets silently swapped for the
+  // reader's own edition.
+  const current = docs.find((d) => d.slug === active) ?? applicable[0];
 
   const select = useCallback((slug: string) => {
     setActive(slug);
