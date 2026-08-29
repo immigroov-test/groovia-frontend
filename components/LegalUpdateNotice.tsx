@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FileText, X } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
@@ -35,17 +34,20 @@ function dismiss(versionIds: string[]) {
 /** "Legal document updated" — shown after sign-in when one or more documents that
  *  apply to this user have a newer version than the one they acknowledged.
  *
- *  Small and corner-anchored, always - never a gate. Explicit acceptance already
- *  happens at the checkbox moments (signup, checkout, mentor onboarding, the Groovia
- *  AI Terms modal); this notice just tells an already-bound user something changed
- *  and links straight to it, with a one-click bundled review at /legal/updates when
- *  more than one document is pending - see LegalUpdatesReview.
+ *  Small and corner-anchored rather than a modal: this is a prompt to review, not a
+ *  gate. Blocking the product behind it would punish people for a change they did
+ *  not make, and an interstitial is exactly the pattern users dismiss without reading.
+ *
+ *  However many documents are pending, Review leads to ONE page (/legal/updates)
+ *  with ONE acknowledgement covering all of them - see LegalUpdatesReview. A customer
+ *  should never be asked to click through nine separate documents one at a time.
  *
  *  The check runs client-side after mount so it never sits in the critical path of a
  *  page render, and re-runs on navigation so acknowledging clears it without a reload. */
 export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   const [pending, setPending] = useState<PendingUpdate[]>([]);
   const [hidden, setHidden] = useState<string[]>([]);
+  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -62,15 +64,8 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   // Never stack the notice on top of the review page itself.
   if (pathname === '/legal/updates') return null;
 
-  if (!authed) return null;
-
-  // Every pending update gets the same small, dismissible corner notice. Continuing to
-  // use the product is never blocked here: the checkbox gates at signup, checkout,
-  // mentor onboarding and the Groovia AI Terms modal are where explicit acceptance is
-  // actually required and recorded. This notice just tells an already-bound user what
-  // changed, with a direct link to read it.
   const shown = pending.filter((p) => !hidden.includes(p.version_id));
-  if (shown.length === 0) return null;
+  if (!authed || shown.length === 0) return null;
 
   const first = shown[0];
   const others = shown.length - 1;
@@ -87,12 +82,20 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
           <FileText className="h-4 w-4 text-brand-700" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-brand-900">We&rsquo;ve updated our {first.title}</p>
+          <p className="text-sm font-semibold text-brand-900">Legal document updated</p>
           <p className="text-sm text-muted mt-0.5">
             {others === 0
-              ? <>Read the <Link href={`/privacy#${first.slug}`} className="text-brand-700 underline hover:text-brand-900">latest version</Link>.</>
-              : <>Along with {others} other document{others === 1 ? '' : 's'}. <Link href="/legal/updates" className="text-brand-700 underline hover:text-brand-900">Read what changed</Link>.</>}
+              ? <>{first.title} has been updated. Please review the latest version.</>
+              : <>{first.title} and {others} other document{others === 1 ? '' : 's'} {others === 1 ? 'has' : 'have'} been updated. Please review the latest versions.</>}
           </p>
+          <button
+            type="button"
+            onClick={() => router.push('/legal/updates')}
+            className="mt-2.5 inline-flex h-9 items-center rounded-full bg-brand-900 px-4 text-sm font-medium
+                       text-white hover:bg-[#2a2e39] active:scale-[0.98] transition-colors"
+          >
+            Review
+          </button>
         </div>
         <button
           type="button"
