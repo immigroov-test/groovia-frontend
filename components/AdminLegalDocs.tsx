@@ -79,6 +79,10 @@ export function AdminLegalDocs() {
   const [rows, setRows] = useState<LegalRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  // Deactivating stops the document being served to anyone, so it confirms first;
+  // reactivating just undoes that and needs no confirmation.
+  const [confirmDeactivate, setConfirmDeactivate] = useState<LegalRow | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -87,6 +91,16 @@ export function AdminLegalDocs() {
     setRows(data);
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  async function setActive(row: LegalRow, isActive: boolean) {
+    setTogglingId(row.id); setError(null);
+    const { ok, data } = await apiFetch<{ detail?: string }>(
+      `/api/legal/admin/documents/${row.id}/active`, { method: 'POST', json: { is_active: isActive } });
+    setTogglingId(null);
+    setConfirmDeactivate(null);
+    if (!ok) { setError(data?.detail || 'Could not update the document.'); return; }
+    await load();
+  }
 
   if (openId) {
     return <DocumentEditor
@@ -133,6 +147,7 @@ export function AdminLegalDocs() {
                 <td className="px-4 py-3">
                   <span className="text-xs text-muted tabular-nums mr-2">{r.code}</span>
                   <span className="font-medium text-foreground">{r.title}</span>
+                  {!r.is_active && <Badge tone="neutral" className="ml-1.5">Inactive</Badge>}
                 </td>
                 <td className="px-4 py-3">
                   <Badge tone={AUDIENCE_TONE[r.audience] ?? 'neutral'}>{r.audience_label}</Badge>
@@ -158,6 +173,17 @@ export function AdminLegalDocs() {
                   <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
                     <Pencil className="h-3.5 w-3.5" /> Edit
                   </Button>
+                  {r.is_active ? (
+                    <Button size="sm" variant="ghost" className="ml-1.5" loading={togglingId === r.id}
+                      disabled={!!togglingId} onClick={() => setConfirmDeactivate(r)}>
+                      Deactivate
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="ghost" className="ml-1.5" loading={togglingId === r.id}
+                      disabled={!!togglingId} onClick={() => setActive(r, true)}>
+                      Reactivate
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -171,6 +197,17 @@ export function AdminLegalDocs() {
           <code className="text-xs">python -m scripts.seed_legal_documents</code>.
         </p>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeactivate}
+        title="Deactivate this document?"
+        body={`${confirmDeactivate?.title ?? 'This document'} stops being served to anyone - the public page, admin checkout bundles and consent gates that reference it will no longer find it. Its version history and every acknowledgement or consent record against it are kept exactly as they are. You can reactivate it at any time.`}
+        confirmLabel="Deactivate"
+        alternateLabel="Cancel"
+        busy={!!togglingId}
+        onConfirm={() => { if (confirmDeactivate) return setActive(confirmDeactivate, false); }}
+        onClose={() => setConfirmDeactivate(null)}
+      />
     </div>
   );
 }

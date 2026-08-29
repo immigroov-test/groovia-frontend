@@ -14,9 +14,10 @@ export interface RegionScoped {
 export function appliesInRegion(doc: RegionScoped, country?: string | null): boolean {
   const scope = (doc.region_scope || 'all').toLowerCase();
   if (scope === 'all') return true;
-  // Unknown geo falls back to Rest of World: it is the wider audience, and guessing India
-  // for someone we cannot place would show them terms that do not bind them.
-  const inIndia = (country || '').toUpperCase() === 'IN';
+  // India is the default geography: unknown/unresolved geo binds the India edition, and
+  // only a country we positively know is NOT India moves this to Rest of World.
+  const code = (country || '').toUpperCase();
+  const inIndia = !code || code === 'IN';
   return scope === 'in' ? inIndia : !inIndia;
 }
 

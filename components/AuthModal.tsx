@@ -63,6 +63,10 @@ function AuthModalInner() {
   useEffect(() => {
     if (!isOpen) return;
     setEmail(emailParam ?? ''); setFirstName(''); setLastName(''); setPassword(''); setConfirm(''); setAgreed(false); setMarketing(false); setError(null);
+    // Every open is a fresh login/signup attempt, so the entry checkbox has to be ticked
+    // again too - a box left checked from a previous visit this session would let someone
+    // through without the fresh, evidenced tick "every login" requires.
+    setEntryAgreed(false); setEntryConsentError(null);
     if (mode === 'setpw') {
       // Returned from the verification link → set a password. Require a real session.
       settingUp.current = true;

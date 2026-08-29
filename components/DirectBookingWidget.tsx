@@ -1440,7 +1440,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 className="mt-0.5 h-4 w-4 shrink-0 rounded accent-brand-700" />
               <span className="text-xs text-muted leading-relaxed">
                 I agree to the{' '}
-                <a href={`/privacy#${userCountry === 'IN' ? 'customer-terms-india' : 'customer-terms-row'}`}
+                {/* India is the default geography: an unresolved userCountry binds the India
+                    edition, and only a country we positively know is NOT India moves this
+                    link to Rest-of-World. */}
+                <a href={`/privacy#${userCountry && userCountry !== 'IN' ? 'customer-terms-row' : 'customer-terms-india'}`}
                   target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Terms &amp; Conditions
@@ -1448,17 +1451,21 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 <a href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Privacy Policy
-                </a>, and{' '}
+                </a>,{' '}
                 <a href="/privacy#payment-terms" target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Payment Terms
+                </a>, and{' '}
+                <a href="/privacy#refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
+                  className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                  Refund &amp; Cancellation Policy
                 </a>.
               </span>
             </label>
-            {/* Kept visually distinct from the bundle above, per spec: this is the
-                highest-dispute-risk document, surfaced right where money changes hands
-                rather than folded into the general Terms link. All 14 legal documents
-                are public, so this works for a guest with no account too. */}
+            {/* Named again here, alongside the mentor's own notice window: this is the
+                highest-dispute-risk document, worth surfacing a second time right where
+                money changes hands, not just inside the bundle above. All 14 legal
+                documents are public, so this works for a guest with no account too. */}
             <p className="mx-5 mb-3 text-xs text-muted leading-relaxed">
               Review the{' '}
               <a href="/privacy#refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
