@@ -9,6 +9,7 @@ import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
 import { mentorDisplayTz, tzShort } from '../lib/timezone';
 import { hoursText } from '../lib/utils';
+import { BookingEventLog } from './BookingEventLog';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { ConfirmDialog } from './ui/ConfirmDialog';
@@ -38,6 +39,8 @@ interface Detail {
   unpaid_hold: boolean;
   reschedule_count: number;
   no_show_by: string | null;
+  cancelled_by?: 'user' | 'mentor' | 'system' | null;
+  cancel_reason?: string | null;
   deadline_state: 'free' | 'late' | 'buffer' | null;
   cancel_notice_hours?: number | null;   // this mentor's cancellation/reschedule notice (BUG-119)
   buffer_hours?: number | null;          // hard cut-off before the session
@@ -270,6 +273,27 @@ export function SessionDetail({ bookingId, accessToken }: {
           {STATUS_LABEL[d.status] ?? d.status.replace('_', ' ')}
         </Badge>
       </div>
+
+      {/* Who cancelled, and why. "Your session was cancelled" on its own sends people to
+          support to ask the one question the page already knows the answer to. */}
+      {d.status === 'cancelled' && (
+        <div className="mt-5 rounded-2xl border border-[--color-border] bg-card p-4">
+          <p className="text-sm text-foreground">
+            {d.cancelled_by === 'system'
+              ? 'Cancelled automatically because payment was not completed in time.'
+              : d.cancelled_by
+                ? <>Cancelled by <strong>{
+                    d.cancelled_by === 'mentor'
+                      ? (isMentor ? 'you' : d.mentor_name || 'the mentor')
+                      : (isCandidate ? 'you' : d.candidate_name || 'the attendee')
+                  }</strong>.</>
+                : 'This session was cancelled.'}
+          </p>
+          {d.cancel_reason && (
+            <p className="mt-1.5 text-sm text-muted">Reason: {d.cancel_reason}</p>
+          )}
+        </div>
+      )}
 
       {/* Payment-pending banner */}
       {d.unpaid_hold && (
@@ -710,6 +734,13 @@ export function SessionDetail({ bookingId, accessToken }: {
         );
       })()}
 
+      <BookingEventLog
+        bookingId={d.id}
+        token={accessToken}
+        mentorName={d.mentor_name}
+        candidateName={d.candidate_name}
+        viewerIs={d.role}
+      />
     </div>
   );
 }
