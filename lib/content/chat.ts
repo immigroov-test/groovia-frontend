@@ -12,7 +12,7 @@ export const CHAT = {
   // in the privacy policy alone is the thing regulators object to: the disclosure has to be where the
   // decision is made. Kept to one added clause so the line stays readable.
   disclaimer:
-    'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions. Chats are saved to improve Groovia; please avoid sharing sensitive personal details.',
+    'This is AI-generated content based on publicly available information. It is not legal advice. Always consult a qualified immigration professional before making decisions.',
   signInToContinue: 'Sign in to continue',
   // Career-report intent: a popup explains it, then it needs sign-in + résumé.
   report: {

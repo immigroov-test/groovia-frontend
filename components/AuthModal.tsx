@@ -325,7 +325,9 @@ function AuthModalInner() {
                   />
                   <span>
                     I agree to the{' '}
-                    <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms &amp; Policies</Link>.
+                    <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use</Link>,{' '}
+                    <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link> and{' '}
+                    <Link href="/privacy#groovia-ai-terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use - Groovia AI</Link>.
                   </span>
                 </label>
                 {entryConsentError && (
@@ -399,7 +401,9 @@ function AuthModalInner() {
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
                     <span>
                       I agree to the{' '}
-                      <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms &amp; Policies</Link>.
+                      <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use</Link>,{' '}
+                      <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link> and{' '}
+                      <Link href="/privacy#groovia-ai-terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use - Groovia AI</Link>.
                     </span>
                   </label>
                   {/* Separate and unbundled from the checkbox above, per spec: marketing consent

@@ -1118,7 +1118,7 @@ export default function ChatInterface({ authed }: Props) {
             <p className="text-center text-[11px] text-muted/80 mt-1 px-4">
               You&apos;re chatting with Groovia, an AI assistant.{' '}
               <Link href="/privacy#ai-disclosure-notice" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
-                Learn more
+                AI Disclosure Notice
               </Link>
             </p>
           )}
