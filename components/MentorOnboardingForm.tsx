@@ -196,7 +196,13 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const cancelErr = cancelHours >= 2 && cancelHours <= 48 ? null : 'Enter 2-48 hours.';
   const rulesError = daysErr || noticeErr || cancelErr;
   const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
-  const bankError = validateBank(bank).length > 0 ? 'Add your payout bank details.' : null;
+  const bankProblems = validateBank(bank);
+  const bankError = bankProblems.length === 0
+    ? null
+    // Empty form: "add them". Filled but wrong: say what is actually wrong.
+    : (!bank.country_code && !bank.account_holder_name.trim()
+        ? 'Add your payout bank details.'
+        : bankProblems.join(' '));
   const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentor;
 
   function goToStep2() {
@@ -224,7 +230,14 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     setFieldErrors({});
     // Step-2 issues (availability / sessions / rules / bank / terms) are shown inline via the
     // "what's left" list next to the submit button; canSubmit gates the actual submit.
-    if (!canSubmit) return;
+    if (!canSubmit) {
+      setError(
+        [availError, sessionError, rulesError, bankError,
+         agreedMentor ? null : 'Accept the Mentor Agreement.']
+          .filter(Boolean).join(' '),
+      );
+      return;
+    }
 
     setSubmitting(true);
     try {
