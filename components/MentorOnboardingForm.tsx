@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -200,6 +200,10 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const cancelErr = cancelHours >= 2 && cancelHours <= 48 ? null : 'Enter 2-48 hours.';
   const rulesError = daysErr || noticeErr || cancelErr;
   const activeWeekdays = new Set(WEEK_DAYS.filter((d) => (weeklyHours[d]?.length ?? 0) > 0));
+  // Error-summary pattern: stay quiet until they actually try to submit, then show one summary
+  // listing every unmet condition, each linking to the section that needs work.
+  const [triedSubmit, setTriedSubmit] = useState(false);
+  const blockerSummaryRef = useRef<HTMLDivElement>(null);
   const bankProblems = validateBank(bank);
   const bankError = bankProblems.length === 0
     ? null
@@ -208,6 +212,22 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
         ? 'Add your payout bank details.'
         : bankProblems.join(' '));
   const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentorBundle && agreedMentorDpa;
+  const blockers: { section: string; msg: string }[] = [];
+  if (availError) blockers.push({ section: 'sec-availability', msg: availError });
+  if (sessionError) blockers.push({ section: 'sec-services', msg: sessionError });
+  if (rulesError) blockers.push({ section: 'sec-rules', msg: rulesError });
+  if (bankError) blockers.push({ section: 'sec-bank', msg: bankError });
+  if (!agreedMentorBundle) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Agreement, Commission & Payout Terms, and Code of Conduct.' });
+  if (!agreedMentorDpa) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Data Processing Addendum.' });
+
+  // Send them to the section that needs work and move focus there, so keyboard and screen-reader
+  // users end up where a sighted user's eye goes.
+  function goToSection(id: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.querySelector<HTMLElement>('input, select, textarea, button, [tabindex]')?.focus({ preventScroll: true });
+  }
 
   function goToStep2() {
     const errs = collectDetailErrors();
@@ -235,12 +255,11 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     // Step-2 issues (availability / sessions / rules / bank / terms) are shown inline via the
     // "what's left" list next to the submit button; canSubmit gates the actual submit.
     if (!canSubmit) {
-      setError(
-        [availError, sessionError, rulesError, bankError,
-         agreedMentorBundle ? null : 'Accept the Mentor Agreement, Commission & Payout Terms, and Code of Conduct.',
-         agreedMentorDpa ? null : 'Accept the Mentor Data Processing Addendum.']
-          .filter(Boolean).join(' '),
-      );
+      setTriedSubmit(true);
+      requestAnimationFrame(() => {
+        blockerSummaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        blockerSummaryRef.current?.focus({ preventScroll: true });
+      });
       return;
     }
 
@@ -605,7 +624,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card id="sec-availability">
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">Weekly availability *</h2>
@@ -630,7 +649,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card id="sec-services">
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">Services *</h2>
@@ -643,7 +662,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card id="sec-rules">
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">Booking rules *</h2>
@@ -691,7 +710,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card id="sec-bank">
           <CardBody className="pt-6 flex flex-col gap-4">
             <div>
               <h2 className="text-base font-semibold text-foreground">Payout details *</h2>
@@ -703,7 +722,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           </CardBody>
         </Card>
 
-        <Card>
+        <Card id="sec-terms">
           <CardBody className="pt-6 flex flex-col gap-4">
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
               <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorBundle}
@@ -727,18 +746,43 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               </span>
             </label>
 
-            {/* What's left before they can submit */}
-            {!canSubmit && (
+            {/* Before they try, a quiet checklist of what is left. After a blocked attempt, a real
+                error summary: focused, announced, and linking to each section that needs work.
+                Showing the loud version up front would flag errors on a form they are still
+                filling in. */}
+            {!canSubmit && !triedSubmit && (
               <ul className="text-xs text-muted flex flex-col gap-1">
-                {availError && <li>· {availError}</li>}
-                {sessionError && <li>· {sessionError}</li>}
-                {rulesError && <li>· {rulesError}</li>}
-                {bankError && <li>· {bankError}</li>}
-                {!agreedMentorBundle && <li>· Accept the Mentor Agreement, Commission &amp; Payout Terms, and Code of Conduct.</li>}
-                {!agreedMentorDpa && <li>· Accept the Mentor Data Processing Addendum.</li>}
+                {blockers.map((b) => <li key={b.msg}>· {b.msg}</li>)}
               </ul>
             )}
-            {error && step === 2 && <p className="text-sm text-red-600">{error}</p>}
+            {triedSubmit && blockers.length > 0 && (
+              <div
+                ref={blockerSummaryRef}
+                tabIndex={-1}
+                role="alert"
+                className="rounded-2xl bg-red-50 p-4 shadow-[0_0_0_1px_rgba(220,38,38,0.35)] focus:outline-none"
+              >
+                <h2 className="text-sm font-semibold text-red-700">
+                  {blockers.length === 1
+                    ? 'One thing to finish before you submit'
+                    : `${blockers.length} things to finish before you submit`}
+                </h2>
+                <ul className="mt-2 flex flex-col gap-1.5">
+                  {blockers.map((b) => (
+                    <li key={b.msg}>
+                      <a
+                        href={`#${b.section}`}
+                        onClick={(e) => { e.preventDefault(); goToSection(b.section); }}
+                        className="text-sm text-red-700 underline underline-offset-2 hover:text-red-900"
+                      >
+                        {b.msg}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {error && step === 2 && <p className="text-sm text-red-600" role="alert">{error}</p>}
 
             <div className="flex items-center justify-between gap-3">
               <Button type="button" variant="ghost" onClick={backToStep1} disabled={submitting}>← Back</Button>
