@@ -46,16 +46,8 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   // Never stack the notice on top of the review page itself.
   if (pathname === '/legal/updates') return null;
 
-  // A MATERIAL revision (major version bump) to terms someone is already bound by needs
-  // their explicit acceptance, not a toast they can flick away: continuing to use the
-  // product is not agreement, and a dismissible corner card is the pattern people close
-  // without reading. Editorial revisions keep the unobtrusive notice - nagging someone
-  // over a corrected typo trains them to ignore the real ones.
-  //
-  // Dismissal deliberately does not apply to material updates. It applies to the rest.
   // MATERIAL revisions only. An editorial fix is not worth interrupting anyone for, and
-  // prompting on every republish is how people learn to dismiss the prompt that matters.
-  // Dismissal deliberately does not apply here: this is not a notice, it is a gate.
+  // prompting on every republish is how people learn to ignore the prompt that matters.
   const major = pending.filter((p) => p.is_major);
 
   // Not on the legal pages themselves: telling someone the terms changed while they are
@@ -65,7 +57,6 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
   if (!authed || major.length === 0 || readingLegal) return null;
   if (dismissed) return null;
 
-  const one = major.length === 1;
   return (
     <div
       role="status"
@@ -78,17 +69,11 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
           <FileText className="h-4 w-4 text-brand-700" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-brand-900">
-            {one ? "We've updated our terms" : "We've updated our terms"}
-          </p>
+          <p className="text-sm font-semibold text-brand-900">We&apos;ve updated our terms</p>
           <p className="mt-0.5 text-sm text-muted">
-            {one
-              ? <>Our <strong className="text-foreground">{major[0].title}</strong> has changed.{' '}</>
-              : <>{major.length} of the documents that apply to your account have changed.{' '}</>}
             <Link href="/privacy" className="text-brand-700 underline underline-offset-2 hover:text-brand-900">
               Read what changed
             </Link>
-            .
           </p>
           {/* No accept button. Acceptance is the checkbox at sign-in, which is asked every
               time, so a second place to agree would record the same consent twice under two

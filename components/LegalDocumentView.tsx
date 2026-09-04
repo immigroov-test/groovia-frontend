@@ -15,7 +15,7 @@ function when(ts: string): string {
 // into a chore repeated the ask without adding any legal weight. With no writes left this
 // is a server component, so reading a policy no longer ships any JavaScript.
 export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
-  const headings = legalHeadings(doc.content);
+  const headings = legalHeadings(doc.content).filter((h) => h.level === 2);
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
@@ -40,7 +40,7 @@ export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
             {headings.map((h) => (
               <li key={h.id}>
                 <a href={`#${h.id}`} className="text-xs text-muted hover:text-brand-700 hover:underline">
-                  {h.text}
+                  <span className="mr-1.5 tabular-nums text-muted/70">{h.number}</span>{h.text}
                 </a>
               </li>
             ))}

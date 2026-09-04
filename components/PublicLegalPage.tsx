@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { LegalMarkdown, legalHeadings } from './LegalMarkdown';
+import { LegalMarkdown, legalHeadings, type LegalHeading } from './LegalMarkdown';
 import { documentsForRegion } from '../lib/legal';
 
 export interface PublicLegalDocument {
@@ -127,8 +127,10 @@ export function PublicLegalPage(
 
   // Parsed once per document rather than per render of each row.
   const headingsBySlug = useMemo(() => {
-    const m = new Map<string, { text: string; id: string }[]>();
-    for (const d of applicable) m.set(d.slug, legalHeadings(d.content));
+    const m = new Map<string, LegalHeading[]>();
+    // Top-level sections only. The outline is for finding a section; listing every
+    // sub-clause would make it longer than some of the documents.
+    for (const d of applicable) m.set(d.slug, legalHeadings(d.content).filter((h) => h.level === 2));
     return m;
   }, [applicable]);
 
@@ -250,6 +252,7 @@ export function PublicLegalPage(
                                   className="block rounded-md px-2 py-1 text-[0.8rem] leading-snug text-muted
                                              hover:bg-brand-50/60 hover:text-brand-800"
                                 >
+                                  <span className="mr-1.5 tabular-nums text-muted/70">{h.number}</span>
                                   {h.text}
                                 </a>
                               </li>
@@ -296,7 +299,7 @@ export function PublicLegalPage(
                     {headings.map((h) => (
                       <li key={h.id}>
                         <a href={`#${h.id}`} className="text-sm text-brand-700 underline underline-offset-2 hover:text-brand-900">
-                          {h.text}
+                          <span className="mr-1.5 tabular-nums">{h.number}</span>{h.text}
                         </a>
                       </li>
                     ))}
