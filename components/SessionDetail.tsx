@@ -307,8 +307,12 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
             <div className="min-w-0">
               <p className="text-[11px] font-medium uppercase tracking-wider text-muted">Attendee</p>
               <p className="font-semibold text-brand-900 break-words">{d.candidate_name}</p>
-              {d.candidate_email && <p className="text-xs text-muted break-words">{d.candidate_email}</p>}
-              {d.candidate_phone && <p className="text-xs text-muted break-words">{d.candidate_phone}</p>}
+              {/* Email and phone are admin only. Customers are told mentors receive "name, time
+                  zone, and session responses", so a mentor sees the name here and the time zone
+                  beside the session time. The backend enforces this too: it does not send the
+                  contact fields to a mentor at all, so this is defence in depth, not the gate. */}
+              {isAdmin && d.candidate_email && <p className="text-xs text-muted break-words">{d.candidate_email}</p>}
+              {isAdmin && d.candidate_phone && <p className="text-xs text-muted break-words">{d.candidate_phone}</p>}
             </div>
           </div>
         )}
