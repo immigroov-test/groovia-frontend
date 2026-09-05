@@ -1,7 +1,6 @@
 'use client';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { ExternalLink, Loader2, Search } from 'lucide-react';
+import { ChevronDown, Loader2, Search } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Badge } from './ui/Badge';
 import { cn } from '../lib/utils';
@@ -177,7 +176,7 @@ export function AdminBookings() {
                   <th className="px-4 py-2.5 font-medium">Mentor</th>
                   <th className="px-4 py-2.5 font-medium">Mentee</th>
                   <th className="px-4 py-2.5 font-medium">Status</th>
-                  <th className="px-4 py-2.5 font-medium sr-only">Open</th>
+                  <th className="px-4 py-2.5 font-medium sr-only">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,14 +190,24 @@ export function AdminBookings() {
                         <Badge tone={TONE[b.status] ?? 'neutral'}>{STATUS_LABEL[b.status] ?? b.status.replace('_', ' ')}</Badge>
                         {b.reschedule_count > 0 && <span className="text-xs text-muted ml-1.5">· resched {b.reschedule_count}×</span>}
                       </td>
+                      {/* Expands in place instead of navigating away. Reviewing a queue of
+                          bookings meant opening each one on its own page and coming back; the
+                          details now open under the row and the same control closes them. */}
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                        <Link href={`/session/${b.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline">
-                          Open <ExternalLink className="h-3.5 w-3.5" />
-                        </Link>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggle(b.id); }}
+                          aria-expanded={openId === b.id}
+                          aria-controls={`booking-detail-${b.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline"
+                        >
+                          {openId === b.id ? 'Hide details' : 'View details'}
+                          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', openId === b.id && 'rotate-180')} />
+                        </button>
                       </td>
                     </tr>
                     {openId === b.id && (
-                      <tr className="bg-brand-50/30 border-b border-[--color-border]">
+                      <tr id={`booking-detail-${b.id}`} className="bg-brand-50/30 border-b border-[--color-border]">
                         <td colSpan={5} className="px-4 py-3">
                           {details[b.id] === undefined ? <span className="text-xs text-muted">Loading…</span>
                             : details[b.id] === null ? <span className="text-xs text-red-600">Could not load details.</span>
