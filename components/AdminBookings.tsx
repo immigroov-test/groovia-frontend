@@ -14,6 +14,13 @@ interface Booking {
 interface Detail extends Booking {
   service_title?: string | null;
   service_duration?: number | null;
+  /** Supplied by the customer at booking. Admin-only: this is the operator's own view of a
+   *  transaction, not a disclosure to another party. */
+  candidate_phone?: string | null;
+  attendee_timezone?: string | null;
+  notes?: string | null;
+  cancel_reason?: string | null;
+  cancelled_by?: string | null;
   requests?: { kind: string; initiated_by: string; status: string; respond_by: string | null; created_at: string }[];
   offers?: { status: string; was_late: boolean; created_at: string }[];
   intake_answers?: { question: string; answer: string | null }[];
@@ -206,6 +213,37 @@ export function AdminBookings() {
                                   {b.no_show_by && <span>No-show by <b className="text-foreground">{b.no_show_by}</b></span>}
                                   <span>Booking ID <code>{b.id}</code></span>
                                 </div>
+
+                                {/* What the customer gave us when booking. It was being stored and
+                                    never shown, so an admin had no way to reach a customer about
+                                    their own session without querying the database by hand. */}
+                                <div>
+                                  <p className="font-medium text-foreground mb-1">Customer details</p>
+                                  <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                    <span>Name <b className="text-foreground">{b.candidate_name ?? '-'}</b></span>
+                                    <span>Email <b className="text-foreground">{b.candidate_email ?? '-'}</b></span>
+                                    <span>Phone <b className="text-foreground">{details[b.id]?.candidate_phone || '-'}</b></span>
+                                    {details[b.id]?.attendee_timezone && (
+                                      <span>Time zone <b className="text-foreground">{details[b.id]!.attendee_timezone}</b></span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {details[b.id]?.notes && (
+                                  <div>
+                                    <p className="font-medium text-foreground mb-1">What they want to cover</p>
+                                    <p className="whitespace-pre-wrap break-words text-foreground">{details[b.id]!.notes}</p>
+                                  </div>
+                                )}
+
+                                {details[b.id]?.cancel_reason && (
+                                  <div>
+                                    <p className="font-medium text-foreground mb-1">
+                                      Cancellation{details[b.id]?.cancelled_by ? ` (by ${details[b.id]!.cancelled_by})` : ''}
+                                    </p>
+                                    <p className="whitespace-pre-wrap break-words text-foreground">{details[b.id]!.cancel_reason}</p>
+                                  </div>
+                                )}
                                 {details[b.id]?.pricing && (
                                   <div className="flex flex-wrap gap-x-6 gap-y-1">
                                     {details[b.id]!.pricing!.gross_customer != null &&
