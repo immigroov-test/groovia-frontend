@@ -217,7 +217,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   if (sessionError) blockers.push({ section: 'sec-services', msg: sessionError });
   if (rulesError) blockers.push({ section: 'sec-rules', msg: rulesError });
   if (bankError) blockers.push({ section: 'sec-bank', msg: bankError });
-  if (!agreedMentorBundle) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Agreement, Commission & Payout Terms, and Code of Conduct.' });
+  if (!agreedMentorBundle) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Agreement, Payment Terms, and Code of Conduct.' });
   if (!agreedMentorDpa) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Data Processing Addendum.' });
 
   // Send them to the section that needs work and move focus there, so keyboard and screen-reader
@@ -729,9 +729,9 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 onChange={(e) => setAgreedMentorBundle(e.target.checked)} />
               <span>
                 I agree to the{' '}
-                <Link href="/privacy#mentor-agreement" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Agreement</Link>,{' '}
-                <Link href="/privacy#mentor-commission-payout" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Commission &amp; Payout Terms</Link>, and{' '}
-                <Link href="/privacy#mentor-code-of-conduct" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Code of Conduct</Link>.
+                <Link href="/legal/mentor-agreement" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Agreement</Link>,{' '}
+                <Link href="/legal/mentor-commission-payout" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Payment Terms</Link>, and{' '}
+                <Link href="/legal/mentor-code-of-conduct" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Code of Conduct</Link>.
               </span>
             </label>
             {/* Separate from the bundle above, per spec: the DPA is a distinct legal
@@ -742,7 +742,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
                 onChange={(e) => setAgreedMentorDpa(e.target.checked)} />
               <span>
                 I have read and agree to the{' '}
-                <Link href="/privacy#mentor-data-processing" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Data Processing Addendum</Link>.
+                <Link href="/legal/mentor-data-processing" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Data Processing Addendum</Link>.
               </span>
             </label>
 
