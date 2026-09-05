@@ -386,6 +386,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
   const [questions, setQuestions]   = useState<Question[]>([]);
   const [answers, setAnswers]       = useState<Record<string, string>>({});
   const [name, setName]             = useState('');
+  // Set once, after we have looked everywhere for a name. Stable on purpose: keying the field
+  // off `!name` directly would make it disappear on the first character typed.
+  const [needsName, setNeedsName]   = useState(false);
   const [email, setEmail]           = useState('');
   const [phone, setPhone]           = useState('');
   // BUG-142: the CUSTOMER terms have to be accepted before paying - actively ticked, never
@@ -536,10 +539,19 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         setIsLoggedIn(true);
         setEmail(user.email ?? '');
         const fn = user.user_metadata?.full_name || user.user_metadata?.name;
-        if (typeof fn === 'string') setName(fn);
+        if (typeof fn === 'string' && fn.trim()) setName(fn);
         // Prefill the phone from the mentee's profile so returning users don't retype it.
-        const { data: prof } = await supabase.from('profiles').select('phone').eq('id', user.id).maybeSingle();
+        const { data: prof } = await supabase.from('profiles')
+          .select('phone, full_name, display_name').eq('id', user.id).maybeSingle();
         if (prof?.phone) setPhone(prof.phone);
+        // Signing up with email and password leaves user_metadata empty, so a logged-in
+        // customer could book with no name at all and the booking recorded a blank one.
+        // Fall back to the profile, and only ask if there is genuinely nothing to use.
+        const fromProfile = (typeof fn === 'string' && fn.trim())
+          ? fn
+          : (prof?.full_name || prof?.display_name || '');
+        if (fromProfile) setName(fromProfile);
+        else setNeedsName(true);
       }
     })();
   }, []);
@@ -591,7 +603,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
     if (!selectedService || !selectedSlot) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
-    if (!isLoggedIn && !name.trim()) { setFormError('Please enter your name.'); return; }
+    if (!name.trim()) { setFormError('Please enter your name.'); return; }
     if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
@@ -652,7 +664,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
     if (isLoggedIn) { submitBooking(); return; }
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
-    if (!isLoggedIn && !name.trim()) { setFormError('Please enter your name.'); return; }
+    if (!name.trim()) { setFormError('Please enter your name.'); return; }
     if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     setFormError(null);
     // A guest cannot book under an email that already belongs to a registered account: a later
@@ -768,7 +780,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
     if (!selectedSlot || !selectedService) return;
     if (!email.trim()) { setFormError('Email is required.'); return; }
     if (!isValidEmail(email)) { setFormError('Please enter a valid email address.'); return; }
-    if (!isLoggedIn && !name.trim()) { setFormError('Please enter your name.'); return; }
+    if (!name.trim()) { setFormError('Please enter your name.'); return; }
     if (!isValidPhone(phone)) { setFormError('Please enter a valid phone number for the selected country.'); return; }
     const missing = questions.find(q => q.is_required && !answers[q.id]?.trim());
     if (missing) { setFormError(`Please answer: "${missing.question_text}"`); return; }
@@ -1315,7 +1327,17 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                   ))}
 
                   {isLoggedIn ? (
-                    <p className="text-sm text-muted">Booking as <span className="font-medium text-foreground">{email}</span>.</p>
+                    <>
+                      <p className="text-sm text-muted">Booking as <span className="font-medium text-foreground">{email}</span>.</p>
+                      {/* Only when we could find no name on the account. Without this the field
+                          was never shown to a signed-in customer, so anyone whose account had no
+                          name booked anonymously and the mentor met a blank. */}
+                      {needsName && (
+                        <Input label="Your name *" value={name} onChange={e => setName(e.target.value)}
+                          placeholder="Your full name" autoComplete="name" required
+                          hint="Your account has no name saved. Your mentor sees this." />
+                      )}
+                    </>
                   ) : (
                     <>
                       <Input label="Your name *" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" autoComplete="name" required />
@@ -1341,7 +1363,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
-                  <Button variant="accent" onClick={openReview} loading={submitting || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !isValidPhone(phone) || (!isLoggedIn && !name.trim())}>
+                  <Button variant="accent" onClick={openReview} loading={submitting || paying || checkingEmail} disabled={!email.trim() || !isValidEmail(email) || !isValidPhone(phone) || !name.trim()}>
                     Review &amp; confirm
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
