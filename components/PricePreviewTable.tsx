@@ -35,7 +35,21 @@ export function PricePreviewTable({ baseRate, currency, smartPricing }: {
     return () => { cancelled = true; clearTimeout(t); };
   }, [rate, currency, smartPricing]);
 
-  if (!rate || rate <= 0 || markets.length === 0) return null;
+  if (!rate || rate <= 0) return null;
+
+  // A rate is set but nothing came back. The preview depends on live FX rates, so when those are
+  // stale or missing the endpoint returns an empty list. Rendering nothing made that look like a
+  // missing feature: the mentor sets a rate, no prices appear, and there is no way to tell whether
+  // they were meant to. Say so instead.
+  if (markets.length === 0) {
+    return (
+      <p className="text-xs text-muted">
+        {loading
+          ? 'Working out what customers in other markets would pay...'
+          : 'Prices in other currencies are unavailable right now. Your own rate is unaffected.'}
+      </p>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-[--color-border] bg-brand-50/40 p-4">

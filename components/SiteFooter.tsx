@@ -13,9 +13,13 @@ import Link from 'next/link';
 // Data Subject Rights is the deliberate exception. It is not one more policy to read, it is
 // the route to acting on your data, and both the GDPR and the CCPA expect that route to be
 // reachable directly rather than a click inside an index.
+//
+// It points at /privacy#slug, NOT /legal/<slug>. The latter requires a session and redirects
+// to sign-in, which is exactly wrong for a footer link on a public page: the people most
+// likely to want it are the ones who do not have an account.
 const LINKS = [
   { href: '/privacy', label: 'Terms & Policies' },
-  { href: '/legal/data-subject-rights', label: 'Data Subject Rights' },
+  { href: '/privacy#data-subject-rights', label: 'Data Subject Rights' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ];

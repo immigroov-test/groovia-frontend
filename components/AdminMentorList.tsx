@@ -433,9 +433,6 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
           {detail.expertise_categories?.length ? (
             <Field label="Expertise categories">{detail.expertise_categories.join(', ')}</Field>
           ) : null}
-          {detail.session_duration_minutes != null && (
-            <Field label="Default session length">{detail.session_duration_minutes} min</Field>
-          )}
           {detail.avg_rating != null && (detail.review_count ?? 0) > 0 ? (
             <Field label="Rating">
               {detail.avg_rating.toFixed(1)} ({detail.review_count} review{detail.review_count !== 1 ? 's' : ''})
@@ -555,7 +552,14 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
                 {fmtTime(s.start_time)} – {fmtTime(s.end_time)}
               </p>
             ))}
-            {weekly[0]?.timezone && <p className="text-muted text-xs mt-1">Timezone: {weekly[0].timezone}</p>}
+            {/* The mentor's current timezone, not weekly_availability.timezone. That column is
+                stamped once when a row is inserted and never re-stamped when the mentor changes
+                their timezone, so it showed UTC for anyone whose hours predate their timezone
+                being set. Slot generation was never affected: get_available_slots reads the
+                timezone straight off the mentors row, so only this label was wrong. */}
+            {(detail.timezone || weekly[0]?.timezone) && (
+              <p className="text-muted text-xs mt-1">Timezone: {detail.timezone || weekly[0]?.timezone}</p>
+            )}
           </div>
         )}
       </section>

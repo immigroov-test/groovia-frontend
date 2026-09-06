@@ -645,6 +645,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               baseRate={hourlyRate} onBaseRate={setHourlyRate}
               rates={currencyRates} onRates={setCurrencyRates}
               smartPricing={smartPricing} onSmartPricing={setSmartPricing}
+              preview="open"
             />
           </CardBody>
         </Card>
