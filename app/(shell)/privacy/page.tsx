@@ -24,9 +24,13 @@ export const metadata = {
 // actually keeps a crawler from putting a backend round-trip behind every view.
 //
 // Worth being clear about the trade this makes: the old version of this page read
-// markdown off local disk and therefore could not fail. This one depends on the
-// backend, and an admin publishing a change waits up to an hour to see it here.
-const CACHE_SECONDS = 3600;
+// markdown off local disk and therefore could not fail. This one depends on the backend.
+//
+// An hour was too long. This page is driven by a CMS, so an hour meant every publish, retitle
+// or visibility change was invisible here for up to an hour with nothing on screen to say why,
+// and the natural conclusion was that the change had not worked. A minute still absorbs a
+// crawler hammering the page, which is all the cache was ever protecting against.
+const CACHE_SECONDS = 60;
 
 export default async function PrivacyPage() {
   const res = await serverGetPublic<PublicLegalDocument[]>(
