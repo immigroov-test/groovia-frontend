@@ -84,10 +84,48 @@ export function AdminBookings() {
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, Detail | null>>({});
+  // Per-booking commission override. Groundwork for referrals, where a referred booking carries
+  // a different rate from the mentor's standing one.
+  const [commDraft, setCommDraft] = useState<Record<string, string>>({});
+  const [commBusy, setCommBusy] = useState<string | null>(null);
+  const [commError, setCommError] = useState<Record<string, string | null>>({});
 
-  const authedFetch = useCallback(async (url: string) => {
+  async function saveCommission(id: string) {
+    const pct = parseFloat(commDraft[id] ?? '');
+    if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+      setCommError((e) => ({ ...e, [id]: 'Enter a percentage between 0 and 100.' }));
+      return;
+    }
+    setCommBusy(id); setCommError((e) => ({ ...e, [id]: null }));
+    try {
+      const res = await authedFetch(`/api/admin/bookings/${id}/commission`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pct }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setCommError((e) => ({ ...e, [id]: data.detail || 'Could not update.' })); return; }
+      // Re-read rather than patching state by hand: the split is worked out server-side and the
+      // panel must show what was stored, not what we assumed would be.
+      const fresh = await authedFetch(`/api/admin/bookings/${id}`);
+      if (fresh.ok) {
+        const updated = await fresh.json();
+        setDetails((d) => ({ ...d, [id]: updated }));
+      }
+      setCommDraft((v) => { const n = { ...v }; delete n[id]; return n; });
+    } catch { setCommError((e) => ({ ...e, [id]: 'Could not update.' })); }
+    finally { setCommBusy(null); }
+  }
+
+  const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const { data: { session } } = await createClient().auth.getSession();
-    return fetch(url, { headers: { Authorization: `Bearer ${session?.access_token ?? ''}` }, cache: 'no-store' });
+    return fetch(url, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
+        ...(init?.headers ?? {}),
+      },
+      cache: 'no-store',
+    });
   }, []);
 
   // Load the full set once per view; status + search are applied client-side (instant, and lets the
@@ -320,9 +358,30 @@ export function AdminBookings() {
                                       <div className="flex flex-wrap gap-x-6 gap-y-1">
                                         <span className="text-muted/80">Mentor</span>
                                         {commission != null && <span>Commission <b className="text-foreground">{money(commission, cc)}</b>{commissionPct != null ? ` (${commissionPct}%)` : ''}</span>}
+                                        {/* Only the mentor's side is editable. The customer has
+                                            already been charged, so gross, platform fee and tax
+                                            are history, not settings. */}
+                                        <span className="flex items-center gap-1.5">
+                                          <label htmlFor={`comm-${b.id}`} className="text-muted/80">Set %</label>
+                                          <input
+                                            id={`comm-${b.id}`}
+                                            type="number" min={0} max={100} step={0.5}
+                                            value={commDraft[b.id] ?? String(commissionPct ?? '')}
+                                            onChange={(e) => setCommDraft((v) => ({ ...v, [b.id]: e.target.value }))}
+                                            className="w-16 rounded-md px-1.5 py-0.5 text-xs bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+                                          />
+                                          <button type="button" onClick={() => saveCommission(b.id)}
+                                            disabled={commBusy === b.id}
+                                            className="text-brand-700 hover:underline disabled:opacity-50">
+                                            {commBusy === b.id ? 'Saving...' : 'Save'}
+                                          </button>
+                                        </span>
                                         {p.net_customer != null && <span>Take-home <b className="text-foreground">{money(p.net_customer, cc)}</b></span>}
                                         {p.net_mentor != null && <span>Paid out <b className="text-foreground">{money(p.net_mentor, p.mentor_currency)}</b></span>}
                                       </div>
+                                      {commError[b.id] && (
+                                        <p role="alert" className="text-red-600">{commError[b.id]}</p>
+                                      )}
                                     </div>
                                   );
                                 })()}
