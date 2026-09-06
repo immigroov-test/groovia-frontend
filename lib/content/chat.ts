@@ -17,20 +17,11 @@ export const CHAT = {
   // Career-report intent: a popup explains it, then it needs sign-in + résumé.
   report: {
     title: 'Career pathway report',
-    intro: 'A personalised look at where you could move next, and how to get there.',
-    // Split into what the person receives and what we need from them. As one paragraph these two
-    // ideas competed for the same attention; as two labelled lists each one can be skimmed.
-    gives: [
-      'The countries that fit your profile, ranked',
-      'The visa route for each one, and the steps it takes',
-      'Mentors who have made that move, ready to book',
-    ],
-    needs: [
-      'A free account, so your report is saved and you can return to it',
-      'Your resume as a PDF or DOCX, so the report reflects your actual background',
-    ],
-    givesLabel: "What you'll get",
-    needsLabel: 'What we need from you',
+    intro: 'Your best-fit countries, the visa route to each, and mentors who have made that move.',
+    // Two versions of one line, because the popup is shown in two situations and only the second
+    // half differs. Someone already signed in was being told they need an account.
+    needsSignedOut: "You'll need a free account and your resume (PDF or DOCX).",
+    needsSignedIn: 'Attach your resume (PDF or DOCX) and we will build it.',
     proceed: 'Continue',
     cancel: 'Not now',
     // BUG-143: a resume is personal data and we put it through an AI model, so the person has to

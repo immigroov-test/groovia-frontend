@@ -2,28 +2,32 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Check, FileText, UserPlus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from './ui/Button';
 import { UI_CONTENT } from '../lib/content';
 
-// Shown when the user picks "Generate a career pathway": what the report is, what we need in order
-// to build it, and the resume consent, in that order.
+// Shown when the user picks "Generate a career pathway".
 //
-// The content used to be three paragraphs of roughly equal weight, with the sign-in requirement set
-// larger than everything else, so the thing the person was being asked to decide was the least
-// visible part. It now reads top to bottom as one decision: here is what you get, here is what it
-// costs you, here is the box, here is the button.
-export function ReportInfoModal({ onProceed, onClose }: { onProceed: () => void; onClose: () => void }) {
+// Two situations, two versions. Someone already signed in was being told they needed an account,
+// and read a paragraph explaining why we ask for a sign-in they had already completed. Only the
+// requirement line differs between the two, so it branches on `authed` rather than duplicating a
+// whole modal that would then have to be kept in step.
+//
+// No heading. The logo names the product and the first line says what the report is; a title on
+// top of both was the largest thing in a small box while carrying the least information.
+export function ReportInfoModal(
+  { authed, onProceed, onClose }:
+  { authed: boolean; onProceed: () => void; onClose: () => void },
+) {
   const r = UI_CONTENT.report;
   const [agreed, setAgreed] = useState(false);
   const [showConsentError, setShowConsentError] = useState(false);
-  const titleId = useId();
+  const introId = useId();
   const consentErrorId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const consentRef = useRef<HTMLInputElement>(null);
 
-  // Escape closes, focus starts inside the dialog, and the page behind it stops scrolling. Standard
-  // modal behaviour that this one was missing.
+  // Escape closes, focus starts inside the dialog, and the page behind it stops scrolling.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -36,9 +40,8 @@ export function ReportInfoModal({ onProceed, onClose }: { onProceed: () => void;
     };
   }, [onClose]);
 
-  // The primary button stays enabled and validates on click rather than sitting disabled. A disabled
-  // button gives no reason for being disabled and is skipped by most screen readers; validating on
-  // click lets us say what is missing and put the cursor on it.
+  // The button stays enabled and validates on click. A disabled button gives no reason for being
+  // disabled and is skipped by most screen readers.
   function handleProceed() {
     if (!agreed) {
       setShowConsentError(true);
@@ -56,10 +59,10 @@ export function ReportInfoModal({ onProceed, onClose }: { onProceed: () => void;
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId}
+        aria-labelledby={introId}
         tabIndex={-1}
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-card shadow-2xl
-                   border border-[--color-border] p-6 sm:p-8 animate-fade-up focus:outline-none"
+        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl bg-card shadow-2xl
+                   border border-[--color-border] p-6 sm:p-7 animate-fade-up focus:outline-none"
       >
         <button
           type="button"
@@ -70,51 +73,22 @@ export function ReportInfoModal({ onProceed, onClose }: { onProceed: () => void;
           <X className="h-4 w-4" />
         </button>
 
-        <div className="text-center">
-          <div className="mx-auto w-fit bg-white rounded-full px-4 py-2 shadow-sm">
-            <Image
-              src="/Immigroov_Transparent_Logo.png"
-              alt="Immigroov"
-              width={280}
-              height={60}
-              priority
-              className="object-contain"
-              style={{ height: '24px', width: 'auto' }}
-            />
-          </div>
-          <h2 id={titleId} className="mt-5 text-xl sm:text-2xl font-semibold text-brand-900">{r.title}</h2>
-          <p className="mt-2 text-sm text-muted leading-relaxed">{r.intro}</p>
+        <div className="mx-auto w-fit bg-white rounded-full px-4 py-2 shadow-sm">
+          <Image
+            src="/Immigroov_Transparent_Logo.png"
+            alt="Immigroov"
+            width={280}
+            height={60}
+            priority
+            className="object-contain"
+            style={{ height: '22px', width: 'auto' }}
+          />
         </div>
 
-        {/* What you get, then what it asks of you. Left aligned: centred text is fine for a heading
-            but slows down anything the eye has to scan line by line. */}
-        <div className="mt-6 space-y-5 text-left">
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-brand-500">{r.givesLabel}</h3>
-            <ul className="mt-2.5 space-y-2">
-              {r.gives.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm text-foreground leading-relaxed">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" aria-hidden />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="rounded-2xl bg-brand-50/60 p-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-brand-500">{r.needsLabel}</h3>
-            <ul className="mt-2.5 space-y-2">
-              {r.needs.map((item, i) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm text-foreground leading-relaxed">
-                  {i === 0
-                    ? <UserPlus className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" aria-hidden />
-                    : <FileText className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" aria-hidden />}
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
+        <p id={introId} className="mt-5 text-sm text-foreground leading-relaxed">{r.intro}</p>
+        <p className="mt-2 text-sm text-muted leading-relaxed">
+          {authed ? r.needsSignedIn : r.needsSignedOut}
+        </p>
 
         {/* BUG-143: explicit consent before a resume is shared and run through a model. Deliberately
             here rather than in a cookie banner: consenting to cookies is not consenting to have your
@@ -141,8 +115,6 @@ export function ReportInfoModal({ onProceed, onClose }: { onProceed: () => void;
           <p id={consentErrorId} role="alert" className="mt-2 text-xs text-red-600">{r.consentRequired}</p>
         )}
 
-        {/* Primary action last, which is where it is expected on desktop and the natural end of the
-            reading order on mobile. */}
         <div className="mt-5 flex flex-col sm:flex-row gap-2.5">
           <Button variant="ghost" className="sm:flex-1" onClick={onClose}>{r.cancel}</Button>
           <Button variant="accent" className="sm:flex-1" onClick={handleProceed}>{r.proceed}</Button>
