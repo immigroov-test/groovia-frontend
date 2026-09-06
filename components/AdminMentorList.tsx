@@ -81,6 +81,12 @@ interface AvailabilityRules { days_ahead?: number; min_notice_hours?: number; ca
 interface SocialLink { type: string; url: string }
 
 interface MentorDetail extends AdminMentor {
+  /** The mentor's own base rate. Every session price is derived from it, so an admin
+   *  reviewing an application needs to see it, not just the results. */
+  hourly_rate?: number | null;
+  currency?: string | null;
+  smart_pricing?: boolean | null;
+  currency_rates?: { currency: string; hourly_rate: number }[];
   bio?: string | null;
   phone?: string | null;
   city?: string | null;
@@ -461,6 +467,41 @@ function MentorDetailView({ detail }: { detail: MentorDetail }) {
         <BankSection mentorId={detail.id} bank={detail.bank} />
       </section>
 
+
+      {/* BUG-146: the base rate every session price below is derived from. Placed directly above
+          the sessions so the relationship is visible: the admin can see a price and see where it
+          came from, instead of only the result. */}
+      <section>
+        <SectionLabel>Base rate &amp; currencies</SectionLabel>
+        {detail.hourly_rate == null ? (
+          <p className="text-muted text-xs">No base rate set.</p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-foreground font-semibold">
+                {money(detail.hourly_rate, detail.currency)} / hour
+              </span>
+              {detail.smart_pricing
+                ? <Badge tone="accent">fair pricing on</Badge>
+                : <Badge tone="neutral">fair pricing off</Badge>}
+            </div>
+            {detail.currency_rates && detail.currency_rates.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <span className="text-muted">Also priced in:</span>
+                {detail.currency_rates.map((r) => (
+                  <span key={r.currency} className="text-foreground">
+                    {money(r.hourly_rate, r.currency)} / hour
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="text-muted text-xs mt-1">
+              Session prices are worked out from this rate by session length. Currencies not listed
+              here are converted automatically.
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* Session types + the mentor's own price (what they set; customers pay this plus the
           platform markup and any PPP adjustment, which the mentor never sees). */}
