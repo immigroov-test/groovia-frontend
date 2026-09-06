@@ -30,8 +30,16 @@ export interface LegalHeading {
   id: string;
   /** 2, 3 or 4, matching ##, ### and ####. */
   level: number;
-  /** Derived clause number: '1', '1.2', '1.2.3'. */
+  /** Derived clause number: '1', '1.2', '1.2.3'. Empty when the heading already carries its own. */
   number: string;
+}
+
+/** Does this heading already start with its own clause number, as in "4. Data Retention"?
+ *  Published documents are written both ways, and numbering an already-numbered heading printed
+ *  it twice. Anchored to the start and requires trailing text, so a heading that merely opens
+ *  with a year or an amount is not mistaken for a numbered one. */
+function alreadyNumbered(text: string): boolean {
+  return /^\d+(\.\d+)*[.)]?\s+\S/.test(text);
 }
 
 /** The headings of a document, numbered, for a table of contents and for the rendered page.
@@ -58,7 +66,10 @@ export function legalHeadings(content: string): LegalHeading[] {
     // A new section restarts everything beneath it, so 2.1 follows 1.3 rather than continuing it.
     for (let i = depth + 1; i < counters.length; i += 1) counters[i] = 0;
     const text = m[2].replace(/\*\*/g, '').trim();
-    out.push({ text, id: headingId(text), level, number: counters.slice(0, depth + 1).join('.') });
+    // Keep counting either way, so a document that numbers only some of its headings still
+    // gets a consistent sequence for the ones it leaves bare.
+    const derived = counters.slice(0, depth + 1).join('.');
+    out.push({ text, id: headingId(text), level, number: alreadyNumbered(text) ? '' : derived });
   }
   return out;
 }
@@ -67,7 +78,7 @@ export function legalHeadings(content: string): LegalHeading[] {
  *  First occurrence wins on a repeated heading text, matching how anchors already resolve. */
 export function headingNumbers(content: string): Map<string, string> {
   const m = new Map<string, string>();
-  for (const h of legalHeadings(content)) if (!m.has(h.id)) m.set(h.id, h.number);
+  for (const h of legalHeadings(content)) if (h.number && !m.has(h.id)) m.set(h.id, h.number);
   return m;
 }
 

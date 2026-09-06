@@ -40,7 +40,7 @@ export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
             {headings.map((h) => (
               <li key={h.id}>
                 <a href={`#${h.id}`} className="text-xs text-muted hover:text-brand-700 hover:underline">
-                  <span className="mr-1.5 tabular-nums text-muted/70">{h.number}</span>{h.text}
+                  {h.number && <span className="mr-1.5 tabular-nums text-muted/70">{h.number}</span>}{h.text}
                 </a>
               </li>
             ))}
