@@ -34,12 +34,18 @@ export interface LegalHeading {
   number: string;
 }
 
-/** Does this heading already start with its own clause number, as in "4. Data Retention"?
- *  Published documents are written both ways, and numbering an already-numbered heading printed
- *  it twice. Anchored to the start and requires trailing text, so a heading that merely opens
- *  with a year or an amount is not mistaken for a numbered one. */
-function alreadyNumbered(text: string): boolean {
-  return /^\d+(\.\d+)*[.)]?\s+\S/.test(text);
+/** Strip a clause number the document wrote for itself, as in "4. Data Retention".
+ *
+ *  We number headings ourselves, from their nesting, so a document that also carries its own
+ *  numbers printed them twice: "4 4. Data Retention". Ours wins, because it is derived from the
+ *  structure and stays right when a section is added or moved, whereas a number typed into the
+ *  text goes stale the moment anything shifts around it.
+ *
+ *  Anchored to the start and requires trailing text, so a heading that merely opens with a year
+ *  or an amount keeps it. The document's own text is untouched on disk: this only affects what
+ *  is displayed. */
+function stripOwnNumber(text: string): string {
+  return text.replace(/^\d+(\.\d+)*[.)]?\s+(?=\S)/, '');
 }
 
 /** The headings of a document, numbered, for a table of contents and for the rendered page.
@@ -65,11 +71,14 @@ export function legalHeadings(content: string): LegalHeading[] {
     counters[depth] += 1;
     // A new section restarts everything beneath it, so 2.1 follows 1.3 rather than continuing it.
     for (let i = depth + 1; i < counters.length; i += 1) counters[i] = 0;
-    const text = m[2].replace(/\*\*/g, '').trim();
-    // Keep counting either way, so a document that numbers only some of its headings still
-    // gets a consistent sequence for the ones it leaves bare.
-    const derived = counters.slice(0, depth + 1).join('.');
-    out.push({ text, id: headingId(text), level, number: alreadyNumbered(text) ? '' : derived });
+    const raw = m[2].replace(/\*\*/g, '').trim();
+    const text = stripOwnNumber(raw);
+    // The anchor keeps using the RAW heading, so links already published against a numbered
+    // heading keep resolving.
+    out.push({
+      text, id: headingId(raw), level,
+      number: counters.slice(0, depth + 1).join('.'),
+    });
   }
   return out;
 }
@@ -78,7 +87,7 @@ export function legalHeadings(content: string): LegalHeading[] {
  *  First occurrence wins on a repeated heading text, matching how anchors already resolve. */
 export function headingNumbers(content: string): Map<string, string> {
   const m = new Map<string, string>();
-  for (const h of legalHeadings(content)) if (h.number && !m.has(h.id)) m.set(h.id, h.number);
+  for (const h of legalHeadings(content)) if (!m.has(h.id)) m.set(h.id, h.number);
   return m;
 }
 
@@ -107,16 +116,19 @@ export function LegalMarkdown({ content, className }: { content: string; classNa
           // Headings carry an id so a clause can be linked to directly. scroll-mt clears
           // the fixed nav, otherwise jumping to a clause parks it under the header.
           h2: ({ children }) => {
-            const id = headingId(textOf(children));
-            return <h2 id={id} className="scroll-mt-24">{label(id)}{children}</h2>;
+            const raw = textOf(children);
+            const id = headingId(raw);
+            return <h2 id={id} className="scroll-mt-24">{label(id)}{stripOwnNumber(raw)}</h2>;
           },
           h3: ({ children }) => {
-            const id = headingId(textOf(children));
-            return <h3 id={id} className="scroll-mt-24">{label(id)}{children}</h3>;
+            const raw = textOf(children);
+            const id = headingId(raw);
+            return <h3 id={id} className="scroll-mt-24">{label(id)}{stripOwnNumber(raw)}</h3>;
           },
           h4: ({ children }) => {
-            const id = headingId(textOf(children));
-            return <h4 id={id} className="scroll-mt-24">{label(id)}{children}</h4>;
+            const raw = textOf(children);
+            const id = headingId(raw);
+            return <h4 id={id} className="scroll-mt-24">{label(id)}{stripOwnNumber(raw)}</h4>;
           },
           // A fee schedule or retention table must not force the whole page to
           // scroll sideways on a phone; it scrolls inside its own box instead.

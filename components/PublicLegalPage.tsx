@@ -252,7 +252,7 @@ export function PublicLegalPage(
                                   className="block rounded-md px-2 py-1 text-[0.8rem] leading-snug text-muted
                                              hover:bg-brand-50/60 hover:text-brand-800"
                                 >
-                                  {h.number && <span className="mr-1.5 tabular-nums text-muted/70">{h.number}</span>}
+                                  <span className="mr-1.5 tabular-nums text-muted/70">{h.number}</span>
                                   {h.text}
                                 </a>
                               </li>
@@ -299,7 +299,7 @@ export function PublicLegalPage(
                     {headings.map((h) => (
                       <li key={h.id}>
                         <a href={`#${h.id}`} className="text-sm text-brand-700 underline underline-offset-2 hover:text-brand-900">
-                          {h.number && <span className="mr-1.5 tabular-nums">{h.number}</span>}{h.text}
+                          <span className="mr-1.5 tabular-nums">{h.number}</span>{h.text}
                         </a>
                       </li>
                     ))}
