@@ -1465,7 +1465,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 {/* India is the default geography: an unresolved userCountry binds the India
                     edition, and only a country we positively know is NOT India moves this
                     link to Rest-of-World. */}
-                <a href={`/legal/${userCountry && userCountry !== 'IN' ? 'customer-terms-row' : 'customer-terms-india'}`}
+                <a href={`/privacy#${userCountry && userCountry !== 'IN' ? 'customer-terms-row' : 'customer-terms-india'}`}
                   target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Terms &amp; Conditions
@@ -1474,11 +1474,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Privacy Policy
                 </a>,{' '}
-                <a href="/legal/payment-terms" target="_blank" rel="noopener noreferrer"
+                <a href="/privacy#payment-terms" target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Payment Terms
                 </a>, and{' '}
-                <a href="/legal/refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
+                <a href="/privacy#refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                   Refund &amp; Cancellation Policy
                 </a>.
@@ -1490,7 +1490,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 documents are public, so this works for a guest with no account too. */}
             <p className="mx-5 mb-3 text-xs text-muted leading-relaxed">
               Review the{' '}
-              <a href="/legal/refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
+              <a href="/privacy#refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
                 className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
                 Refund &amp; Cancellation Policy
               </a>{' '}

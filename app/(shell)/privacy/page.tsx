@@ -1,6 +1,5 @@
 import { headers } from 'next/headers';
 import { serverGetPublic } from '../../../lib/backend';
-import { serverAuth } from '../../../lib/supabase/server';
 import { PageLoadError } from '../../../components/PageLoadError';
 import { PublicLegalPage, type PublicLegalDocument } from '../../../components/PublicLegalPage';
 
@@ -45,10 +44,5 @@ export default async function PrivacyPage() {
   // reader would inherit whichever region happened to warm the cache.
   const country = (await headers()).get('x-vercel-ip-country');
 
-  // This page is the PUBLIC set only. The contracts a signed-in person is actually bound by
-  // (their customer terms, or the mentor agreements) are audience-scoped and live at /legal,
-  // so someone signed in needs pointing there or those documents look simply missing.
-  const { user } = await serverAuth();
-
-  return <PublicLegalPage docs={res.data} country={country} authed={!!user} />;
+  return <PublicLegalPage docs={res.data} country={country} />;
 }

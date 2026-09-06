@@ -36,8 +36,8 @@ function when(ts: string): string {
 // it. Keeping the contents there rather than in a box above the text means the reader holds
 // their place in the structure instead of scrolling past a list to reach the document.
 export function PublicLegalPage(
-  { docs, openSlug, country, authed = false }:
-  { docs: PublicLegalDocument[]; openSlug?: string; country?: string | null; authed?: boolean },
+  { docs, openSlug, country }:
+  { docs: PublicLegalDocument[]; openSlug?: string; country?: string | null },
 ) {
   const [query, setQuery] = useState('');
 
@@ -311,17 +311,6 @@ export function PublicLegalPage(
                 <LegalMarkdown content={current.content} />
               </div>
             </>
-          )}
-
-          {authed && (
-            <p className="mt-8 rounded-xl bg-brand-50/60 px-4 py-3 text-sm text-muted">
-              These are the policies that apply to everyone. The agreements tied to your account,
-              such as your customer terms, are at{' '}
-              <Link href="/legal" className="text-brand-700 underline underline-offset-2 hover:text-brand-900">
-                your legal documents
-              </Link>
-              .
-            </p>
           )}
 
           <p className="mt-10 pt-6 border-t border-[--color-border] text-sm text-muted">
