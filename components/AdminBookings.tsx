@@ -31,8 +31,15 @@ interface Detail extends Booking {
   }[];
   pricing?: {
     customer_currency?: string | null; mentor_currency?: string | null;
-    gross_customer?: number | null; fee_pct?: number | null; fee_amount?: number | null;
-    net_customer?: number | null; net_mentor?: number | null;
+    gross_customer?: number | null; net_customer?: number | null; net_mentor?: number | null;
+    /** fee_pct/fee_amount are the MENTOR COMMISSION, not the platform fee. The names predate
+     *  the v5 model, which added a separate customer-facing platform fee. Read the explicit
+     *  fields below; these two are kept only for bookings taken before they existed. */
+    fee_pct?: number | null; fee_amount?: number | null;
+    subtotal?: number | null;
+    platform_fee_pct?: number | null; platform_fee?: number | null;
+    tax_pct?: number | null; tax_amount?: number | null;
+    commission_pct?: number | null; commission_amount?: number | null;
   } | null;
 }
 interface LegacyRow {
@@ -279,16 +286,46 @@ export function AdminBookings() {
                                     <p className="whitespace-pre-wrap break-words text-foreground">{details[b.id]!.cancel_reason}</p>
                                   </div>
                                 )}
-                                {details[b.id]?.pricing && (
-                                  <div className="flex flex-wrap gap-x-6 gap-y-1">
-                                    {details[b.id]!.pricing!.gross_customer != null &&
-                                      <span>Customer paid <b className="text-foreground">{money(details[b.id]!.pricing!.gross_customer, details[b.id]!.pricing!.customer_currency)}</b></span>}
-                                    {details[b.id]!.pricing!.fee_amount != null &&
-                                      <span>Platform fee <b className="text-foreground">{money(details[b.id]!.pricing!.fee_amount, details[b.id]!.pricing!.customer_currency)}{details[b.id]!.pricing!.fee_pct != null ? ` (${details[b.id]!.pricing!.fee_pct}%)` : ''}</b></span>}
-                                    {details[b.id]!.pricing!.net_mentor != null &&
-                                      <span>Mentor net <b className="text-foreground">{money(details[b.id]!.pricing!.net_mentor, details[b.id]!.pricing!.mentor_currency)}</b></span>}
-                                  </div>
-                                )}
+                                {details[b.id]?.pricing && (() => {
+                                  const p = details[b.id]!.pricing!;
+                                  const cc = p.customer_currency;
+                                  // Two ledgers, deliberately separate. What the customer paid is
+                                  // session + platform fee + tax. What the mentor takes home is the
+                                  // session minus our commission. The commission is NOT a line in
+                                  // the customer's total: it comes out of the mentor's side.
+                                  // Conflating the two is what made this read as wrong, since the
+                                  // commission was being shown labelled "Platform fee".
+                                  const commission = p.commission_amount ?? p.fee_amount;
+                                  const commissionPct = p.commission_pct ?? p.fee_pct;
+                                  // Pre-fix bookings stored neither the fee nor the tax, so they
+                                  // can only be shown combined, derived from what is there.
+                                  const legacy = p.platform_fee == null && p.tax_amount == null;
+                                  const subtotal = p.subtotal
+                                    ?? (p.net_customer != null && commission != null ? p.net_customer + commission : null);
+                                  const feeAndTax = subtotal != null && p.gross_customer != null
+                                    ? Math.round((p.gross_customer - subtotal) * 100) / 100 : null;
+                                  return (
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                        <span className="text-muted/80">Customer</span>
+                                        {subtotal != null && <span>Session <b className="text-foreground">{money(subtotal, cc)}</b></span>}
+                                        {legacy
+                                          ? (feeAndTax != null && <span>Fee + tax <b className="text-foreground">{money(feeAndTax, cc)}</b> <span className="text-muted/70">(not itemised on this booking)</span></span>)
+                                          : (<>
+                                              {p.platform_fee != null && <span>Platform fee <b className="text-foreground">{money(p.platform_fee, cc)}</b>{p.platform_fee_pct != null ? ` (${p.platform_fee_pct}%)` : ''}</span>}
+                                              {p.tax_amount != null && <span>Tax <b className="text-foreground">{money(p.tax_amount, cc)}</b>{p.tax_pct != null ? ` (${p.tax_pct}%)` : ''}</span>}
+                                            </>)}
+                                        {p.gross_customer != null && <span>Paid <b className="text-foreground">{money(p.gross_customer, cc)}</b></span>}
+                                      </div>
+                                      <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                        <span className="text-muted/80">Mentor</span>
+                                        {commission != null && <span>Commission <b className="text-foreground">{money(commission, cc)}</b>{commissionPct != null ? ` (${commissionPct}%)` : ''}</span>}
+                                        {p.net_customer != null && <span>Take-home <b className="text-foreground">{money(p.net_customer, cc)}</b></span>}
+                                        {p.net_mentor != null && <span>Paid out <b className="text-foreground">{money(p.net_mentor, p.mentor_currency)}</b></span>}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                                 {(details[b.id]?.payments?.length ?? 0) > 0 && (
                                   <div>
                                     <p className="font-medium text-foreground mb-1">Payments</p>
