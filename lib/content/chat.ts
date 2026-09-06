@@ -14,8 +14,11 @@ export const CHAT = {
   // Career-report intent: a popup explains it, then it needs sign-in + résumé.
   report: {
     title: 'Career pathway report',
-    intro: 'Your best-fit countries and the visa route to each, with mentors you can book.',
-    why: 'We need you to sign in and share your resume so we can build your report.',
+    intro: 'Your best-fit countries, the visa route to each, and mentors who have made that move.',
+    // Two versions of one line, because the popup is shown in two situations and only the second
+    // half differs. Someone already signed in was being told they need an account.
+    needsSignedOut: "You'll need a free account and your resume (PDF or DOCX).",
+    needsSignedIn: 'Attach your resume (PDF or DOCX) and we will build it.',
     proceed: 'Continue',
     cancel: 'Not now',
     // BUG-143: a resume is personal data and we put it through an AI model, so the person has to
@@ -24,7 +27,7 @@ export const CHAT = {
     consent:
       'I agree to Immigroov analysing my resume with AI to build this report. It is stored securely '
       + 'and used only for my report and mentor matches.',
-    consentRequired: 'Please agree before we analyse your resume.',
+    consentRequired: 'Please tick the box above so we can analyse your resume.',
     needLogin: "Sign in or create a free account, then attach your resume and we'll build your report.",
     needResume: "You're signed in. Now attach your resume (PDF or DOCX) using the attach button below.",
   },

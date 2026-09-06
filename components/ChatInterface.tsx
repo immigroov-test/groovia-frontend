@@ -1039,7 +1039,7 @@ export default function ChatInterface({ authed }: Props) {
       </div>
 
       {showReportModal && (
-        <ReportInfoModal onProceed={proceedReport} onClose={() => setShowReportModal(false)} />
+        <ReportInfoModal authed={authed} onProceed={proceedReport} onClose={() => setShowReportModal(false)} />
       )}
       {pendingResumeFile && (
         <ResumeConsentModal
