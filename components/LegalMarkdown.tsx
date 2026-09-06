@@ -57,7 +57,7 @@ function stripOwnNumber(text: string): string {
  *
  *  Lines inside fenced code blocks are ignored so a fenced `## ...` is not mistaken for a
  *  section, even though legal text rarely contains one. */
-export function legalHeadings(content: string): LegalHeading[] {
+export function legalHeadings(content: string, docNumber?: string): LegalHeading[] {
   const out: LegalHeading[] = [];
   const counters = [0, 0, 0];   // ## , ### , ####
   let fenced = false;
@@ -75,9 +75,13 @@ export function legalHeadings(content: string): LegalHeading[] {
     const text = stripOwnNumber(raw);
     // The anchor keeps using the RAW heading, so links already published against a numbered
     // heading keep resolving.
+    // Rooted at the document's own number, so a section of document 4 reads 4.1 and its
+    // sub-section 4.1.1. Without the root every document restarted at 1 and a citation like
+    // "2.3" named a different clause depending on which document you were looking at.
+    const local = counters.slice(0, depth + 1).join('.');
     out.push({
       text, id: headingId(raw), level,
-      number: counters.slice(0, depth + 1).join('.'),
+      number: docNumber ? `${docNumber}.${local}` : local,
     });
   }
   return out;
@@ -85,10 +89,18 @@ export function legalHeadings(content: string): LegalHeading[] {
 
 /** id -> clause number, so the renderer can label a heading without re-deriving the order.
  *  First occurrence wins on a repeated heading text, matching how anchors already resolve. */
-export function headingNumbers(content: string): Map<string, string> {
+export function headingNumbers(content: string, docNumber?: string): Map<string, string> {
   const m = new Map<string, string>();
-  for (const h of legalHeadings(content)) if (!m.has(h.id)) m.set(h.id, h.number);
+  for (const h of legalHeadings(content, docNumber)) if (!m.has(h.id)) m.set(h.id, h.number);
   return m;
+}
+
+/** '04' -> '4'. The catalogue code IS the document's number, so citations stay stable whoever
+ *  is reading: the region filter hides one Customer T&C edition, and a positional number would
+ *  quietly mean something different in India than elsewhere. */
+export function docNumberFromCode(code?: string | null): string {
+  const n = parseInt(String(code ?? ''), 10);
+  return Number.isFinite(n) && n > 0 ? String(n) : '';
 }
 
 /** react-markdown hands children as nodes, not a string; flatten to the visible text. */
@@ -100,8 +112,11 @@ function textOf(node: ReactNode): string {
   return el.props ? textOf(el.props.children) : '';
 }
 
-export function LegalMarkdown({ content, className }: { content: string; className?: string }) {
-  const numbers = headingNumbers(content);
+export function LegalMarkdown(
+  { content, className, docNumber }:
+  { content: string; className?: string; docNumber?: string },
+) {
+  const numbers = headingNumbers(content, docNumber);
   // A separate span so the number can be dimmed, but inside the heading so that copying the
   // heading copies its number with it.
   const label = (id: string) => {

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { LegalMarkdown, legalHeadings, type LegalHeading } from './LegalMarkdown';
+import { LegalMarkdown, legalHeadings, docNumberFromCode, type LegalHeading } from './LegalMarkdown';
 import { documentsForRegion } from '../lib/legal';
 
 export interface PublicLegalDocument {
@@ -130,7 +130,9 @@ export function PublicLegalPage(
     const m = new Map<string, LegalHeading[]>();
     // Top-level sections only. The outline is for finding a section; listing every
     // sub-clause would make it longer than some of the documents.
-    for (const d of applicable) m.set(d.slug, legalHeadings(d.content).filter((h) => h.level === 2));
+    for (const d of applicable) {
+      m.set(d.slug, legalHeadings(d.content, docNumberFromCode(d.code)).filter((h) => h.level === 2));
+    }
     return m;
   }, [applicable]);
 
@@ -192,7 +194,9 @@ export function PublicLegalPage(
             >
               {groups.map((g) => (
                 <optgroup key={g.label} label={g.label}>
-                  {g.items.map((d) => <option key={d.slug} value={d.slug}>{d.title}</option>)}
+                  {g.items.map((d) => (
+                    <option key={d.slug} value={d.slug}>{docNumberFromCode(d.code)}. {d.title}</option>
+                  ))}
                 </optgroup>
               ))}
             </select>
@@ -226,6 +230,7 @@ export function PublicLegalPage(
                               isActive ? 'text-brand-900 font-medium' : 'text-muted hover:text-foreground',
                             )}
                           >
+                            <span className="mr-1.5 tabular-nums text-muted/70">{docNumberFromCode(d.code)}</span>
                             {d.title}
                           </button>
                           {docHeadings.length > 0 && (
@@ -308,7 +313,7 @@ export function PublicLegalPage(
               )}
 
               <div className="mt-6">
-                <LegalMarkdown content={current.content} />
+                <LegalMarkdown content={current.content} docNumber={docNumberFromCode(current.code)} />
               </div>
             </>
           )}

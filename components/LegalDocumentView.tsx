@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { LegalMarkdown, legalHeadings } from './LegalMarkdown';
+import { LegalMarkdown, legalHeadings, docNumberFromCode } from './LegalMarkdown';
 import type { UserLegalDocument } from '../app/(shell)/legal/[slug]/page';
 
 function when(ts: string): string {
@@ -15,7 +15,8 @@ function when(ts: string): string {
 // into a chore repeated the ask without adding any legal weight. With no writes left this
 // is a server component, so reading a policy no longer ships any JavaScript.
 export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
-  const headings = legalHeadings(doc.content).filter((h) => h.level === 2);
+  const docNumber = docNumberFromCode(doc.code);
+  const headings = legalHeadings(doc.content, docNumber).filter((h) => h.level === 2);
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12">
@@ -24,7 +25,10 @@ export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
         <ArrowLeft className="h-4 w-4" /> Terms &amp; Policies
       </Link>
 
-      <h1 className="mt-5 text-3xl font-semibold tracking-tight text-brand-900">{doc.title}</h1>
+      <h1 className="mt-5 text-3xl font-semibold tracking-tight text-brand-900">
+        {docNumber && <span className="text-brand-500 font-normal tabular-nums mr-2">{docNumber}</span>}
+        {doc.title}
+      </h1>
       {doc.summary && <p className="text-sm text-muted mt-2">{doc.summary}</p>}
       <p className="text-xs text-muted/80 mt-2 tabular-nums">
         {doc.version} · Last updated {when(doc.last_updated)} · Applies to {doc.audience_label.toLowerCase()}
@@ -49,7 +53,7 @@ export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
       )}
 
       <article className="mt-6 rounded-2xl border border-[--color-border] bg-card px-5 py-6 sm:px-7 sm:py-8">
-        <LegalMarkdown content={doc.content} />
+        <LegalMarkdown content={doc.content} docNumber={docNumber} />
       </article>
     </div>
   );

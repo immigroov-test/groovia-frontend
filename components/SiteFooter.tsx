@@ -14,12 +14,20 @@ import Link from 'next/link';
 // the route to acting on your data, and both the GDPR and the CCPA expect that route to be
 // reachable directly rather than a click inside an index.
 //
-// It points at /privacy#slug, NOT /legal/<slug>. The latter requires a session and redirects
-// to sign-in, which is exactly wrong for a footer link on a public page: the people most
-// likely to want it are the ones who do not have an account.
+// It points at the REQUEST page, which is a real public route, not at /privacy#slug.
+//
+// The hash form sent people to the wrong document. /privacy resolves a hash by looking for a
+// matching document slug and, failing that, a matching heading in any document. Data Subject
+// Rights has no published version, so the slug matched nothing and the fallback found a
+// heading of the same name inside the Website Terms of Use, opening that instead. A heading
+// named after a document is not a rare accident; it is what a privacy document looks like.
+//
+// The request page has no such dependency, and it is the better destination anyway: both the
+// GDPR and the CCPA expect a footer link to reach the means of ACTING on your data, not a
+// policy describing it.
 const LINKS = [
   { href: '/privacy', label: 'Terms & Policies' },
-  { href: '/privacy#data-subject-rights', label: 'Data Subject Rights' },
+  { href: '/legal/data-subject-request', label: 'Data Subject Rights' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ];
