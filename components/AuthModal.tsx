@@ -16,6 +16,8 @@ import { TypeText } from './TypeText';
 
 type Stage = 'email' | 'login' | 'oauth' | 'setup' | 'forgot' | 'sent';
 
+const ENTRY_CONSENT_KEY = 'ig_entry_consent';
+
 function AuthModalInner() {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,6 +42,12 @@ function AuthModalInner() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [agreed, setAgreed] = useState(false);
+  // Consent at the FIRST step, gating both routes in. Separate from `agreed` above, which
+  // is the signup step's own checkbox: someone signing IN never reaches that step, so
+  // relying on it would take consent from new accounts only.
+  const [entryAgreed, setEntryAgreed] = useState(false);
+  const [entryConsentError, setEntryConsentError] = useState<string | null>(null);
+  const [marketing, setMarketing] = useState(false);
   const [sentType, setSentType] = useState<'signup' | 'reset'>('signup');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,7 +62,11 @@ function AuthModalInner() {
 
   useEffect(() => {
     if (!isOpen) return;
-    setEmail(emailParam ?? ''); setFirstName(''); setLastName(''); setPassword(''); setConfirm(''); setAgreed(false); setError(null);
+    setEmail(emailParam ?? ''); setFirstName(''); setLastName(''); setPassword(''); setConfirm(''); setAgreed(false); setMarketing(false); setError(null);
+    // Every open is a fresh login/signup attempt, so the entry checkbox has to be ticked
+    // again too - a box left checked from a previous visit this session would let someone
+    // through without the fresh, evidenced tick "every login" requires.
+    setEntryAgreed(false); setEntryConsentError(null);
     if (mode === 'setpw') {
       // Returned from the verification link → set a password. Require a real session.
       settingUp.current = true;
@@ -102,8 +114,23 @@ function AuthModalInner() {
 
   // Step 1 - email only. Existing account with a password → login. Everyone else →
   // email a verification link (they set a password after clicking it).
+  /** Both ways in are gated on the same checkbox. Returns false and shows why when it is
+   *  unticked, rather than disabling the controls: a dead button explains nothing to the
+   *  person who has not spotted the checkbox yet. */
+  function requireEntryConsent(): boolean {
+    if (entryAgreed) {
+      // Google takes the user off-site and back to /auth/callback, where this component no
+      // longer exists. The marker is what lets the callback record the same agreement.
+      try { sessionStorage.setItem(ENTRY_CONSENT_KEY, '1'); } catch { /* private mode */ }
+      return true;
+    }
+    setEntryConsentError('Please accept the Terms of Use and Privacy Policy to continue.');
+    return false;
+  }
+
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
+    if (!requireEntryConsent()) return;
     setError(null); setLoading(true);
     try {
       const res = await fetch('/api/auth/check-email', {
@@ -149,6 +176,10 @@ function AuthModalInner() {
         const res = await fetch('/api/auth/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          // The entry checkbox was ticked to get here, so this sign-in is a consent event.
+          // The backend skips it when a live record already exists, and records it when a
+          // newer version of the policies has been published since.
+          body: JSON.stringify({ accepted_terms: true, consent_context: 'signin' }),
         });
         const d = await res.json().catch(() => ({}));
         if (d?.role === 'mentor' && d?.needs_onboarding) { router.push('/mentor'); return; }
@@ -183,7 +214,10 @@ function AuthModalInner() {
         await fetch('/api/auth/sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-          body: JSON.stringify({ full_name: fullName }),
+          // accepted_terms/marketing_consent only ever come from THIS one-time call -
+          // it's what tells the backend to actually record signup consent, rather than
+          // a routine sync (handleLogin's call above sends neither).
+          body: JSON.stringify({ full_name: fullName, accepted_terms: agreed, marketing_consent: marketing }),
         });
       }
     } catch { /* best-effort */ }
@@ -277,12 +311,30 @@ function AuthModalInner() {
                 <div className="my-4 flex items-center gap-3 text-sm text-muted">
                   <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
                 </div>
-                <GoogleButton label={t.continueWithGoogle} next={next} />
-                <p className="mt-4 text-xs leading-snug text-muted">
-                  {t.termsNote}{' '}
-                  <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                  <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
-                </p>
+                <GoogleButton label={t.continueWithGoogle} next={next} beforeSignIn={requireEntryConsent} />
+                {/* An actual checkbox, not the old "by continuing you agree" line. Implied
+                    consent from the act of signing in is not consent anyone can evidence
+                    later; a ticked box with a timestamp is. */}
+                <label className="mt-4 flex items-start gap-2 text-xs leading-snug text-muted cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={entryAgreed}
+                    onChange={(e) => { setEntryAgreed(e.target.checked); if (e.target.checked) setEntryConsentError(null); }}
+                    className="mt-0.5 accent-brand-700"
+                    aria-describedby={entryConsentError ? 'entry-consent-error' : undefined}
+                  />
+                  <span>
+                    I agree to the{' '}
+                    <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use</Link>,{' '}
+                    <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link> and{' '}
+                    <Link href="/privacy#groovia-ai-terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use - Groovia AI</Link>.
+                  </span>
+                </label>
+                {entryConsentError && (
+                  <p id="entry-consent-error" role="alert" className="mt-2 text-xs text-red-600">
+                    {entryConsentError}
+                  </p>
+                )}
               </>
             )}
 
@@ -348,10 +400,17 @@ function AuthModalInner() {
                   <label className="flex items-start gap-2 text-xs leading-snug text-muted">
                     <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 accent-brand-700" />
                     <span>
-                      I agree to Immigroov&apos;s{' '}
-                      <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.terms}</Link> and{' '}
-                      <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{t.privacy}</Link>.
+                      I agree to the{' '}
+                      <Link href="/privacy#website-terms-of-use" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use</Link>,{' '}
+                      <Link href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link> and{' '}
+                      <Link href="/privacy#groovia-ai-terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Use - Groovia AI</Link>.
                     </span>
+                  </label>
+                  {/* Separate and unbundled from the checkbox above, per spec: marketing consent
+                      cannot be forced as part of accepting the Terms. Unchecked by default. */}
+                  <label className="flex items-start gap-2 text-xs leading-snug text-muted">
+                    <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)} className="mt-0.5 accent-brand-700" />
+                    <span>(optional) Send me updates and offers from Immigroov</span>
                   </label>
                   {error && <p className="text-xs text-red-600">{error}</p>}
                   <Button type="submit" loading={loading}

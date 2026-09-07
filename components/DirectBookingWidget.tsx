@@ -809,6 +809,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
           idempotency_key: idemKey,
           referral_code: referralCode.trim() || undefined,
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
+          accepted_terms: acceptedTerms,
         }),
       });
       const data = await res.json();
@@ -843,6 +844,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         answers: questions
           .map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' }))
           .filter(a => a.answer_text),
+        acceptedTerms,
       },
       {
         onConfirmed: (id) => { setBookingId(id); clearDraft(); setStep('confirmed'); done(); },
@@ -1455,18 +1457,45 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
               </p>
             </div>
 
-            <label className="mx-5 mb-3 flex items-start gap-2.5 cursor-pointer">
+            <label className="mx-5 mb-2 flex items-start gap-2.5 cursor-pointer">
               <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)}
                 className="mt-0.5 h-4 w-4 shrink-0 rounded accent-brand-700" />
               <span className="text-xs text-muted leading-relaxed">
-                I agree to Immigroov&apos;s{' '}
-                <a href="/terms" target="_blank" rel="noopener noreferrer"
+                I agree to the{' '}
+                {/* India is the default geography: an unresolved userCountry binds the India
+                    edition, and only a country we positively know is NOT India moves this
+                    link to Rest-of-World. */}
+                <a href={`/privacy#${userCountry && userCountry !== 'IN' ? 'customer-terms-row' : 'customer-terms-india'}`}
+                  target="_blank" rel="noopener noreferrer"
                   className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
-                  Terms for customers
-                </a>{' '}
-                and this mentor&apos;s cancellation and rescheduling policy shown above.
+                  Terms &amp; Conditions
+                </a>,{' '}
+                <a href="/privacy#privacy-policy" target="_blank" rel="noopener noreferrer"
+                  className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                  Privacy Policy
+                </a>,{' '}
+                <a href="/privacy#payment-terms" target="_blank" rel="noopener noreferrer"
+                  className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                  Payment Terms
+                </a>, and{' '}
+                <a href="/privacy#refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
+                  className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                  Refund &amp; Cancellation Policy
+                </a>.
               </span>
             </label>
+            {/* Named again here, alongside the mentor's own notice window: this is the
+                highest-dispute-risk document, worth surfacing a second time right where
+                money changes hands, not just inside the bundle above. All 14 legal
+                documents are public, so this works for a guest with no account too. */}
+            <p className="mx-5 mb-3 text-xs text-muted leading-relaxed">
+              Review the{' '}
+              <a href="/privacy#refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
+                className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                Refund &amp; Cancellation Policy
+              </a>{' '}
+              and this mentor&apos;s cancellation and rescheduling notice shown above.
+            </p>
 
             {selfBooking && (
               <div className="mx-5 mb-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">

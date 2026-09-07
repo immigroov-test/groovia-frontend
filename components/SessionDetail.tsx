@@ -180,6 +180,10 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         slotTime: d.slot_time,
         email, phone,
         serviceTitle: d.service_title,
+        // Completing payment on a booking that already exists (a signed-in retry of an unpaid
+        // hold, not a fresh checkout decision) - the Terms were agreed to when this booking was
+        // first created, and the consent record from that moment still stands.
+        acceptedTerms: true,
       },
       {
         onConfirmed: async () => { await load(); setBusy(false); },
