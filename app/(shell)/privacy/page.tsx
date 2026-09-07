@@ -1,27 +1,52 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { LegalDoc } from '../../../components/LegalDoc';
+import { headers } from 'next/headers';
+import { serverGetPublic } from '../../../lib/backend';
+import { PageLoadError } from '../../../components/PageLoadError';
+import { PublicLegalPage, type PublicLegalDocument } from '../../../components/PublicLegalPage';
 
-export const metadata = { title: 'Privacy Policy - Immigroov' };
+export const metadata = {
+  title: 'Privacy Policy & Legal Documents - Immigroov',
+  alternates: { canonical: '/privacy' },
+};
 
-function read(name: string): string {
-  try {
-    return readFileSync(join(process.cwd(), 'content', 'legal', name), 'utf8');
-  } catch {
-    return '_Content coming soon._';
-  }
-}
+// The one public legal page: all fourteen documents as collapsible sections, served
+// from the Legal Documents CMS rather than from files in this repo. An admin editing
+// the Privacy Policy updates this page without a deploy, and there is a single source
+// of truth instead of a repo copy that drifts from what was actually published.
+//
+// It lives at /privacy because that URL is already linked from the cookie banner, the
+// signup form, the mentor onboarding form and the sitemap. Moving it would break links
+// we do not control and throw away the indexing that URL has already earned; /terms
+// 308s here.
+//
+// The RESPONSE is cached for an hour, not the route. A route-level `revalidate` would
+// do nothing: this page sits under the (shell) layout, which reads cookies() and so
+// forces every page beneath it to render per request. Caching the fetch is what
+// actually keeps a crawler from putting a backend round-trip behind every view.
+//
+// Worth being clear about the trade this makes: the old version of this page read
+// markdown off local disk and therefore could not fail. This one depends on the backend.
+//
+// An hour was too long. This page is driven by a CMS, so an hour meant every publish, retitle
+// or visibility change was invisible here for up to an hour with nothing on screen to say why,
+// and the natural conclusion was that the change had not worked. A minute still absorbs a
+// crawler hammering the page, which is all the cache was ever protecting against.
+const CACHE_SECONDS = 60;
 
-export default function PrivacyPage() {
-  return (
-    <LegalDoc
-      title="Privacy Policy"
-      updated="Last updated: 01 Aug 2025"
-      groups={[
-        { label: 'For Mentors', content: read('privacy-mentor.md') },
-        { label: 'For Customers', content: read('privacy-customer.md') },
-        { label: 'Marketing consent', content: read('privacy-marketing-consent.md') },
-      ]}
-    />
+export default async function PrivacyPage() {
+  const res = await serverGetPublic<PublicLegalDocument[]>(
+    '/legal/public', 12000, 1, CACHE_SECONDS,
   );
+
+  // An empty array is a real answer (nothing published yet) and the page says so.
+  // A failed fetch is not - rendering "no legal documents" because the backend blinked
+  // would be a false statement about a page people rely on.
+  if (!res.ok || !Array.isArray(res.data)) return <PageLoadError retryHref="/privacy" />;
+
+  // Which Customer T&C binds this reader, India's or the Rest of World's. Read straight
+  // from the edge geo header rather than the cached fetch: the RESPONSE is cached for an
+  // hour and shared between visitors, so the country must be resolved per request or every
+  // reader would inherit whichever region happened to warm the cache.
+  const country = (await headers()).get('x-vercel-ip-country');
+
+  return <PublicLegalPage docs={res.data} country={country} />;
 }

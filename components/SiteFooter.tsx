@@ -1,0 +1,66 @@
+import Link from 'next/link';
+
+// The site-wide footer. Until this existed the only persistent legal links lived on the
+// auth pages, so a visitor browsing mentors or reading a profile had no route to the
+// policies at all. A reachable-from-every-page link is the placement regulators, ad
+// platforms and app stores all check for.
+//
+// One link to the policies, not nine. Listing every document here duplicated the index that
+// /privacy already is, and a row of nine legal links reads as heavier and more alarming than
+// the single destination it stands for. Anyone after a specific policy reaches it in one
+// more click, from a page built to navigate them.
+//
+// Data Subject Rights is the deliberate exception. It is not one more policy to read, it is
+// the route to acting on your data, and both the GDPR and the CCPA expect that route to be
+// reachable directly rather than a click inside an index.
+//
+// It points at the REQUEST page, which is a real public route, not at /privacy#slug.
+//
+// The hash form sent people to the wrong document. /privacy resolves a hash by looking for a
+// matching document slug and, failing that, a matching heading in any document. Data Subject
+// Rights has no published version, so the slug matched nothing and the fallback found a
+// heading of the same name inside the Website Terms of Use, opening that instead. A heading
+// named after a document is not a rare accident; it is what a privacy document looks like.
+//
+// The request page has no such dependency, and it is the better destination anyway: both the
+// GDPR and the CCPA expect a footer link to reach the means of ACTING on your data, not a
+// policy describing it.
+const LINKS = [
+  { href: '/privacy', label: 'Terms & Policies' },
+  { href: '/legal/data-subject-request', label: 'Data Subject Rights' },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
+];
+
+export function SiteFooter() {
+  return (
+    <footer className="mt-10">
+      {/* Links left, copyright right on a wide screen; stacked and centred once the row is
+          too narrow to hold both without them crowding each other. */}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-3
+                      flex flex-col items-center gap-2
+                      sm:flex-row sm:justify-between sm:gap-6">
+        <nav aria-label="Legal and company links" className="min-w-0">
+          {/* Separators are drawn on the list items rather than typed between them, so a
+              wrapped row never begins or ends with a stray divider. */}
+          <ul className="flex flex-wrap items-center justify-center sm:justify-start gap-y-2 text-xs">
+            {LINKS.map((l, i) => (
+              <li
+                key={l.href}
+                className={`leading-none ${i === 0 ? 'pr-3 sm:pl-0' : 'px-3'}
+                            border-r border-[--color-border] last:border-r-0`}
+              >
+                <Link href={l.href} className="text-muted hover:text-foreground hover:underline">
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <p className="shrink-0 text-xs text-muted/70">
+          &copy; {new Date().getFullYear()} Immigroov. All rights reserved.
+        </p>
+      </div>
+    </footer>
+  );
+}
