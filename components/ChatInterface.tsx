@@ -19,6 +19,7 @@ import { ReportInfoModal } from './ReportInfoModal';
 import { ResumeConsentModal } from './ResumeConsentModal';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { AiAvatar } from './AiAvatar';
+import { SiteFooter } from './SiteFooter';
 
 // Standalone (not in LS_KEYS): a Groq rate-limit block is server-side reality, so it must
 // survive "clear chat" - which wipes every LS_KEYS entry.
@@ -936,6 +937,13 @@ export default function ChatInterface({ authed }: Props) {
 
           <div ref={chatEndRef} />
         </div>
+
+        {/* The footer lives inside THIS scroller, not the layout's. The chat fills the
+            viewport and scrolls its own content, so a footer placed in the outer container
+            makes that scroll as well and the page shows two scrollbars. Landing only:
+            during a conversation the end of the scroll area is where the newest message
+            goes, and a footer there would sit between the reader and the reply. */}
+        {messages.length === 0 && <SiteFooter />}
       </div>
 
       {/* z-index: 10 keeps the input bar above both the scroll area (z-1) and landmarks (z-0). */}

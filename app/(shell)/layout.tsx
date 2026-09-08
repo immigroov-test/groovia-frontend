@@ -5,6 +5,7 @@ import { PageTransition } from '../../components/PageTransition';
 import { IdleLogout } from '../../components/IdleLogout';
 import { AuthStateSync } from '../../components/AuthStateSync';
 import { IntroSplash } from '../../components/IntroSplash';
+import { FooterSlot } from '../../components/FooterSlot';
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -30,6 +31,10 @@ export default async function ShellLayout({ children }: { children: React.ReactN
       <TopNav authed={!!user} email={user?.email ?? null} role={role} name={name} photoUrl={photoUrl} />
       <main id="app-scroll" className="h-full overflow-y-auto pt-16">
         <PageTransition>{children}</PageTransition>
+        {/* The footer goes INSIDE #app-scroll, not after it: the wrapper is h-screen
+            overflow-hidden and this element is the only thing that scrolls, so a footer
+            placed outside it would never be reachable. */}
+        <FooterSlot />
       </main>
       <AuthModal />
       <IdleLogout authed={!!user} />
