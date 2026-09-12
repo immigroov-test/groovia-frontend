@@ -21,6 +21,7 @@ export interface CheckoutParams {
   answers?: { question_id: string; answer_text: string }[];
   timezone?: string;
   referralCode?: string;       // validated server-side in reserve; applies its discount
+  referralToken?: string;      // set by the /r/<slug> landing route; attributes a link click
   // Consent Flow Spec Section 4: the checkout checkbox's state. The backend re-validates
   // this is true, and records the consent bundle against the booking_id reserve() returns.
   acceptedTerms: boolean;
@@ -67,6 +68,7 @@ export async function startPaidCheckout(p: CheckoutParams, h: CheckoutHandlers):
         answers: p.answers ?? [],
         specific_availability_id: null,
         referral_code: p.referralCode || undefined,
+        referral_token: p.referralToken || undefined,
         accepted_terms: p.acceptedTerms,
       }),
     });

@@ -12,6 +12,7 @@ interface RefCode {
 }
 interface Overview {
   affiliate_id: string | null; codes: RefCode[];
+  link_slug: string | null; link_clicks: number;
   referrals: number; earnings_inr: number; pending_inr: number;
 }
 
@@ -23,6 +24,9 @@ export function MentorReferrals() {
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [form, setForm] = useState({ discount_pct: '10', redemption_cap: '100', expires_at: '' });
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => { setOrigin(window.location.origin); }, []);
 
   const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const { data: { session } } = await createClient().auth.getSession();
@@ -68,22 +72,52 @@ export function MentorReferrals() {
     } catch { setError('Could not update the code.'); }
   }
 
-  async function copy(code: string) {
-    try { await navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(null), 1500); } catch { /* ignore */ }
+  async function copy(text: string) {
+    try { await navigator.clipboard.writeText(text); setCopied(text); setTimeout(() => setCopied(null), 1500); } catch { /* ignore */ }
   }
 
   if (data === null && !error) return <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
 
   const codes = data?.codes ?? [];
+  const shareUrl = data?.link_slug ? `${origin}/r/${data.link_slug}` : '';
 
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm text-muted">
-        Share a referral code. When someone books their first session with it, they get the discount and you earn a
-        referral commission on that session.
+        Share your link or a code. When someone books their first session through either, you earn a referral
+        commission on that session, and a code also gives them the discount you set.
       </p>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {/* Shareable link. Codes are opt-in; the link works the moment the affiliate exists. */}
+      <Card><CardBody className="pt-4 pb-4 flex flex-col gap-2">
+        <p className="text-sm font-semibold text-foreground">Your referral link</p>
+        {data?.link_slug ? (
+          <>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <code className="flex-1 min-w-0 break-all rounded-lg bg-slate-50 px-3 py-2 text-xs sm:text-sm font-mono text-brand-900">
+                {shareUrl}
+              </code>
+              <Button variant="outline" size="sm" className="shrink-0" onClick={() => copy(shareUrl)}>
+                {copied === shareUrl ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                {copied === shareUrl ? 'Copied' : 'Copy link'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted">
+              Opened {data.link_clicks ?? 0} {(data.link_clicks ?? 0) === 1 ? 'time' : 'times'}. A click counts for 60 days,
+              so someone who leaves and comes back later is still yours. If they enter someone else&rsquo;s code at
+              checkout, that code takes precedence.
+            </p>
+            <p className="text-xs text-muted">
+              You earn 10% when the person you referred books with another mentor. When they book with you, there is no
+              separate commission: you keep 90% of the session instead of the usual 70%.
+            </p>
+          </>
+        ) : (
+          <p className="text-xs text-muted">Generate your first code below and your link appears here.</p>
+        )}
+      </CardBody></Card>
 
       {/* Earnings summary */}
       <div className="grid grid-cols-3 gap-3">

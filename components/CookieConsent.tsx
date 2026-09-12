@@ -132,7 +132,7 @@ export function CookieConsent() {
             <label className="flex items-start justify-between gap-3 cursor-pointer">
               <div>
                 <p className="text-xs font-medium text-brand-900">Marketing</p>
-                <p className="text-xs text-muted">Not used today. Listed so you can decide in advance.</p>
+                <p className="text-xs text-muted">Remembering which referral link brought you here, so whoever referred you gets credit.</p>
               </div>
               <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)}
                 className="mt-0.5 shrink-0 accent-brand-700" />
