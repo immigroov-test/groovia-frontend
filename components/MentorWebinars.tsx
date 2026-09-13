@@ -8,13 +8,21 @@ import { Card, CardBody } from './ui/Card';
 
 export function MentorWebinars() {
   const [rows, setRows] = useState<Webinar[]>([]); const [busy, setBusy] = useState(false); const [message, setMessage] = useState<string | null>(null);
+  const [minimumStart] = useState(() => {
+    const date = new Date(Date.now() + 60_000);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  });
   const load = useCallback(async () => { const r = await apiFetch<Webinar[]>('/api/mentor/webinars'); if (r.ok) setRows(r.data); }, []);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); setBusy(true); setMessage(null); const fd = new FormData(e.currentTarget);
+    const start = new Date(String(fd.get('starts_at')));
+    if (!Number.isFinite(start.getTime()) || start <= new Date()) {
+      setMessage('Choose a webinar date and time in the future.'); setBusy(false); return;
+    }
     const isPaid = fd.get('is_paid') === 'on';
     const r = await apiFetch<{ detail?: string }>('/api/mentor/webinars/requests', { method: 'POST', json: {
-      title: fd.get('title'), description: fd.get('description'), starts_at: new Date(String(fd.get('starts_at'))).toISOString(),
+      title: fd.get('title'), description: fd.get('description'), starts_at: start.toISOString(),
       duration_minutes: Number(fd.get('duration_minutes')), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       capacity: Number(fd.get('capacity')), is_paid: isPaid, price: isPaid ? Number(fd.get('price')) : 0, currency: String(fd.get('currency')),
     }});
@@ -26,7 +34,7 @@ export function MentorWebinars() {
     <Card><CardBody className="pt-6"><form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
       <label className="text-sm sm:col-span-2">Title<input required minLength={4} name="title" className="mt-1 w-full rounded-lg border p-2.5 bg-background" /></label>
       <label className="text-sm sm:col-span-2">Description<textarea required minLength={20} rows={4} name="description" className="mt-1 w-full rounded-lg border p-2.5 bg-background" /></label>
-      <label className="text-sm">Preferred date and time<input required type="datetime-local" name="starts_at" className="mt-1 w-full rounded-lg border p-2.5 bg-background" /></label>
+      <label className="text-sm">Preferred date and time<input required type="datetime-local" min={minimumStart} name="starts_at" className="mt-1 w-full rounded-lg border p-2.5 bg-background" /><span className="mt-1 block text-xs text-muted">The selected time must be in the future.</span></label>
       <label className="text-sm">Duration (minutes)<input required type="number" min="15" max="480" defaultValue="60" name="duration_minutes" className="mt-1 w-full rounded-lg border p-2.5 bg-background" /></label>
       <label className="text-sm">Capacity<input required type="number" min="1" max="10000" defaultValue="100" name="capacity" className="mt-1 w-full rounded-lg border p-2.5 bg-background" /></label>
       <label className="text-sm flex items-center gap-2 pt-7"><input type="checkbox" name="is_paid" /> Paid webinar</label>

@@ -24,6 +24,7 @@ export const MARKETING = {
     mentors: 'Mentors',
     account: 'Account',
     mentorPortal: 'Join as Mentor',
+    mentorApplication: 'Mentor Application',
     mentorHub: 'Mentor Dashboard',
     about: 'About',
     contact: 'Contact',

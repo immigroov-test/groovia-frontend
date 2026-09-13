@@ -4,6 +4,7 @@ export interface Webinar {
   title: string;
   description: string;
   banner_url?: string | null;
+  media_url?: string | null;
   mentor_id?: string | null;
   mentor?: { display_name: string; slug: string; photo_url?: string | null } | null;
   source?: 'admin' | 'mentor_request';
