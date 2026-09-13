@@ -52,7 +52,7 @@ export default async function Page() {
     <header className="max-w-3xl">
       <p className="text-[13px] font-bold uppercase tracking-[0.08em] text-accent-700">Pricing</p>
       <h1 className="font-display mt-4 text-4xl sm:text-5xl font-bold leading-[1.1] text-brand-900">See the price before you commit.</h1>
-      <p className="mt-5 text-lg leading-8 text-muted">Groovia does not use a single fixed price for every service. The exact amount is shown on the relevant mentor or webinar page before payment.</p>
+      <p className="mt-5 text-lg leading-8 text-muted">Immigroov does not use a single fixed price for every service. The exact amount is shown on the relevant mentor or webinar page before payment.</p>
     </header>
 
     <div className="mt-12 grid gap-5 lg:grid-cols-3">

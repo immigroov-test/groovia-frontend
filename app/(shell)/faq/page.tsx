@@ -1,7 +1,7 @@
 import { OrganizationPage } from '../../../components/OrganizationPage';
 export const metadata = { title: 'Frequently asked questions - Immigroov' };
 export default function Page() { return <OrganizationPage eyebrow="FAQ" title="Common questions, answered clearly." intro="Quick answers about guidance, mentors, webinars, bookings, and accounts." sections={[
-  { title: 'Is Groovia legal advice?', body: 'No. Groovia provides educational information and access to lived experience. Consult an appropriately qualified professional for legal advice about your circumstances.' },
+  { title: 'Is Immigroov legal advice?', body: 'No. Immigroov and its Groovia assistant provide educational information and access to lived experience. Consult an appropriately qualified professional for legal advice about your circumstances.' },
   { title: 'How do I choose a mentor?', body: 'Filter by destination, topic, and language, then review the person’s profile, experience, services, price, and availability.' },
   { title: 'How do webinars work?', body: 'Register from the webinar page. Confirmed attendees receive access through the protected join flow when the session is available.' },
   { title: 'Can a mentor request a webinar?', body: 'Yes. Mentors can submit a hosting request from their mentor dashboard. An administrator reviews it before publication.' },
