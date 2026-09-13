@@ -10,7 +10,7 @@ import { MentorPhotoStrip } from './MentorPhotoStrip';
 import { REVIEW_AVERAGE } from '../lib/content/reviews';
 import { webinarPrice, webinarWhen, type Webinar } from '../lib/webinars';
 
-interface Props { hideGif: boolean; showWelcome: boolean; onReveal: () => void; mentors?: Mentor[]; webinars?: Webinar[]; }
+interface Props { onReveal: () => void; mentors?: Mentor[]; webinars?: Webinar[]; }
 
 const EYEBROW = 'text-[13px] font-bold uppercase tracking-[0.08em] text-accent-700';
 

@@ -30,7 +30,7 @@ export default async function Page() {
     {
       icon: MessageCircle, name: 'Groovia guidance', price: <p className={TITLE}>Free to try</p>, note: 'No payment needed to start',
       points: ['Guests can try a limited number of questions', 'Any account requirements or limits are shown before you continue'],
-      cta: { label: 'Ask Groovia', href: '/home' },
+      cta: { label: 'Ask Groovia', href: '/home?chat=open' },
     },
     {
       icon: Users, name: 'Mentor sessions', featured: true,

@@ -5,4 +5,4 @@ export default function Page() { return <OrganizationPage eyebrow="IMPORTANT INF
   { title: 'Verify important decisions', body: 'Check current requirements with official government sources and seek qualified legal advice when a decision depends on your specific circumstances.' },
   { title: 'No outcome guarantees', body: 'A mentor’s experience, a webinar, or an AI response cannot guarantee visa, admission, employment, or relocation outcomes.' },
   { title: 'Your documents and deadlines', body: 'You remain responsible for the accuracy of submissions, official deadlines, fees, and decisions made using platform information.' },
-]} cta={{ label: 'Start with a question', href: '/home' }} />; }
+]} cta={{ label: 'Start with a question', href: '/home?chat=open' }} />; }

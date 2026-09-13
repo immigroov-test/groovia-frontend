@@ -57,7 +57,7 @@ export function AccountTabs({
       <div className="mt-6">
         {tab === 'overview' && <div className="grid gap-5">
           <div className="grid gap-4 sm:grid-cols-3">
-            <Link href="/home" className="rounded-[14px] border border-(--color-border) bg-white p-5 hover:border-brand-400"><MessageCircle className="h-5 w-5 text-accent-600"/><h2 className="mt-4 font-semibold text-brand-900">Ask Groovia</h2><p className="mt-1 text-sm text-muted">Continue with a question or return to guidance.</p></Link>
+            <Link href="/home?chat=open" className="rounded-[14px] border border-(--color-border) bg-white p-5 hover:border-brand-400"><MessageCircle className="h-5 w-5 text-accent-600"/><h2 className="mt-4 font-semibold text-brand-900">Ask Groovia</h2><p className="mt-1 text-sm text-muted">Continue with a question or return to guidance.</p></Link>
             <Link href="/mentors" className="rounded-[14px] border border-(--color-border) bg-white p-5 hover:border-brand-400"><UserRound className="h-5 w-5 text-accent-600"/><h2 className="mt-4 font-semibold text-brand-900">Find a mentor</h2><p className="mt-1 text-sm text-muted">Compare profiles, services, and availability.</p></Link>
             <Link href="/webinars" className="rounded-[14px] border border-(--color-border) bg-white p-5 hover:border-brand-400"><Search className="h-5 w-5 text-accent-600"/><h2 className="mt-4 font-semibold text-brand-900">Browse webinars</h2><p className="mt-1 text-sm text-muted">Find a focused live session.</p></Link>
           </div>

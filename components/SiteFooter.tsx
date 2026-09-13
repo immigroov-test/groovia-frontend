@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const GROUPS = [
-  { title: 'Explore', links: [['Ask Groovia', '/home'], ['Find a mentor', '/mentors'], ['Webinars', '/webinars']] },
+  { title: 'Explore', links: [['Ask Groovia', '/home?chat=open'], ['Find a mentor', '/mentors'], ['Webinars', '/webinars']] },
   { title: 'Organization', links: [['About Immigroov', '/about'], ['Company facts', '/company'], ['How it works', '/how-it-works'], ['Partnerships', '/partnerships'], ['Careers', '/careers']] },
   { title: 'Support', links: [['Pricing', '/pricing'], ['FAQ', '/faq'], ['Contact', '/contact'], ['Refunds & cancellations', '/refund-policy']] },
   { title: 'Legal', links: [['Terms & privacy', '/privacy'], ['Guidance disclaimer', '/immigration-disclaimer'], ['Data subject rights', '/legal/data-subject-request']] },

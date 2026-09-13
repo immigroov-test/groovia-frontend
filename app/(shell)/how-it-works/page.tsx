@@ -5,4 +5,4 @@ export default function Page() { return <OrganizationPage eyebrow="HOW IT WORKS"
   { title: '2. Explore the options', body: 'Use Groovia for an initial direction, compare mentors, or review upcoming webinars without committing to a purchase.' },
   { title: '3. Choose human support', body: 'Review a mentor’s background, languages, service duration, price, and availability before booking.' },
   { title: '4. Keep moving', body: 'Use your account to return to conversations and manage booked sessions. Educational guidance does not replace regulated legal advice.' },
-]} cta={{ label: 'Ask Groovia', href: '/home' }} />; }
+]} cta={{ label: 'Ask Groovia', href: '/home?chat=open' }} />; }

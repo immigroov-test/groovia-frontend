@@ -1,6 +1,7 @@
 // Groovia chat copy: what the assistant says, its prompts, guest limits and errors.
 export const CHAT = {
-  welcomeMessage: "Hi, I'm Groovia 👋 What would you like to do?",
+  welcomeMessage: "Hi, I'm Groovia 👋",
+  welcomeFollowUp: "I help people plan their move abroad. I can map out a career pathway, find you a mentor who has made the move, or answer a quick question. Where would you like to start?",
   uploadIndicator: '📎 Resume uploaded',
   intentPrompt: 'What would you like to do?',
   askQuestionPrompt: 'Sure, what would you like to know? Ask me anything about visas, jobs, salaries, or moving abroad.',

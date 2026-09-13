@@ -126,6 +126,15 @@ h1, h2, h3, h4, h5, h6 {
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up { animation: fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-panel-in { animation: panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: bottom right; }
+/* Groovia's avatar blinks now and then (header and launcher only). */
+@keyframes avatar-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.12); } }
+.avatar-blink { transform-box: fill-box; transform-origin: center; animation: avatar-blink 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .avatar-blink { animation: none; } }
 
 /* Staggered "fall into position" entrance for a page's content blocks.
    Put `reveal-children` on a container; its direct children animate in with a stagger. */
