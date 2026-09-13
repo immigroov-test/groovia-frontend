@@ -6,7 +6,8 @@ import { Badge } from './ui/Badge';
 import { cn } from '../lib/utils';
 
 interface Booking {
-  id: string; status: string; slot_time: string | null;
+  /** BUG-098: short human-readable id (IMG-00001). Null only for a row that predates the backfill. */
+  id: string; reference: string | null; status: string; slot_time: string | null;
   candidate_name: string | null; candidate_email: string | null;
   mentor_name: string | null; reschedule_count: number; no_show_by: string | null; created_at: string;
 }
@@ -30,10 +31,24 @@ interface Detail extends Booking {
   }[];
   pricing?: {
     customer_currency?: string | null; mentor_currency?: string | null;
-    gross_customer?: number | null; fee_pct?: number | null; fee_amount?: number | null;
-    net_customer?: number | null; net_mentor?: number | null;
+    gross_customer?: number | null; net_customer?: number | null; net_mentor?: number | null;
+    /** fee_pct/fee_amount are the MENTOR COMMISSION, not the platform fee. The names predate
+     *  the v5 model, which added a separate customer-facing platform fee. Read the explicit
+     *  fields below; these two are kept only for bookings taken before they existed. */
+    fee_pct?: number | null; fee_amount?: number | null;
+    subtotal?: number | null;
+    platform_fee_pct?: number | null; platform_fee?: number | null;
+    tax_pct?: number | null; tax_amount?: number | null;
+    commission_pct?: number | null; commission_amount?: number | null;
+  } | null;
+  referral?: {
+    affiliate_id: string | null; affiliate_name: string; affiliate_type: string | null;
+    own_session: boolean; code: string | null; discount_pct: number | null;
+    ledger: { status: string; split_snapshot: Split | null; commission_amount: number | null;
+              commission_amount_inr: number | null; customer_currency: string | null } | null;
   } | null;
 }
+interface Split { mentor_pct: number; immigroov_pct: number; promoter_pct: number; }
 interface LegacyRow {
   id: string; status: string | null; service_title: string | null; customer_name: string | null;
   slot_start: string | null; duration_min: number | null; amount_total: number | null;
@@ -76,10 +91,48 @@ export function AdminBookings() {
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [details, setDetails] = useState<Record<string, Detail | null>>({});
+  // Per-booking commission override. Groundwork for referrals, where a referred booking carries
+  // a different rate from the mentor's standing one.
+  const [commDraft, setCommDraft] = useState<Record<string, string>>({});
+  const [commBusy, setCommBusy] = useState<string | null>(null);
+  const [commError, setCommError] = useState<Record<string, string | null>>({});
 
-  const authedFetch = useCallback(async (url: string) => {
+  async function saveCommission(id: string) {
+    const pct = parseFloat(commDraft[id] ?? '');
+    if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+      setCommError((e) => ({ ...e, [id]: 'Enter a percentage between 0 and 100.' }));
+      return;
+    }
+    setCommBusy(id); setCommError((e) => ({ ...e, [id]: null }));
+    try {
+      const res = await authedFetch(`/api/admin/bookings/${id}/commission`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pct }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setCommError((e) => ({ ...e, [id]: data.detail || 'Could not update.' })); return; }
+      // Re-read rather than patching state by hand: the split is worked out server-side and the
+      // panel must show what was stored, not what we assumed would be.
+      const fresh = await authedFetch(`/api/admin/bookings/${id}`);
+      if (fresh.ok) {
+        const updated = await fresh.json();
+        setDetails((d) => ({ ...d, [id]: updated }));
+      }
+      setCommDraft((v) => { const n = { ...v }; delete n[id]; return n; });
+    } catch { setCommError((e) => ({ ...e, [id]: 'Could not update.' })); }
+    finally { setCommBusy(null); }
+  }
+
+  const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const { data: { session } } = await createClient().auth.getSession();
-    return fetch(url, { headers: { Authorization: `Bearer ${session?.access_token ?? ''}` }, cache: 'no-store' });
+    return fetch(url, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
+        ...(init?.headers ?? {}),
+      },
+      cache: 'no-store',
+    });
   }, []);
 
   // Load the full set once per view; status + search are applied client-side (instant, and lets the
@@ -120,9 +173,29 @@ export function AdminBookings() {
     } catch { setDetails((d) => ({ ...d, [id]: null })); }
   }
 
+  // BUG-095: soonest call at the top. The table used to render in whatever order the endpoint
+  // returned - newest BOOKED first - so the calls furthest in the future sat at the top and the one
+  // happening next was at the bottom. Sorted here rather than in the query on purpose: the endpoint
+  // returns the 200 most recently created bookings, so ordering by slot_time in SQL would change
+  // WHICH 200 come back (the 200 earliest-scheduled) and quietly drop recent bookings off the table.
+  // Status and search are already applied client-side for the same reason, so this sits with them.
+  const startMs = (b: Booking) => (b.slot_time ? new Date(b.slot_time).getTime() : null);
+  const earliestFirst = (a: Booking, b: Booking) => {
+    const x = startMs(a), y = startMs(b);
+    // A booking with no slot yet (awaiting payment) has no place on a timeline - park those at the
+    // end rather than letting an epoch-0 fallback pin them above every real call.
+    if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+    return x - y;
+  };
+
+  // BUG-098: a booking with no reference predates the backfill; show the head of its UUID rather
+  // than an empty cell, so every row still has something quotable.
+  const refOf = (b: Booking) => b.reference ?? b.id.slice(0, 8).toUpperCase();
+
   const term = q.trim().toLowerCase();
   const live = (rows ?? []).filter((b) => inGroup(b.status, group)
-    && (!term || [b.mentor_name, b.candidate_name, b.candidate_email].some((x) => x?.toLowerCase().includes(term))));
+    && (!term || [refOf(b), b.mentor_name, b.candidate_name, b.candidate_email].some((x) => x?.toLowerCase().includes(term))))
+    .sort(earliestFirst);
   const past = (pastRows ?? []).filter((s) => !term || [s.mentor_name, s.customer_name, s.service_title].some((x) => x?.toLowerCase().includes(term)));
 
   return (
@@ -156,7 +229,7 @@ export function AdminBookings() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
         <input value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder={view === 'live' ? 'Search mentor or mentee name/email…' : 'Search mentor or customer name…'}
+          placeholder={view === 'live' ? 'Search ref, mentor or mentee name/email…' : 'Search mentor or customer name…'}
           className="w-full h-10 pl-9 pr-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
       </div>
 
@@ -172,6 +245,7 @@ export function AdminBookings() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted border-b border-[--color-border]">
+                  <th className="px-4 py-2.5 font-medium">Ref</th>
                   <th className="px-4 py-2.5 font-medium">When</th>
                   <th className="px-4 py-2.5 font-medium">Mentor</th>
                   <th className="px-4 py-2.5 font-medium">Mentee</th>
@@ -183,6 +257,7 @@ export function AdminBookings() {
                 {live.map((b) => (
                   <Fragment key={b.id}>
                     <tr onClick={() => toggle(b.id)} className="border-b border-[--color-border] last:border-0 hover:bg-brand-50/50 cursor-pointer">
+                      <td className="px-4 py-2.5 whitespace-nowrap"><code className="text-xs text-muted">{refOf(b)}</code></td>
                       <td className="px-4 py-2.5 whitespace-nowrap text-foreground">{fmt(b.slot_time)}</td>
                       <td className="px-4 py-2.5 text-foreground">{b.mentor_name ?? '-'}</td>
                       <td className="px-4 py-2.5 min-w-0"><span className="text-foreground">{b.candidate_name ?? '-'}</span><span className="block text-xs text-muted truncate">{b.candidate_email}</span></td>
@@ -208,7 +283,7 @@ export function AdminBookings() {
                     </tr>
                     {openId === b.id && (
                       <tr id={`booking-detail-${b.id}`} className="bg-brand-50/30 border-b border-[--color-border]">
-                        <td colSpan={5} className="px-4 py-3">
+                        <td colSpan={6} className="px-4 py-3">
                           {details[b.id] === undefined ? <span className="text-xs text-muted">Loading…</span>
                             : details[b.id] === null ? <span className="text-xs text-red-600">Could not load details.</span>
                             : (
@@ -220,6 +295,9 @@ export function AdminBookings() {
                                       {details[b.id]?.service_duration ? ` · ${details[b.id]!.service_duration} min` : ''}</span>
                                   )}
                                   {b.no_show_by && <span>No-show by <b className="text-foreground">{b.no_show_by}</b></span>}
+                                  {/* Both: the reference is what a person quotes, the UUID is what
+                                      a query needs. */}
+                                  <span>Ref <b className="text-foreground">{refOf(b)}</b></span>
                                   <span>Booking ID <code>{b.id}</code></span>
                                 </div>
 
@@ -253,16 +331,87 @@ export function AdminBookings() {
                                     <p className="whitespace-pre-wrap break-words text-foreground">{details[b.id]!.cancel_reason}</p>
                                   </div>
                                 )}
-                                {details[b.id]?.pricing && (
-                                  <div className="flex flex-wrap gap-x-6 gap-y-1">
-                                    {details[b.id]!.pricing!.gross_customer != null &&
-                                      <span>Customer paid <b className="text-foreground">{money(details[b.id]!.pricing!.gross_customer, details[b.id]!.pricing!.customer_currency)}</b></span>}
-                                    {details[b.id]!.pricing!.fee_amount != null &&
-                                      <span>Platform fee <b className="text-foreground">{money(details[b.id]!.pricing!.fee_amount, details[b.id]!.pricing!.customer_currency)}{details[b.id]!.pricing!.fee_pct != null ? ` (${details[b.id]!.pricing!.fee_pct}%)` : ''}</b></span>}
-                                    {details[b.id]!.pricing!.net_mentor != null &&
-                                      <span>Mentor net <b className="text-foreground">{money(details[b.id]!.pricing!.net_mentor, details[b.id]!.pricing!.mentor_currency)}</b></span>}
-                                  </div>
-                                )}
+                                {details[b.id]?.pricing && (() => {
+                                  const p = details[b.id]!.pricing!;
+                                  const cc = p.customer_currency;
+                                  // Two ledgers, deliberately separate. What the customer paid is
+                                  // session + platform fee + tax. What the mentor takes home is the
+                                  // session minus our commission. The commission is NOT a line in
+                                  // the customer's total: it comes out of the mentor's side.
+                                  // Conflating the two is what made this read as wrong, since the
+                                  // commission was being shown labelled "Platform fee".
+                                  const commission = p.commission_amount ?? p.fee_amount;
+                                  const commissionPct = p.commission_pct ?? p.fee_pct;
+                                  // Pre-fix bookings stored neither the fee nor the tax, so they
+                                  // can only be shown combined, derived from what is there.
+                                  const legacy = p.platform_fee == null && p.tax_amount == null;
+                                  const subtotal = p.subtotal
+                                    ?? (p.net_customer != null && commission != null ? p.net_customer + commission : null);
+                                  const feeAndTax = subtotal != null && p.gross_customer != null
+                                    ? Math.round((p.gross_customer - subtotal) * 100) / 100 : null;
+                                  return (
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                        <span className="text-muted/80">Customer</span>
+                                        {subtotal != null && <span>Session <b className="text-foreground">{money(subtotal, cc)}</b></span>}
+                                        {legacy
+                                          ? (feeAndTax != null && <span>Fee + tax <b className="text-foreground">{money(feeAndTax, cc)}</b> <span className="text-muted/70">(not itemised on this booking)</span></span>)
+                                          : (<>
+                                              {p.platform_fee != null && <span>Platform fee <b className="text-foreground">{money(p.platform_fee, cc)}</b>{p.platform_fee_pct != null ? ` (${p.platform_fee_pct}%)` : ''}</span>}
+                                              {p.tax_amount != null && <span>Tax <b className="text-foreground">{money(p.tax_amount, cc)}</b>{p.tax_pct != null ? ` (${p.tax_pct}%)` : ''}</span>}
+                                            </>)}
+                                        {p.gross_customer != null && <span>Paid <b className="text-foreground">{money(p.gross_customer, cc)}</b></span>}
+                                      </div>
+                                      <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                        <span className="text-muted/80">Mentor</span>
+                                        {commission != null && <span>Commission <b className="text-foreground">{money(commission, cc)}</b>{commissionPct != null ? ` (${commissionPct}%)` : ''}</span>}
+                                        {/* Only the mentor's side is editable. The customer has
+                                            already been charged, so gross, platform fee and tax
+                                            are history, not settings. */}
+                                        <span className="flex items-center gap-1.5">
+                                          <label htmlFor={`comm-${b.id}`} className="text-muted/80">Set %</label>
+                                          <input
+                                            id={`comm-${b.id}`}
+                                            type="number" min={0} max={100} step={0.5}
+                                            value={commDraft[b.id] ?? String(commissionPct ?? '')}
+                                            onChange={(e) => setCommDraft((v) => ({ ...v, [b.id]: e.target.value }))}
+                                            className="w-16 rounded-md px-1.5 py-0.5 text-xs bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+                                          />
+                                          <button type="button" onClick={() => saveCommission(b.id)}
+                                            disabled={commBusy === b.id}
+                                            className="text-brand-700 hover:underline disabled:opacity-50">
+                                            {commBusy === b.id ? 'Saving...' : 'Save'}
+                                          </button>
+                                        </span>
+                                        {p.net_customer != null && <span>Take-home <b className="text-foreground">{money(p.net_customer, cc)}</b></span>}
+                                        {p.net_mentor != null && <span>Paid out <b className="text-foreground">{money(p.net_mentor, p.mentor_currency)}</b></span>}
+                                      </div>
+                                      {details[b.id]?.referral && (() => {
+                                        // A referred booking: the commission above already reflects the referred
+                                        // split. This line says who brought the customer and what they are owed.
+                                        const r = details[b.id]!.referral!;
+                                        const sp = r.ledger?.split_snapshot;
+                                        return (
+                                          <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                            <span className="text-muted/80">Referral</span>
+                                            <span>By <b className="text-foreground">{r.affiliate_name}</b>
+                                              {r.own_session ? ' (own client)' : r.affiliate_type === 'mentor' ? ' (mentor)' : ' (influencer)'}</span>
+                                            {r.code && <span>Code <b className="font-mono text-foreground">{r.code}</b>{r.discount_pct ? ` (${r.discount_pct}% off)` : ''}</span>}
+                                            {!r.code && <span className="text-muted/70">via link</span>}
+                                            {sp && <span>Split M/I/P <b className="text-foreground">{sp.mentor_pct}/{sp.immigroov_pct}/{sp.promoter_pct}</b></span>}
+                                            {r.ledger && r.ledger.commission_amount != null && (
+                                              <span>Promoter <b className="text-foreground">{money(r.ledger.commission_amount, r.ledger.customer_currency ?? cc)}</b> <span className="text-muted/70">({r.ledger.status.replace('_', ' ')})</span></span>
+                                            )}
+                                            {!r.ledger && <span className="text-muted/70">commission on completion</span>}
+                                          </div>
+                                        );
+                                      })()}
+                                      {commError[b.id] && (
+                                        <p role="alert" className="text-red-600">{commError[b.id]}</p>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                                 {(details[b.id]?.payments?.length ?? 0) > 0 && (
                                   <div>
                                     <p className="font-medium text-foreground mb-1">Payments</p>

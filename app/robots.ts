@@ -26,6 +26,8 @@ export default function robots(): MetadataRoute.Robots {
         // IS the public become-a-mentor page. /mentor/register keeps its own Allow above, which wins
         // on longest match.
         '/api/', '/auth/', '/account/', '/admin', '/mentor/', '/session/', '/meeting/', '/preview/',
+        // Promoter links. Every crawl would look like a visit and inflate someone's click count.
+        '/r/',
         '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email',
       ],
     },

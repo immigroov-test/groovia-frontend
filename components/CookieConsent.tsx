@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Cookie, X } from 'lucide-react';
 import { detectCountry } from '../lib/geo';
+import { guestConsentSessionId } from '../lib/guestSession';
 import { FEATURES } from '../lib/features';
 import {
   CONSENT_VERSION, consentMode, readConsent, writeConsent,
@@ -44,7 +45,10 @@ export function CookieConsent() {
     void fetch('/api/consent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ kind: 'cookies', ...choice, policy_version: CONSENT_VERSION }),
+      // session_id: this call carries no auth header (a signed-in user's cookie choice
+      // is recorded the same as a guest's), so the Cookie Policy consent record below
+      // always needs a non-account identity to attach to.
+      body: JSON.stringify({ kind: 'cookies', ...choice, policy_version: CONSENT_VERSION, session_id: guestConsentSessionId() }),
     }).catch(() => {});
   }
 
@@ -101,8 +105,8 @@ export function CookieConsent() {
               {optOut
                 ? 'We use cookies to run the site. You can opt out of analytics at any time.'
                 : 'We need some cookies to sign you in and keep the site secure. Analytics are optional and off until you say yes.'}{' '}
-              <Link href="/privacy" target="_blank" className="text-brand-700 hover:underline">
-                Privacy Policy
+              <Link href="/privacy#cookie-policy" target="_blank" className="text-brand-700 hover:underline">
+                Cookie Policy
               </Link>
             </p>
           </div>
@@ -128,7 +132,7 @@ export function CookieConsent() {
             <label className="flex items-start justify-between gap-3 cursor-pointer">
               <div>
                 <p className="text-xs font-medium text-brand-900">Marketing</p>
-                <p className="text-xs text-muted">Not used today. Listed so you can decide in advance.</p>
+                <p className="text-xs text-muted">Remembering which referral link brought you here, so whoever referred you gets credit.</p>
               </div>
               <input type="checkbox" checked={marketing} onChange={(e) => setMarketing(e.target.checked)}
                 className="mt-0.5 shrink-0 accent-brand-700" />
@@ -142,7 +146,7 @@ export function CookieConsent() {
           {!open && (
             <button type="button" onClick={() => setOpen(true)}
               className="text-xs text-muted hover:text-brand-900 sm:mr-auto underline underline-offset-4">
-              Manage
+              Cookie settings
             </button>
           )}
           {open ? (

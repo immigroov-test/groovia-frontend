@@ -8,6 +8,8 @@
 // The regions differ in MODEL, not just wording, so this is not one banner with translated text:
 //   EU / EEA / UK   opt-in.  Nothing non-essential may load before the person agrees, and refusing
 //                            must be as easy as accepting (GDPR + ePrivacy).
+//   India           opt-in.  The DPDP Act 2023 is consent-first: notice, then agreement, before
+//                            personal data is processed. Treated the same as the EEA here.
 //   California      opt-out. No blocking banner; a standing "Do Not Sell or Share" control.
 //   elsewhere       generally nothing required, so we do not interrupt.
 
@@ -30,10 +32,15 @@ const KEY = 'groovia.consent';
 
 // EEA (EU 27 + Iceland, Liechtenstein, Norway) plus the UK and Switzerland. Switzerland's revFADP
 // is close enough in practice that treating it as opt-in is the safe side of the line.
+//
+// India is here too. The DPDP Act 2023 is consent-first, and India is a core market rather than
+// an edge case, so asking is the safe side of that line as well - the cost of showing the banner
+// where it was not strictly required is a banner, and the cost of the reverse is a breach.
 const OPT_IN_COUNTRIES = new Set([
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV',
   'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
   'IS', 'LI', 'NO', 'GB', 'CH',
+  'IN',
 ]);
 
 // Opt-out regimes. State-level in the US, and we only have the country from IP geo, so US is treated

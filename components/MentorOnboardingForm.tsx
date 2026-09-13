@@ -57,10 +57,13 @@ const DEFAULT_DISCLAIMER =
 
 interface Props {
   defaultName?: string;
+  defaultPhone?: string;
+  defaultCountry?: string;     // ISO-2, from the customer profile when one exists
+  defaultTimezone?: string;
   userId?: string;
 }
 
-export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
+export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defaultCountry = '', defaultTimezone = '', userId }: Props) {
   const router = useRouter();
 
   // Step 1 - details
@@ -68,13 +71,14 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [headlineEdited, setHeadlineEdited] = useState(false);   // true once the mentor types their own headline
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(defaultPhone);
   const [bio, setBio] = useState('');
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState(defaultCountry);
   // Other countries the mentor can advise on (besides their current one), up to 2, each with years lived there.
   const [servedCountries, setServedCountries] = useState<{ code: string; years: string }[]>([]);
   const [city, setCity] = useState('');
-  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  // The profile's own zone wins, unless it is the column default, which says nothing.
+  const [timezone, setTimezone] = useState(defaultTimezone && defaultTimezone !== 'UTC' ? defaultTimezone : Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [languages, setLanguages] = useState<string[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [publicNotes, setPublicNotes] = useState(DEFAULT_DISCLAIMER);
@@ -97,7 +101,11 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [minNotice, setMinNotice] = useState(2);
   const [cancelHours, setCancelHours] = useState(24);
   const [overrides, setOverrides] = useState<DateOverride[]>([]);
-  const [agreedMentor, setAgreedMentor] = useState(false);
+  // Two independent checkboxes per the Consent Flow Spec: the commercial bundle, and
+  // the Data Processing Addendum - regulators expect the DPA's controller/processor
+  // consent to be distinct from the general agreement, never folded into one tick.
+  const [agreedMentorBundle, setAgreedMentorBundle] = useState(false);
+  const [agreedMentorDpa, setAgreedMentorDpa] = useState(false);
   const [bank, setBank] = useState<BankValue>(emptyBank());   // payout details (optional at signup)
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -207,13 +215,14 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
     : (!bank.country_code && !bank.account_holder_name.trim()
         ? 'Add your payout bank details.'
         : bankProblems.join(' '));
-  const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentor;
+  const canSubmit = !availError && !sessionError && !rulesError && !bankError && agreedMentorBundle && agreedMentorDpa;
   const blockers: { section: string; msg: string }[] = [];
   if (availError) blockers.push({ section: 'sec-availability', msg: availError });
   if (sessionError) blockers.push({ section: 'sec-services', msg: sessionError });
   if (rulesError) blockers.push({ section: 'sec-rules', msg: rulesError });
   if (bankError) blockers.push({ section: 'sec-bank', msg: bankError });
-  if (!agreedMentor) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Agreement.' });
+  if (!agreedMentorBundle) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Agreement, Payment Terms, and Code of Conduct.' });
+  if (!agreedMentorDpa) blockers.push({ section: 'sec-terms', msg: 'Accept the Mentor Data Processing Addendum.' });
 
   // Send them to the section that needs work and move focus there, so keyboard and screen-reader
   // users end up where a sighted user's eye goes.
@@ -288,7 +297,8 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
           years_professional_experience: parseInt(yearsProfExp, 10),
           professional_domains: allDomains,
           specializations,
-          agreed_to_mentor_terms: true,
+          agreed_to_mentor_bundle: true,
+          agreed_to_mentor_dpa: true,
           hourly_rate: parseFloat(hourlyRate) || null,
           currency,
           currency_rates: currencyRates,
@@ -639,6 +649,7 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
               baseRate={hourlyRate} onBaseRate={setHourlyRate}
               rates={currencyRates} onRates={setCurrencyRates}
               smartPricing={smartPricing} onSmartPricing={setSmartPricing}
+              preview="open"
             />
           </CardBody>
         </Card>
@@ -719,13 +730,24 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
         <Card id="sec-terms">
           <CardBody className="pt-6 flex flex-col gap-4">
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
-              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentor}
-                onChange={(e) => setAgreedMentor(e.target.checked)} />
+              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorBundle}
+                onChange={(e) => setAgreedMentorBundle(e.target.checked)} />
               <span>
                 I agree to the{' '}
-                <Link href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Terms of Service</Link>{' '}
-                and{' '}
-                <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Privacy Policy</Link>.
+                <Link href="/privacy#mentor-agreement" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Agreement</Link>,{' '}
+                <Link href="/privacy#mentor-commission-payout" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Payment Terms</Link>, and{' '}
+                <Link href="/privacy#mentor-code-of-conduct" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Code of Conduct</Link>.
+              </span>
+            </label>
+            {/* Separate from the bundle above, per spec: the DPA is a distinct legal
+                instrument (controller/processor relationship) and regulators expect
+                distinct consent, not folded into the general agreement. */}
+            <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
+              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorDpa}
+                onChange={(e) => setAgreedMentorDpa(e.target.checked)} />
+              <span>
+                I have read and agree to the{' '}
+                <Link href="/privacy#mentor-data-processing" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Mentor Data Processing Addendum</Link>.
               </span>
             </label>
 

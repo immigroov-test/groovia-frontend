@@ -12,14 +12,15 @@ import { countryLabel, flagEmoji } from '../lib/countries';
 import { createClient } from '../lib/supabase/client';
 import { FEATURES } from '../lib/features';
 import { LS_KEYS, clearLocalChat } from '../lib/chatStorage';
+import { apiFetch } from '../lib/api';
 import { cn } from '../lib/utils';
 import { LandingIntro } from './LandingIntro';
+import { SiteFooter } from './SiteFooter';
 import { RateLimitModal } from './RateLimitModal';
 import { ReportInfoModal } from './ReportInfoModal';
 import { ResumeConsentModal } from './ResumeConsentModal';
 import { ThinkingIndicator } from './ThinkingIndicator';
 import { AiAvatar } from './AiAvatar';
-import { SiteFooter } from './SiteFooter';
 
 // Standalone (not in LS_KEYS): a Groq rate-limit block is server-side reality, so it must
 // survive "clear chat" - which wipes every LS_KEYS entry.
@@ -779,7 +780,13 @@ export default function ChatInterface({ authed }: Props) {
   const composerVisible = qnaActive || pendingQna || guestGate;
 
   return (
-    <div className="flex flex-col h-full relative">
+    // h-full alone is not safe here. The containing block is PageTransition's motion
+    // wrapper, which is display:contents and carries inline opacity/transform from the
+    // route animation; the moment that wrapper generates a box its height is auto, and a
+    // percentage height against auto resolves to ZERO - the whole page renders blank with
+    // the footer sitting under the nav. The viewport-based minimum cannot collapse, so it
+    // holds the page up whichever way the wrapper resolves. 4rem is the layout's pt-16.
+    <div className="flex flex-col h-full min-h-[calc(100dvh-4rem)] relative">
       {/* Landmarks - fixed to viewport bottom, always visible regardless of chat state.
           z-index 0 puts it above the body background but below the z-1/z-10 content layers. */}
       <div
@@ -1042,6 +1049,18 @@ export default function ChatInterface({ authed }: Props) {
               to disclaim and just adds a line of grey text under the intent buttons. */}
           {composerVisible && (
             <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
+          )}
+          {/* AI Disclosure Notice (EU AI Act Art. 50): a persistent label at the point of AI
+              interaction, distinct from the caveat above - that one is about the content
+              ("not legal advice"); this discloses that Groovia is an AI system at all. Shown
+              wherever the composer is, not only in the footer. */}
+          {composerVisible && (
+            <p className="text-center text-[11px] text-muted/80 mt-1 px-4">
+              You&apos;re chatting with Groovia, an AI assistant.{' '}
+              <Link href="/privacy#ai-disclosure-notice" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                AI Disclosure Notice
+              </Link>
+            </p>
           )}
         </div>
       </div>

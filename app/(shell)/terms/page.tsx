@@ -1,26 +1,18 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { LegalDoc } from '../../../components/LegalDoc';
+import { permanentRedirect } from 'next/navigation';
 
-export const metadata = { title: 'Terms of Service - Immigroov' };
-
-function read(name: string): string {
-  try {
-    return readFileSync(join(process.cwd(), 'content', 'legal', name), 'utf8');
-  } catch {
-    return '_Content coming soon._';
-  }
-}
-
+// There is one public legal page now, and it lives at /privacy. This route stays alive
+// because /terms is linked from older emails, the sitemap and pages we do not control -
+// links that would otherwise 404.
+//
+// It redirects to the Website Terms of Use SECTION, not to the top of the page. /privacy
+// renders fourteen contracts as collapsed sections, so landing a reader at the top means
+// handing them a list of titles and asking them to guess which one they came for. The
+// fragment survives a 308 (it is a Location header like any other), and PublicLegalPage
+// opens the section the hash names.
+//
+// permanentRedirect (308) rather than a soft redirect so search engines transfer the
+// indexing /terms has accumulated to /privacy instead of treating them as rivals for
+// the same content.
 export default function TermsPage() {
-  return (
-    <LegalDoc
-      title="Terms of Service"
-      updated="Last updated: 01 Aug 2025"
-      groups={[
-        { label: 'For Mentors', content: read('terms-mentor.md') },
-        { label: 'For Customers', content: read('terms-customer.md') },
-      ]}
-    />
-  );
+  permanentRedirect('/privacy#website-terms-of-use');
 }

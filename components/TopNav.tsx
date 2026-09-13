@@ -17,18 +17,14 @@ interface Props {
   role?: string | null;
   name?: string | null;
   photoUrl?: string | null;
+  /** Mentor has not finished first-login setup (rate + sessions). */
+  onboarding?: boolean;
+  mentorStatus?: string | null;
 }
 
 // Fixed top nav: floating logo (no background) on the left, a centered links pill,
 // and auth on the right. Always visible. Mobile uses a hamburger menu.
-// Where a signed-in customer goes when they ask to become a mentor: the contact form, with the
-// topic and an opening line filled in. Support converts the account, because one email cannot be
-// both a customer and a mentor today.
-const JOIN_AS_MENTOR_CONTACT =
-  `/contact?topic=${encodeURIComponent('Join as a Mentor')}`
-  + `&message=${encodeURIComponent('I want to join as a mentor.')}`;
-
-export function TopNav({ authed, email, role, name, photoUrl }: Props) {
+export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentorStatus = null }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -75,20 +71,30 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
     router.push(`${pathname}?auth=open&mode=login`);
   }
 
-  const nav = [
+  // A mentor mid-setup gets ONE destination. The rate and session steps are what make a
+  // profile bookable, and leaving them half-done produced a mentor who is listed but cannot
+  // be priced. Offering Home, About and Mentors during that flow invites exactly the detour
+  // that leaves it half-done, so the nav shrinks to the hub until setup is finished.
+  // /mentor and /home both re-check this server-side; this stops the click, not the route.
+  const nav = onboarding && role === 'mentor' ? [
+    { href: '/mentor', label: UI_CONTENT.sidebar.mentorHub, gated: false },
+  ] : [
     { href: '/home', label: UI_CONTENT.sidebar.chat, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
-    { href: '/account', label: UI_CONTENT.sidebar.account, gated: true },
-    // BUG-067: decide the destination HERE, from the role we already hold, rather than sending
-    // everyone to /mentor and letting it bounce. The old path was a client-side navigation through
-    // two server redirects (/mentor -> /mentor/onboarding -> /contact), and a redirect chain is
-    // both fragile and invisible to the user. A signed-in customer now goes straight to the
-    // prefilled contact form in one hop. The server guards on those pages stay as a safety net for
-    // anyone typing the URL directly, but the normal click no longer relies on them.
+    { href: '/webinars', label: 'Webinars', gated: false },
+    // BUG-083: hidden for mentors. Its Profile tab repeats what they edit in the mentor hub, and its
+    // Sessions tab is scoped to role="mentee", which is empty for someone who does not book sessions.
+    // Two tabs that either duplicate or show nothing read as a broken page, not a spare one.
+    ...(role !== 'mentor' ? [{ href: '/account', label: UI_CONTENT.sidebar.account, gated: true }] : []),
+    // Three states, decided here from what the layout already knows: an approved mentor has a
+    // hub; a customer with an application in flight sees its status; anyone else is offered the
+    // form. A signed-in customer goes straight to the prefilled form, not to a contact page.
     ...(role !== 'admin' ? [{
-      href: role === 'mentor' ? '/mentor' : authed ? JOIN_AS_MENTOR_CONTACT : '/mentor',
-      label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub : UI_CONTENT.sidebar.mentorPortal,
+      href: role === 'mentor' || mentorStatus ? '/mentor' : authed ? '/mentor/onboarding' : '/mentor',
+      label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub
+        : mentorStatus ? UI_CONTENT.sidebar.mentorApplication
+          : UI_CONTENT.sidebar.mentorPortal,
       gated: false,
     }] : []),
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),
@@ -214,10 +220,13 @@ export function TopNav({ authed, email, role, name, photoUrl }: Props) {
       {menuOpen && (
         <div ref={menuPanelRef} className="lg:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
           {/* Signed-in profile header: photo (or an "upload photo" placeholder), name, email.
-              The whole row and the placeholder lead to the account page. */}
+              The whole row and the placeholder lead to wherever that person actually edits it.
+              BUG-083: for a mentor that is their own profile form, NOT /account - hiding the
+              Account item from the nav above while this row still linked to it meant a mentor on a
+              phone tapped their avatar and landed on the redundant page anyway. */}
           {authed && (
             <Link
-              href="/account"
+              href={role === 'mentor' ? '/mentor/profile' : '/account'}
               onClick={() => setMenuOpen(false)}
               className="flex items-center gap-3 px-2 py-2 mb-1 rounded-xl hover:bg-brand-50/60"
             >

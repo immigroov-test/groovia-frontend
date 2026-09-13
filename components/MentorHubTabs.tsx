@@ -10,12 +10,14 @@ import { MentorPricingEditor } from './MentorPricingEditor';
 import { MentorBankCard } from './MentorBankCard';
 import { MentorEarnings } from './MentorEarnings';
 import { MigrationWelcomeModal } from './MigrationWelcomeModal';
+import { MentorProfileClosure, MentorProfileClosedCard } from './MentorProfileClosure';
 import { PastSessions, type LegacySession } from './PastSessions';
 import { MENTOR_HUB } from '../lib/content';
 import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
 import { cn } from '../lib/utils';
+import { MentorWebinars } from './MentorWebinars';
 
 const COUNTRY_MAP = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.name]));
 const LANGUAGE_MAP = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.name]));
@@ -23,7 +25,10 @@ const LANGUAGE_MAP = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.name]));
 export interface HubMentor {
   slug: string;
   display_name: string;
-  status: 'pending_review' | 'approved' | 'rejected' | 'suspended' | 'changes_requested';
+  status: 'pending_review' | 'approved' | 'rejected' | 'suspended' | 'changes_requested'
+        | 'deactivated' | 'deletion_pending';
+  /** FEAT-020: set while a self-requested deletion is inside its grace window. */
+  purge_due_at?: string | null;
   rejection_reason?: string | null;
   pending_submitted_at?: string | null;
   headline?: string | null;
@@ -50,16 +55,33 @@ type TabId = 'profile' | 'services' | 'availability' | 'bookings' | 'payments' |
 
 export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMentor; legacySessions?: LegacySession[] }) {
   const approved = mentor.status === 'approved';
+  // Before approval this is an application, not a mentor account. What the reviewer assesses
+  // stays editable; everything a working mentor uses unlocks on approval.
   const tabs: { id: TabId; label: string }[] = [
     { id: 'profile', label: 'Profile' },
     { id: 'services', label: 'Services' },
     { id: 'availability', label: 'Availability' },
-    { id: 'bookings', label: 'Bookings' },
-    { id: 'payments', label: 'Payments' },
-    { id: 'referrals', label: 'Referrals' },
-    { id: 'webinars', label: 'Webinars' },
+    ...(approved ? [
+      { id: 'bookings' as TabId, label: 'Bookings' },
+      { id: 'payments' as TabId, label: 'Payments' },
+      { id: 'referrals' as TabId, label: 'Referrals' },
+      { id: 'webinars' as TabId, label: 'Webinars' },
+    ] : []),
   ];
   const [tab, setTab] = useState<TabId>('profile');
+
+  // BUG-151: every input the server re-prices sessions from, in one value. hourly_rate, currency and
+  // currency_rates each trigger a full reprice; smart_pricing re-syncs is_ppp across the services.
+  // The Services tab lists the STORED prices, so it has to reload for any of them - keying that on
+  // the base rate alone (all BUG-150 fixed) left a lone added-currency or smart-pricing change
+  // showing the old numbers. `mentor` comes from the server component, so this changes as soon as
+  // the pricing editor calls router.refresh().
+  const pricingKey = JSON.stringify([
+    mentor.hourly_rate ?? null,
+    mentor.currency ?? null,
+    mentor.smart_pricing ?? null,
+    (mentor.currency_rates ?? []).map((r) => [r.currency, r.hourly_rate]),
+  ]);
 
   // Suspension is checked FIRST, before anything else. It used to sit below the onboarding gate, so a
   // suspended mentor who had not finished first-login was told their account was suspended and asked
@@ -72,6 +94,13 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
         <p className="text-sm text-muted mt-1">Your mentor account is currently suspended. Please contact support.</p>
       </CardBody></Card>
     );
+  }
+
+  // FEAT-020: a profile the mentor closed themselves. Checked separately from 'suspended' - these
+  // are reversible by the mentor, and routing them through the suspended screen (which is what
+  // deactivating used to do) left them staring at "contact support" with no way back.
+  if (mentor.status === 'deactivated' || mentor.status === 'deletion_pending') {
+    return <MentorProfileClosedCard status={mentor.status} purgeDueAt={mentor.purge_due_at} />;
   }
 
   // Migrated mentors arrive with no per-hour rate. The hub stays locked behind a mandatory
@@ -111,7 +140,8 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
             <section className="flex flex-col gap-4">
               <h2 className="text-base font-semibold text-foreground">Session types</h2>
               <p className="text-sm text-muted -mt-2">The sessions a mentee can book with you. Prices come from your base rate on the Profile tab.</p>
-              <ServicesManager hourlyRate={mentor.hourly_rate ?? undefined} currency={mentor.currency ?? undefined} />
+              <ServicesManager hourlyRate={mentor.hourly_rate ?? undefined} currency={mentor.currency ?? undefined}
+                pricingKey={pricingKey} />
             </section>
           )}
           {tab === 'availability' && (
@@ -140,7 +170,7 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
           {tab === 'referrals' && (
             <UnderDevelopment title="Referrals" note={MENTOR_HUB.referralsSoon} />
           )}
-          {tab === 'webinars' && <UnderDevelopment title="Webinars" note={MENTOR_HUB.webinarsSoon} />}
+          {tab === 'webinars' && (approved ? <MentorWebinars /> : <Card><CardBody className="pt-6"><p className="text-sm text-muted">Webinar requests become available after your mentor profile is approved.</p></CardBody></Card>)}
         </div>
       </div>
     </div>
@@ -298,6 +328,11 @@ function ProfileTab({ mentor }: { mentor: HubMentor }) {
           )}
         </CardBody>
       </Card>
+
+      {/* FEAT-020: last on the tab, so the destructive options are nowhere near everyday editing.
+          Only offered on a live profile - the other states either cannot be closed (still under
+          review) or are already closed and show the restore card instead of this whole hub. */}
+      {approved && <MentorProfileClosure />}
     </div>
   );
 }

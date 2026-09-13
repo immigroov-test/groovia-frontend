@@ -16,6 +16,7 @@ import { ExpandableRichText } from './ui/ExpandableRichText';
 import { isRichTextEmpty } from '../lib/sanitizeHtml';
 import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
+import { referralToken } from '../lib/referral';
 import { detectCountry, pricingCountry } from '../lib/geo';
 import { tzShort, tzCity, tzOffset, userDisplayTz, mentorDisplayTz, countryTimezone } from '../lib/timezone';
 import { TimezoneSelect } from './TimezoneSelect';
@@ -808,6 +809,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
           timezone:    userTz,
           idempotency_key: idemKey,
           referral_code: referralCode.trim() || undefined,
+          referral_token: referralToken(),
           answers:     questions.map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' })),
           accepted_terms: acceptedTerms,
         }),
@@ -841,6 +843,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         serviceTitle: selectedService.title,
         timezone: userTz,
         referralCode: referralCode.trim() || undefined,
+        referralToken: referralToken(),
         answers: questions
           .map(q => ({ question_id: q.id, answer_text: answers[q.id] ?? '' }))
           .filter(a => a.answer_text),

@@ -41,7 +41,15 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
     && money(price.original, price.currency) !== money(price.discounted, price.currency);
 
   return (
-    <Card className="h-full flex flex-col hover:border-brand-300 hover:-translate-y-0.5 transition-transform">
+    <Card className="group relative h-full flex flex-col hover:border-brand-300 hover:-translate-y-0.5 transition-transform">
+      {/* FEAT-036: the whole card opens the mentor's profile, not just Book. The link is STRETCHED
+          over the card rather than wrapped around it - wrapping would put the Book anchor inside
+          another anchor, which is invalid - and Book itself becomes presentational, so the card
+          still exposes exactly one link instead of two pointing at the same profile. Book keeps its
+          hover colour via group-hover, since the pointer is over this overlay and never over Book. */}
+      <Link href={`/mentors/${mentor.slug}`}
+        aria-label={`View ${mentor.display_name}'s profile and book a session`}
+        className="absolute inset-0 z-10 rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2" />
       <CardBody className="pt-6 flex flex-col gap-4 h-full">
         {/* Identity: photo · name / title / rating */}
         <div className="flex items-start gap-3">
@@ -135,10 +143,10 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
               </span>
             )}
           </div>
-          <Link href={`/mentors/${mentor.slug}`}
-            className="inline-flex items-center gap-1 h-9 px-4 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 transition-colors shrink-0">
+          <span aria-hidden="true"
+            className="inline-flex items-center gap-1 h-9 px-4 rounded-lg bg-accent-500 text-white text-sm font-semibold group-hover:bg-accent-600 transition-colors shrink-0">
             Book →
-          </Link>
+          </span>
         </div>
       </CardBody>
     </Card>

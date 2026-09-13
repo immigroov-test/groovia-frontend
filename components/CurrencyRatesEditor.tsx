@@ -59,7 +59,11 @@ export function CurrencyRatesEditor({
       {/* Rate on the left, live market preview on the right, so the mentor sets a number and sees what
           it becomes elsewhere without scrolling between the two. Stacks on phones, preview underneath.
           Currency and rate sit in one column so they are necessarily the same width. */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] gap-4 lg:gap-6 items-start">
+      {/* BUG-155: the rate column was 18rem, which left the preview beside it ~264px on the
+          onboarding page (max-w-2xl) - too narrow for its tiles at any column count. 15rem still
+          holds the select and the rate input comfortably and takes the preview to 312px, which fits
+          two tiles that show every currency name and price in full. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-4 lg:gap-6 items-start">
         <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base currency</label>
@@ -81,9 +85,13 @@ export function CurrencyRatesEditor({
             Base rate is too low. Enter at least {mins[primaryCurrency.toUpperCase()]} {primaryCurrency} per hour.
           </p>
         )}
+        {/* BUG-063: this read "INRcustomers pay it directly" - JSX trims per-line whitespace on a
+            text chunk that spans a line break, so the space after {primaryCurrency} was dropped.
+            Keeping the currency and the words either side of it on ONE line is what fixes it.
+            The wording was also wrong: prices are prorated by length, not "split". */}
         <p className="text-xs text-muted leading-relaxed">
-          Your <span className="font-medium text-foreground">base rate</span>. {primaryCurrency} customers pay it
-          directly; everyone else&apos;s price is worked out from it, split by session length.
+          This is your <span className="font-medium text-foreground">base hourly rate</span>. Customers paying in {primaryCurrency} are charged it directly, and everyone else sees the equivalent in their own currency.
+          Each session is priced from this rate and how long it runs, so a 30-minute session costs half.
         </p>
         </div>
 

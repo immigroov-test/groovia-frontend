@@ -9,6 +9,7 @@ import { createClient } from '../lib/supabase/client';
 import { startPaidCheckout } from '../lib/checkout';
 import { mentorDisplayTz, tzShort } from '../lib/timezone';
 import { hoursText } from '../lib/utils';
+import { BookingEventLog } from './BookingEventLog';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 import { ConfirmDialog } from './ui/ConfirmDialog';
@@ -38,6 +39,8 @@ interface Detail {
   unpaid_hold: boolean;
   reschedule_count: number;
   no_show_by: string | null;
+  cancelled_by?: 'user' | 'mentor' | 'system' | null;
+  cancel_reason?: string | null;
   deadline_state: 'free' | 'late' | 'buffer' | null;
   cancel_notice_hours?: number | null;   // this mentor's cancellation/reschedule notice (BUG-119)
   buffer_hours?: number | null;          // hard cut-off before the session
@@ -108,7 +111,13 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
-export function SessionDetail({ bookingId }: { bookingId: string }) {
+export function SessionDetail({ bookingId, accessToken }: {
+  bookingId: string;
+  /** Signed token from the confirmation email. Present for guests, absent for signed-in users. */
+  accessToken?: string;
+}) {
+  // Appended to every backend call so a guest is authorised on this one booking.
+  const tq = accessToken ? `?t=${encodeURIComponent(accessToken)}` : '';
   const router = useRouter();   // BUG-121: no-show actions navigate, not just message
   const [d, setD] = useState<Detail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -141,12 +150,12 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
   const load = useCallback(async () => {
     setLoadError(null);
     try {
-      const res = await authedFetch(`/api/booking/${bookingId}/detail`);
+      const res = await authedFetch(`/api/booking/${bookingId}/detail${tq}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setLoadError(data.detail || 'Could not load this session.'); return; }
       setD(data);
     } catch { setLoadError('Could not load this session.'); }
-  }, [authedFetch, bookingId]);
+  }, [authedFetch, bookingId, tq]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -180,9 +189,9 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         slotTime: d.slot_time,
         email, phone,
         serviceTitle: d.service_title,
-        // Completing payment on a booking that already exists (a signed-in retry of an unpaid
-        // hold, not a fresh checkout decision) - the Terms were agreed to when this booking was
-        // first created, and the consent record from that moment still stands.
+        // Completing payment on a booking that already exists (this is a signed-in retry
+        // of an unpaid hold, not a fresh checkout decision) - the Terms were already
+        // agreed to when this booking was first created.
         acceptedTerms: true,
       },
       {
@@ -264,6 +273,27 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
           {STATUS_LABEL[d.status] ?? d.status.replace('_', ' ')}
         </Badge>
       </div>
+
+      {/* Who cancelled, and why. "Your session was cancelled" on its own sends people to
+          support to ask the one question the page already knows the answer to. */}
+      {d.status === 'cancelled' && (
+        <div className="mt-5 rounded-2xl border border-[--color-border] bg-card p-4">
+          <p className="text-sm text-foreground">
+            {d.cancelled_by === 'system'
+              ? 'Cancelled automatically because payment was not completed in time.'
+              : d.cancelled_by
+                ? <>Cancelled by <strong>{
+                    d.cancelled_by === 'mentor'
+                      ? (isMentor ? 'you' : d.mentor_name || 'the mentor')
+                      : (isCandidate ? 'you' : d.candidate_name || 'the attendee')
+                  }</strong>.</>
+                : 'This session was cancelled.'}
+          </p>
+          {d.cancel_reason && (
+            <p className="mt-1.5 text-sm text-muted">Reason: {d.cancel_reason}</p>
+          )}
+        </div>
+      )}
 
       {/* Payment-pending banner */}
       {d.unpaid_hold && (
@@ -399,7 +429,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
             starts, so a late joiner can still get in mid-session. */}
         {(isCandidate || isMentor) && d.paid && (!d.closes_at || new Date(d.closes_at).getTime() > Date.now()) && (
           <div className="flex flex-col gap-1.5">
-            <Link href={`/meeting/${d.id}`}>
+            <Link href={`/meeting/${d.id}${tq}`}>
               <Button variant="primary" className="w-full"><Video className="h-4 w-4" /> Join meeting</Button>
             </Link>
             {!d.join_open && d.opens_at && (
@@ -675,7 +705,7 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
               <h3 className="mt-4 text-lg font-semibold text-brand-900">{title}</h3>
               <p className="mt-2 text-sm text-muted leading-relaxed">
                 {notice}{' '}
-                <Link href="/terms" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
+                <Link href="/privacy#refund-cancellation-policy" target="_blank" className="underline hover:text-foreground">Refund policy</Link>
               </p>
               {/* BUG-123: a reason is required from whoever cancels. It's sent to the other party and
                   kept for any refund review, so the confirm button stays disabled until it's given. */}
@@ -708,6 +738,13 @@ export function SessionDetail({ bookingId }: { bookingId: string }) {
         );
       })()}
 
+      <BookingEventLog
+        bookingId={d.id}
+        token={accessToken}
+        mentorName={d.mentor_name}
+        candidateName={d.candidate_name}
+        viewerIs={d.role}
+      />
     </div>
   );
 }

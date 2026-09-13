@@ -44,10 +44,20 @@ export function AuthCallbackClient({
       // user who was actually signed in. Only fail when there is genuinely no session.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) { setFailed(true); return; }
+      // The consent checkbox was ticked in the modal before the redirect to Google, and that
+      // component is long gone by now. The marker it left is how this agreement gets a row
+      // behind it - without it, signing in with Google would be the one route in that records
+      // no consent at all. Cleared either way, so a later visit cannot replay it.
+      let entryConsent = false;
+      try {
+        entryConsent = sessionStorage.getItem('ig_entry_consent') === '1';
+        sessionStorage.removeItem('ig_entry_consent');
+      } catch { /* private mode */ }
       try {
         await fetch('/api/auth/sync', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${session.access_token}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify(entryConsent ? { accepted_terms: true, consent_context: 'signin' } : {}),
           signal: AbortSignal.timeout(4000),
         });
       } catch { /* best-effort, never blocks sign-in */ }

@@ -77,7 +77,18 @@ async function apiFetch(path: string, method = 'GET', body?: object) {
 // Prices are ALWAYS derived from the mentor's base hourly rate (point 4) - never hand-typed here - so
 // they stay in sync with the base rate everywhere (customer, admin). hourlyRate + currency come from
 // the mentor's Profile-tab pricing.
-export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?: number; currency?: string }) {
+export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
+  hourlyRate?: number;
+  currency?: string;
+  /**
+   * BUG-151: every pricing input the SERVER re-prices sessions from, folded into one value. The
+   * base rate alone is not enough - hourly_rate, currency AND currency_rates each trigger a
+   * reprice, and smart_pricing re-syncs is_ppp across the mentor's services - so keying the reload
+   * on the rate only (BUG-150) left an added currency or a smart-pricing flip showing stale prices.
+   * Optional: onboarding has no mentor row yet and falls back to the rate + currency it knows.
+   */
+  pricingKey?: string;
+}) {
   const [services, setServices]     = useState<Service[]>([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
@@ -118,13 +129,25 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
 
   const hasRate = !!hourlyRate && hourlyRate > 0;
 
-  async function load() {
-    setLoading(true); setError(null);
+  async function load({ blocking = true }: { blocking?: boolean } = {}) {
+    if (blocking) setLoading(true);
+    setError(null);
     try { setServices(await apiFetch('/api/mentor/services')); }
     catch (e) { setError(e instanceof Error ? e.message : 'Failed to load services'); }
-    finally { setLoading(false); }
+    finally { if (blocking) setLoading(false); }
   }
-  useEffect(() => { load(); }, []);
+  // BUG-150 / BUG-151: reload whenever the mentor's pricing changes, not only on mount. Saving on
+  // the Profile tab re-prices every stored session server-side, and the prices listed here are the
+  // STORED ones (svc.set_price / svc.currency_prices) - not something derived from the props - so a
+  // mount-only load left the whole list showing the old numbers until a browser refresh. The
+  // refetch is non-blocking: swapping the list for a full-tab spinner every time the mentor edits
+  // their pricing would be a worse flicker than the stale numbers it fixes.
+  const priceInputs = pricingKey ?? `${hourlyRate ?? ''}|${currency}`;
+  const firstLoad = useRef(true);
+  useEffect(() => {
+    load({ blocking: firstLoad.current });
+    firstLoad.current = false;
+  }, [priceInputs]);
 
   async function loadQuestions(serviceId: string) {
     try {
@@ -201,7 +224,9 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
         category: draft.category || null,
         set_price: derivedPrice(draft.duration, draft.free),
         is_active: true,
-        is_ppp: false,
+        // is_ppp is NOT sent: fair pricing belongs to the mentor, not to one session. This used to
+        // post `false` regardless, so a mentor with fair pricing on got new sessions that quietly
+        // opted out of it. The server derives it from their smart_pricing setting.
         tags: draft.tags,
       });
       await load();
@@ -298,13 +323,6 @@ export function ServicesManager({ hourlyRate, currency = 'USD' }: { hourlyRate?:
       {/* ── Add another session (picker) - ABOVE the list (BUG-070). Tapping a tag opens an
              editable draft below (BUG-137) - nothing is created until it's confirmed. ─────────── */}
       <div className="flex flex-col gap-4">
-        <div>
-          <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">
-            {services.length > 0 ? 'Add another session' : 'Add your sessions'}
-          </h3>
-          <p className="text-xs text-muted mt-0.5">Tap one to review it before adding. Prices come from your base rate, by length.</p>
-        </div>
-
         {(
           <div className="flex flex-col gap-4">
             {/* Free intro call - its own category, only one allowed (BUG-059). */}

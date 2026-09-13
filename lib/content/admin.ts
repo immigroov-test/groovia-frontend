@@ -31,6 +31,7 @@ export const ADMIN = {
     reviews: "Ratings and written reviews. Hiding one removes it from the mentor's public rating.",
     activity: 'Admin-only log of every booking, payment, payout and pricing change. Filter by booking id to follow one end to end.',
     strikes: 'Mentors with accrued no-show strikes. Reset if a dispute is resolved in their favour.',
+    legal: 'The 14 legal documents, their audience and version history. Saving a draft changes nothing for users; publishing creates a new official version and asks affected users to review it.',
     pricing: "Platform fee and tax are added on top of the mentor's price, by customer country (DEFAULT is the fallback). Mentor commission is separate and taken out of their price.",
   },
 } as const;

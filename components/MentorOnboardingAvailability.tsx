@@ -85,7 +85,7 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
         />
       </Section>
 
-      <Section title="Your sessions">
+      <Section title="Add sessions">
         <ServicesManager hourlyRate={savedRate} currency={savedCurrency} />
       </Section>
 

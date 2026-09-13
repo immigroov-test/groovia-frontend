@@ -14,6 +14,7 @@ export const config = {
     '/home',
     '/account/:path*',
     '/mentor/:path*',
+    '/webinars/:path*',
     '/login',
     '/signup',
     '/verify-email',

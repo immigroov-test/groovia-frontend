@@ -6,33 +6,25 @@ import { PageLoadError } from '../../../../components/PageLoadError';
 
 export const metadata = { title: 'Mentor Onboarding - Immigroov' };
 
-// BUG-067: an existing customer account can't also become a mentor (one email is one or the other), so
-// instead of dropping them on a signup form that can't work for them, send them to Contact with the
-// "Join as a Mentor" topic prefilled and let support convert the account. `new=1` marks the genuine
-// path: the mentor signup modal sets it right after the account is created.
-const JOIN_AS_MENTOR_CONTACT =
-  `/contact?topic=${encodeURIComponent('Join as a Mentor')}`
-  + `&message=${encodeURIComponent('I want to join as a mentor.')}`;
+// One application form, two ways in. A newcomer signs up first and lands here; an existing
+// customer opens it from the nav and finds it prefilled. Either way they stay a customer until an
+// admin approves the application: the role follows approval, not the form.
+interface Profile {
+  full_name?: string | null; display_name?: string | null; phone?: string | null;
+  country_code?: string | null; timezone?: string | null;
+}
 
-export default async function MentorOnboardingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ new?: string }>;
-}) {
+export default async function MentorOnboardingPage() {
   const { user, token } = await serverAuth();
-  const { new: isFreshSignup } = await searchParams;
 
   if (!user) {
     redirect('/mentor?auth=open&role=mentor');
   }
 
   // A user with no token means the access token in the cookie has expired: serverGet answers 401
-  // without reaching the backend, and this page used to read that as "customer account" and bounce a
-  // legitimate new mentor to the Contact form. Carry new=1 through the round trip so a fresh signup
-  // does not lose its marker and get misclassified on the way back.
+  // without reaching the backend. Sending them through auth fixes it.
   if (!token) {
-    const back = isFreshSignup ? '/mentor/onboarding?new=1' : '/mentor/onboarding';
-    redirect(`/login?next=${encodeURIComponent(back)}`);
+    redirect(`/login?next=${encodeURIComponent('/mentor/onboarding')}`);
   }
 
   // Extra retries here (BUG-067): "join as a mentor" is a common first hit after idle, so it's the
@@ -43,26 +35,32 @@ export default async function MentorOnboardingPage({
   if (r.ok) {
     redirect('/mentor');
   }
-  // ONLY a 404 means "signed in, definitely not a mentor". Everything else (401 from a missing or
-  // expired token, 5xx, timeout) says nothing about whether this is a customer account, and treating
-  // it as one sent a legitimate new mentor to the contact form over a transient failure. Testing for
-  // "not 404" instead of "is 404" is what made a session problem look like a customer account.
+  // ONLY a 404 means "signed in, no application yet". Everything else (401 from a missing or
+  // expired token, 5xx, timeout) is a transient failure, not a fact about the account.
   if (r.status !== 404) {
     return <PageLoadError retryHref="/mentor/onboarding" status={r.status}
       supportEmail="support@immigroov.com" />;
   }
-  // Signed in, no mentor profile, and not arriving from the mentor signup: this is a customer account.
-  if (!isFreshSignup) {
-    redirect(JOIN_AS_MENTOR_CONTACT);
-  }
 
-  const defaultName: string = user.user_metadata?.full_name
+  // Prefill from what the account already holds. Best-effort: a failed read just means an empty
+  // form, which is what a brand-new signup gets anyway.
+  const me = await serverGet<Profile>('/auth/me', token);
+  const prof = me.ok && me.data ? me.data : {};
+  const defaultName: string = prof.display_name
+    ?? prof.full_name
+    ?? user.user_metadata?.full_name
     ?? user.user_metadata?.name
     ?? '';
 
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-10">
-      <MentorOnboardingForm defaultName={defaultName} userId={user.id} />
+      <MentorOnboardingForm
+        defaultName={defaultName}
+        defaultPhone={prof.phone ?? ''}
+        defaultCountry={prof.country_code ?? ''}
+        defaultTimezone={prof.timezone ?? ''}
+        userId={user.id}
+      />
     </div>
   );
 }
