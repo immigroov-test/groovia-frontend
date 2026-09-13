@@ -88,6 +88,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding }: Prop
     { href: '/home', label: UI_CONTENT.sidebar.chat, gated: false },
     { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
+    { href: '/webinars', label: 'Webinars', gated: false },
     // BUG-083: hidden for mentors. Its Profile tab repeats what they edit in the mentor hub, and its
     // Sessions tab is scoped to role="mentee", which is empty for someone who does not book sessions.
     // Two tabs that either duplicate or show nothing read as a broken page, not a spare one.

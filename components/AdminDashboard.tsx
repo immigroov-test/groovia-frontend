@@ -19,16 +19,17 @@ import { AdminDataSubjectRequests } from './AdminDataSubjectRequests';
 import { UI_CONTENT } from '../lib/content';
 import { cn } from '../lib/utils';
 import type { AdminMentor } from '../app/(shell)/admin/page';
+import { AdminWebinars } from './AdminWebinars';
 
 type MentorFilter = 'all' | 'active' | 'inactive' | 'no_service';
 const mentorCategory = (m: AdminMentor): 'active' | 'inactive' | 'no_service' =>
   m.is_active === false ? 'inactive' : m.bookable === false ? 'no_service' : 'active';
 
 interface Stats { pending_mentor_count: number; approved_mentor_count: number; active_mentor_count: number; inactive_mentor_count: number; no_service_mentor_count: number; suspended_mentor_count: number; pending_service_count: number; total_bookings: number; }
-type Tab = 'review' | 'mentors' | 'bookings' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing' | 'legal' | 'dsr' | 'bugs';
+type Tab = 'review' | 'mentors' | 'bookings' | 'webinars' | 'payouts' | 'referrals' | 'reviews' | 'activity' | 'ops' | 'pricing' | 'legal' | 'dsr' | 'bugs';
 // BUG-047: the ?tab= value comes from the URL, so it is whatever someone typed. Validated against
 // this list before use - an unknown value falls back to 'review' rather than rendering nothing.
-const TABS: Tab[] = ['review', 'mentors', 'bookings', 'payouts', 'referrals', 'reviews', 'activity', 'ops', 'pricing', 'legal', 'dsr', 'bugs'];
+const TABS: Tab[] = ['review', 'mentors', 'bookings', 'webinars', 'payouts', 'referrals', 'reviews', 'activity', 'ops', 'pricing', 'legal', 'dsr', 'bugs'];
 
 export function AdminDashboard({ stats, pending, approved, suspended, revisions, countryPricing }: {
   stats: Stats; pending: AdminMentor[]; approved: AdminMentor[]; suspended: AdminMentor[]; revisions: AdminRevision[];
@@ -62,6 +63,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
     { key: 'review', label: 'Review', count: reviewCount || undefined },
     { key: 'mentors', label: 'Mentors', count: approved.length || undefined },
     { key: 'bookings', label: 'Bookings' },
+    { key: 'webinars', label: 'Webinars' },
     { key: 'payouts', label: 'Payouts' },
     { key: 'referrals', label: 'Referrals' },
     { key: 'reviews', label: 'Reviews' },
@@ -110,6 +112,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
       </div>
 
       <div className="mt-6">
+        {tab === 'webinars' && <AdminWebinars mentors={approved} />}
         {tab === 'review' && (
           <div className="flex flex-col gap-10">
             <Section title={t.pendingTitle} subtitle={t.pendingSubtitle}>

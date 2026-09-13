@@ -17,6 +17,7 @@ import { COUNTRIES } from '../lib/countries';
 import { LANGUAGES } from '../lib/languages';
 import { RichText } from './ui/RichText';
 import { cn } from '../lib/utils';
+import { MentorWebinars } from './MentorWebinars';
 
 const COUNTRY_MAP = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.name]));
 const LANGUAGE_MAP = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.name]));
@@ -165,7 +166,7 @@ export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMent
           {tab === 'referrals' && (
             <UnderDevelopment title="Referrals" note={MENTOR_HUB.referralsSoon} />
           )}
-          {tab === 'webinars' && <UnderDevelopment title="Webinars" note={MENTOR_HUB.webinarsSoon} />}
+          {tab === 'webinars' && (approved ? <MentorWebinars /> : <Card><CardBody className="pt-6"><p className="text-sm text-muted">Webinar requests become available after your mentor profile is approved.</p></CardBody></Card>)}
         </div>
       </div>
     </div>
