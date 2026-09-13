@@ -41,7 +41,14 @@ interface Detail extends Booking {
     tax_pct?: number | null; tax_amount?: number | null;
     commission_pct?: number | null; commission_amount?: number | null;
   } | null;
+  referral?: {
+    affiliate_id: string | null; affiliate_name: string; affiliate_type: string | null;
+    own_session: boolean; code: string | null; discount_pct: number | null;
+    ledger: { status: string; split_snapshot: Split | null; commission_amount: number | null;
+              commission_amount_inr: number | null; customer_currency: string | null } | null;
+  } | null;
 }
+interface Split { mentor_pct: number; immigroov_pct: number; promoter_pct: number; }
 interface LegacyRow {
   id: string; status: string | null; service_title: string | null; customer_name: string | null;
   slot_start: string | null; duration_min: number | null; amount_total: number | null;
@@ -379,6 +386,26 @@ export function AdminBookings() {
                                         {p.net_customer != null && <span>Take-home <b className="text-foreground">{money(p.net_customer, cc)}</b></span>}
                                         {p.net_mentor != null && <span>Paid out <b className="text-foreground">{money(p.net_mentor, p.mentor_currency)}</b></span>}
                                       </div>
+                                      {details[b.id]?.referral && (() => {
+                                        // A referred booking: the commission above already reflects the referred
+                                        // split. This line says who brought the customer and what they are owed.
+                                        const r = details[b.id]!.referral!;
+                                        const sp = r.ledger?.split_snapshot;
+                                        return (
+                                          <div className="flex flex-wrap gap-x-6 gap-y-1">
+                                            <span className="text-muted/80">Referral</span>
+                                            <span>By <b className="text-foreground">{r.affiliate_name}</b>
+                                              {r.own_session ? ' (own client)' : r.affiliate_type === 'mentor' ? ' (mentor)' : ' (influencer)'}</span>
+                                            {r.code && <span>Code <b className="font-mono text-foreground">{r.code}</b>{r.discount_pct ? ` (${r.discount_pct}% off)` : ''}</span>}
+                                            {!r.code && <span className="text-muted/70">via link</span>}
+                                            {sp && <span>Split M/I/P <b className="text-foreground">{sp.mentor_pct}/{sp.immigroov_pct}/{sp.promoter_pct}</b></span>}
+                                            {r.ledger && r.ledger.commission_amount != null && (
+                                              <span>Promoter <b className="text-foreground">{money(r.ledger.commission_amount, r.ledger.customer_currency ?? cc)}</b> <span className="text-muted/70">({r.ledger.status.replace('_', ' ')})</span></span>
+                                            )}
+                                            {!r.ledger && <span className="text-muted/70">commission on completion</span>}
+                                          </div>
+                                        );
+                                      })()}
                                       {commError[b.id] && (
                                         <p role="alert" className="text-red-600">{commError[b.id]}</p>
                                       )}

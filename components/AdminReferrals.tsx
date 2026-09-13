@@ -7,6 +7,8 @@ import { Button } from './ui/Button';
 
 interface AffiliateRow {
   affiliate_id: string; type: string; name: string; mentor_id: string | null; status: string;
+  email: string | null; audience_corridor: string | null; link_slug: string | null;
+  is_house_channel: boolean; tier: string | null; open_flags: number;
   codes: number; active_codes: number; redemptions: number; referrals: number;
   commission_inr: number; commission_pending_inr: number;
 }
@@ -88,6 +90,70 @@ export function AdminReferrals() {
 
   const openFlags = (flags ?? []).filter((f) => f.status === 'escalated').length;
 
+  // Influencers have no login; the admin creates them here and hands over the link and code.
+  const [showAdd, setShowAdd] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addDone, setAddDone] = useState<{ link: string; code: string | null } | null>(null);
+  const [addForm, setAddForm] = useState({ display_name: '', email: '', audience_corridor: '', is_house_channel: false, discount_pct: '', redemption_cap: '' });
+  const [rowBusy, setRowBusy] = useState<string | null>(null);
+  const [rowMsg, setRowMsg] = useState<Record<string, string>>({});
+  const [origin, setOrigin] = useState('');
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+
+  async function addAffiliate() {
+    setAdding(true); setAddError(null); setAddDone(null);
+    try {
+      const body: Record<string, unknown> = {
+        display_name: addForm.display_name.trim(), email: addForm.email.trim(),
+        audience_corridor: addForm.audience_corridor.trim() || null,
+        is_house_channel: addForm.is_house_channel,
+      };
+      if (addForm.discount_pct.trim() !== '') body.discount_pct = parseFloat(addForm.discount_pct) || 0;
+      if (addForm.redemption_cap.trim() !== '') body.redemption_cap = Math.max(1, parseInt(addForm.redemption_cap, 10) || 1);
+      const res = await authedFetch('/api/referrals/admin/affiliates', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) { setAddError(d.detail || 'Could not create the affiliate.'); return; }
+      setAddDone({ link: `${origin}/r/${d.link_slug}`, code: d.code ?? null });
+      setAddForm({ display_name: '', email: '', audience_corridor: '', is_house_channel: false, discount_pct: '', redemption_cap: '' });
+      await load();
+    } catch { setAddError('Could not create the affiliate.'); }
+    finally { setAdding(false); }
+  }
+
+  async function setStatus(r: AffiliateRow, status: 'active' | 'frozen') {
+    setRowBusy(r.affiliate_id);
+    try {
+      const res = await authedFetch(`/api/referrals/admin/affiliates/${r.affiliate_id}/status`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setRowMsg((m) => ({ ...m, [r.affiliate_id]: d.detail || 'Failed.' })); return; }
+      await load();
+    } finally { setRowBusy(null); }
+  }
+
+  async function newCode(r: AffiliateRow) {
+    const raw = window.prompt(`Discount % for ${r.name}'s new code (0 for none):`, '10');
+    if (raw === null) return;
+    setRowBusy(r.affiliate_id);
+    try {
+      const res = await authedFetch(`/api/referrals/admin/affiliates/${r.affiliate_id}/codes`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discount_pct: parseFloat(raw) || 0 }),
+      });
+      const d = await res.json().catch(() => ({}));
+      setRowMsg((m) => ({ ...m, [r.affiliate_id]: res.ok ? `New code: ${d.code}` : (d.detail || 'Failed.') }));
+      if (res.ok) await load();
+    } finally { setRowBusy(null); }
+  }
+
+  async function copyLink(r: AffiliateRow) {
+    if (!r.link_slug) return;
+    try { await navigator.clipboard.writeText(`${origin}/r/${r.link_slug}`); setRowMsg((m) => ({ ...m, [r.affiliate_id]: 'Link copied' })); } catch { /* ignore */ }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       {rows && rows.length > 0 && (
@@ -115,28 +181,81 @@ export function AdminReferrals() {
 
       {view === 'affiliates' && (
         rows === null ? <Loading /> : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[720px]">
-              <thead><tr className="text-left text-xs text-muted border-b border-[--color-border]">
-                <Th>Affiliate</Th><Th>Type</Th><Th>Codes</Th><Th>Redemptions</Th><Th>Referrals</Th>
-                <Th>Earned</Th><Th>Pending</Th><Th></Th>
-              </tr></thead>
-              <tbody>
-                {rows.length === 0 && <tr><td colSpan={8} className="py-4 text-muted">No affiliates yet.</td></tr>}
-                {rows.map((r) => (
-                  <tr key={r.affiliate_id} className="border-b border-[--color-border]/60">
-                    <Td><span className="font-medium text-foreground">{r.name}</span>{r.status !== 'active' && <span className="ml-2 text-xs text-amber-700">({r.status})</span>}</Td>
-                    <Td>{r.type === 'mentor' ? 'Mentor' : 'Influencer'}</Td>
-                    <Td>{r.active_codes}/{r.codes}</Td>
-                    <Td>{r.redemptions}</Td>
-                    <Td>{r.referrals}</Td>
-                    <Td>{inr(r.commission_inr)}</Td>
-                    <Td className="text-amber-700">{inr(r.commission_pending_inr)}</Td>
-                    <Td><Button variant="outline" size="sm" onClick={() => { setFocus({ id: r.affiliate_id, name: r.name }); setView('commissions'); }}>View</Button></Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted">Mentors appear here on their own. Influencers are added by you.</p>
+              <Button variant="outline" size="sm" onClick={() => { setShowAdd((v) => !v); setAddDone(null); setAddError(null); }}>
+                {showAdd ? 'Close' : 'Add influencer'}
+              </Button>
+            </div>
+
+            {showAdd && (
+              <Card><CardBody className="pt-4 pb-4 flex flex-col gap-3">
+                <p className="text-sm font-semibold text-foreground">New influencer</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <AField label="Name" value={addForm.display_name} onChange={(v) => setAddForm((f) => ({ ...f, display_name: v }))} />
+                  <AField label="Email" type="email" value={addForm.email} onChange={(v) => setAddForm((f) => ({ ...f, email: v }))} />
+                  <AField label="Audience (optional)" placeholder="e.g. India to Netherlands" value={addForm.audience_corridor} onChange={(v) => setAddForm((f) => ({ ...f, audience_corridor: v }))} />
+                  <AField label="Code discount % (blank = no code)" type="number" value={addForm.discount_pct} onChange={(v) => setAddForm((f) => ({ ...f, discount_pct: v }))} />
+                  <AField label="Code usage limit" type="number" placeholder="100" value={addForm.redemption_cap} onChange={(v) => setAddForm((f) => ({ ...f, redemption_cap: v }))} />
+                  <label className="flex items-center gap-2 text-xs text-muted self-end pb-2">
+                    <input type="checkbox" checked={addForm.is_house_channel} onChange={(e) => setAddForm((f) => ({ ...f, is_house_channel: e.target.checked }))} />
+                    House channel (our own marketing, pays no commission)
+                  </label>
+                </div>
+                {addError && <p className="text-sm text-red-600">{addError}</p>}
+                {addDone && (
+                  <p className="text-xs text-foreground">
+                    Created. Link <code className="rounded bg-slate-50 px-1.5 py-0.5 font-mono">{addDone.link}</code>
+                    {addDone.code && <> and code <code className="rounded bg-slate-50 px-1.5 py-0.5 font-mono">{addDone.code}</code></>}. Send these to them.
+                  </p>
+                )}
+                <div><Button variant="accent" size="sm" loading={adding} onClick={addAffiliate}>Create</Button></div>
+              </CardBody></Card>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[960px]">
+                <thead><tr className="text-left text-xs text-muted border-b border-[--color-border]">
+                  <Th>Affiliate</Th><Th>Type</Th><Th>Link</Th><Th>Codes</Th><Th>Redemptions</Th><Th>Referrals</Th>
+                  <Th>Earned</Th><Th>Pending</Th><Th></Th>
+                </tr></thead>
+                <tbody>
+                  {rows.length === 0 && <tr><td colSpan={9} className="py-4 text-muted">No affiliates yet.</td></tr>}
+                  {rows.map((r) => (
+                    <tr key={r.affiliate_id} className="border-b border-[--color-border]/60 align-top">
+                      <Td>
+                        <span className="font-medium text-foreground">{r.name}</span>
+                        {r.status !== 'active' && <span className="ml-2 text-xs text-amber-700">({r.status})</span>}
+                        {r.is_house_channel && <span className="ml-2 text-xs text-slate-500">(house)</span>}
+                        {r.open_flags > 0 && <span className="ml-2 text-xs text-red-600">{r.open_flags} open flag{r.open_flags === 1 ? '' : 's'}</span>}
+                        {r.email && r.type !== 'mentor' && <span className="block text-xs text-muted">{r.email}</span>}
+                        {r.audience_corridor && <span className="block text-xs text-muted">{r.audience_corridor}</span>}
+                        {rowMsg[r.affiliate_id] && <span className="block text-xs text-brand-700">{rowMsg[r.affiliate_id]}</span>}
+                      </Td>
+                      <Td>{r.type === 'mentor' ? 'Mentor' : 'Influencer'}{r.tier && <span className="block text-xs text-muted capitalize">{r.tier}</span>}</Td>
+                      <Td>{r.link_slug
+                        ? <button type="button" onClick={() => copyLink(r)} className="font-mono text-xs text-brand-700 hover:underline" title="Copy link">/r/{r.link_slug}</button>
+                        : <span className="text-muted">-</span>}</Td>
+                      <Td>{r.active_codes}/{r.codes}</Td>
+                      <Td>{r.redemptions}</Td>
+                      <Td>{r.referrals}</Td>
+                      <Td>{inr(r.commission_inr)}</Td>
+                      <Td className="text-amber-700">{inr(r.commission_pending_inr)}</Td>
+                      <Td>
+                        <div className="flex flex-wrap gap-1">
+                          <Button variant="outline" size="sm" onClick={() => { setFocus({ id: r.affiliate_id, name: r.name }); setView('commissions'); }}>View</Button>
+                          <Button variant="outline" size="sm" loading={rowBusy === r.affiliate_id} onClick={() => newCode(r)}>New code</Button>
+                          {r.status === 'active'
+                            ? <Button variant="outline" size="sm" onClick={() => setStatus(r, 'frozen')}>Freeze</Button>
+                            : <Button variant="accent" size="sm" onClick={() => setStatus(r, 'active')}>Unfreeze</Button>}
+                        </div>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )
       )}
@@ -379,6 +498,20 @@ function StatusPill({ status }: { status: string }) {
   };
   const label = status === 'pending_review' ? 'Pending' : status.charAt(0).toUpperCase() + status.slice(1);
   return <span className={`text-xs px-2 py-0.5 rounded-full ${map[status] || 'bg-slate-100 text-slate-500'}`}>{label}</span>;
+}
+
+function AField({ label, value, onChange, type = 'text', placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-xs">
+      <span className="text-muted">{label}</span>
+      <input type={type} value={value} placeholder={placeholder}
+        {...(type === 'number' ? { min: 0, step: 1 } : {})}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-9 w-full px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+    </label>
+  );
 }
 
 function RefKpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
