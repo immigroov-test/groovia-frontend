@@ -19,18 +19,12 @@ interface Props {
   photoUrl?: string | null;
   /** Mentor has not finished first-login setup (rate + sessions). */
   onboarding?: boolean;
+  mentorStatus?: string | null;
 }
 
 // Fixed top nav: floating logo (no background) on the left, a centered links pill,
 // and auth on the right. Always visible. Mobile uses a hamburger menu.
-// Where a signed-in customer goes when they ask to become a mentor: the contact form, with the
-// topic and an opening line filled in. Support converts the account, because one email cannot be
-// both a customer and a mentor today.
-const JOIN_AS_MENTOR_CONTACT =
-  `/contact?topic=${encodeURIComponent('Join as a Mentor')}`
-  + `&message=${encodeURIComponent('I want to join as a mentor.')}`;
-
-export function TopNav({ authed, email, role, name, photoUrl, onboarding }: Props) {
+export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentorStatus = null }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -93,15 +87,14 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding }: Prop
     // Sessions tab is scoped to role="mentee", which is empty for someone who does not book sessions.
     // Two tabs that either duplicate or show nothing read as a broken page, not a spare one.
     ...(role !== 'mentor' ? [{ href: '/account', label: UI_CONTENT.sidebar.account, gated: true }] : []),
-    // BUG-067: decide the destination HERE, from the role we already hold, rather than sending
-    // everyone to /mentor and letting it bounce. The old path was a client-side navigation through
-    // two server redirects (/mentor -> /mentor/onboarding -> /contact), and a redirect chain is
-    // both fragile and invisible to the user. A signed-in customer now goes straight to the
-    // prefilled contact form in one hop. The server guards on those pages stay as a safety net for
-    // anyone typing the URL directly, but the normal click no longer relies on them.
+    // Three states, decided here from what the layout already knows: an approved mentor has a
+    // hub; a customer with an application in flight sees its status; anyone else is offered the
+    // form. A signed-in customer goes straight to the prefilled form, not to a contact page.
     ...(role !== 'admin' ? [{
-      href: role === 'mentor' ? '/mentor' : authed ? JOIN_AS_MENTOR_CONTACT : '/mentor',
-      label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub : UI_CONTENT.sidebar.mentorPortal,
+      href: role === 'mentor' || mentorStatus ? '/mentor' : authed ? '/mentor/onboarding' : '/mentor',
+      label: role === 'mentor' ? UI_CONTENT.sidebar.mentorHub
+        : mentorStatus ? UI_CONTENT.sidebar.mentorApplication
+          : UI_CONTENT.sidebar.mentorPortal,
       gated: false,
     }] : []),
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),

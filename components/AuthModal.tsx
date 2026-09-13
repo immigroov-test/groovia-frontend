@@ -31,7 +31,7 @@ function AuthModalInner() {
   // page afterwards (which itself sends already-approved mentors to their hub).
   // BUG-067: `new=1` tells the onboarding page this really is a fresh mentor signup, so it shows the
   // form. An already-signed-in customer arrives without it and is routed to Contact instead.
-  const next = params.get('next') ?? (role === 'mentor' ? '/mentor/onboarding?new=1' : undefined);
+  const next = params.get('next') ?? (role === 'mentor' ? '/mentor/onboarding' : undefined);
   // Booking flow prefills the email so the guest just sets a password after verifying.
   const emailParam = params.get('email');
 

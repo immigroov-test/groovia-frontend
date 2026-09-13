@@ -55,14 +55,18 @@ type TabId = 'profile' | 'services' | 'availability' | 'bookings' | 'payments' |
 
 export function MentorHubTabs({ mentor, legacySessions = [] }: { mentor: HubMentor; legacySessions?: LegacySession[] }) {
   const approved = mentor.status === 'approved';
+  // Before approval this is an application, not a mentor account. What the reviewer assesses
+  // stays editable; everything a working mentor uses unlocks on approval.
   const tabs: { id: TabId; label: string }[] = [
     { id: 'profile', label: 'Profile' },
     { id: 'services', label: 'Services' },
     { id: 'availability', label: 'Availability' },
-    { id: 'bookings', label: 'Bookings' },
-    { id: 'payments', label: 'Payments' },
-    { id: 'referrals', label: 'Referrals' },
-    { id: 'webinars', label: 'Webinars' },
+    ...(approved ? [
+      { id: 'bookings' as TabId, label: 'Bookings' },
+      { id: 'payments' as TabId, label: 'Payments' },
+      { id: 'referrals' as TabId, label: 'Referrals' },
+      { id: 'webinars' as TabId, label: 'Webinars' },
+    ] : []),
   ];
   const [tab, setTab] = useState<TabId>('profile');
 

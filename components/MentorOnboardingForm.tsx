@@ -57,10 +57,13 @@ const DEFAULT_DISCLAIMER =
 
 interface Props {
   defaultName?: string;
+  defaultPhone?: string;
+  defaultCountry?: string;     // ISO-2, from the customer profile when one exists
+  defaultTimezone?: string;
   userId?: string;
 }
 
-export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
+export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defaultCountry = '', defaultTimezone = '', userId }: Props) {
   const router = useRouter();
 
   // Step 1 - details
@@ -68,13 +71,14 @@ export function MentorOnboardingForm({ defaultName = '', userId }: Props) {
   const [professionalTitle, setProfessionalTitle] = useState('');
   const [headlineEdited, setHeadlineEdited] = useState(false);   // true once the mentor types their own headline
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(defaultPhone);
   const [bio, setBio] = useState('');
-  const [country, setCountry] = useState('');
+  const [country, setCountry] = useState(defaultCountry);
   // Other countries the mentor can advise on (besides their current one), up to 2, each with years lived there.
   const [servedCountries, setServedCountries] = useState<{ code: string; years: string }[]>([]);
   const [city, setCity] = useState('');
-  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  // The profile's own zone wins, unless it is the column default, which says nothing.
+  const [timezone, setTimezone] = useState(defaultTimezone && defaultTimezone !== 'UTC' ? defaultTimezone : Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [languages, setLanguages] = useState<string[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [publicNotes, setPublicNotes] = useState(DEFAULT_DISCLAIMER);
