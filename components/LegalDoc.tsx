@@ -75,7 +75,7 @@ export function LegalDoc({ title, updated, groups }: { title: string; updated?: 
           const sections = parse(g.content);
           const groupOpen = openGroup === g.label;
           return (
-            <div key={g.label} className="rounded-[14px] border border-[--color-border] bg-card overflow-hidden">
+            <div key={g.label} className="rounded-[14px] border border-(--color-border) bg-card overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpenGroup(groupOpen ? null : g.label)}
@@ -87,12 +87,12 @@ export function LegalDoc({ title, updated, groups }: { title: string; updated?: 
               </button>
 
               {groupOpen && (
-                <div className="px-4 pb-4 pt-1 border-t border-[--color-border] flex flex-col gap-2">
+                <div className="px-4 pb-4 pt-1 border-t border-(--color-border) flex flex-col gap-2">
                   {sections.map((s, i) => {
                     const sid = `${g.label}-${i}`;
                     const sOpen = openSection === sid;
                     return (
-                      <div key={sid} className="rounded-[10px] border border-[--color-border] overflow-hidden">
+                      <div key={sid} className="rounded-[10px] border border-(--color-border) overflow-hidden">
                         <button
                           type="button"
                           onClick={() => setOpenSection(sOpen ? null : sid)}
@@ -103,7 +103,7 @@ export function LegalDoc({ title, updated, groups }: { title: string; updated?: 
                           <ChevronDown className={cn('h-4 w-4 text-muted shrink-0 transition-transform', sOpen && 'rotate-180')} />
                         </button>
                         {sOpen && (
-                          <div className="px-4 pb-4 pt-3 border-t border-[--color-border] bg-card">
+                          <div className="px-4 pb-4 pt-3 border-t border-(--color-border) bg-card">
                             {renderBody(s.body)}
                           </div>
                         )}

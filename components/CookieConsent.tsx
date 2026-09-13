@@ -81,7 +81,7 @@ export function CookieConsent() {
       aria-label="Cookie preferences"
       className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4"
     >
-      <div className="mx-auto max-w-3xl rounded-[14px] border border-[--color-border] bg-card p-4 sm:p-5 shadow-[--shadow-3]">
+      <div className="mx-auto max-w-3xl rounded-[14px] border border-(--color-border) bg-card p-4 sm:p-5 shadow-(--shadow-3)">
         {open && (
           <button
             type="button"
@@ -113,7 +113,7 @@ export function CookieConsent() {
         </div>
 
         {open && (
-          <div className="mt-4 space-y-2.5 border-t border-[--color-border] pt-3.5">
+          <div className="mt-4 space-y-2.5 border-t border-(--color-border) pt-3.5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-medium text-brand-900">Strictly necessary</p>
@@ -157,7 +157,7 @@ export function CookieConsent() {
           ) : (
             <>
               <button type="button" onClick={() => save({ analytics: false, marketing: false })}
-                className="h-9 rounded-lg border border-[--color-border] bg-white px-4 text-xs font-medium text-brand-900 hover:bg-brand-50">
+                className="h-9 rounded-lg border border-(--color-border) bg-white px-4 text-xs font-medium text-brand-900 hover:bg-brand-50">
                 Reject all
               </button>
               <button type="button" onClick={() => save({ analytics: true, marketing: true })}

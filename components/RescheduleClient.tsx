@@ -165,10 +165,10 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
       <p className="text-sm text-muted mt-8">No open slots in the next 30 days. Please check back later.</p>
     ) : (
       <div className="mt-6 grid gap-6 sm:grid-cols-[1fr_260px]">
-        <div className="rounded-[14px] border border-[--color-border] p-5">
+        <div className="rounded-[14px] border border-(--color-border) p-5">
           <CalendarPanel availableDates={availableDates} selectedDate={selectedDate} onSelect={(d) => { setSelectedDate(d); setSelectedSlot(null); }} />
         </div>
-        <div className="rounded-[14px] border border-[--color-border] p-5">
+        <div className="rounded-[14px] border border-(--color-border) p-5">
           {!selectedDate ? (
             <p className="text-sm text-muted">Pick a date to see open times.</p>
           ) : timeSlotsForDay.length === 0 ? (
@@ -182,7 +182,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
                   const active = selectedSlot?.slot_start === slot.slot_start;
                   return (
                     <button key={slot.slot_start} type="button" onClick={() => setSelectedSlot(slot)}
-                      className={`px-4 py-2 rounded-lg border text-left text-sm font-medium transition-colors ${active ? 'border-brand-900 bg-brand-900 text-white' : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50'}`}>
+                      className={`px-4 py-2 rounded-lg border text-left text-sm font-medium transition-colors ${active ? 'border-brand-900 bg-brand-900 text-white' : 'border-(--color-border) hover:border-brand-500 hover:bg-brand-50'}`}>
                       {formatSlotTime(slot.slot_start)}
                     </button>
                   );

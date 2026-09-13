@@ -177,7 +177,7 @@ export function MultiSelect({
           id={`${id}-listbox`}
           role="listbox"
           aria-multiselectable="true"
-          className="z-30 mt-1 max-h-56 overflow-y-auto rounded-[10px] bg-white border border-[--color-border] shadow-[--shadow-2] py-1"
+          className="z-30 mt-1 max-h-56 overflow-y-auto rounded-[10px] bg-white border border-(--color-border) shadow-(--shadow-2) py-1"
         >
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">No results</li>
@@ -202,7 +202,7 @@ export function MultiSelect({
                   <span
                     className={cn(
                       'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
-                      selected ? 'bg-brand-600 border-brand-600' : 'border-[--color-border]',
+                      selected ? 'bg-brand-600 border-brand-600' : 'border-(--color-border)',
                     )}
                   >
                     {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}

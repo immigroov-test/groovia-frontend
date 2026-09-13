@@ -180,7 +180,7 @@ export function ReviewsList({ mentorId }: { mentorId: string }) {
 
       <div className="flex flex-col gap-4">
         {reviews.map((r) => (
-          <div key={r.id} className="border-b border-[--color-border]/60 pb-4 last:border-0">
+          <div key={r.id} className="border-b border-(--color-border)/60 pb-4 last:border-0">
             <div className="flex flex-wrap items-center gap-2">
               <ReviewStars rating={r.rating} />
               <span className="text-sm font-medium text-foreground">{r.reviewer_name || 'Member'}</span>

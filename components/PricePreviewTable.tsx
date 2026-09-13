@@ -52,7 +52,7 @@ export function PricePreviewTable({ baseRate, currency, smartPricing }: {
   }
 
   return (
-    <div className="rounded-[10px] border border-[--color-border] bg-brand-50/40 p-4">
+    <div className="rounded-[10px] border border-(--color-border) bg-brand-50/40 p-4">
       <p className="flex items-start gap-1.5 text-xs text-muted mb-3">
         <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-brand-500" aria-hidden="true" />
         <span>

@@ -47,7 +47,7 @@ export function PastSessions({ sessions, heading = 'Past sessions', bare = false
         <h2 className="text-base font-semibold text-foreground">{heading}</h2>
         <span className="text-sm text-muted">{sessions.length} total</span>
       </div>
-      <div className="flex flex-col divide-y divide-[--color-border]">
+      <div className="flex flex-col divide-y divide-(--color-border)">
         {shown.map((s, i) => (
           <div key={i} className="flex items-center justify-between gap-3 py-2.5">
             <div className="min-w-0">

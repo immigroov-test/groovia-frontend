@@ -66,7 +66,7 @@ export function ContactContent() {
               <Office label={c.offices.europe.label} address={c.offices.europe.address} />
               <Office label={c.offices.asia.label} address={c.offices.asia.address} />
             </div>
-            <p className="mt-5 pt-4 border-t border-[--color-border] text-xs text-muted leading-relaxed">
+            <p className="mt-5 pt-4 border-t border-(--color-border) text-xs text-muted leading-relaxed">
               {c.offices.note}
             </p>
           </CardBody>
@@ -98,7 +98,7 @@ function ChannelCard({ icon: Icon, tone, title, sub, children }: {
 function SocialChip({ href, label }: { href: string; label: string }) {
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-lg border border-[--color-border] px-2.5 py-1.5 text-xs font-medium text-brand-900 hover:border-brand-300 hover:bg-brand-50/40">
+      className="inline-flex items-center gap-1.5 rounded-lg border border-(--color-border) px-2.5 py-1.5 text-xs font-medium text-brand-900 hover:border-brand-300 hover:bg-brand-50/40">
       {label} <ExternalLink className="h-3 w-3 text-muted" />
     </a>
   );

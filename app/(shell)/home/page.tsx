@@ -54,11 +54,16 @@ export default async function HomePage({
     const response = await fetch(`${backendBaseUrl()}/mentors?limit=300`, { next: { revalidate: 300 } });
     if (response.ok) {
       const roster: Mentor[] = (await response.json()).mentors ?? [];
-      mentors = roster
+      const ranked = roster
         .map((mentor, index) => ({ mentor, index, score: profileCompleteness(mentor) }))
         .sort((a, b) => b.score - a.score || a.index - b.index)
-        .slice(0, 3)
         .map(({ mentor }) => mentor);
+      // The first three feed the full mentor cards. The rest only feed the hero photo strip, so they
+      // are limited to mentors with a photo and stripped of their bio to keep the page payload small.
+      mentors = [
+        ...ranked.slice(0, 3),
+        ...ranked.slice(3).filter((m) => m.photo_url).slice(0, 27).map((m) => ({ ...m, bio: null })),
+      ];
     }
   } catch { /* the homepage remains useful while the backend wakes */ }
   const webinarResult = await serverGetPublic<Webinar[]>('/webinars', 8000, 1, 2);

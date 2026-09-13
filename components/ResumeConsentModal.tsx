@@ -30,7 +30,7 @@ export function ResumeConsentModal({
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-900/50 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onCancel} aria-hidden />
 
-      <div className="relative w-full max-w-md rounded-[14px] bg-card shadow-[--shadow-3] border border-[--color-border] p-6 sm:p-8 animate-fade-up">
+      <div className="relative w-full max-w-md rounded-[14px] bg-card shadow-(--shadow-3) border border-(--color-border) p-6 sm:p-8 animate-fade-up">
         <button
           type="button"
           onClick={onCancel}

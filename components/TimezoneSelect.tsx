@@ -69,7 +69,7 @@ export function TimezoneSelect({ value, onChange, className = '' }: {
       </button>
       {open && (
         <div className="absolute z-40 mt-1 w-72 max-w-[80vw] rounded-[10px] bg-white shadow-[0_8px_28px_rgba(8,43,82,0.16),0_0_0_1px_rgba(8,43,82,0.08)]">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[--color-border]">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-(--color-border)">
             <Search className="h-4 w-4 text-muted shrink-0" />
             <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
               placeholder="Search city or GMT offset"

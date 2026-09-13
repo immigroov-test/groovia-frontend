@@ -109,7 +109,7 @@ export function AdminBugBoard() {
 
   if (!configured) {
     return (
-      <div className="rounded-[10px] border border-[--color-border] p-4 text-sm text-muted">
+      <div className="rounded-[10px] border border-(--color-border) p-4 text-sm text-muted">
         <p className="font-medium text-foreground">Bug board not connected</p>
         <p className="mt-1">
           The board lives in its own Supabase project. Set <code>BUG_BOARD_SUPABASE_URL</code> and{' '}
@@ -134,7 +134,7 @@ export function AdminBugBoard() {
         {([['all', 'All'] as [string, string]].concat(COLUMNS)).map(([key, label]) => (
           <button key={key} type="button" onClick={() => setColumn(key)}
             className={cn('rounded-[10px] border px-3 py-2 text-left transition-colors',
-              column === key ? 'border-brand-600 bg-brand-50' : 'border-[--color-border] hover:bg-brand-50/40')}>
+              column === key ? 'border-brand-600 bg-brand-50' : 'border-(--color-border) hover:bg-brand-50/40')}>
             <p className="text-xl font-bold text-foreground leading-none">
               {key === 'all' ? bugs.length : counts[key] ?? 0}
             </p>
@@ -157,7 +157,7 @@ export function AdminBugBoard() {
       ) : (
         <div className="flex flex-col gap-2">
           {shown.map((b) => (
-            <div key={b.id} className="rounded-[10px] border border-[--color-border] p-3">
+            <div key={b.id} className="rounded-[10px] border border-(--color-border) p-3">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -182,7 +182,7 @@ export function AdminBugBoard() {
               </div>
 
               {openId === b.id && (
-                <div className="mt-3 pt-3 border-t border-[--color-border] flex flex-col gap-2 text-xs text-muted">
+                <div className="mt-3 pt-3 border-t border-(--color-border) flex flex-col gap-2 text-xs text-muted">
                   {b.description && <p className="whitespace-pre-line">{b.description}</p>}
                   {(b.tags?.length ?? 0) > 0 && (
                     <p className="flex flex-wrap gap-1">

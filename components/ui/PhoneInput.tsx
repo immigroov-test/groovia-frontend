@@ -204,8 +204,8 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
 
         {/* Dropdown */}
         {dropdownOpen && (
-          <div className="absolute top-full left-0 z-50 mt-1 w-64 bg-white rounded-[10px] border border-[--color-border] shadow-[--shadow-2] overflow-hidden">
-            <div className="p-2 border-b border-[--color-border]">
+          <div className="absolute top-full left-0 z-50 mt-1 w-64 bg-white rounded-[10px] border border-(--color-border) shadow-(--shadow-2) overflow-hidden">
+            <div className="p-2 border-b border-(--color-border)">
               <input
                 type="text"
                 autoFocus

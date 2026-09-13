@@ -21,7 +21,7 @@ export function MigrationWelcomeModal({ mentorName }: { mentorName?: string }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-lg rounded-[14px] bg-white p-6 shadow-[--shadow-2] flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg rounded-[14px] bg-white p-6 shadow-(--shadow-2) flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
         <div>
           <h2 className="text-xl font-semibold text-brand-900">
             Welcome{first ? `, ${first}` : ''} 👋

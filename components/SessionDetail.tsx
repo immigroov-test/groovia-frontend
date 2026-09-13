@@ -264,7 +264,7 @@ export function SessionDetail({ bookingId, accessToken }: {
       <BackLink />
 
       {/* Everything sits in one card, matching the booking-confirmation layout. */}
-      <div className="mt-4 rounded-[14px] border border-[--color-border] bg-white p-6 sm:p-8">
+      <div className="mt-4 rounded-[14px] border border-(--color-border) bg-white p-6 sm:p-8">
 
       {/* Header: title on the left, status pinned top-right beside it. */}
       <div className="flex items-start justify-between gap-4">
@@ -277,7 +277,7 @@ export function SessionDetail({ bookingId, accessToken }: {
       {/* Who cancelled, and why. "Your session was cancelled" on its own sends people to
           support to ask the one question the page already knows the answer to. */}
       {d.status === 'cancelled' && (
-        <div className="mt-5 rounded-[14px] border border-[--color-border] bg-card p-4">
+        <div className="mt-5 rounded-[14px] border border-(--color-border) bg-card p-4">
           <p className="text-sm text-foreground">
             {d.cancelled_by === 'system'
               ? 'Cancelled automatically because payment was not completed in time.'
@@ -355,7 +355,7 @@ export function SessionDetail({ bookingId, accessToken }: {
       {/* BUG-113: the customer's prep note + intake answers - mentor sees "what to prepare",
           the customer sees a copy of what they submitted. */}
       {(d.notes || (d.answers?.length ?? 0) > 0) && (
-        <div className="mt-6 rounded-[14px] border border-[--color-border] bg-brand-50/40 p-4">
+        <div className="mt-6 rounded-[14px] border border-(--color-border) bg-brand-50/40 p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-muted">
             {isCandidate ? 'What you shared with your mentor' : 'What to prepare'}
           </p>
@@ -381,7 +381,7 @@ export function SessionDetail({ bookingId, accessToken }: {
 
       {/* Mentee: rate + review a completed session */}
       {isCandidate && d.status === 'completed' && (
-        <div className="mt-7 rounded-[14px] border border-[--color-border] p-5">
+        <div className="mt-7 rounded-[14px] border border-(--color-border) p-5">
           <h2 className="text-base font-semibold text-foreground">Rate your session</h2>
           <p className="text-sm text-muted mt-0.5 mb-3">Your review helps other mentees. You can update it anytime.</p>
           <ReviewForm bookingId={bookingId} />
@@ -548,7 +548,7 @@ export function SessionDetail({ bookingId, accessToken }: {
             cancel button the moment THEY sent a proposal. Only "start a new negotiation" (propose/
             reschedule) needs to wait for the current one to resolve - cancel always stays available. */}
         {(isCandidate || isMentor) && d.paid && !d.is_past && (
-          <div className="flex flex-col gap-3 border-t border-[--color-border] pt-4">
+          <div className="flex flex-col gap-3 border-t border-(--color-border) pt-4">
             {d.deadline_state === 'buffer' && (
               // BUG-084: cancelling this close to the session no longer qualifies for a refund, so the
               // cancel button is hidden (can_cancel excludes buffer) - but a reschedule can still be

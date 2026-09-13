@@ -9,7 +9,7 @@ import { Button } from './ui/Button';
 import { Card, CardBody } from './ui/Card';
 import { WebinarMediaUpload } from './ui/WebinarMediaUpload';
 
-const fieldClass = 'mt-1.5 w-full rounded-[10px] border border-[--color-border] bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
+const fieldClass = 'mt-1.5 w-full rounded-[10px] border border-(--color-border) bg-background px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100';
 
 function localDateTime(iso?: string) {
   if (!iso) return '';
@@ -144,7 +144,7 @@ export function AdminWebinars({ mentors = [] }: { mentors?: { id: string; displa
         <label className="text-sm font-medium text-foreground">Host mentor<select name="mentor_id" defaultValue={editing?.mentor_id ?? ''} className={fieldClass}><option value="">Select host later</option>{mentors.map((mentor) => <option key={mentor.id} value={mentor.id}>{mentor.display_name}</option>)}</select></label>
         <label className="text-sm font-medium text-foreground sm:col-span-2">Poster image<input type="url" name="banner_url" value={posterUrl} onChange={(event) => setPosterUrl(event.target.value)} placeholder="Paste a public image URL or upload below" className={fieldClass} /><span className="mt-1 block text-xs font-normal text-muted">Recommended size: 1600 × 900 px.</span><WebinarMediaUpload kind="poster" onUploaded={setPosterUrl} /></label>
         <label className="text-sm font-medium text-foreground sm:col-span-2">Supporting media<input type="url" name="media_url" value={mediaUrl} onChange={(event) => setMediaUrl(event.target.value)} placeholder="Paste a YouTube/resource URL or upload below" className={fieldClass} /><span className="mt-1 block text-xs font-normal text-muted">Optional trailer, explainer video, brochure, or other resource.</span><WebinarMediaUpload kind="media" onUploaded={setMediaUrl} /></label>
-        <div className="sm:col-span-2 rounded-[10px] border border-[--color-border] bg-brand-50/40 p-4">
+        <div className="sm:col-span-2 rounded-[10px] border border-(--color-border) bg-brand-50/40 p-4">
           <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" name="is_paid" checked={paid} onChange={(event) => setPaid(event.target.checked)} /> This is a paid webinar</label>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="text-sm font-medium text-foreground">Price<input disabled={!paid} required={paid} type="number" name="price" min={paid ? '0.01' : '0'} step="0.01" defaultValue={editing?.price ?? 0} className={`${fieldClass} disabled:cursor-not-allowed disabled:opacity-50`} /></label>
@@ -162,7 +162,7 @@ export function AdminWebinars({ mentors = [] }: { mentors?: { id: string; displa
         return <Card key={webinar.id}><CardBody className="py-5">
           <div className="flex justify-between gap-5 flex-wrap">
             <div className="flex min-w-0 gap-4">
-              {webinar.banner_url ? <img src={webinar.banner_url} alt="" className="hidden h-20 w-32 rounded-[10px] border border-[--color-border] object-cover sm:block" /> : <div className="hidden h-20 w-32 items-center justify-center rounded-[10px] border border-dashed border-[--color-border] bg-brand-50 text-muted sm:flex"><ImageIcon className="h-5 w-5" /></div>}
+              {webinar.banner_url ? <img src={webinar.banner_url} alt="" className="hidden h-20 w-32 rounded-[10px] border border-(--color-border) object-cover sm:block" /> : <div className="hidden h-20 w-32 items-center justify-center rounded-[10px] border border-dashed border-(--color-border) bg-brand-50 text-muted sm:flex"><ImageIcon className="h-5 w-5" /></div>}
               <div><p className="font-semibold text-brand-900">{webinar.title}</p><p className="mt-1 text-xs text-muted">{webinarWhen(webinar)} · {webinarPrice(webinar)} · {webinar.registration_count ?? 0}/{webinar.capacity}</p><p className="mt-2 text-xs font-semibold uppercase text-brand-700">{webinar.status.replace('_', ' ')}{webinar.source === 'mentor_request' ? ' · mentor request' : ''}{past ? ' · past' : ''}</p>{webinar.media_url && <a href={webinar.media_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:underline">Open supporting media <ExternalLink className="h-3 w-3" /></a>}</div>
             </div>
             <div className="flex items-start gap-2 flex-wrap">

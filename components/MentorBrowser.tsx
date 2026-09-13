@@ -175,7 +175,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
             {addOpen && available.length > 0 && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setAddOpen(false)} />
-                <div className="absolute left-0 z-30 mt-1 w-52 rounded-[10px] bg-white border border-[--color-border] shadow-[--shadow-2] py-1">
+                <div className="absolute left-0 z-30 mt-1 w-52 rounded-[10px] bg-white border border-(--color-border) shadow-(--shadow-2) py-1">
                   {available.map((f) => (
                     <button
                       key={f.key}

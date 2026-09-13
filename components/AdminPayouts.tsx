@@ -259,7 +259,7 @@ function MentorSummaryCard({ g, open, onToggle, busy, onPay }: {
       </button>
       {open && (
         <CardBody className="pt-0 pb-4">
-          <div className="border-t border-[--color-border] pt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="border-t border-(--color-border) pt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {g.items.map((i) => <PaymentCard key={i.key} i={i} busy={busy} onPay={onPay} />)}
           </div>
         </CardBody>

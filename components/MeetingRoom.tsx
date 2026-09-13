@@ -173,7 +173,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
       </div>
       <div className={body === 'left' ? 'text-left' : 'text-center'}>{children}</div>
 
-      <div className="mt-10 pt-6 border-t border-[--color-border] text-center">
+      <div className="mt-10 pt-6 border-t border-(--color-border) text-center">
         {isMentor ? (
           <Link href="/mentor" className="text-sm font-medium text-brand-700 hover:text-brand-900">
             Back to my mentor dashboard
@@ -228,7 +228,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
       <Shell icon={<Video className="h-6 w-6" />} title="Your video call is ready" body="left">
         {/* The same facts as the confirmation email, so nobody has to cross-reference their inbox.
             Definition list rather than a table: it stacks cleanly on a phone. */}
-        <dl className="mt-6 rounded-[10px] bg-brand-50/50 divide-y divide-[--color-border] overflow-hidden">
+        <dl className="mt-6 rounded-[10px] bg-brand-50/50 divide-y divide-(--color-border) overflow-hidden">
           {([
             info?.service_title && ['Session', <span key="s" className="font-medium">{info.service_title}</span>],
             ['Scheduled for', `${fmt(info?.slot_time)}${info?.duration ? ` · ${info.duration} min` : ''}`],
@@ -261,7 +261,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
             a no-show puts a strike on a mentor, so it must not be available to someone who never
             opened the call themselves. */}
         {canAct && (
-          <div className="mt-10 pt-6 border-t border-[--color-border]">
+          <div className="mt-10 pt-6 border-t border-(--color-border)">
             <p className="text-xs font-semibold text-muted uppercase tracking-wider">After your call</p>
             <p className="text-xs text-muted mt-1 mb-4 leading-relaxed">
               These become useful once the session is over. Nothing here is sent until you choose it.
@@ -292,7 +292,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
             {/* Only after the session has actually ENDED. It used to appear the moment Join was
                 clicked, inviting someone to review a call that had not happened yet. */}
             {isCandidate && sessionEnded && (
-              <div className="mt-8 pt-6 border-t border-[--color-border]">
+              <div className="mt-8 pt-6 border-t border-(--color-border)">
                 <p className="text-sm font-medium text-foreground">How was your session?</p>
                 <p className="text-xs text-muted mt-1 mb-3">Only the overall rating is required.</p>
                 <ReviewForm bookingId={bookingId} />

@@ -16,7 +16,7 @@ export default async function WebinarsPage() {
     <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {webinars.map((w) => <Link key={w.id} href={`/webinars/${w.slug}`} className="block">
         <Card className="h-full overflow-hidden hover:border-brand-300 transition-colors">
-          {w.banner_url && <img src={w.banner_url} alt="" className="aspect-[16/9] w-full border-b border-[--color-border] object-cover" />}
+          {w.banner_url && <img src={w.banner_url} alt="" className="aspect-[16/9] w-full border-b border-(--color-border) object-cover" />}
           <CardBody className="pt-6">
           <div className="flex justify-between gap-3"><span className="text-xs font-semibold text-brand-700">{webinarPrice(w)}</span><span className="text-xs text-muted">{w.duration_minutes} min</span></div>
           <h2 className="mt-3 text-lg font-semibold text-foreground">{w.title}</h2>

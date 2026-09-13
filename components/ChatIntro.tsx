@@ -57,7 +57,7 @@ export const ChatIntro = forwardRef<HTMLElement, Props>(function ChatIntro(
             className="flex items-start gap-2.5 justify-start"
           >
             <AiAvatar />
-            <div className="max-w-[85%] rounded-[14px] rounded-tl-sm bg-white border border-[--color-border] shadow-[--shadow-1] px-4 py-3 text-sm leading-relaxed text-foreground text-left composer-glow">
+            <div className="max-w-[85%] rounded-[14px] rounded-tl-sm bg-white border border-(--color-border) shadow-(--shadow-1) px-4 py-3 text-sm leading-relaxed text-foreground text-left composer-glow">
               {UI_CONTENT.welcomeMessage}
             </div>
           </motion.div>

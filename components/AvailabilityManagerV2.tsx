@@ -273,7 +273,7 @@ export function AvailabilityManagerV2() {
               where you are, set your timezone on the <strong>Profile</strong> tab and these will follow.
             </p>
           )}
-          <div className="mt-4 flex flex-col divide-y divide-[--color-border]">
+          <div className="mt-4 flex flex-col divide-y divide-(--color-border)">
             {DAYS.map((day, i) => (
               <div key={day} className="flex flex-wrap items-center gap-2 py-3">
                 <span className="w-12 text-sm font-semibold text-brand-900 shrink-0">{DAY_SHORT[i]}</span>
@@ -303,14 +303,14 @@ export function AvailabilityManagerV2() {
                 ) : (
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button onClick={() => { setAddDay(day); setError(null); }}
-                      className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-[--color-border] text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors">
+                      className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-(--color-border) text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors">
                       <Plus className="h-3.5 w-3.5" /> Add hours
                     </button>
                     {/* Only offered on days that HAVE hours: copying nothing is the most common way to
                         press this by mistake. */}
                     {weeklyByDay[day].length > 0 && (
                       <button onClick={() => { setCopyOpen(copyOpen === day ? null : day); setError(null); }}
-                        className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-[--color-border] text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors">
+                        className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-(--color-border) text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors">
                         <Copy className="h-3.5 w-3.5" /> Copy to
                       </button>
                     )}
@@ -406,7 +406,7 @@ export function AvailabilityManagerV2() {
                     <div key={k} className="flex justify-center">
                       <button type="button" disabled={past} aria-pressed={sel} onClick={(e) => pickDate(k, e)}
                         className={cn('relative w-9 h-9 rounded-lg text-sm font-medium flex flex-col items-center justify-center transition-colors',
-                          past ? 'text-muted/40 cursor-not-allowed' : sel ? 'bg-brand-900 text-white' : 'text-brand-900 hover:bg-brand-50 border border-[--color-border]')}>
+                          past ? 'text-muted/40 cursor-not-allowed' : sel ? 'bg-brand-900 text-white' : 'text-brand-900 hover:bg-brand-50 border border-(--color-border)')}>
                         {d.getDate()}
                         {dotColor && !sel && <span className={cn('absolute bottom-1 h-1 w-1 rounded-full', dotColor)} />}
                       </button>
@@ -417,7 +417,7 @@ export function AvailabilityManagerV2() {
             </div>
 
             {/* Selected-date actions */}
-            <div className="rounded-[10px] border border-[--color-border] p-4">
+            <div className="rounded-[10px] border border-(--color-border) p-4">
               {selDates.length === 0 ? (
                 <p className="text-sm text-muted">Pick a date to block it or set custom hours.</p>
               ) : selDate === null ? (
@@ -465,7 +465,7 @@ export function AvailabilityManagerV2() {
                         </div>
                         <Button size="sm" variant="accent" onClick={() => overrideDate(selDate)}>Set hours</Button>
                       </div>
-                      <div className="border-t border-[--color-border] pt-3">
+                      <div className="border-t border-(--color-border) pt-3">
                         <Button size="sm" variant="outline" loading={busy} onClick={() => blockDates([selDate])}
                           className="text-red-600 border-red-200 hover:bg-red-50">
                           <Ban className="h-3.5 w-3.5" /> Block this date

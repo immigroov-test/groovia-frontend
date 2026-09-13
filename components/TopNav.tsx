@@ -101,7 +101,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 h-16 border-b border-[--color-border] bg-white/95 backdrop-blur-md">
+    <header className="fixed top-0 inset-x-0 z-40 h-16 border-b border-(--color-border) bg-white/95 backdrop-blur-md">
       <div className="container-public h-full flex items-center gap-4">
         {/* Left section: logo. flex-1 so the left + right sides carry equal weight,
             which keeps the centered nav truly centered without overlapping either. */}
@@ -162,7 +162,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
                 title={email ?? undefined}
                 aria-haspopup="menu"
                 aria-expanded={userMenuOpen}
-                className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-[10px] border border-[--color-border] bg-white min-w-0"
+                className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-[10px] border border-(--color-border) bg-white min-w-0"
               >
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -177,7 +177,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
               </button>
               {userMenuOpen && (
                 <div className="absolute top-full right-0 pt-2">
-                  <div className="w-44 rounded-[14px] bg-card shadow-[--shadow-2] border border-[--color-border] p-1.5">
+                  <div className="w-44 rounded-[14px] bg-card shadow-(--shadow-2) border border-(--color-border) p-1.5">
                     <button
                       type="button"
                       onClick={handleSignOut}
@@ -193,7 +193,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
               )}
             </div>
           ) : (
-            <Button size="sm" onClick={openSignIn}>
+            <Button size="sm" variant="accent" onClick={openSignIn}>
               <LogIn className="h-4 w-4" /> Login
             </Button>
           )}
@@ -217,7 +217,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
 
       {/* Menu (below lg) */}
       {menuOpen && (
-        <div ref={menuPanelRef} className="lg:hidden mx-4 mt-2 rounded-[14px] bg-card shadow-[--shadow-2] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
+        <div ref={menuPanelRef} className="lg:hidden mx-4 mt-2 rounded-[14px] bg-card shadow-(--shadow-2) border border-(--color-border) px-3 py-3 flex flex-col gap-1">
           {/* Signed-in profile header: photo (or an "upload photo" placeholder), name, email.
               The whole row and the placeholder lead to wherever that person actually edits it.
               BUG-083: for a mentor that is their own profile form, NOT /account - hiding the
@@ -269,7 +269,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
                 <LogOut className="h-4 w-4" /> Sign out
               </button>
             ) : (
-              <Button className="w-full" onClick={() => { setMenuOpen(false); openSignIn(); }}>
+              <Button variant="accent" className="w-full" onClick={() => { setMenuOpen(false); openSignIn(); }}>
                 <LogIn className="h-4 w-4" /> Login
               </Button>
             )}

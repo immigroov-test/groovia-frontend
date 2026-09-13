@@ -168,7 +168,7 @@ export function AdminReferrals() {
         {(['affiliates', 'commissions', 'review'] as const).map((v) => (
           <button key={v} type="button" onClick={() => { setView(v); if (v === 'affiliates') setFocus(null); }}
             className={`rounded-full px-3 py-1 text-sm font-medium border transition-colors ${
-              view === v ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-[--color-border] text-muted hover:text-foreground'}`}>
+              view === v ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-(--color-border) text-muted hover:text-foreground'}`}>
             {v === 'affiliates' ? 'Affiliates & codes' : v === 'commissions' ? 'Commissions' : 'Review queue'}
             {v === 'review' && openFlags > 0 && (
               <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">{openFlags}</span>
@@ -216,14 +216,14 @@ export function AdminReferrals() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[960px]">
-                <thead><tr className="text-left text-xs text-muted border-b border-[--color-border]">
+                <thead><tr className="text-left text-xs text-muted border-b border-(--color-border)">
                   <Th>Affiliate</Th><Th>Type</Th><Th>Link</Th><Th>Codes</Th><Th>Redemptions</Th><Th>Referrals</Th>
                   <Th>Earned</Th><Th>Pending</Th><Th></Th>
                 </tr></thead>
                 <tbody>
                   {rows.length === 0 && <tr><td colSpan={9} className="py-4 text-muted">No affiliates yet.</td></tr>}
                   {rows.map((r) => (
-                    <tr key={r.affiliate_id} className="border-b border-[--color-border]/60 align-top">
+                    <tr key={r.affiliate_id} className="border-b border-(--color-border)/60 align-top">
                       <Td>
                         <span className="font-medium text-foreground">{r.name}</span>
                         {r.status !== 'active' && <span className="ml-2 text-xs text-amber-700">({r.status})</span>}
@@ -456,14 +456,14 @@ export function AdminReferralCommissions({ affiliateId, heading, onChanged }: {
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
-          <thead><tr className="text-left text-xs text-muted border-b border-[--color-border]">
+          <thead><tr className="text-left text-xs text-muted border-b border-(--color-border)">
             <Th>Completed</Th><Th>By (code)</Th><Th>Customer</Th><Th>Mentor</Th><Th>Discount</Th>
             <Th>Paid</Th><Th>Split (M/I/P)</Th><Th>Commission</Th><Th>Status</Th><Th></Th>
           </tr></thead>
           <tbody>
             {(rows ?? []).length === 0 && <tr><td colSpan={10} className="py-4 text-muted">No referred bookings yet.</td></tr>}
             {(rows ?? []).map((r: CommissionRow & { ledger_id?: string }) => (
-              <tr key={r.booking_id} className="border-b border-[--color-border]/60 align-top">
+              <tr key={r.booking_id} className="border-b border-(--color-border)/60 align-top">
                 <Td>{r.completed_at ? new Date(r.completed_at).toLocaleDateString() : '-'}</Td>
                 <Td><span className="font-medium text-foreground">{r.affiliate_name}</span>{r.referral_code && <span className="block font-mono text-xs text-muted">{r.referral_code}</span>}</Td>
                 <Td>{r.customer_name || r.customer_email}</Td>

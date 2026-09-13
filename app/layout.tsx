@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { SITE_URL, IS_PUBLIC_SITE, GOOGLE_SITE_VERIFICATION } from '../lib/site';
 import { BackendWakeOverlay } from '@/components/ui/BackendWakeOverlay';
 import { CookieConsent } from '@/components/CookieConsent';
 import { ReferralCapture } from '@/components/ReferralCapture';
 
-const sourceSans = localFont({ src: './fonts/SourceSans3-Variable.ttf', variable: '--font-source-sans', display: 'swap', weight: '200 900' });
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta', display: 'swap' });
 const sourceSerif = localFont({ src: './fonts/SourceSerif4-Variable.ttf', variable: '--font-source-serif', display: 'swap', weight: '200 900' });
 
 const SITE_TITLE = 'Immigroov - Practical guidance for moving abroad';
@@ -50,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sourceSans.variable} ${sourceSerif.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${sourceSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         {children}

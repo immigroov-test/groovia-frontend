@@ -105,8 +105,8 @@ export function CountrySelect({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-[10px] border border-[--color-border] shadow-[--shadow-2] overflow-hidden" style={{ position: 'relative' }}>
-          <div className="p-2 border-b border-[--color-border]">
+        <div className="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-[10px] border border-(--color-border) shadow-(--shadow-2) overflow-hidden" style={{ position: 'relative' }}>
+          <div className="p-2 border-b border-(--color-border)">
             <input
               type="text"
               autoFocus

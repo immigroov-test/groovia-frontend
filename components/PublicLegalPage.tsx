@@ -165,7 +165,7 @@ export function PublicLegalPage(
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search all documents"
               aria-label="Search terms and policies"
-              className="w-full rounded-full border border-[--color-border] bg-card py-2 pl-9 pr-9 text-sm
+              className="w-full rounded-full border border-(--color-border) bg-card py-2 pl-9 pr-9 text-sm
                          outline-none focus:border-brand-500"
             />
             {query && (
@@ -190,7 +190,7 @@ export function PublicLegalPage(
               id="legal-picker"
               value={current?.slug ?? ''}
               onChange={(e) => select(e.target.value)}
-              className="w-full rounded-[10px] border border-[--color-border] bg-card px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+              className="w-full rounded-[10px] border border-(--color-border) bg-card px-3 py-2.5 text-sm outline-none focus:border-brand-500"
             >
               {groups.map((g) => (
                 <optgroup key={g.label} label={g.label}>
@@ -249,7 +249,7 @@ export function PublicLegalPage(
                         {/* Sections nested beneath their document. The indent rule is what
                             makes this read as an outline rather than a second flat list. */}
                         {isExpanded && docHeadings.length > 0 && (
-                          <ul className="mt-1 mb-2 ml-4 flex flex-col gap-0.5 border-l border-[--color-border] pl-3">
+                          <ul className="mt-1 mb-2 ml-4 flex flex-col gap-0.5 border-l border-(--color-border) pl-3">
                             {docHeadings.map((h) => (
                               <li key={h.id}>
                                 <a
@@ -288,7 +288,7 @@ export function PublicLegalPage(
                 {/* Version and date as a tag beside the title. As grey micro-text under the
                     heading it was effectively invisible, and for a contract the version a
                     reader is looking at is not a detail. */}
-                <span className="shrink-0 rounded-full border border-[--color-border] bg-brand-50 px-2.5 py-0.5
+                <span className="shrink-0 rounded-full border border-(--color-border) bg-brand-50 px-2.5 py-0.5
                                  text-xs font-medium text-brand-800 tabular-nums">
                   {current.version} · {when(current.last_updated)}
                 </span>
@@ -298,7 +298,7 @@ export function PublicLegalPage(
               {/* Phone only: the sections, since the outline column collapses to a select. */}
               {headings.length >= 4 && (
                 <nav aria-label={`Sections of ${current.title}`}
-                  className="md:hidden mt-5 rounded-[10px] border border-[--color-border] bg-brand-50/40 px-4 py-3">
+                  className="md:hidden mt-5 rounded-[10px] border border-(--color-border) bg-brand-50/40 px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted/70">Sections</p>
                   <ul className="mt-2 flex flex-col gap-1.5">
                     {headings.map((h) => (
@@ -318,7 +318,7 @@ export function PublicLegalPage(
             </>
           )}
 
-          <p className="mt-10 pt-6 border-t border-[--color-border] text-sm text-muted">
+          <p className="mt-10 pt-6 border-t border-(--color-border) text-sm text-muted">
             Questions about your data?{' '}
             <Link href="/legal/data-subject-request" className="text-brand-700 hover:underline">
               Make a data request

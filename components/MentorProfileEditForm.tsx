@@ -399,7 +399,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
                   {suggestions.slice(0, 8).map((t) => (
                     <button key={t} type="button"
                       onClick={() => setSpecializations([...specializations, t].slice(0, 12))}
-                      className="rounded-full border border-dashed border-[--color-border] bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                      className="rounded-full border border-dashed border-(--color-border) bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
                       + {t}
                     </button>
                   ))}
@@ -528,7 +528,7 @@ function StatusNotice({ status, note, hasPendingRevision }: {
   }
   // Approved, no revision in flight.
   return (
-    <div className="rounded-lg border border-[--color-border] bg-brand-50/40 p-3">
+    <div className="rounded-lg border border-(--color-border) bg-brand-50/40 p-3">
       <p className="text-sm text-muted">
         Your profile is live. Edits here go live right away, except a change to your <span className="font-medium text-foreground">name</span> or
         {' '}<span className="font-medium text-foreground">country</span>, which needs an admin&apos;s approval first.

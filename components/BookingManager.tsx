@@ -206,13 +206,13 @@ function BookingCard({ b, role }: { b: ManagedBooking; role: Role }) {
   return (
     <Link
       href={`/session/${b.id}`}
-      className="group block rounded-[14px] border border-[--color-border] bg-white p-4 sm:p-5 transition-colors hover:border-brand-400 hover:bg-brand-50/30"
+      className="group block rounded-[14px] border border-(--color-border) bg-white p-4 sm:p-5 transition-colors hover:border-brand-400 hover:bg-brand-50/30"
     >
       <div className="flex items-center gap-4">
         {/* Date chip */}
         <div className={cn(
           'shrink-0 w-14 h-14 rounded-[10px] border flex flex-col items-center justify-center',
-          pending ? 'bg-amber-50 border-amber-200' : 'bg-brand-50 border-[--color-border]',
+          pending ? 'bg-amber-50 border-amber-200' : 'bg-brand-50 border-(--color-border)',
         )}>
           <span className={cn('text-xs font-semibold uppercase tracking-wide', pending ? 'text-amber-700' : 'text-brand-700')}>{monthAbbr(b.slot_time)}</span>
           <span className="text-xl font-bold text-brand-900 leading-none">{dayNum(b.slot_time)}</span>

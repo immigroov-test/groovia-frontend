@@ -29,7 +29,7 @@ export function LocationBadge({ variant = 'menu' }: { variant?: 'inline' | 'menu
   }
 
   return (
-    <div className="mt-1 flex items-center gap-2 border-t border-[--color-border] px-3 pt-3 pb-1 text-xs text-muted">
+    <div className="mt-1 flex items-center gap-2 border-t border-(--color-border) px-3 pt-3 pb-1 text-xs text-muted">
       <MapPin className="h-4 w-4 shrink-0 text-accent-500" aria-hidden />
       <span className="truncate" title={label}>{label}</span>
     </div>

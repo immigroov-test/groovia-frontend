@@ -893,7 +893,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 w-fit">
           <ChevronLeft className="h-4 w-4" /> All mentors
         </Link>
-        <div className="rounded-[14px] border border-[--color-border] bg-white px-6 py-10 sm:px-8 max-w-lg mx-auto">
+        <div className="rounded-[14px] border border-(--color-border) bg-white px-6 py-10 sm:px-8 max-w-lg mx-auto">
         <div className="text-center">
           <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
             <Check className="h-7 w-7 text-emerald-500" />
@@ -934,7 +934,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         )}
 
         {/* What happens next - BUG-080: reassure the customer and set expectations. */}
-        <div className="mt-8 rounded-[14px] border border-[--color-border] bg-brand-50/50 p-4">
+        <div className="mt-8 rounded-[14px] border border-(--color-border) bg-brand-50/50 p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-muted">What happens next</p>
           {/* Only the two facts the actions below don't already state (no repetition). Reminder timing
               comes from REMINDER_NOTICE so it stays in sync with the actual schedule. */}
@@ -1005,7 +1005,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
       )}
 
       {/* ── Header: identity + rating + timezones ─────────────────── */}
-      <div className="rounded-[14px] border border-[--color-border] bg-white p-5 sm:p-6">
+      <div className="rounded-[14px] border border-(--color-border) bg-white p-5 sm:p-6">
         <div className="flex items-start gap-4">
           {mentor.photo_url ? (
             <img src={mentor.photo_url} alt={mentor.display_name} className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover shrink-0" />
@@ -1071,7 +1071,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
           || (mentor.specializations?.length ?? 0) > 0
           || (mentor.expertise_country_codes?.length ?? 0) > 0
           || (mentor.languages?.length ?? 0) > 0) && (
-          <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-col gap-2 text-xs text-muted">
+          <div className="mt-4 pt-3 border-t border-(--color-border) flex flex-col gap-2 text-xs text-muted">
             {(mentor.home_country_code || mentor.years_lived_experience) && (
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 {mentor.home_country_code && (
@@ -1120,7 +1120,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         )}
 
         {/* Timezones on their own row so they never squeeze the name/headline on mobile. */}
-        <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
+        <div className="mt-4 pt-3 border-t border-(--color-border) flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
           <span className="inline-flex items-center gap-1">
             Your time <TimezoneSelect value={userTz} onChange={setPickedTz} />
           </span>
@@ -1141,7 +1141,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         {/* Bio lives INSIDE the card, aligned with the identity above it (clamped to ~4 lines;
             Read more only when it actually overflows). */}
         {mentor.bio && !isRichTextEmpty(mentor.bio) && (
-          <div className="mt-4 pt-4 border-t border-[--color-border]">
+          <div className="mt-4 pt-4 border-t border-(--color-border)">
             {/* Justify + tighten: migrated bios arrive as many short one-line paragraphs, which
                 otherwise read as a choppy, spaced-out list. Tight paragraph margins + hidden empty
                 paragraphs make it flow as continuous prose. */}
@@ -1169,7 +1169,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         {/* CONTENT: service list, or calendar + slots once a service is picked */}
         <div className="min-w-0">
           {!selectedService ? (
-            <div className="rounded-[14px] border border-[--color-border] bg-white p-5 sm:p-6">
+            <div className="rounded-[14px] border border-(--color-border) bg-white p-5 sm:p-6">
               <h3 className="text-base font-semibold text-brand-900 mb-4">Choose a service</h3>
               {servicesError ? (
                 <p className="text-sm text-red-600">{servicesError}</p>
@@ -1186,7 +1186,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                     // description toggle stopping propagation so it can expand independently.
                     <div key={svc.id} role="button" tabIndex={0} onClick={() => selectService(svc)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectService(svc); } }}
-                      className="text-left rounded-[10px] border border-[--color-border] p-4 hover:border-brand-400 hover:bg-brand-50/60 transition-colors cursor-pointer">
+                      className="text-left rounded-[10px] border border-(--color-border) p-4 hover:border-brand-400 hover:bg-brand-50/60 transition-colors cursor-pointer">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex flex-col gap-1 flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -1209,11 +1209,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
               )}
             </div>
           ) : (
-            <div className="rounded-[14px] border border-[--color-border] bg-white p-5 sm:p-6">
+            <div className="rounded-[14px] border border-(--color-border) bg-white p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3 mb-4">
                 <h3 className="text-base font-semibold text-brand-900">Pick a date &amp; time</h3>
                 <button type="button" onClick={changeService}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[--color-border] px-2.5 py-1.5 text-xs font-medium text-brand-700 hover:border-brand-400 hover:bg-brand-50 transition-colors shrink-0">
+                  className="inline-flex items-center gap-1 rounded-lg border border-(--color-border) px-2.5 py-1.5 text-xs font-medium text-brand-700 hover:border-brand-400 hover:bg-brand-50 transition-colors shrink-0">
                   <ChevronLeft className="h-3.5 w-3.5" /> Back to services
                 </button>
               </div>
@@ -1251,7 +1251,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                                 className={cn('flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg border text-center transition-colors',
                                   sel
                                     ? 'border-brand-900 bg-brand-900 text-white'
-                                    : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50')}>
+                                    : 'border-(--color-border) hover:border-brand-500 hover:bg-brand-50')}>
                                 <span className={cn('text-sm font-semibold', sel ? 'text-white' : 'text-foreground')}>
                                   {formatSlotTime(slot.slot_start, userTz)}
                                 </span>
@@ -1274,7 +1274,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         </div>
 
         {/* SUMMARY: booking details + confirm form (guest fields only when logged out) */}
-        <aside className="rounded-[14px] border border-[--color-border] bg-white p-5 flex flex-col gap-3 lg:sticky lg:top-6">
+        <aside className="rounded-[14px] border border-(--color-border) bg-white p-5 flex flex-col gap-3 lg:sticky lg:top-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted">Your booking</p>
           {!selectedService ? (
             <p className="text-sm text-muted">Pick a service to get started.</p>
@@ -1284,7 +1284,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 <p className="font-semibold text-foreground">{selectedService.title}</p>
                 <p className="text-sm text-muted">{selectedService.duration} min · {selectedService.type === 'video' ? 'Video call' : 'Direct message'}</p>
               </div>
-              <div className="border-y border-[--color-border] py-3 flex flex-col gap-1.5">
+              <div className="border-y border-(--color-border) py-3 flex flex-col gap-1.5">
                 <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start, userTz))}, ${formatSlotTime(selectedSlot.slot_start, userTz)}` : 'Not selected yet'} />
                 {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? `${formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)} ${tzShort(mentorTz)}` : 'Not selected yet'} />}
               </div>
@@ -1306,7 +1306,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
               })()}
 
               {selectedSlot && (
-                <div className="border-t border-[--color-border] pt-3 flex flex-col gap-3">
+                <div className="border-t border-(--color-border) pt-3 flex flex-col gap-3">
                   {questions.map(q => (
                     <div key={q.id} className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-foreground">
@@ -1393,8 +1393,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
 
       {showReview && selectedService && selectedSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-[14px] bg-white shadow-[--shadow-2] flex flex-col max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-3 p-5 border-b border-[--color-border]">
+          <div className="w-full max-w-md rounded-[14px] bg-white shadow-(--shadow-2) flex flex-col max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-(--color-border)">
               <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted">Review &amp; payment</p>
                 <h3 className="text-base font-semibold text-brand-900 break-words">{selectedService.title}</h3>
@@ -1406,7 +1406,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
             </div>
 
             {/* Referral code: validated in the backend; a valid code applies its discount below. */}
-            <div className="p-5 border-b border-[--color-border] flex flex-col gap-2">
+            <div className="p-5 border-b border-(--color-border) flex flex-col gap-2">
               <label className="text-sm font-medium text-foreground">Referral code</label>
               <div className="flex gap-2">
                 <input value={referralCode}
@@ -1441,7 +1441,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                       <span className="text-sm">- {formatPrice(reviewQuote.gross_customer * referralInfo.discount_pct / 100, reviewQuote.customer_currency)}</span>
                     </div>
                   )}
-                  <div className="mt-1 pt-2 border-t border-[--color-border] flex items-center justify-between">
+                  <div className="mt-1 pt-2 border-t border-(--color-border) flex items-center justify-between">
                     <span className="text-sm font-semibold text-foreground">Total to pay</span>
                     <span className="text-base font-bold text-brand-900">{formatPrice(reviewQuote.gross_customer * (1 - (referralInfo?.discount_pct || 0) / 100), reviewQuote.customer_currency)}</span>
                   </div>
@@ -1508,7 +1508,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
             )}
 
             {/* Actions: confirm, or go back to change the slot */}
-            <div className="p-5 border-t border-[--color-border] flex flex-col-reverse sm:flex-row gap-2">
+            <div className="p-5 border-t border-(--color-border) flex flex-col-reverse sm:flex-row gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowReview(false); setStep('datetime'); }}>Modify booking</Button>
               <Button variant="accent" className="flex-1" loading={submitting || paying || checkingEmail}
                 disabled={selfBooking || !acceptedTerms} onClick={handleConfirm}>

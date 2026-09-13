@@ -85,7 +85,7 @@ export function WeeklyHoursEditor({ value, onChange }: { value: WeeklyHours; onC
   }
 
   return (
-    <div className="flex flex-col divide-y divide-[--color-border]">
+    <div className="flex flex-col divide-y divide-(--color-border)">
       {WEEK_DAYS.map((day) => {
         const slots = value[day] ?? [];
         const on = slots.length > 0;
@@ -129,8 +129,8 @@ export function WeeklyHoursEditor({ value, onChange }: { value: WeeklyHours; onC
                             <Copy className="h-4 w-4" /> Copy to…
                           </button>
                           {copyFrom === day && (
-                            <div className="absolute right-0 z-30 mt-1 w-52 rounded-[10px] bg-white border border-[--color-border] shadow-[--shadow-2] p-2 flex flex-col gap-1">
-                              <div className="flex gap-2 pb-1.5 border-b border-[--color-border]">
+                            <div className="absolute right-0 z-30 mt-1 w-52 rounded-[10px] bg-white border border-(--color-border) shadow-(--shadow-2) p-2 flex flex-col gap-1">
+                              <div className="flex gap-2 pb-1.5 border-b border-(--color-border)">
                                 <button type="button" onClick={() => setCopyTo(WEEK_DAYS.filter((d) => d !== day))}
                                   className="text-xs font-medium text-brand-700 hover:underline">All days</button>
                                 <button type="button" onClick={() => setCopyTo(WEEK_DAYS.slice(0, 5).filter((d) => d !== day))}
@@ -145,7 +145,7 @@ export function WeeklyHoursEditor({ value, onChange }: { value: WeeklyHours; onC
                                   {d}
                                 </label>
                               ))}
-                              <div className="flex gap-2 pt-1.5 border-t border-[--color-border]">
+                              <div className="flex gap-2 pt-1.5 border-t border-(--color-border)">
                                 <button type="button" onClick={() => applyCopy(day, copyTo)} disabled={copyTo.length === 0}
                                   className="flex-1 text-xs font-medium bg-brand-600 text-white rounded-md py-1.5 disabled:opacity-40">
                                   Apply

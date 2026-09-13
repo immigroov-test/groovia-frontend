@@ -205,7 +205,7 @@ export function AdminBookings() {
         {([['live', 'Live bookings'], ['past', 'Past sessions']] as const).map(([key, label]) => (
           <button key={key} type="button" onClick={() => setView(key)}
             className={cn('rounded-full px-3 py-1 text-sm font-medium border transition-colors',
-              view === key ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-[--color-border] text-muted hover:text-foreground')}>
+              view === key ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-(--color-border) text-muted hover:text-foreground')}>
             {label}
           </button>
         ))}
@@ -217,7 +217,7 @@ export function AdminBookings() {
           {GROUPS.map(([key, label]) => (
             <button key={key} type="button" onClick={() => setGroup(key)}
               className={cn('rounded-[10px] border px-3 py-2 text-left transition-colors',
-                group === key ? 'border-brand-600 bg-brand-50' : 'border-[--color-border] hover:bg-brand-50/40')}>
+                group === key ? 'border-brand-600 bg-brand-50' : 'border-(--color-border) hover:bg-brand-50/40')}>
               <p className="text-xl font-bold text-foreground leading-none">{counts[key] ?? 0}</p>
               <p className="text-xs text-muted mt-1">{label}</p>
             </button>
@@ -241,10 +241,10 @@ export function AdminBookings() {
         ) : live.length === 0 ? (
           <p className="text-sm text-muted">No bookings match.</p>
         ) : (
-          <div className="overflow-x-auto rounded-[10px] border border-[--color-border]">
+          <div className="overflow-x-auto rounded-[10px] border border-(--color-border)">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-muted border-b border-[--color-border]">
+                <tr className="text-left text-xs text-muted border-b border-(--color-border)">
                   <th className="px-4 py-2.5 font-medium">Ref</th>
                   <th className="px-4 py-2.5 font-medium">When</th>
                   <th className="px-4 py-2.5 font-medium">Mentor</th>
@@ -256,7 +256,7 @@ export function AdminBookings() {
               <tbody>
                 {live.map((b) => (
                   <Fragment key={b.id}>
-                    <tr onClick={() => toggle(b.id)} className="border-b border-[--color-border] last:border-0 hover:bg-brand-50/50 cursor-pointer">
+                    <tr onClick={() => toggle(b.id)} className="border-b border-(--color-border) last:border-0 hover:bg-brand-50/50 cursor-pointer">
                       <td className="px-4 py-2.5 whitespace-nowrap"><code className="text-xs text-muted">{refOf(b)}</code></td>
                       <td className="px-4 py-2.5 whitespace-nowrap text-foreground">{fmt(b.slot_time)}</td>
                       <td className="px-4 py-2.5 text-foreground">{b.mentor_name ?? '-'}</td>
@@ -282,7 +282,7 @@ export function AdminBookings() {
                       </td>
                     </tr>
                     {openId === b.id && (
-                      <tr id={`booking-detail-${b.id}`} className="bg-brand-50/30 border-b border-[--color-border]">
+                      <tr id={`booking-detail-${b.id}`} className="bg-brand-50/30 border-b border-(--color-border)">
                         <td colSpan={6} className="px-4 py-3">
                           {details[b.id] === undefined ? <span className="text-xs text-muted">Loading…</span>
                             : details[b.id] === null ? <span className="text-xs text-red-600">Could not load details.</span>
@@ -463,10 +463,10 @@ export function AdminBookings() {
         ) : past.length === 0 ? (
           <p className="text-sm text-muted">No past sessions match. (Imported from the old portal, read-only.)</p>
         ) : (
-          <div className="overflow-x-auto rounded-[10px] border border-[--color-border]">
+          <div className="overflow-x-auto rounded-[10px] border border-(--color-border)">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-muted border-b border-[--color-border]">
+                <tr className="text-left text-xs text-muted border-b border-(--color-border)">
                   <th className="px-4 py-2.5 font-medium">When</th>
                   <th className="px-4 py-2.5 font-medium">Mentor</th>
                   <th className="px-4 py-2.5 font-medium">Customer</th>
@@ -476,7 +476,7 @@ export function AdminBookings() {
               </thead>
               <tbody>
                 {past.map((s) => (
-                  <tr key={s.id} className="border-b border-[--color-border] last:border-0">
+                  <tr key={s.id} className="border-b border-(--color-border) last:border-0">
                     <td className="px-4 py-2.5 whitespace-nowrap text-foreground">{fmt(s.slot_start)}</td>
                     <td className="px-4 py-2.5 text-foreground">{s.mentor_name ?? '-'}</td>
                     <td className="px-4 py-2.5 text-foreground">{s.customer_name ?? '-'}</td>

@@ -820,7 +820,7 @@ export default function ChatInterface({ authed, featuredMentors = [], upcomingWe
           onClick={scrollToTop}
           aria-label="Back to the top"
           title="Back to the top"
-          className="absolute top-2 left-1/2 -translate-x-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur text-brand-800 shadow-[--shadow-1] hover:bg-white"
+          className="absolute top-2 left-1/2 -translate-x-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur text-brand-800 shadow-(--shadow-1) hover:bg-white"
         >
           <ChevronUp className="h-4 w-4" />
         </button>
@@ -828,7 +828,7 @@ export default function ChatInterface({ authed, featuredMentors = [], upcomingWe
           <button
             onClick={handleNewChat}
             title="Clear chat"
-            className="absolute top-2 right-4 sm:right-auto sm:left-[63%] flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-[--shadow-1] hover:bg-white"
+            className="absolute top-2 right-4 sm:right-auto sm:left-[63%] flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-(--shadow-1) hover:bg-white"
           >
             <SquarePen className="h-3.5 w-3.5" />
             Clear chat

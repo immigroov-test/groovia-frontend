@@ -389,7 +389,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                 step >= n ? 'bg-brand-600 text-white' : 'bg-brand-100 text-brand-600')}>{n}</span>
               <span className={cn('text-sm', step === n ? 'font-semibold text-foreground' : 'text-muted')}>{label}</span>
             </div>
-            {i < STEPS.length - 1 && <div className={cn('h-px w-8', step > n ? 'bg-brand-500' : 'bg-[--color-border]')} />}
+            {i < STEPS.length - 1 && <div className={cn('h-px w-8', step > n ? 'bg-brand-500' : 'bg-(--color-border)')} />}
           </div>
         ))}
       </div>
@@ -469,7 +469,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
               ))}
               {servedCountries.length < 2 && (
                 <button type="button" onClick={addServedCountry}
-                  className="self-start inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                  className="self-start inline-flex items-center gap-1.5 rounded-full border border-dashed border-(--color-border) bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
                   <Plus className="h-3.5 w-3.5" /> Add a country
                 </button>
               )}
@@ -563,7 +563,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                     {suggestions.slice(0, 8).map((t) => (
                       <button key={t} type="button"
                         onClick={() => setSpecializations([...specializations, t].slice(0, 12))}
-                        className="rounded-full border border-dashed border-[--color-border] bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                        className="rounded-full border border-dashed border-(--color-border) bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
                         + {t}
                       </button>
                     ))}
@@ -730,7 +730,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
         <Card id="sec-terms">
           <CardBody className="pt-6 flex flex-col gap-4">
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
-              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorBundle}
+              <input type="checkbox" className="mt-0.5 accent-(--color-brand-500)" checked={agreedMentorBundle}
                 onChange={(e) => setAgreedMentorBundle(e.target.checked)} />
               <span>
                 I agree to the{' '}
@@ -743,7 +743,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                 instrument (controller/processor relationship) and regulators expect
                 distinct consent, not folded into the general agreement. */}
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
-              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorDpa}
+              <input type="checkbox" className="mt-0.5 accent-(--color-brand-500)" checked={agreedMentorDpa}
                 onChange={(e) => setAgreedMentorDpa(e.target.checked)} />
               <span>
                 I have read and agree to the{' '}

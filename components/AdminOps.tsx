@@ -43,7 +43,7 @@ export function AdminOps() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-[10px] border border-[--color-border] bg-brand-50/40 p-4 text-xs text-muted leading-relaxed">
+      <div className="rounded-[10px] border border-(--color-border) bg-brand-50/40 p-4 text-xs text-muted leading-relaxed">
         <p className="font-medium text-foreground mb-1">No-show strike ladder</p>
         Strike 1-2 → warning only. Strike 3+ → 25% mentor-payout penalty per no-show. Counter resets automatically after 90 days.
         Reset a mentor&apos;s strikes here if a dispute is resolved in their favour.

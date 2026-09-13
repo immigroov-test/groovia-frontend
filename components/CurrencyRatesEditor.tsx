@@ -72,7 +72,7 @@ export function CurrencyRatesEditor({
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base rate (per hour)</label>
           <div className="flex items-stretch w-full rounded-[10px] bg-white overflow-hidden shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus-within:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]">
-            <span className="pl-2.5 pr-2.5 flex items-center gap-1.5 text-sm border-r border-[--color-border] bg-brand-50/50 select-none">
+            <span className="pl-2.5 pr-2.5 flex items-center gap-1.5 text-sm border-r border-(--color-border) bg-brand-50/50 select-none">
               <Flag code={currencyCountry(primaryCurrency)} className="w-4 h-auto rounded-[1px] shrink-0" />
               <span className="text-foreground">{currencySymbol(primaryCurrency)}</span>
             </span>
@@ -148,7 +148,7 @@ export function CurrencyRatesEditor({
       </div>
 
       {/* Smart pricing - controls the market preview above. Intentionally vague on the method. */}
-      <label className="flex items-start justify-between gap-3 rounded-lg border border-[--color-border] p-3 cursor-pointer">
+      <label className="flex items-start justify-between gap-3 rounded-lg border border-(--color-border) p-3 cursor-pointer">
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground">Smart pricing</p>
           <p className="text-xs text-muted mt-0.5">

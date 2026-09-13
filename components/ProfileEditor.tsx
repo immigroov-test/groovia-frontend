@@ -72,7 +72,7 @@ export function ProfileEditor({ userId, initialFullName, initialPhone, initialSu
               rows={5}
               maxLength={2000}
               placeholder="A short professional summary - your role, experience, skills and goals."
-              className="w-full rounded-[10px] border border-[--color-border] bg-card px-3.5 py-2.5 text-sm leading-relaxed placeholder:text-muted/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 resize-y"
+              className="w-full rounded-[10px] border border-(--color-border) bg-card px-3.5 py-2.5 text-sm leading-relaxed placeholder:text-muted/70 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400 resize-y"
             />
           </label>
 

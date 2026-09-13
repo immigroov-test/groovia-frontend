@@ -87,7 +87,7 @@ export function MentorEarnings() {
               ))}
             </div>
           )}
-          <ul className="mt-4 flex flex-col divide-y divide-[--color-border]">
+          <ul className="mt-4 flex flex-col divide-y divide-(--color-border)">
             {earning.map((b) => (
               <li key={b.id} className="flex items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">

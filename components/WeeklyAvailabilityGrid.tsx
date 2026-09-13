@@ -145,7 +145,7 @@ export function WeeklyAvailabilityGrid({ value, onChange }: Props) {
                     onMouseEnter={() => onCellEnter(key)}
                     onMouseLeave={() => setHovered(null)}
                     className={cn(
-                      'h-4 border-b border-r border-[--color-border] cursor-pointer transition-colors',
+                      'h-4 border-b border-r border-(--color-border) cursor-pointer transition-colors',
                       dayIdx === 0 && 'border-l',
                       rowIdx === 0 && 'border-t rounded-tl-sm rounded-tr-sm',
                       isSelected

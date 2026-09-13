@@ -105,8 +105,8 @@ export function AdminRevisionList({ initialRevisions }: { initialRevisions: Admi
                 <div className="flex items-start gap-3 min-w-0">
                   {rev.photo_url
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={rev.photo_url} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover border border-[--color-border]" />
-                    : <div className="h-12 w-12 shrink-0 rounded-full bg-brand-50 border border-[--color-border] flex items-center justify-center text-brand-300"><User className="h-6 w-6" /></div>}
+                    ? <img src={rev.photo_url} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover border border-(--color-border)" />
+                    : <div className="h-12 w-12 shrink-0 rounded-full bg-brand-50 border border-(--color-border) flex items-center justify-center text-brand-300"><User className="h-6 w-6" /></div>}
                   <div className="min-w-0">
                     <h3 className="text-base font-semibold text-foreground">{rev.display_name}</h3>
                     <p className="text-xs text-muted mt-0.5">{rev.email ?? '-'}</p>
@@ -129,7 +129,7 @@ export function AdminRevisionList({ initialRevisions }: { initialRevisions: Admi
               </div>
 
               {commentFor === rev.id && (
-                <div className="mt-4 flex flex-col gap-2 rounded-[10px] border border-[--color-border] bg-brand-50/40 p-3">
+                <div className="mt-4 flex flex-col gap-2 rounded-[10px] border border-(--color-border) bg-brand-50/40 p-3">
                   <label className="text-xs font-medium text-foreground">
                     What should the mentor change? <span className="text-muted font-normal">(shown in their dashboard; live profile stays up)</span>
                   </label>
@@ -144,7 +144,7 @@ export function AdminRevisionList({ initialRevisions }: { initialRevisions: Admi
                 </div>
               )}
 
-              <div className="mt-5 pt-5 border-t border-[--color-border]">
+              <div className="mt-5 pt-5 border-t border-(--color-border)">
                 <p className="text-xs font-semibold text-foreground uppercase tracking-wide mb-3">Proposed changes</p>
                 {keys.length === 0 ? (
                   <p className="text-sm text-muted">No field details.</p>
@@ -185,7 +185,7 @@ function FieldValue({ field, value }: { field: keyof ProposedChanges; value: unk
   if (field === 'bio') return <RichText html={value as string} className="text-foreground" />;
   if (field === 'photo_url') {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={value as string} alt="" className="h-16 w-16 rounded-full object-cover border border-[--color-border]" />;
+    return <img src={value as string} alt="" className="h-16 w-16 rounded-full object-cover border border-(--color-border)" />;
   }
   if (field === 'social_links') {
     const links = value as SocialLink[];

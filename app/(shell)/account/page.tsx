@@ -41,7 +41,7 @@ export default async function AccountPage() {
 
       {/* Section 7 placement: "linked from account/profile settings page (all
           logged-in users - mentors and customers)." */}
-      <p className="mt-8 pt-6 border-t border-[--color-border] text-sm text-muted">
+      <p className="mt-8 pt-6 border-t border-(--color-border) text-sm text-muted">
         <Link href="/legal/data-subject-request" className="text-brand-700 hover:underline">
           Request access to, correction of, or deletion of your data
         </Link>

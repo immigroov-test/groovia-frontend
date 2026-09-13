@@ -55,10 +55,10 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
           )}
 
           {/* min-h reserves the headline space so typing doesn't shift the layout. Gradient
-              is the exact Immigroov logo colours (blue #00377d -> orange #fe9d1c). */}
+              runs brand navy -> orange. */}
           <motion.h1
             {...rise(headlineOn, 0)}
-            className="min-h-[4rem] sm:min-h-[7rem] text-2xl sm:text-4xl font-bold tracking-tight leading-[1.12] text-center sm:text-left bg-gradient-to-r from-[#00377d] via-[#0a4fa0] to-[#fe9d1c] bg-clip-text text-transparent"
+            className="min-h-[4rem] sm:min-h-[7rem] text-2xl sm:text-4xl font-bold tracking-tight leading-[1.12] text-center sm:text-left bg-gradient-to-r from-brand-900 via-brand-700 to-accent-500 bg-clip-text text-transparent"
           >
             <TypeText text={b.headline} active={headlineOn} speed={TYPE_SPEED} />
           </motion.h1>

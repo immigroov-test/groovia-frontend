@@ -62,7 +62,7 @@ export function LegalUpdateNotice({ authed }: { authed: boolean }) {
       role="status"
       aria-live="polite"
       className="fixed bottom-4 right-4 z-40 w-[calc(100vw-2rem)] max-w-sm rounded-[14px] border
-                 border-[--color-border] bg-card p-4 shadow-[0_8px_30px_-8px_rgba(8,43,82,0.25)]"
+                 border-(--color-border) bg-card p-4 shadow-[0_8px_30px_-8px_rgba(8,43,82,0.25)]"
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50">
