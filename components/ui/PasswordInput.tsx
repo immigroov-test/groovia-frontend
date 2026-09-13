@@ -13,9 +13,9 @@ export function PasswordInput({ className, ...rest }: Props) {
       <input
         type={show ? 'text' : 'password'}
         className={cn(
-          'h-11 w-full pl-3.5 pr-10 rounded-xl bg-white text-sm text-foreground placeholder:text-muted',
-          'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-          'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
+          'h-11 w-full pl-3.5 pr-10 rounded-[10px] bg-white text-sm text-foreground placeholder:text-muted',
+          'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+          'focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25),0_1px_2px_rgba(8,43,82,0.04)]',
           className,
         )}
         {...rest}

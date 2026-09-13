@@ -190,7 +190,7 @@ export function PublicLegalPage(
               id="legal-picker"
               value={current?.slug ?? ''}
               onChange={(e) => select(e.target.value)}
-              className="w-full rounded-xl border border-[--color-border] bg-card px-3 py-2.5 text-sm outline-none focus:border-brand-500"
+              className="w-full rounded-[10px] border border-[--color-border] bg-card px-3 py-2.5 text-sm outline-none focus:border-brand-500"
             >
               {groups.map((g) => (
                 <optgroup key={g.label} label={g.label}>
@@ -205,7 +205,7 @@ export function PublicLegalPage(
           <nav className="hidden md:block mt-5" aria-label="Terms and policies">
             {groups.map((g) => (
               <div key={g.label} className="mb-5 last:mb-0">
-                <p className="px-3 text-[0.7rem] font-semibold uppercase tracking-wide text-muted/70">{g.label}</p>
+                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted/70">{g.label}</p>
                 <ul className="mt-1.5 flex flex-col gap-0.5">
                   {g.items.map((d) => {
                     const isActive = d.slug === current?.slug;
@@ -289,7 +289,7 @@ export function PublicLegalPage(
                     heading it was effectively invisible, and for a contract the version a
                     reader is looking at is not a detail. */}
                 <span className="shrink-0 rounded-full border border-[--color-border] bg-brand-50 px-2.5 py-0.5
-                                 text-[0.7rem] font-medium text-brand-800 tabular-nums">
+                                 text-xs font-medium text-brand-800 tabular-nums">
                   {current.version} · {when(current.last_updated)}
                 </span>
               </div>
@@ -298,7 +298,7 @@ export function PublicLegalPage(
               {/* Phone only: the sections, since the outline column collapses to a select. */}
               {headings.length >= 4 && (
                 <nav aria-label={`Sections of ${current.title}`}
-                  className="md:hidden mt-5 rounded-xl border border-[--color-border] bg-brand-50/40 px-4 py-3">
+                  className="md:hidden mt-5 rounded-[10px] border border-[--color-border] bg-brand-50/40 px-4 py-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted/70">Sections</p>
                   <ul className="mt-2 flex flex-col gap-1.5">
                     {headings.map((h) => (

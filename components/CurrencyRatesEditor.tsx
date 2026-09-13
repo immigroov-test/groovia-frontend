@@ -36,7 +36,7 @@ export function CurrencyRatesEditor({
   const used = new Set([primaryCurrency, ...rates.map((r) => r.currency)]);
   const available = CURRENCIES.filter((c) => !used.has(c.code));
 
-  const rateInput = 'h-11 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]';
+  const rateInput = 'h-11 px-3 rounded-[10px] bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]';
 
   function setRate(i: number, patch: Partial<CurrencyRate>) {
     onRates(rates.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -71,7 +71,7 @@ export function CurrencyRatesEditor({
         </div>
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">Base rate (per hour)</label>
-          <div className="flex items-stretch w-full rounded-xl bg-white overflow-hidden shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus-within:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
+          <div className="flex items-stretch w-full rounded-[10px] bg-white overflow-hidden shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus-within:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]">
             <span className="pl-2.5 pr-2.5 flex items-center gap-1.5 text-sm border-r border-[--color-border] bg-brand-50/50 select-none">
               <Flag code={currencyCountry(primaryCurrency)} className="w-4 h-auto rounded-[1px] shrink-0" />
               <span className="text-foreground">{currencySymbol(primaryCurrency)}</span>
@@ -134,7 +134,7 @@ export function CurrencyRatesEditor({
               </span>
             )}
             <button type="button" onClick={() => onRates(rates.filter((_, idx) => idx !== i))} aria-label="Remove currency"
-              className="h-11 w-11 flex items-center justify-center rounded-xl text-muted hover:text-red-600 hover:bg-red-50">
+              className="h-11 w-11 flex items-center justify-center rounded-[10px] text-muted hover:text-red-600 hover:bg-red-50">
               <Trash2 className="h-5 w-5" />
             </button>
           </div>

@@ -66,7 +66,7 @@ export function MentorOnboardingAvailability({ mentor }: { mentor: OnboardingMen
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4">
+      <div className="rounded-[10px] border border-brand-200 bg-brand-50/60 p-4">
         <p className="text-sm font-semibold text-brand-900">Step 2 of 2 · Rate &amp; sessions</p>
         <p className="text-sm text-muted mt-1">Finish at the bottom to go live.</p>
       </div>

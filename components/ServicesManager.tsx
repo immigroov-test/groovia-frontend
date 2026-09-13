@@ -419,7 +419,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                   is the actual commit, so it gets its own plain-language confirmation instead of firing
                   the moment "Add session" is clicked. */}
               {confirmingAdd && (
-                <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4 flex flex-col gap-3">
+                <div className="rounded-[10px] border border-brand-200 bg-brand-50/60 p-4 flex flex-col gap-3">
                   <p className="text-sm text-foreground">
                     Add <strong>{draft.title.trim()}</strong> ({draft.duration} min · {priceText(draft.duration, draft.free)})?
                     It will be submitted for admin approval before it&apos;s bookable.
@@ -441,7 +441,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
         <div className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">Your sessions</h3>
           {services.map(svc => (
-            <div key={svc.id} className={cn('rounded-xl border border-[--color-border] overflow-hidden', !svc.is_active && 'opacity-70')}>
+            <div key={svc.id} className={cn('rounded-[10px] border border-[--color-border] overflow-hidden', !svc.is_active && 'opacity-70')}>
               <div className="flex items-start justify-between gap-3 p-4">
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

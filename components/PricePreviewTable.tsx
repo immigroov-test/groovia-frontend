@@ -52,7 +52,7 @@ export function PricePreviewTable({ baseRate, currency, smartPricing }: {
   }
 
   return (
-    <div className="rounded-xl border border-[--color-border] bg-brand-50/40 p-4">
+    <div className="rounded-[10px] border border-[--color-border] bg-brand-50/40 p-4">
       <p className="flex items-start gap-1.5 text-xs text-muted mb-3">
         <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-brand-500" aria-hidden="true" />
         <span>
@@ -72,12 +72,12 @@ export function PricePreviewTable({ baseRate, currency, smartPricing }: {
       <div className="grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] gap-2">
         {markets.map((m) => (
           <div key={m.country_code}
-            className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 min-w-0 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
+            className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 min-w-0 shadow-[0_0_0_1px_rgba(8,43,82,0.06)]">
             <Flag code={currencyCountry(m.currency)} className="w-5 h-auto rounded-[2px] shrink-0" />
             <div className="min-w-0">
               {/* The name may still truncate on the narrowest tile - it is the expendable half, and
                   the title keeps the full text reachable. The price never truncates. */}
-              <p className="text-[11px] text-muted leading-tight truncate" title={currencyName(m.currency)}>
+              <p className="text-xs text-muted leading-tight truncate" title={currencyName(m.currency)}>
                 {currencyName(m.currency)}
               </p>
               <p className="text-sm font-semibold text-brand-900 leading-tight whitespace-nowrap tabular-nums">

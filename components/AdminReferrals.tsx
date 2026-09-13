@@ -171,7 +171,7 @@ export function AdminReferrals() {
               view === v ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-[--color-border] text-muted hover:text-foreground'}`}>
             {v === 'affiliates' ? 'Affiliates & codes' : v === 'commissions' ? 'Commissions' : 'Review queue'}
             {v === 'review' && openFlags > 0 && (
-              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-[11px] font-semibold text-amber-800">{openFlags}</span>
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">{openFlags}</span>
             )}
           </button>
         ))}
@@ -346,7 +346,7 @@ function AdminFraudQueue({ flags, includeResolved, onToggleResolved, onChanged }
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-sm font-semibold text-foreground">{inr(f.commission_inr ?? 0)}</p>
-                <p className="text-[11px] text-muted">
+                <p className="text-xs text-muted">
                   {f.commission_status ? `commission ${f.commission_status.replace('_', ' ')}` : 'no commission attached'}
                 </p>
               </div>
@@ -380,7 +380,7 @@ function AdminFraudQueue({ flags, includeResolved, onToggleResolved, onChanged }
                   value={notes[f.flag_id] ?? ''}
                   onChange={(e) => setNotes((n) => ({ ...n, [f.flag_id]: e.target.value }))}
                   placeholder="Note (required to approve with one)"
-                  className="h-9 min-w-0 flex-1 rounded-lg bg-white px-3 text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                  className="h-9 min-w-0 flex-1 rounded-lg bg-white px-3 text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                 <div className="flex flex-wrap gap-2">
                   <Button variant="accent" size="sm" loading={busy === f.flag_id} onClick={() => decide(f, 'approve')}>Approve</Button>
                   <Button variant="outline" size="sm" onClick={() => decide(f, 'approve_with_note')}>Approve with note</Button>
@@ -398,9 +398,9 @@ function AdminFraudQueue({ flags, includeResolved, onToggleResolved, onChanged }
 function Fact({ label, value, sub }: { label: string; value: string; sub?: string | null }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] text-muted">{label}</dt>
+      <dt className="text-xs text-muted">{label}</dt>
       <dd className="truncate text-sm text-foreground" title={value}>{value}</dd>
-      {sub && <dd className="truncate text-[11px] text-muted" title={sub}>{sub}</dd>}
+      {sub && <dd className="truncate text-xs text-muted" title={sub}>{sub}</dd>}
     </div>
   );
 }
@@ -509,7 +509,7 @@ function AField({ label, value, onChange, type = 'text', placeholder }: {
       <input type={type} value={value} placeholder={placeholder}
         {...(type === 'number' ? { min: 0, step: 1 } : {})}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+        className="h-9 w-full px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
     </label>
   );
 }
@@ -519,7 +519,7 @@ function RefKpi({ label, value, hint }: { label: string; value: string; hint?: s
     <Card><CardBody className="pt-4 pb-4">
       <p className="text-xs text-muted">{label}</p>
       <p className="text-lg font-bold text-foreground mt-0.5">{value}</p>
-      {hint && <p className="text-[11px] text-muted/70 mt-0.5">{hint}</p>}
+      {hint && <p className="text-xs text-muted/70 mt-0.5">{hint}</p>}
     </CardBody></Card>
   );
 }

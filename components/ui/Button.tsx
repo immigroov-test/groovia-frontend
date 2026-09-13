@@ -13,7 +13,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    'bg-brand-900 text-white hover:bg-[#2a2e39] active:bg-brand-900 shadow-sm',
+    'bg-brand-700 text-white hover:bg-brand-900 active:bg-brand-900',
   secondary:
     'bg-brand-50 text-brand-900 hover:bg-brand-100 active:bg-brand-200',
   outline:
@@ -21,13 +21,13 @@ const variantClasses: Record<Variant, string> = {
   ghost:
     'text-foreground hover:bg-brand-50/60 active:bg-brand-100',
   accent:
-    'bg-accent-500 text-white hover:bg-accent-600 active:bg-accent-700 shadow-sm',
+    'bg-accent-700 text-white hover:bg-brand-900 active:bg-brand-900',
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: 'h-9 px-4 text-sm rounded-full',
-  md: 'h-11 px-5 text-sm rounded-full',
-  lg: 'h-12 px-7 text-base rounded-full',
+  sm: 'h-9 px-4 text-sm rounded-[10px]',
+  md: 'h-11 px-5 text-sm rounded-[10px]',
+  lg: 'h-12 px-7 text-base rounded-[10px]',
 };
 
 export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
@@ -41,7 +41,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       className={cn(
         'inline-flex items-center justify-center gap-2 font-medium select-none',
         'disabled:opacity-50 disabled:cursor-not-allowed',
-        'active:scale-[0.98]',
+        'transition-colors duration-150',
         variantClasses[variant],
         sizeClasses[size],
         className,

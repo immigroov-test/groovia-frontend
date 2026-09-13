@@ -48,8 +48,8 @@ export function RichTextEditor({ value, onChange, placeholder = 'Start typing…
       <div
         className={cn(
           'rounded-lg bg-white overflow-hidden',
-          'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-          focused && 'shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
+          'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+          focused && 'shadow-[0_0_0_2px_rgba(7,63,125,0.25),0_1px_2px_rgba(8,43,82,0.04)]',
         )}
       >
         {/* Toolbar */}

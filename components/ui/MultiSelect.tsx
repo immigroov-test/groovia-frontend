@@ -116,8 +116,8 @@ export function MultiSelect({
         onClick={() => { setOpen((o) => !o); if (!open) setTimeout(() => inputRef.current?.focus(), 0); }}
         className={cn(
           'min-h-10 px-3 py-1.5 rounded-lg bg-white text-sm text-foreground cursor-pointer',
-          'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-          open && 'shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
+          'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+          open && 'shadow-[0_0_0_2px_rgba(7,63,125,0.25),0_1px_2px_rgba(8,43,82,0.04)]',
           error && 'shadow-[0_0_0_1px_rgba(220,38,38,0.4)]',
           'flex flex-wrap gap-1.5 items-center',
         )}
@@ -177,7 +177,7 @@ export function MultiSelect({
           id={`${id}-listbox`}
           role="listbox"
           aria-multiselectable="true"
-          className="z-30 mt-1 max-h-56 overflow-y-auto rounded-xl bg-white border border-[--color-border] shadow-lg py-1"
+          className="z-30 mt-1 max-h-56 overflow-y-auto rounded-[10px] bg-white border border-[--color-border] shadow-[--shadow-2] py-1"
         >
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-sm text-muted">No results</li>

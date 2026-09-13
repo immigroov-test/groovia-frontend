@@ -272,7 +272,7 @@ function AuthModalInner() {
         className="flex min-h-full items-start md:items-center justify-center p-4"
         onClick={(e) => { if (e.target === e.currentTarget && stage !== 'setup') close(); }}
       >
-        <div className="relative w-[92vw] max-w-6xl md:h-[90vh] md:max-h-[880px] bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
+        <div className="relative w-[92vw] max-w-6xl md:h-[90vh] md:max-h-[880px] bg-card rounded-[14px] shadow-[--shadow-3] overflow-hidden flex flex-col md:flex-row animate-fade-up">
           {/* No dismiss during 'setup' - a verified user must finish setting a password. */}
           {stage !== 'setup' && (
             <button
@@ -284,7 +284,7 @@ function AuthModalInner() {
           )}
 
           {/* Desktop: logo centered across the vertical divider at the top. */}
-          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 hidden md:block bg-white rounded-full px-5 py-2.5 shadow-md">
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 hidden md:block bg-white rounded-full px-5 py-2.5 shadow-[--shadow-2]">
             <Image src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
               priority className="object-contain" style={{ height: '26px', width: 'auto' }} />
           </div>
@@ -457,7 +457,7 @@ function AuthModalInner() {
               each, mirroring the desktop logo on the vertical divider. h-0 puts the flex line
               on the seam; items-center centers the pill on it. */}
           <div className="md:hidden relative z-30 flex h-0 items-center justify-center">
-            <div className="bg-white rounded-full px-5 py-2.5 shadow-md">
+            <div className="bg-white rounded-full px-5 py-2.5 shadow-[--shadow-2]">
               <Image src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
                 className="object-contain" style={{ height: '26px', width: 'auto' }} />
             </div>
@@ -493,7 +493,7 @@ function AuthModalInner() {
                 “<TypeText key={quote.text} text={quote.text} active={isOpen} speed={38} onDone={() => setQuoteDone(true)} />”
               </p>
               {quote.author && quoteDone && (
-                <p className="text-[11px] text-white/60 mt-1 not-italic animate-fade-up">{quote.author}</p>
+                <p className="text-xs text-white/60 mt-1 not-italic animate-fade-up">{quote.author}</p>
               )}
             </div>
           </div>

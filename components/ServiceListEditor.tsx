@@ -74,7 +74,7 @@ export function ServiceListEditor({
   return (
     <div className="flex flex-col gap-3">
       {value.map((s, i) => (
-        <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-[--color-border] p-3">
+        <div key={i} className="flex items-center justify-between gap-3 rounded-[10px] border border-[--color-border] p-3">
           <div className="flex items-center gap-3 min-w-0">
             <Toggle checked={s.active} onChange={() => toggle(i)} aria-label={`Activate ${s.title}`} />
             <div className="min-w-0">
@@ -100,7 +100,7 @@ export function ServiceListEditor({
       ))}
 
       {adding ? (
-        <div className="rounded-xl border border-[--color-border] p-4 flex flex-col gap-3">
+        <div className="rounded-[10px] border border-[--color-border] p-4 flex flex-col gap-3">
           <Input label="Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Quick career chat" autoFocus />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">

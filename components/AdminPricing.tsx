@@ -185,7 +185,7 @@ function Field({ label, type, value, placeholder, onChange }: {
       <span className="text-muted">{label}</span>
       <input type={type} {...(type === 'number' ? { min: 0, max: 100, step: 0.5 } : {})}
         value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-28 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+        className="h-9 w-28 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
     </label>
   );
 }

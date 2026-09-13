@@ -105,10 +105,10 @@ export function WeeklyHoursEditor({ value, onChange }: { value: WeeklyHours; onC
                   {slots.map((s, i) => (
                     <div key={i} className="flex items-center gap-2 flex-wrap">
                       <input type="time" value={s.start} onChange={(e) => updateSlot(day, i, { start: e.target.value })}
-                        className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                        className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]" />
                       <span className="text-muted">-</span>
                       <input type="time" value={s.end} onChange={(e) => updateSlot(day, i, { end: e.target.value })}
-                        className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                        className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]" />
                       {i === 0 ? (
                         <button type="button" onClick={() => addSlot(day)} aria-label="Add time slot"
                           className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-brand-700 hover:bg-brand-50 transition-colors">
@@ -129,7 +129,7 @@ export function WeeklyHoursEditor({ value, onChange }: { value: WeeklyHours; onC
                             <Copy className="h-4 w-4" /> Copy to…
                           </button>
                           {copyFrom === day && (
-                            <div className="absolute right-0 z-30 mt-1 w-52 rounded-xl bg-white border border-[--color-border] shadow-lg p-2 flex flex-col gap-1">
+                            <div className="absolute right-0 z-30 mt-1 w-52 rounded-[10px] bg-white border border-[--color-border] shadow-[--shadow-2] p-2 flex flex-col gap-1">
                               <div className="flex gap-2 pb-1.5 border-b border-[--color-border]">
                                 <button type="button" onClick={() => setCopyTo(WEEK_DAYS.filter((d) => d !== day))}
                                   className="text-xs font-medium text-brand-700 hover:underline">All days</button>

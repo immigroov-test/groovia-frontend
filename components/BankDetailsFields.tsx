@@ -86,7 +86,7 @@ export function BankDetailsFields({
                   value={value.account_type}
                   onChange={(e) => set({ account_type: e.target.value })}
                   onBlur={() => blur('account_type')}
-                  className="h-11 px-3.5 rounded-xl bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+                  className="h-11 px-3.5 rounded-[10px] bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]"
                 >
                   <option value="">Select account type</option>
                   <option value="checking">Checking</option>

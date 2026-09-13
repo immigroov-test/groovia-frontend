@@ -42,7 +42,7 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm rounded-[14px] bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
           <AlertTriangle className="h-6 w-6 text-red-600" />
         </div>
@@ -56,7 +56,7 @@ export function ConfirmDialog({
             </label>
             <textarea rows={3} value={text} maxLength={1000} onChange={(e) => setText(e.target.value)}
               placeholder={reason.placeholder}
-              className="mt-1.5 w-full px-3 py-2 rounded-xl bg-white text-sm resize-y placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+              className="mt-1.5 w-full px-3 py-2 rounded-[10px] bg-white text-sm resize-y placeholder:text-muted shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]" />
             {reason.hint && <p className="text-xs text-muted mt-1">{reason.hint}</p>}
           </div>
         )}

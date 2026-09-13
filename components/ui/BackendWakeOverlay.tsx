@@ -24,7 +24,7 @@ export function BackendWakeOverlay() {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40"
          role="alertdialog" aria-live="polite" aria-label="Server is starting up">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center">
+      <div className="w-full max-w-sm rounded-[14px] bg-white p-6 text-center">
         <div className="mx-auto h-12 w-12 rounded-full bg-brand-50 flex items-center justify-center">
           <Server className="h-6 w-6 text-brand-600" />
         </div>

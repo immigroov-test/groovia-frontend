@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { createClient } from '../../../lib/supabase/server';
 import { AccountTabs } from '../../../components/AccountTabs';
+import { serverAuth } from '../../../lib/supabase/server';
+import { serverGet } from '../../../lib/backend';
+
+interface Registration { id: string; status: string; webinars?: { slug: string; title: string; starts_at: string; duration_minutes: number; status: string } | null }
 
 export const metadata = { title: 'Account - Immigroov',
   // BUG-144: private page. robots.txt stops the crawl, but a Disallow does not prevent
@@ -17,6 +21,8 @@ export default async function AccountPage() {
     .select('full_name, email, phone, profile_summary, role')
     .eq('id', user!.id)
     .maybeSingle();
+  const { token } = await serverAuth();
+  const registrationResult = await serverGet<Registration[]>('/webinars/mine', token);
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
@@ -30,6 +36,7 @@ export default async function AccountPage() {
         phone={profile?.phone ?? ''}
         summary={profile?.profile_summary ?? ''}
         role={profile?.role ?? ''}
+        registrations={registrationResult.data ?? []}
       />
 
       {/* Section 7 placement: "linked from account/profile settings page (all

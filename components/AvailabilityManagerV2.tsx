@@ -293,10 +293,10 @@ export function AvailabilityManagerV2() {
                 {addDay === day ? (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <input type="time" value={addFrom} onChange={(e) => setAddFrom(e.target.value)}
-                      className="h-8 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                      className="h-8 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                     <span className="text-xs text-muted">-</span>
                     <input type="time" value={addTo} onChange={(e) => setAddTo(e.target.value)}
-                      className="h-8 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                      className="h-8 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                     <Button size="sm" variant="accent" loading={busy} onClick={() => addHours(day)}>Add</Button>
                     <button onClick={() => setAddDay(null)} className="text-xs text-muted hover:text-foreground px-1">Cancel</button>
                   </div>
@@ -417,7 +417,7 @@ export function AvailabilityManagerV2() {
             </div>
 
             {/* Selected-date actions */}
-            <div className="rounded-xl border border-[--color-border] p-4">
+            <div className="rounded-[10px] border border-[--color-border] p-4">
               {selDates.length === 0 ? (
                 <p className="text-sm text-muted">Pick a date to block it or set custom hours.</p>
               ) : selDate === null ? (
@@ -458,10 +458,10 @@ export function AvailabilityManagerV2() {
                         <label className="text-xs font-medium text-foreground">Custom hours</label>
                         <div className="flex items-center gap-1.5">
                           <input type="time" value={ovFrom} onChange={(e) => setOvFrom(e.target.value)}
-                            className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                            className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                           <span className="text-xs text-muted">-</span>
                           <input type="time" value={ovTo} onChange={(e) => setOvTo(e.target.value)}
-                            className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                            className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                         </div>
                         <Button size="sm" variant="accent" onClick={() => overrideDate(selDate)}>Set hours</Button>
                       </div>
@@ -496,7 +496,7 @@ function RuleField({ label, value, onChange, min, max, step, error }: {
       <label className="text-xs font-medium text-muted">{label}</label>
       <input type="number" value={value} min={min} max={max} step={step} aria-invalid={!!error}
         onChange={(e) => onChange(step ? parseFloat(e.target.value) : parseInt(e.target.value))}
-        className={`h-11 w-40 px-3 rounded-xl bg-white text-sm focus:outline-none ${error ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
+        className={`h-11 w-40 px-3 rounded-[10px] bg-white text-sm focus:outline-none ${error ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]'}`} />
       {error && <span className="absolute left-0 bottom-0 text-xs text-red-600">{error}</span>}
     </div>
   );

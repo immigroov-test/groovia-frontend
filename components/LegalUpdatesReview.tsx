@@ -81,7 +81,7 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
         {docs.map((d) => {
           const isOpen = open === d.slug;
           return (
-            <div key={d.document_id} className="rounded-2xl border border-[--color-border] bg-card overflow-hidden">
+            <div key={d.document_id} className="rounded-[14px] border border-[--color-border] bg-card overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : d.slug)}

@@ -216,10 +216,10 @@ export function AdminBookings() {
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {GROUPS.map(([key, label]) => (
             <button key={key} type="button" onClick={() => setGroup(key)}
-              className={cn('rounded-xl border px-3 py-2 text-left transition-colors',
+              className={cn('rounded-[10px] border px-3 py-2 text-left transition-colors',
                 group === key ? 'border-brand-600 bg-brand-50' : 'border-[--color-border] hover:bg-brand-50/40')}>
               <p className="text-xl font-bold text-foreground leading-none">{counts[key] ?? 0}</p>
-              <p className="text-[11px] text-muted mt-1">{label}</p>
+              <p className="text-xs text-muted mt-1">{label}</p>
             </button>
           ))}
         </div>
@@ -230,7 +230,7 @@ export function AdminBookings() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
         <input value={q} onChange={(e) => setQ(e.target.value)}
           placeholder={view === 'live' ? 'Search ref, mentor or mentee name/email…' : 'Search mentor or customer name…'}
-          className="w-full h-10 pl-9 pr-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+          className="w-full h-10 pl-9 pr-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -241,7 +241,7 @@ export function AdminBookings() {
         ) : live.length === 0 ? (
           <p className="text-sm text-muted">No bookings match.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-[--color-border]">
+          <div className="overflow-x-auto rounded-[10px] border border-[--color-border]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted border-b border-[--color-border]">
@@ -375,7 +375,7 @@ export function AdminBookings() {
                                             type="number" min={0} max={100} step={0.5}
                                             value={commDraft[b.id] ?? String(commissionPct ?? '')}
                                             onChange={(e) => setCommDraft((v) => ({ ...v, [b.id]: e.target.value }))}
-                                            className="w-16 rounded-md px-1.5 py-0.5 text-xs bg-white shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+                                            className="w-16 rounded-md px-1.5 py-0.5 text-xs bg-white shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]"
                                           />
                                           <button type="button" onClick={() => saveCommission(b.id)}
                                             disabled={commBusy === b.id}
@@ -463,7 +463,7 @@ export function AdminBookings() {
         ) : past.length === 0 ? (
           <p className="text-sm text-muted">No past sessions match. (Imported from the old portal, read-only.)</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-[--color-border]">
+          <div className="overflow-x-auto rounded-[10px] border border-[--color-border]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted border-b border-[--color-border]">

@@ -82,7 +82,7 @@ function ChannelCard({ icon: Icon, tone, title, sub, children }: {
   return (
     <Card>
       <CardBody className="pt-6 flex flex-col gap-3">
-        <span className={`h-11 w-11 rounded-xl flex items-center justify-center ${tone}`}>
+        <span className={`h-11 w-11 rounded-[10px] flex items-center justify-center ${tone}`}>
           <Icon className="h-5 w-5" />
         </span>
         <div>
@@ -187,7 +187,7 @@ function ContactForm() {
         <label className="text-sm font-medium text-foreground">{c.topicLabel}</label>
         <select
           value={topic} onChange={(e) => setTopic(e.target.value)}
-          className="h-11 px-3 rounded-xl bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+          className="h-11 px-3 rounded-[10px] bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(8,43,82,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]"
         >
           <option value="">{c.topicPlaceholder}</option>
           {c.topics.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -199,7 +199,7 @@ function ContactForm() {
         <textarea
           rows={5} value={message} onChange={(e) => setMessage(e.target.value)} required
           placeholder={c.messagePlaceholder}
-          className="px-3 py-2 rounded-xl bg-white text-sm text-foreground resize-y placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+          className="px-3 py-2 rounded-[10px] bg-white text-sm text-foreground resize-y placeholder:text-muted shadow-[0_0_0_1px_rgba(8,43,82,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]"
         />
         <p className={`text-xs text-right ${wordCount > 500 ? 'text-red-500' : 'text-muted'}`}>{wordCount}/500 words</p>
       </div>

@@ -172,7 +172,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
     <Card><CardBody className="pt-4 pb-4">
       <p className="text-xl font-bold text-foreground">{value}</p>
       <p className="text-xs text-muted mt-0.5">{label}</p>
-      {hint && <p className="text-[11px] text-muted/70">{hint}</p>}
+      {hint && <p className="text-xs text-muted/70">{hint}</p>}
     </CardBody></Card>
   );
 }
@@ -195,7 +195,7 @@ function Field({ label, value, onChange, type = 'text', placeholder, wide, max }
       <input type={type} value={value} placeholder={placeholder}
         {...(type === 'number' ? { min: 0, step: 1, ...(max != null ? { max } : {}) } : {})}
         onChange={(e) => onChange(e.target.value)}
-        className={`h-9 ${wide ? 'w-40' : 'w-28'} px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none`} />
+        className={`h-9 ${wide ? 'w-40' : 'w-28'} px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none`} />
     </label>
   );
 }

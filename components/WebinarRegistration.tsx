@@ -7,7 +7,7 @@ import Link from 'next/link';
 import type { Webinar } from '../lib/webinars';
 import { openRazorpayCheckout, type RazorpaySuccess } from '../lib/razorpay';
 
-export function WebinarRegistration({ webinar, loggedIn }: { webinar: Webinar; loggedIn: boolean }) {
+export function WebinarRegistration({ webinar, loggedIn, initiallyConfirmed = false }: { webinar: Webinar; loggedIn: boolean; initiallyConfirmed?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -36,9 +36,10 @@ export function WebinarRegistration({ webinar, loggedIn }: { webinar: Webinar; l
     if (!opened) { setMessage('Could not load payment checkout.'); setBusy(false); }
   }
 
-  const confirmed = message?.includes('confirmed');
+  const confirmed = initiallyConfirmed || message?.includes('confirmed');
   return <div>
-    <Button variant="accent" loading={busy} disabled={full} onClick={register}>{full ? 'Webinar full' : webinar.is_paid ? 'Register and pay' : 'Register free'}</Button>
+    {!initiallyConfirmed && <Button variant="accent" loading={busy} disabled={full} onClick={register}>{full ? 'Webinar full' : webinar.is_paid ? 'Register and pay' : 'Register free'}</Button>}
+    {initiallyConfirmed && <p className="text-sm font-semibold text-emerald-700">Your seat is confirmed.</p>}
     {message && <p className="mt-3 text-sm text-muted" role="status">{message}</p>}
     {confirmed && <Link href={`/webinars/${webinar.slug}/join`} className="mt-3 inline-block text-sm font-medium text-brand-700 hover:underline">Open webinar room →</Link>}
   </div>;

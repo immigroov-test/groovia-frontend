@@ -152,7 +152,7 @@ export function CitySelect({
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
 
         {open && !disabled && (
-          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[--color-border] bg-white shadow-lg">
+          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[--color-border] bg-white shadow-[--shadow-2]">
             {matches.map((c) => (
               <button
                 key={c}

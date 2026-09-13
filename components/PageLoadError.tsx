@@ -33,7 +33,7 @@ export function PageLoadError({
         </p>
       )}
       {status !== undefined && status !== 0 && (
-        <p className="text-[11px] text-muted/70 mt-3">Reference: HTTP {status}</p>
+        <p className="text-xs text-muted/70 mt-3">Reference: HTTP {status}</p>
       )}
     </div>
   );

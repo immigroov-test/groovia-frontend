@@ -22,7 +22,7 @@ export default function GlobalError({
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-semibold text-brand-900">Something went wrong.</h1>
           <p className="mt-3 text-sm text-foreground/70">
-            Our team has been notified. You can try again, or head back to chat.
+            You can try again or return to Groovia. If the problem continues, contact support.
           </p>
           <div className="mt-6 flex items-center justify-center gap-2">
             <Button onClick={reset}>Try again</Button>
@@ -31,7 +31,7 @@ export default function GlobalError({
             </a>
           </div>
           {error.digest && (
-            <p className="mt-4 text-[11px] text-muted font-mono">ref: {error.digest}</p>
+            <p className="mt-4 text-xs text-muted font-mono">ref: {error.digest}</p>
           )}
         </div>
       </body>

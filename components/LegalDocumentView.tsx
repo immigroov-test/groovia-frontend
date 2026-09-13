@@ -38,7 +38,7 @@ export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
           actual difficulty. Under four sections it is noise. */}
       {headings.length >= 4 && (
         <nav aria-label={`Contents of ${doc.title}`}
-          className="mt-6 rounded-xl border border-[--color-border] bg-brand-50/40 px-4 py-3">
+          className="mt-6 rounded-[10px] border border-[--color-border] bg-brand-50/40 px-4 py-3">
           <p className="text-xs font-medium text-brand-900">On this page</p>
           <ul className="mt-2 flex flex-col gap-1.5">
             {headings.map((h) => (
@@ -52,7 +52,7 @@ export function LegalDocumentView({ doc }: { doc: UserLegalDocument }) {
         </nav>
       )}
 
-      <article className="mt-6 rounded-2xl border border-[--color-border] bg-card px-5 py-6 sm:px-7 sm:py-8">
+      <article className="mt-6 rounded-[14px] border border-[--color-border] bg-card px-5 py-6 sm:px-7 sm:py-8">
         <LegalMarkdown content={doc.content} docNumber={docNumber} />
       </article>
     </div>

@@ -66,7 +66,7 @@ export function CookieConsent() {
       <button
         type="button"
         onClick={() => { setAnalytics(decided.analytics); setMarketing(decided.marketing); setOpen(true); }}
-        className="fixed bottom-1.5 left-2.5 z-40 text-[10px] sm:text-[11px] leading-none text-muted/70 underline underline-offset-2 hover:text-brand-900"
+        className="fixed bottom-1.5 left-2.5 z-40 text-xs sm:text-xs leading-none text-muted/70 underline underline-offset-2 hover:text-brand-900"
       >
         {mode === 'optout' ? 'Privacy choices' : 'Cookie settings'}
       </button>
@@ -81,7 +81,7 @@ export function CookieConsent() {
       aria-label="Cookie preferences"
       className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4"
     >
-      <div className="mx-auto max-w-3xl rounded-2xl border border-[--color-border] bg-card p-4 sm:p-5 shadow-2xl">
+      <div className="mx-auto max-w-3xl rounded-[14px] border border-[--color-border] bg-card p-4 sm:p-5 shadow-[--shadow-3]">
         {open && (
           <button
             type="button"

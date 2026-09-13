@@ -86,9 +86,9 @@ export function CountrySelect({
         onClick={() => { setOpen((o) => !o); setHighlight(0); }}
         className={cn(
           'flex items-center gap-2 h-10 px-3 rounded-lg bg-white text-sm text-left',
-          'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-          'hover:shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none',
-          open && 'shadow-[0_0_0_2px_rgba(29,78,216,0.25)]',
+          'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+          'hover:shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none',
+          open && 'shadow-[0_0_0_2px_rgba(7,63,125,0.25)]',
         )}
       >
         {selected ? (
@@ -105,7 +105,7 @@ export function CountrySelect({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-xl border border-[--color-border] shadow-xl overflow-hidden" style={{ position: 'relative' }}>
+        <div className="absolute z-50 mt-1 w-full max-w-xs bg-white rounded-[10px] border border-[--color-border] shadow-[--shadow-2] overflow-hidden" style={{ position: 'relative' }}>
           <div className="p-2 border-b border-[--color-border]">
             <input
               type="text"

@@ -211,7 +211,7 @@ export function AdminPayouts() {
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-sm text-muted">Mentor</span>
         <select value={mentor} onChange={(e) => setMentor(e.target.value)}
-          className="h-9 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none max-w-full">
+          className="h-9 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none max-w-full">
           <option value="all">All mentors ({groups.length})</option>
           {groups.map((g) => <option key={g.mentorId} value={g.mentorId}>{g.name}</option>)}
         </select>
@@ -303,7 +303,7 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: Reac
     <Card><CardBody className="pt-4 pb-4">
       <p className="text-xs text-muted">{label}</p>
       <p className="text-2xl font-bold text-foreground mt-0.5 leading-none">{value}</p>
-      {hint ? <p className="text-[11px] text-muted/70 mt-1 break-words">{hint}</p> : null}
+      {hint ? <p className="text-xs text-muted/70 mt-1 break-words">{hint}</p> : null}
     </CardBody></Card>
   );
 }

@@ -26,6 +26,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/webinars`, changeFrequency: 'daily', priority: 0.8 },
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/contact`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/company`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/partnerships`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/careers`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/how-it-works`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${SITE_URL}/mentor-verification`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/pricing`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/faq`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/refund-policy`, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${SITE_URL}/immigration-disclaimer`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/mentor/register`, changeFrequency: 'monthly', priority: 0.6 },
     // The one public legal page - all fourteen documents. /terms is a 308 to here, so
     // it is not listed: advertising a URL that only redirects wastes crawl budget and

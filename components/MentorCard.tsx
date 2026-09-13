@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Star, Globe, MapPin, Sparkles, Gift } from 'lucide-react';
+import { Star, Globe, MapPin, Sparkles, Gift, BadgeCheck } from 'lucide-react';
 import { Card, CardBody } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
@@ -49,7 +49,7 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
           hover colour via group-hover, since the pointer is over this overlay and never over Book. */}
       <Link href={`/mentors/${mentor.slug}`}
         aria-label={`View ${mentor.display_name}'s profile and book a session`}
-        className="absolute inset-0 z-10 rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2" />
+        className="absolute inset-0 z-10 rounded-[14px] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2" />
       <CardBody className="pt-6 flex flex-col gap-4 h-full">
         {/* Identity: photo · name / title / rating */}
         <div className="flex items-start gap-3">
@@ -63,7 +63,7 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
           )}
           <div className="min-w-0">
             <div className="flex items-baseline gap-x-2 gap-y-0.5 flex-wrap">
-              <h3 className="text-base font-semibold text-brand-900 break-words">{mentor.display_name}</h3>
+              <h3 className="text-base font-semibold text-brand-900 break-words inline-flex items-center gap-1.5">{mentor.display_name}<BadgeCheck className="h-4 w-4 text-accent-600" aria-label="Approved mentor" /></h3>
               {rating > 0 && (
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 shrink-0">
                   <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
@@ -113,23 +113,23 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
                 <>
                   {/* Reads as "from <cost> per session"; the cheapest PAID session, never the free one. */}
                   <p className="leading-tight flex flex-wrap items-baseline gap-x-1">
-                    <span className="text-[11px] text-muted">from</span>
+                    <span className="text-xs text-muted">from</span>
                     {showStrike && price && (
                       <span className="text-sm text-muted line-through">{money(price.original, price.currency)}</span>
                     )}
                     <span className="text-lg font-bold text-brand-900">
                       {price ? money(price.discounted, price.currency) : money(mentor.min_price, mentor.price_currency ?? 'USD')}
                     </span>
-                    <span className="text-[11px] text-muted">per session</span>
+                    <span className="text-xs text-muted">per session</span>
                   </p>
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                     {mentor.smart_pricing && showStrike && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
                         <Sparkles className="h-3 w-3" /> Fair pricing
                       </span>
                     )}
                     {mentor.has_free_session && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
                         <Gift className="h-3 w-3" /> Free intro call
                       </span>
                     )}
@@ -144,7 +144,7 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
             )}
           </div>
           <span aria-hidden="true"
-            className="inline-flex items-center gap-1 h-9 px-4 rounded-lg bg-accent-500 text-white text-sm font-semibold group-hover:bg-accent-600 transition-colors shrink-0">
+            className="inline-flex items-center gap-1 h-9 px-4 rounded-lg bg-accent-700 text-white text-sm font-semibold group-hover:bg-brand-900 transition-colors shrink-0">
             Book →
           </span>
         </div>

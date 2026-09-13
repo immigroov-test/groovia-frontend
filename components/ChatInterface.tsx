@@ -62,6 +62,8 @@ function readGuestQuestions(): number {
 
 interface Props {
   authed: boolean;
+  featuredMentors?: import('../lib/types').Mentor[];
+  upcomingWebinars?: import('../lib/webinars').Webinar[];
 }
 
 interface ChatMessage {
@@ -148,7 +150,7 @@ function safeSetMessages(messages: ChatMessage[]): void {
 const LANDMARKS_OPACITY = 0.22;       // 0.0 = invisible  · 1.0 = fully visible
 const CHAT_INPUT_OPACITY = 0.92;      // 0.7 = see-through · 1.0 = fully white
 
-export default function ChatInterface({ authed }: Props) {
+export default function ChatInterface({ authed, featuredMentors = [], upcomingWebinars = [] }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -818,7 +820,7 @@ export default function ChatInterface({ authed }: Props) {
           onClick={scrollToTop}
           aria-label="Back to the top"
           title="Back to the top"
-          className="absolute top-2 left-1/2 -translate-x-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur text-brand-800 shadow-sm hover:bg-white"
+          className="absolute top-2 left-1/2 -translate-x-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur text-brand-800 shadow-[--shadow-1] hover:bg-white"
         >
           <ChevronUp className="h-4 w-4" />
         </button>
@@ -826,7 +828,7 @@ export default function ChatInterface({ authed }: Props) {
           <button
             onClick={handleNewChat}
             title="Clear chat"
-            className="absolute top-2 right-4 sm:right-auto sm:left-[63%] flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white"
+            className="absolute top-2 right-4 sm:right-auto sm:left-[63%] flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-[--shadow-1] hover:bg-white"
           >
             <SquarePen className="h-3.5 w-3.5" />
             Clear chat
@@ -854,6 +856,8 @@ export default function ChatInterface({ authed }: Props) {
             hideGif={isMobile && scrolledOnce}
             showWelcome={welcomeRevealed}
             onReveal={() => setWelcomeRevealed(true)}
+            mentors={featuredMentors}
+            webinars={upcomingWebinars}
           />
         )}
 
@@ -866,7 +870,7 @@ export default function ChatInterface({ authed }: Props) {
               {m.role === 'assistant' && <AiAvatar />}
               <div
                 className={cn(
-                  'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+                  'max-w-[80%] rounded-[14px] px-4 py-3 text-sm leading-relaxed',
                   m.role === 'user'
                     ? 'bg-brand-900 text-white rounded-br-sm'
                     : 'bg-brand-50/60 text-foreground rounded-bl-sm prose-chat',
@@ -959,7 +963,7 @@ export default function ChatInterface({ authed }: Props) {
           {gated && (pendingQna || pendingReport || guestGate) && (
             <button
               onClick={openGate}
-              className="w-full flex items-center justify-center gap-2 mb-2 px-4 py-2.5 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 mb-2 px-4 py-2.5 rounded-[10px] bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium"
             >
               <Lock className="h-4 w-4" />
               {guestGate ? 'Create a free account or sign in' : UI_CONTENT.signInToContinue}
@@ -974,7 +978,7 @@ export default function ChatInterface({ authed }: Props) {
             <button
               type="button"
               onClick={() => setShowRateModal(true)}
-              className="w-full text-center mb-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-medium hover:bg-amber-100"
+              className="w-full text-center mb-2 px-4 py-2.5 rounded-[10px] bg-amber-50 text-amber-800 text-sm font-medium hover:bg-amber-100"
             >
               You can chat again in{' '}
               <span className="tabular-nums">{formatWait(rlRemaining)}</span>. Tap to pass the time.
@@ -989,7 +993,7 @@ export default function ChatInterface({ authed }: Props) {
           {composerVisible && (
           <div
             className={cn(
-              "flex items-end gap-2 rounded-2xl px-2 py-1.5",
+              "flex items-end gap-2 rounded-[14px] px-2 py-1.5",
               rateLimited && "opacity-60",
               // Glow only when the composer is actually usable (Q&A active, not rate-limited).
               !rateLimited && "composer-glow",
@@ -1055,7 +1059,7 @@ export default function ChatInterface({ authed }: Props) {
               ("not legal advice"); this discloses that Groovia is an AI system at all. Shown
               wherever the composer is, not only in the footer. */}
           {composerVisible && (
-            <p className="text-center text-[11px] text-muted/80 mt-1 px-4">
+            <p className="text-center text-xs text-muted/80 mt-1 px-4">
               You&apos;re chatting with Groovia, an AI assistant.{' '}
               <Link href="/privacy#ai-disclosure-notice" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
                 AI Disclosure Notice

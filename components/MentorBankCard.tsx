@@ -92,7 +92,7 @@ export function MentorBankCard({ defaultCountry = '' }: { defaultCountry?: strin
         </div>
 
         {masked?.has_details && !editing && (
-          <div className="rounded-xl border border-[--color-border] p-4 flex flex-col gap-1.5 text-sm">
+          <div className="rounded-[10px] border border-[--color-border] p-4 flex flex-col gap-1.5 text-sm">
             <Row k="Account holder" v={masked.account_holder_name || 'Not set'} />
             {masked.bank_name && <Row k="Bank" v={masked.bank_name} />}
             <Row k="Country" v={masked.country_code ? (COUNTRY_MAP[masked.country_code] ?? masked.country_code) : 'Not set'} />

@@ -55,7 +55,7 @@ export function RateLimitModal({ until, onClose }: { until: number; onClose: () 
     >
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative w-[92vw] max-w-2xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col sm:flex-row"
+          className="relative w-[92vw] max-w-2xl bg-card rounded-[14px] shadow-[--shadow-3] overflow-hidden flex flex-col sm:flex-row"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -182,7 +182,7 @@ function RiddlePanel() {
             />
             <button
               type="button" onClick={submit} disabled={!guess.trim()}
-              className="shrink-0 px-5 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 disabled:opacity-40"
+              className="shrink-0 px-5 h-10 rounded-lg bg-accent-700 text-white text-sm font-semibold hover:bg-brand-900 disabled:opacity-40"
             >
               Submit
             </button>
@@ -199,7 +199,7 @@ function RiddlePanel() {
           )}
           <button
             type="button" onClick={next}
-            className="px-6 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600"
+            className="px-6 h-10 rounded-lg bg-accent-700 text-white text-sm font-semibold hover:bg-brand-900"
           >
             New riddle?
           </button>

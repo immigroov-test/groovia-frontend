@@ -75,7 +75,7 @@ export function LegalDoc({ title, updated, groups }: { title: string; updated?: 
           const sections = parse(g.content);
           const groupOpen = openGroup === g.label;
           return (
-            <div key={g.label} className="rounded-2xl border border-[--color-border] bg-card overflow-hidden">
+            <div key={g.label} className="rounded-[14px] border border-[--color-border] bg-card overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpenGroup(groupOpen ? null : g.label)}
@@ -92,7 +92,7 @@ export function LegalDoc({ title, updated, groups }: { title: string; updated?: 
                     const sid = `${g.label}-${i}`;
                     const sOpen = openSection === sid;
                     return (
-                      <div key={sid} className="rounded-xl border border-[--color-border] overflow-hidden">
+                      <div key={sid} className="rounded-[10px] border border-[--color-border] overflow-hidden">
                         <button
                           type="button"
                           onClick={() => setOpenSection(sOpen ? null : sid)}

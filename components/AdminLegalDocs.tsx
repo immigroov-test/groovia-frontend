@@ -129,7 +129,7 @@ export function AdminLegalDocs() {
 
       {/* The table scrolls inside its own box: six columns do not fit a phone, and
           letting the page scroll sideways would take the admin nav with it. */}
-      <div className="overflow-x-auto rounded-2xl bg-card shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.08)]">
+      <div className="overflow-x-auto rounded-[14px] bg-card shadow-[0_1px_2px_rgba(8,43,82,0.04),0_8px_24px_-8px_rgba(8,43,82,0.08)]">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[--color-border] text-left">
@@ -356,8 +356,8 @@ function DocumentEditor({ documentId, onBack }: { documentId: string; onBack: ()
           onChange={(e) => setContent(e.target.value)}
           spellCheck={false}
           rows={26}
-          className="w-full px-4 py-3 rounded-xl bg-white font-mono text-[13px] leading-relaxed resize-y
-                     shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+          className="w-full px-4 py-3 rounded-[10px] bg-white font-mono text-[13px] leading-relaxed resize-y
+                     shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]"
           placeholder="Markdown. Use ## for each numbered section."
         />
       ) : (
@@ -417,7 +417,7 @@ function DocumentEditor({ documentId, onBack }: { documentId: string; onBack: ()
         ) : (
           <div className="mt-3 flex flex-col gap-2">
             {doc.history.map((h) => (
-              <div key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-[--color-border] px-4 py-2.5">
+              <div key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] border border-[--color-border] px-4 py-2.5">
                 <span className="font-medium text-foreground tabular-nums">{h.version}</span>
                 {h.is_current && <Badge tone="success">Current</Badge>}
                 <span className="text-sm text-muted">{when(h.published_at)}</span>
@@ -458,7 +458,7 @@ function DocumentEditor({ documentId, onBack }: { documentId: string; onBack: ()
 function ArchivedVersionModal({ version, onClose }: { version: ArchivedVersion; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-white overflow-hidden"
+      <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-[14px] bg-white overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-[--color-border]">
           <div className="flex flex-wrap items-center gap-2">

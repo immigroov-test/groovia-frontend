@@ -61,7 +61,7 @@ export function ReportInfoModal(
         aria-modal="true"
         aria-labelledby={introId}
         tabIndex={-1}
-        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl bg-card shadow-2xl
+        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-[14px] bg-card shadow-[--shadow-3]
                    border border-[--color-border] p-6 sm:p-7 animate-fade-up focus:outline-none"
       >
         <button
@@ -73,7 +73,7 @@ export function ReportInfoModal(
           <X className="h-4 w-4" />
         </button>
 
-        <div className="mx-auto w-fit bg-white rounded-full px-4 py-2 shadow-sm">
+        <div className="mx-auto w-fit bg-white rounded-full px-4 py-2 shadow-[--shadow-1]">
           <Image
             src="/Immigroov_Transparent_Logo.png"
             alt="Immigroov"

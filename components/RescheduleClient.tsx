@@ -165,10 +165,10 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
       <p className="text-sm text-muted mt-8">No open slots in the next 30 days. Please check back later.</p>
     ) : (
       <div className="mt-6 grid gap-6 sm:grid-cols-[1fr_260px]">
-        <div className="rounded-2xl border border-[--color-border] p-5">
+        <div className="rounded-[14px] border border-[--color-border] p-5">
           <CalendarPanel availableDates={availableDates} selectedDate={selectedDate} onSelect={(d) => { setSelectedDate(d); setSelectedSlot(null); }} />
         </div>
-        <div className="rounded-2xl border border-[--color-border] p-5">
+        <div className="rounded-[14px] border border-[--color-border] p-5">
           {!selectedDate ? (
             <p className="text-sm text-muted">Pick a date to see open times.</p>
           ) : timeSlotsForDay.length === 0 ? (
@@ -250,7 +250,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
           it's cancelling (no refund this close) that's actually locked, not rescheduling. */}
       {(deadline === 'late' || deadline === 'buffer') && (
         <div className="mt-6 flex flex-col gap-3">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-2">
+          <div className="rounded-[10px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
             <span>
               {deadline === 'buffer'

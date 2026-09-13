@@ -109,7 +109,7 @@ export function AdminBugBoard() {
 
   if (!configured) {
     return (
-      <div className="rounded-xl border border-[--color-border] p-4 text-sm text-muted">
+      <div className="rounded-[10px] border border-[--color-border] p-4 text-sm text-muted">
         <p className="font-medium text-foreground">Bug board not connected</p>
         <p className="mt-1">
           The board lives in its own Supabase project. Set <code>BUG_BOARD_SUPABASE_URL</code> and{' '}
@@ -133,12 +133,12 @@ export function AdminBugBoard() {
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {([['all', 'All'] as [string, string]].concat(COLUMNS)).map(([key, label]) => (
           <button key={key} type="button" onClick={() => setColumn(key)}
-            className={cn('rounded-xl border px-3 py-2 text-left transition-colors',
+            className={cn('rounded-[10px] border px-3 py-2 text-left transition-colors',
               column === key ? 'border-brand-600 bg-brand-50' : 'border-[--color-border] hover:bg-brand-50/40')}>
             <p className="text-xl font-bold text-foreground leading-none">
               {key === 'all' ? bugs.length : counts[key] ?? 0}
             </p>
-            <p className="text-[11px] text-muted mt-1">{label}</p>
+            <p className="text-xs text-muted mt-1">{label}</p>
           </button>
         ))}
       </div>
@@ -147,7 +147,7 @@ export function AdminBugBoard() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
         <input value={q} onChange={(e) => setQ(e.target.value)}
           placeholder="Search ref, title, tag or reporter…"
-          className="w-full h-10 pl-9 pr-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+          className="w-full h-10 pl-9 pr-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -157,7 +157,7 @@ export function AdminBugBoard() {
       ) : (
         <div className="flex flex-col gap-2">
           {shown.map((b) => (
-            <div key={b.id} className="rounded-xl border border-[--color-border] p-3">
+            <div key={b.id} className="rounded-[10px] border border-[--color-border] p-3">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -176,7 +176,7 @@ export function AdminBugBoard() {
                 </div>
                 <select value={b.status} onChange={(e) => move(b, e.target.value)}
                   disabled={savingId === b.id} aria-label={`Status for ${b.ref_id}`}
-                  className="h-9 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none shrink-0">
+                  className="h-9 px-2 rounded-lg bg-white text-xs shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none shrink-0">
                   {COLUMNS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </div>

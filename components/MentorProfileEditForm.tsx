@@ -283,7 +283,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
       {onboarding ? (
-        <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4">
+        <div className="rounded-[10px] border border-brand-200 bg-brand-50/60 p-4">
           <p className="text-sm font-semibold text-brand-900">Step 1 of 2 · Review your profile</p>
           <p className="text-sm text-muted mt-1">
             We imported these details from immigroov.com. Check them, fill in anything missing, then
@@ -373,7 +373,7 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground">Primary domain of expertise</label>
             <select value={primaryDomain} onChange={(e) => setPrimaryDomain(e.target.value)}
-              className="h-11 px-3 rounded-xl bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
+              className="h-11 px-3 rounded-[10px] bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]">
               <option value="">Select your main field</option>
               {DOMAIN_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
             </select>
@@ -464,8 +464,8 @@ export function MentorProfileEditForm({ mentor, userId, onboarding = false }: Pr
               onChange={(e) => setPublicNotes(e.target.value.slice(0, NOTES_MAX))}
               placeholder="Anything clients should know before booking (visible on your profile)."
               className={cn('px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-y placeholder:text-muted',
-                'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-                'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]')} />
+                'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+                'focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]')} />
             <p className={cn('text-xs text-right', publicNotes.length >= NOTES_MAX ? 'text-red-500' : 'text-muted')}>{publicNotes.length}/{NOTES_MAX}</p>
           </div>
         </CardBody>

@@ -221,7 +221,7 @@ function StatCard({ n, label, hint }: { n: number; label: string; hint?: string 
     <Card><CardBody className="pt-5 pb-5">
       <p className="text-2xl font-bold text-foreground">{n}</p>
       <p className="text-xs text-muted mt-0.5">{label}</p>
-      {hint && <p className="text-[11px] text-muted/70 mt-0.5">{hint}</p>}
+      {hint && <p className="text-xs text-muted/70 mt-0.5">{hint}</p>}
     </CardBody></Card>
   );
 }

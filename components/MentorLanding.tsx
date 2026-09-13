@@ -95,9 +95,9 @@ export function MentorLanding() {
           {BENEFITS.map(({ icon: Icon, iconBg, iconColor, title, description }) => (
             <div
               key={title}
-              className="flex gap-4 items-start p-5 rounded-2xl bg-white border border-[--color-border] shadow-sm transition-shadow hover:shadow-md"
+              className="flex gap-4 items-start p-5 rounded-[14px] bg-white border border-[--color-border] shadow-[--shadow-1] transition-shadow hover:shadow-[--shadow-2]"
             >
-              <div className={`shrink-0 flex items-center justify-center w-11 h-11 rounded-xl ${iconBg}`}>
+              <div className={`shrink-0 flex items-center justify-center w-11 h-11 rounded-[10px] ${iconBg}`}>
                 <Icon className={`h-5 w-5 ${iconColor}`} />
               </div>
               <div>
@@ -111,7 +111,7 @@ export function MentorLanding() {
         {/* How it works: vertical timeline that stretches to fill the column height so
             the last step lines up with the bottom of the last benefit card. */}
         <div className="flex flex-col lg:h-full">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted mb-5">How it works</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-5">How it works</p>
           <ol className="flex flex-col lg:flex-1 reveal-children">
             {STEPS.map(({ icon: Icon, label, description }, i) => {
               const last = i === STEPS.length - 1;

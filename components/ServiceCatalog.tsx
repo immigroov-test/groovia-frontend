@@ -89,7 +89,7 @@ export function ServiceCatalog({
     const expanded = s.code === expandedCode;
     return (
       <div key={s.code} className={cn(
-        'rounded-xl border border-[--color-border] p-3 transition-opacity',
+        'rounded-[10px] border border-[--color-border] p-3 transition-opacity',
         !s.active && 'opacity-60',
       )}>
         <div className="flex items-center justify-between gap-3">

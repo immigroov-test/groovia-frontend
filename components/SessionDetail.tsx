@@ -264,7 +264,7 @@ export function SessionDetail({ bookingId, accessToken }: {
       <BackLink />
 
       {/* Everything sits in one card, matching the booking-confirmation layout. */}
-      <div className="mt-4 rounded-2xl border border-[--color-border] bg-white p-6 sm:p-8">
+      <div className="mt-4 rounded-[14px] border border-[--color-border] bg-white p-6 sm:p-8">
 
       {/* Header: title on the left, status pinned top-right beside it. */}
       <div className="flex items-start justify-between gap-4">
@@ -277,7 +277,7 @@ export function SessionDetail({ bookingId, accessToken }: {
       {/* Who cancelled, and why. "Your session was cancelled" on its own sends people to
           support to ask the one question the page already knows the answer to. */}
       {d.status === 'cancelled' && (
-        <div className="mt-5 rounded-2xl border border-[--color-border] bg-card p-4">
+        <div className="mt-5 rounded-[14px] border border-[--color-border] bg-card p-4">
           <p className="text-sm text-foreground">
             {d.cancelled_by === 'system'
               ? 'Cancelled automatically because payment was not completed in time.'
@@ -297,7 +297,7 @@ export function SessionDetail({ bookingId, accessToken }: {
 
       {/* Payment-pending banner */}
       {d.unpaid_hold && (
-        <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+        <div className="mt-5 rounded-[14px] border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
           <CreditCard className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-amber-900">
@@ -323,7 +323,7 @@ export function SessionDetail({ bookingId, accessToken }: {
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white font-semibold shrink-0">{initials}</div>
             )}
             <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-muted">Mentor</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted">Mentor</p>
               <p className="font-semibold text-brand-900 break-words">{d.mentor_name ?? 'Your mentor'}</p>
             </div>
             {d.mentor_slug && (
@@ -339,7 +339,7 @@ export function SessionDetail({ bookingId, accessToken }: {
               {(d.candidate_name[0] ?? 'A').toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-muted">Attendee</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted">Attendee</p>
               <p className="font-semibold text-brand-900 break-words">{d.candidate_name}</p>
               {/* Email and phone are admin only. Customers are told mentors receive "name, time
                   zone, and session responses", so a mentor sees the name here and the time zone
@@ -355,8 +355,8 @@ export function SessionDetail({ bookingId, accessToken }: {
       {/* BUG-113: the customer's prep note + intake answers - mentor sees "what to prepare",
           the customer sees a copy of what they submitted. */}
       {(d.notes || (d.answers?.length ?? 0) > 0) && (
-        <div className="mt-6 rounded-2xl border border-[--color-border] bg-brand-50/40 p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted">
+        <div className="mt-6 rounded-[14px] border border-[--color-border] bg-brand-50/40 p-4">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted">
             {isCandidate ? 'What you shared with your mentor' : 'What to prepare'}
           </p>
           {d.notes && <p className="mt-2 text-sm text-foreground whitespace-pre-line break-words">{d.notes}</p>}
@@ -373,7 +373,7 @@ export function SessionDetail({ bookingId, accessToken }: {
       <dl className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
         {detailRows.map(([k, v]) => (
           <div key={k}>
-            <dt className="text-[11px] font-medium uppercase tracking-wider text-muted">{k}</dt>
+            <dt className="text-xs font-medium uppercase tracking-wider text-muted">{k}</dt>
             <dd className="mt-1 text-sm font-semibold text-foreground break-words">{v}</dd>
           </div>
         ))}
@@ -381,7 +381,7 @@ export function SessionDetail({ bookingId, accessToken }: {
 
       {/* Mentee: rate + review a completed session */}
       {isCandidate && d.status === 'completed' && (
-        <div className="mt-7 rounded-2xl border border-[--color-border] p-5">
+        <div className="mt-7 rounded-[14px] border border-[--color-border] p-5">
           <h2 className="text-base font-semibold text-foreground">Rate your session</h2>
           <p className="text-sm text-muted mt-0.5 mb-3">Your review helps other mentees. You can update it anytime.</p>
           <ReviewForm bookingId={bookingId} />
@@ -396,7 +396,7 @@ export function SessionDetail({ bookingId, accessToken }: {
 
       {/* Confirmation after an action (e.g. reporting a no-show or choosing a resolution) - BUG-082. */}
       {actionSuccess && (
-        <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-2.5">
+        <div className="mt-6 rounded-[14px] border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-2.5">
           <Check className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
           <p className="text-sm font-medium text-emerald-900">{actionSuccess}</p>
         </div>
@@ -404,7 +404,7 @@ export function SessionDetail({ bookingId, accessToken }: {
 
       {/* Slot-taken message after a failed re-pay */}
       {slotTaken && (
-        <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4">
+        <div className="mt-6 rounded-[14px] border border-red-200 bg-red-50 p-4">
           <p className="text-sm font-semibold text-red-900">{slotTaken}</p>
           {d.mentor_slug && (
             <Link href={`/mentors/${d.mentor_slug}`} className="mt-3 inline-block">
@@ -443,7 +443,7 @@ export function SessionDetail({ bookingId, accessToken }: {
         {/* Mentee: mentor proposed a new time -> go to the reschedule page to pick a slot (the mentor's
             proposed frame by default, or all their free times). No reject; cancelling is separate. */}
         {isCandidate && mentorProposal && d.offer && (
-          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 flex flex-col gap-3">
+          <div className="rounded-[14px] border border-violet-200 bg-violet-50 p-4 flex flex-col gap-3">
             <p className="text-sm text-violet-900">
               Your mentor proposed a new time{d.offer.range_start && d.offer.range_end ? <> between <strong>{fmtInTz(d.offer.range_start, BROWSER_TZ)}</strong> and <strong>{fmtInTz(d.offer.range_end, BROWSER_TZ)}</strong></> : null}. Pick a slot that works, no extra payment, your session is already paid.
             </p>
@@ -458,14 +458,14 @@ export function SessionDetail({ bookingId, accessToken }: {
 
         {/* Mentor: you proposed a new time; waiting for the attendee to choose. */}
         {isMentor && mentorProposal && d.offer && (
-          <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+          <div className="rounded-[14px] border border-violet-200 bg-violet-50 p-4">
             <p className="text-sm text-violet-900">You proposed a new time. Waiting for the attendee to pick a slot; we&apos;ll email you once they do.</p>
           </div>
         )}
 
         {/* Mentor: a pending cancel/reschedule request to answer */}
         {isMentor && pendingReq && d.request && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 flex flex-col gap-2">
+          <div className="rounded-[14px] border border-amber-200 bg-amber-50 p-4 flex flex-col gap-2">
             <p className="text-sm text-amber-900">
               The attendee requested a <strong>{d.request.kind}</strong>. Respond before {fmtInTz(d.request.respond_by, BROWSER_TZ)} or it auto-approves.
             </p>
@@ -480,7 +480,7 @@ export function SessionDetail({ bookingId, accessToken }: {
 
         {/* No-show resolution */}
         {d.status === 'no_show' && isCandidate && d.no_show_by === 'mentor' && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
+          <div className="rounded-[14px] border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
             <p className="text-sm text-red-900">Your mentor didn&apos;t show up. How would you like to resolve it?</p>
             {/* BUG-121: each button now DOES the thing it says instead of only sending a message.
                 Rebook opens the booking page it refers to; the refund request is submitted for review
@@ -509,7 +509,7 @@ export function SessionDetail({ bookingId, accessToken }: {
           </div>
         )}
         {d.status === 'no_show' && isMentor && d.no_show_by === 'user' && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
+          <div className="rounded-[14px] border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
             <p className="text-sm text-red-900">The attendee was marked as a no-show.</p>
             <div className="flex flex-wrap gap-2">
               <Button variant="primary" loading={busy} onClick={() => act('/api/booking/no-show/resolve-customer', { booking_id: d.id, choice: 'accept_rebook' }, 'Rebook offered. The session is reinstated for the attendee.')}>Offer a rebook</Button>
@@ -523,7 +523,7 @@ export function SessionDetail({ bookingId, accessToken }: {
             page with nothing to do. They can't clear their own strike (that would defeat the point),
             so the action is to put it in front of a human, with the booking already identified. */}
         {d.status === 'no_show' && isMentor && d.no_show_by === 'mentor' && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
+          <div className="rounded-[14px] border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
             <p className="text-sm text-red-900">
               You were reported as not attending this session. The attendee has been refunded as per our
               refund policy, and a no-show strike has been recorded on your account.
@@ -564,9 +564,9 @@ export function SessionDetail({ bookingId, accessToken }: {
                   <p className="text-xs font-medium text-foreground">Propose a new time range</p>
                   <div className="grid sm:grid-cols-2 gap-2">
                     <input type="datetime-local" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)}
-                      className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                      className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                     <input type="datetime-local" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)}
-                      className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                      className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                   </div>
                   <Button variant="outline" loading={busy} disabled={!rangeStart || !rangeEnd}
                     onClick={() => act('/api/booking/reschedule/propose', {
@@ -698,7 +698,7 @@ export function SessionDetail({ bookingId, accessToken }: {
         const confirmLabel = isMentor ? 'Yes, cancel' : late ? 'Send request' : 'Cancel session';
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowCancelConfirm(false)}>
-            <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-sm rounded-[14px] bg-white p-6 text-center" onClick={(e) => e.stopPropagation()}>
               <div className="mx-auto h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
@@ -716,7 +716,7 @@ export function SessionDetail({ bookingId, accessToken }: {
                 <textarea id="cancel-reason" rows={3} value={cancelReason} maxLength={1000}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder={isMentor ? 'Let the attendee know why you need to cancel.' : 'Let your mentor know why you need to cancel.'}
-                  className="mt-1.5 w-full px-3 py-2 rounded-xl bg-white text-sm resize-y placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                  className="mt-1.5 w-full px-3 py-2 rounded-[10px] bg-white text-sm resize-y placeholder:text-muted shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]" />
                 <p className="text-xs text-muted mt-1">Shared with {isMentor ? 'the attendee' : 'your mentor'}.</p>
               </div>
               <div className="mt-5 flex flex-col gap-2.5">

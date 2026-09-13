@@ -116,7 +116,7 @@ export function DateOverridesEditor({
         </p>
       </div>
 
-      <div className="rounded-xl border border-[--color-border] p-4">
+      <div className="rounded-[10px] border border-[--color-border] p-4">
         {!selDate ? (
           <p className="text-sm text-muted">Pick a date to block it or set custom hours. Optional.</p>
         ) : (
@@ -135,10 +135,10 @@ export function DateOverridesEditor({
                   <label className="text-xs font-medium text-foreground">Custom hours</label>
                   <div className="flex items-center gap-1.5">
                     <input type="time" value={ovFrom} onChange={(e) => setOvFrom(e.target.value)}
-                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none" />
+                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none" />
                     <span className="text-xs text-muted">-</span>
                     <input type="time" value={ovTo} onChange={(e) => setOvTo(e.target.value)}
-                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none" />
+                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none" />
                   </div>
                   {err && <p className="text-xs text-red-600">{err}</p>}
                   <Button type="button" size="sm" variant="accent" onClick={() => setCustom(selDate)}>Set hours</Button>

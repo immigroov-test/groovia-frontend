@@ -80,7 +80,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
     { href: '/mentor', label: UI_CONTENT.sidebar.mentorHub, gated: false },
   ] : [
     { href: '/home', label: UI_CONTENT.sidebar.chat, gated: false },
-    { href: '/about', label: UI_CONTENT.sidebar.about, gated: false },
+    { href: '/how-it-works', label: 'How it works', gated: false },
     { href: '/mentors', label: UI_CONTENT.sidebar.mentors, gated: false },
     { href: '/webinars', label: 'Webinars', gated: false },
     // BUG-083: hidden for mentors. Its Profile tab repeats what they edit in the mentor hub, and its
@@ -98,12 +98,11 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
       gated: false,
     }] : []),
     ...(role === 'admin' ? [{ href: '/admin', label: UI_CONTENT.sidebar.admin, gated: false }] : []),
-    { href: '/contact', label: UI_CONTENT.sidebar.contact, gated: false },
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 h-16 bg-brand-50">
-      <div className="mx-auto max-w-6xl h-full px-4 sm:px-6 flex items-center gap-3">
+    <header className="fixed top-0 inset-x-0 z-40 h-16 border-b border-[--color-border] bg-white/95 backdrop-blur-md">
+      <div className="container-public h-full flex items-center gap-4">
         {/* Left section: logo. flex-1 so the left + right sides carry equal weight,
             which keeps the centered nav truly centered without overlapping either. */}
         <div className="flex-1 flex items-center min-w-0">
@@ -124,7 +123,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
             Only shown at lg+ where there's room for logo + full pill + auth. Between md
             and lg the pill was wide enough to squeeze the logo out of its column and slide
             under it, so below lg everything folds into the hamburger instead. */}
-        <nav className="hidden lg:flex items-center gap-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] px-2 py-1.5 shrink-0">
+        <nav className="hidden lg:flex items-center gap-1 shrink-0">
           {nav.map(({ href, label, gated }) => {
             const active = href === '/account' ? pathname.startsWith('/account') : pathname === href;
             return (
@@ -132,8 +131,8 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
                 key={href}
                 href={hrefFor(href, gated)}
                 className={cn(
-                  'px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors',
-                  active ? 'text-brand-900 bg-brand-50' : 'text-muted hover:text-brand-900 hover:bg-brand-50/60',
+                  'px-3 py-2 rounded-[10px] text-sm font-semibold transition-colors',
+                  active ? 'text-brand-700 bg-brand-50' : 'text-muted hover:text-brand-700 hover:bg-brand-50',
                 )}
               >
                 {label}
@@ -163,13 +162,13 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
                 title={email ?? undefined}
                 aria-haspopup="menu"
                 aria-expanded={userMenuOpen}
-                className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-card/90 backdrop-blur-md shadow-[0_4px_18px_-6px_rgba(15,23,42,0.18)] min-w-0"
+                className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-[10px] border border-[--color-border] bg-white min-w-0"
               >
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoUrl} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
                 ) : (
-                  <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-[10px] font-semibold">
+                  <div className="h-6 w-6 shrink-0 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-xs font-semibold">
                     {(name?.[0] ?? email?.[0] ?? 'U').toUpperCase()}
                   </div>
                 )}
@@ -178,7 +177,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
               </button>
               {userMenuOpen && (
                 <div className="absolute top-full right-0 pt-2">
-                  <div className="w-44 rounded-xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] p-1.5">
+                  <div className="w-44 rounded-[14px] bg-card shadow-[--shadow-2] border border-[--color-border] p-1.5">
                     <button
                       type="button"
                       onClick={handleSignOut}
@@ -205,7 +204,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
         <button
           ref={menuBtnRef}
           type="button"
-          className="lg:hidden inline-flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-full bg-card border border-brand-200 shadow-[0_4px_14px_-4px_rgba(15,23,42,0.25)] text-brand-900 hover:bg-brand-50 transition-colors"
+          className="lg:hidden inline-flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-[10px] bg-card border border-brand-200 text-brand-900 hover:bg-brand-50 transition-colors"
           aria-label="Menu"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
@@ -218,7 +217,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
 
       {/* Menu (below lg) */}
       {menuOpen && (
-        <div ref={menuPanelRef} className="lg:hidden mx-4 mt-1 rounded-2xl bg-card shadow-[0_8px_30px_-8px_rgba(15,23,42,0.3)] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
+        <div ref={menuPanelRef} className="lg:hidden mx-4 mt-2 rounded-[14px] bg-card shadow-[--shadow-2] border border-[--color-border] px-3 py-3 flex flex-col gap-1">
           {/* Signed-in profile header: photo (or an "upload photo" placeholder), name, email.
               The whole row and the placeholder lead to wherever that person actually edits it.
               BUG-083: for a mentor that is their own profile form, NOT /account - hiding the
@@ -228,7 +227,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
             <Link
               href={role === 'mentor' ? '/mentor/profile' : '/account'}
               onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-3 px-2 py-2 mb-1 rounded-xl hover:bg-brand-50/60"
+              className="flex items-center gap-3 px-2 py-2 mb-1 rounded-[10px] hover:bg-brand-50/60"
             >
               {photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -241,7 +240,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-brand-900 truncate">{name || 'Your profile'}</p>
                 {email && <p className="text-xs text-muted truncate">{email}</p>}
-                {!photoUrl && <p className="text-[11px] font-medium text-accent-600 mt-0.5">Upload photo</p>}
+                {!photoUrl && <p className="text-xs font-medium text-accent-600 mt-0.5">Upload photo</p>}
               </div>
             </Link>
           )}
@@ -251,7 +250,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
               href={hrefFor(href, gated)}
               onClick={() => setMenuOpen(false)}
               className={cn(
-                'px-3 py-2.5 rounded-xl text-sm font-medium',
+                'px-3 py-2.5 rounded-[10px] text-sm font-medium',
                 (href === '/account' ? pathname.startsWith('/account') : pathname === href)
                   ? 'bg-brand-50 text-brand-900'
                   : 'text-muted hover:bg-brand-50/60',
@@ -265,7 +264,7 @@ export function TopNav({ authed, email, role, name, photoUrl, onboarding, mentor
               <button
                 onClick={handleSignOut}
                 disabled={signingOut}
-                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:bg-brand-50/60 disabled:opacity-50"
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-[10px] text-sm font-medium text-muted hover:bg-brand-50/60 disabled:opacity-50"
               >
                 <LogOut className="h-4 w-4" /> Sign out
               </button>
