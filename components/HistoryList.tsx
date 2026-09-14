@@ -104,7 +104,7 @@ export function HistoryList({ open }: Props) {
 
   return (
     <div className="mt-6 px-3">
-      <p className="px-2 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+      <p className="px-2 mb-2 text-xs font-semibold uppercase tracking-wider text-muted">
         {UI_CONTENT.sidebar.history}
       </p>
       {loading ? (
@@ -123,7 +123,7 @@ export function HistoryList({ open }: Props) {
                 )}
               >
                 <span className="line-clamp-1 font-medium">{labelFor(t)}</span>
-                <span className="inline-flex items-center gap-1 text-[11px] text-muted">
+                <span className="inline-flex items-center gap-1 text-xs text-muted">
                   <Clock className="h-3 w-3" />
                   {relativeTime(t.last_message_at)}
                 </span>

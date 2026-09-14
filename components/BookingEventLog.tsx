@@ -67,7 +67,7 @@ export function BookingEventLog(
   }
 
   return (
-    <div className="mt-6 border-t border-[--color-border] pt-4">
+    <div className="mt-6 border-t border-(--color-border) pt-4">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

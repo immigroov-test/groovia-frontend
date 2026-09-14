@@ -97,7 +97,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
         <button type="button" onClick={() => setTab('pricing')} className="font-medium text-brand-700 hover:underline">Edit per country</button>
       </p>
 
-      <div className="mt-8 flex items-center gap-1 border-b border-[--color-border] overflow-x-auto overflow-y-hidden">
+      <div className="mt-8 flex items-center gap-1 border-b border-(--color-border) overflow-x-auto overflow-y-hidden">
         {tabs.map((x) => (
           <button
             key={x.key}
@@ -140,7 +140,7 @@ export function AdminDashboard({ stats, pending, approved, suspended, revisions,
                 ] as const).map(([key, label]) => (
                   <button key={key} type="button" onClick={() => setMentorFilter(key)}
                     className={cn('rounded-full px-3 py-1 text-sm font-medium border transition-colors',
-                      mentorFilter === key ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-[--color-border] text-muted hover:text-foreground')}>
+                      mentorFilter === key ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-(--color-border) text-muted hover:text-foreground')}>
                     {label} ({mCounts[key]})
                   </button>
                 ))}
@@ -221,7 +221,7 @@ function StatCard({ n, label, hint }: { n: number; label: string; hint?: string 
     <Card><CardBody className="pt-5 pb-5">
       <p className="text-2xl font-bold text-foreground">{n}</p>
       <p className="text-xs text-muted mt-0.5">{label}</p>
-      {hint && <p className="text-[11px] text-muted/70 mt-0.5">{hint}</p>}
+      {hint && <p className="text-xs text-muted/70 mt-0.5">{hint}</p>}
     </CardBody></Card>
   );
 }

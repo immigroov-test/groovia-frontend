@@ -262,9 +262,9 @@ function AuthModalInner() {
   if (!isOpen) return null;
 
   const inputBorder = 'border border-brand-300 focus:border-brand-500';
-  // Primary CTA in navy (#102a4c) so the left half mirrors the right: dark-blue text +
+  // Primary CTA in navy so the left half mirrors the right: dark-blue text +
   // buttons on white, opposite the right's white text on dark-blue.
-  const primaryBtn = 'w-full bg-[#102a4c] text-white hover:bg-[#1b3f6e] active:bg-[#0c1830]';
+  const primaryBtn = 'w-full bg-brand-900 text-white hover:bg-brand-800 active:bg-brand-900';
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-brand-900/50 backdrop-blur-sm">
@@ -272,7 +272,7 @@ function AuthModalInner() {
         className="flex min-h-full items-start md:items-center justify-center p-4"
         onClick={(e) => { if (e.target === e.currentTarget && stage !== 'setup') close(); }}
       >
-        <div className="relative w-[92vw] max-w-6xl md:h-[90vh] md:max-h-[880px] bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-up">
+        <div className="relative w-[92vw] max-w-6xl md:h-[90vh] md:max-h-[880px] bg-card rounded-[14px] shadow-(--shadow-3) overflow-hidden flex flex-col md:flex-row animate-fade-up">
           {/* No dismiss during 'setup' - a verified user must finish setting a password. */}
           {stage !== 'setup' && (
             <button
@@ -284,7 +284,7 @@ function AuthModalInner() {
           )}
 
           {/* Desktop: logo centered across the vertical divider at the top. */}
-          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 hidden md:block bg-white rounded-full px-5 py-2.5 shadow-md">
+          <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 hidden md:block bg-white rounded-full px-5 py-2.5 shadow-(--shadow-2)">
             <Image src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
               priority className="object-contain" style={{ height: '26px', width: 'auto' }} />
           </div>
@@ -300,7 +300,7 @@ function AuthModalInner() {
             <div className="relative z-10 px-6 sm:px-9 pt-12 md:pt-20 pb-24 md:pb-6 flex flex-col md:h-full overflow-y-auto">
             {stage === 'email' && (
               <>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">{t.heading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.heading}</h2>
                 <p className="text-base text-muted mt-1 text-center">{t.subheading}</p>
                 <form onSubmit={handleEmail} className="mt-6 flex flex-col gap-3">
                   <Input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)}
@@ -309,7 +309,7 @@ function AuthModalInner() {
                   <Button type="submit" loading={loading} className={primaryBtn}>{t.continue}</Button>
                 </form>
                 <div className="my-4 flex items-center gap-3 text-sm text-muted">
-                  <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
+                  <div className="h-px flex-1 bg-(--color-border)" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-(--color-border)" />
                 </div>
                 <GoogleButton label={t.continueWithGoogle} next={next} beforeSignIn={requireEntryConsent} />
                 {/* An actual checkbox, not the old "by continuing you agree" line. Implied
@@ -340,7 +340,7 @@ function AuthModalInner() {
 
             {stage === 'login' && (
               <>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">{t.loginHeading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.loginHeading}</h2>
                 <p className="text-base text-muted mt-1 text-center break-all">{email}</p>
                 <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-3">
                   <PasswordInput required autoFocus value={password} onChange={(e) => setPassword(e.target.value)}
@@ -357,7 +357,7 @@ function AuthModalInner() {
 
             {stage === 'oauth' && (
               <>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">This account uses Google</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">This account uses Google</h2>
                 <p className="text-base text-muted mt-1 text-center break-all">{email}</p>
                 <p className="text-sm text-muted mt-3 text-center leading-relaxed">
                   You created this account with Google, so there&apos;s no password. Continue with Google to sign in.
@@ -379,7 +379,7 @@ function AuthModalInner() {
 
             {stage === 'setup' && (
               <>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">{t.setupHeading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.setupHeading}</h2>
                 <p className="text-base text-muted mt-1 text-center">{t.setupSubheading}</p>
                 <form onSubmit={handleSetup} className="mt-6 flex flex-col gap-3">
                   <div className="flex flex-col sm:flex-row gap-3">
@@ -422,7 +422,7 @@ function AuthModalInner() {
 
             {stage === 'forgot' && (
               <>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] text-center">{t.forgotHeading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-center">{t.forgotHeading}</h2>
                 <p className="text-base text-muted mt-1 text-center">{t.forgotSubheading}</p>
                 <form onSubmit={handleForgot} className="mt-6 flex flex-col gap-3">
                   <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
@@ -439,7 +439,7 @@ function AuthModalInner() {
                 <div className="h-16 w-16 rounded-full bg-brand-50 border border-brand-200 flex items-center justify-center text-brand-700">
                   <Mail className="h-8 w-8" />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#102a4c] mt-5">{sentType === 'signup' ? t.confirmHeading : t.resetHeading}</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 mt-5">{sentType === 'signup' ? t.confirmHeading : t.resetHeading}</h2>
                 <p className="text-base text-muted mt-2 leading-relaxed">
                   {sentType === 'signup' ? t.confirmBody(email) : t.resetBody(email)}
                 </p>
@@ -457,7 +457,7 @@ function AuthModalInner() {
               each, mirroring the desktop logo on the vertical divider. h-0 puts the flex line
               on the seam; items-center centers the pill on it. */}
           <div className="md:hidden relative z-30 flex h-0 items-center justify-center">
-            <div className="bg-white rounded-full px-5 py-2.5 shadow-md">
+            <div className="bg-white rounded-full px-5 py-2.5 shadow-(--shadow-2)">
               <Image src="/Immigroov_Transparent_Logo.png" alt="Immigroov" width={280} height={60}
                 className="object-contain" style={{ height: '26px', width: 'auto' }} />
             </div>
@@ -466,14 +466,14 @@ function AuthModalInner() {
           {/* Right - background image (navy scrim for readable white text); bullet points at
               the top, quote at the bottom. On desktop it's the right half; on a narrow screen
               it stacks below the form so the popup reads top-to-bottom. */}
-          <div className="relative flex w-full md:w-1/2 md:h-full flex-col text-white bg-[#102a4c] overflow-hidden">
+          <div className="relative flex w-full md:w-1/2 md:h-full flex-col text-white bg-brand-900 overflow-hidden">
             {/* object-cover: fills the whole right column at any popup size (industry standard for
                 a side/hero panel), scales responsively, never distorts, crops only the overflow. */}
             <Image src="/login-bg.jpg" alt="" fill priority className="object-cover object-center" sizes="(max-width: 896px) 50vw, 576px" />
             {/* Light scrim: shows the true image through the middle, darker only at the top
                 (bullets) and bottom (quote) so the white text stays legible. Raise the /NN
                 values for more contrast, lower them to reveal more of the image. */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0a1e3a]/50 via-[#0a1e3a]/10 to-[#0a1e3a]/70" />
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-900/50 via-brand-900/10 to-brand-900/70" />
 
             <div className="relative flex-1 px-8 pt-8 md:pt-20 pb-5 flex flex-col">
               <h3 className="text-xl sm:text-2xl font-semibold text-center">{t.whyJoinTitle}</h3>
@@ -493,7 +493,7 @@ function AuthModalInner() {
                 “<TypeText key={quote.text} text={quote.text} active={isOpen} speed={38} onDone={() => setQuoteDone(true)} />”
               </p>
               {quote.author && quoteDone && (
-                <p className="text-[11px] text-white/60 mt-1 not-italic animate-fade-up">{quote.author}</p>
+                <p className="text-xs text-white/60 mt-1 not-italic animate-fade-up">{quote.author}</p>
               )}
             </div>
           </div>

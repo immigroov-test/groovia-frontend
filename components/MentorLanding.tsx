@@ -1,11 +1,12 @@
 'use client';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  ArrowRight,
   BadgeCheck,
   BookOpen,
   CalendarCheck,
-  ChevronDown,
-  DollarSign,
+  Wallet,
   UserPlus,
   User,
   ShieldCheck,
@@ -14,63 +15,21 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/Button';
 
+const EYEBROW = 'text-[13px] font-bold uppercase tracking-[0.08em] text-accent-700';
+
 const BENEFITS = [
-  {
-    icon: BadgeCheck,
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    title: 'Build your personal brand',
-    description: 'Showcase your expertise and stand out as a trusted voice in your field.',
-  },
-  {
-    icon: BookOpen,
-    iconBg: 'bg-sky-100',
-    iconColor: 'text-sky-600',
-    title: 'Share your hard-earned experience',
-    description: 'Help others with insights from your real-life immigration and career journey.',
-  },
-  {
-    icon: DollarSign,
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
-    title: 'Monetize your time & knowledge',
-    description: 'Turn your valuable experience into a meaningful earning opportunity.',
-  },
-  {
-    icon: CalendarCheck,
-    iconBg: 'bg-teal-100',
-    iconColor: 'text-teal-600',
-    title: 'Flexible scheduling',
-    description: 'Set your own availability and guide others at your own pace.',
-  },
+  { icon: BadgeCheck, title: 'Build your personal brand', description: 'Showcase your expertise and stand out as a trusted voice in your field.' },
+  { icon: BookOpen, title: 'Share your hard-earned experience', description: 'Help others with insights from your real-life immigration and career journey.' },
+  { icon: Wallet, title: 'Monetize your time & knowledge', description: 'Turn your valuable experience into a meaningful earning opportunity.' },
+  { icon: CalendarCheck, title: 'Flexible scheduling', description: 'Set your own availability and guide others at your own pace.' },
 ];
 
 const STEPS = [
-  {
-    icon: UserPlus,
-    label: 'Account',
-    description: 'Create your account',
-  },
-  {
-    icon: User,
-    label: 'Profile',
-    description: 'Your info & expertise',
-  },
-  {
-    icon: Calendar,
-    label: 'Availability',
-    description: 'Set your schedule',
-  },
-  {
-    icon: ShieldCheck,
-    label: 'Review',
-    description: 'Admin approval',
-  },
-  {
-    icon: Rocket,
-    label: 'Go Live',
-    description: 'Accept bookings & start earning',
-  },
+  { icon: UserPlus, label: 'Account', description: 'Create your free mentor account.' },
+  { icon: User, label: 'Profile', description: 'Add your background, destinations, and expertise.' },
+  { icon: Calendar, label: 'Availability', description: 'Set the hours you can take sessions.' },
+  { icon: ShieldCheck, label: 'Review', description: 'Our team reviews your profile and services.' },
+  { icon: Rocket, label: 'Go live', description: 'Accept bookings and start earning.' },
 ];
 
 export function MentorLanding() {
@@ -85,73 +44,61 @@ export function MentorLanding() {
   }
 
   return (
-    <div className="flex flex-col gap-10">
-      {/* Left: reasons to join · Right: the vertical journey. items-stretch makes the
-          right timeline span the same height, so both columns start and end level. */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_16rem] gap-8 lg:gap-12 items-stretch">
+    <div>
+      <section className="container-public py-16 sm:py-20">
+        <div className="max-w-3xl">
+          <p className={EYEBROW}>For mentors</p>
+          <h1 className="font-display mt-4 text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight text-brand-900">Become a mentor</h1>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">Help immigrants navigate their career journey with the experience you already have.</p>
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <Button variant="accent" size="lg" onClick={openSignup}>Create mentor account <ArrowRight className="h-4 w-4" /></Button>
+            <Link href="/mentor-verification" className="inline-flex items-center gap-2 text-[15px] font-semibold text-brand-600 hover:text-brand-900">
+              <ShieldCheck className="h-4 w-4" />How mentor approval works
+            </Link>
+          </div>
+        </div>
+      </section>
 
-        {/* Benefits: stacked one below the other, staggered entrance */}
-        <div className="flex flex-col gap-4 reveal-children">
-          {BENEFITS.map(({ icon: Icon, iconBg, iconColor, title, description }) => (
-            <div
-              key={title}
-              className="flex gap-4 items-start p-5 rounded-2xl bg-white border border-[--color-border] shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className={`shrink-0 flex items-center justify-center w-11 h-11 rounded-xl ${iconBg}`}>
-                <Icon className={`h-5 w-5 ${iconColor}`} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{title}</p>
-                <p className="text-sm text-muted mt-0.5">{description}</p>
-              </div>
+      <section className="border-y border-(--color-border) bg-white">
+        <div className="container-public grid sm:grid-cols-2 lg:grid-cols-4">
+          {BENEFITS.map(({ icon: Icon, title, description }, i) => (
+            <div key={title}
+              className={`py-9 sm:px-7 ${i === 0 ? 'lg:pl-0' : ''} ${i < BENEFITS.length - 1 ? 'border-b lg:border-b-0 lg:border-r border-(--color-border)' : ''} ${i % 2 === 0 ? 'sm:max-lg:border-r' : ''} ${i >= 2 ? 'sm:max-lg:border-b-0' : ''}`}>
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-brand-700"><Icon className="h-5 w-5" /></span>
+              <h2 className="mt-5 text-lg font-semibold text-brand-900">{title}</h2>
+              <p className="mt-2 text-base leading-7 text-muted">{description}</p>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* How it works: vertical timeline that stretches to fill the column height so
-            the last step lines up with the bottom of the last benefit card. */}
-        <div className="flex flex-col lg:h-full">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted mb-5">How it works</p>
-          <ol className="flex flex-col lg:flex-1 reveal-children">
-            {STEPS.map(({ icon: Icon, label, description }, i) => {
-              const last = i === STEPS.length - 1;
-              return (
-                <li key={label} className={`flex flex-col ${last ? '' : 'lg:flex-1'}`}>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex items-center justify-center w-11 h-11 rounded-full border-2 shrink-0 ${
-                        i === 0
-                          ? 'bg-brand-700 border-brand-700 text-white'
-                          : 'bg-white border-[--color-border] text-muted'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className={`text-base font-semibold leading-none ${i === 0 ? 'text-brand-700' : 'text-foreground'}`}>
-                        {label}
-                      </p>
-                      <p className="mt-1 text-sm text-muted leading-tight">{description}</p>
-                    </div>
-                  </div>
-                  {!last && (
-                    <div className="flex items-center py-2 my-1 lg:flex-1 ml-3.5">
-                      <ChevronDown className="h-4 w-4 text-muted/50" />
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
+      <section className="container-public py-20">
+        <div className="max-w-2xl">
+          <p className={EYEBROW}>How it works</p>
+          <h2 className="font-display mt-3 text-3xl font-bold text-brand-900">From application to your first booking</h2>
         </div>
-      </div>
+        <ol className="mt-10 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-5">
+          {STEPS.map(({ icon: Icon, label, description }, i) => (
+            <li key={label} className="border-t border-(--color-border) pt-5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-accent-700">{String(i + 1).padStart(2, '0')}</span>
+                <Icon className="h-5 w-5 text-brand-600" />
+              </div>
+              <h3 className="mt-3 text-lg font-semibold text-brand-900">{label}</h3>
+              <p className="mt-2 text-base leading-7 text-muted">{description}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
-      {/* CTA */}
-      <section className="flex flex-col items-center gap-4 animate-fade-up">
-        <p className="text-sm text-muted text-center">
-          Ready to start? Create a free mentor account and begin the application process.
-        </p>
-        <Button variant="accent" onClick={openSignup}>Create mentor account</Button>
+      <section className="container-public pb-20">
+        <div className="flex flex-col gap-6 rounded-[20px] bg-brand-900 px-6 py-10 text-white sm:flex-row sm:items-end sm:justify-between sm:px-10">
+          <div>
+            <p className="text-sm text-white/70">Ready to start?</p>
+            <h2 className="font-display mt-2 max-w-2xl text-3xl font-bold">Create a free mentor account and begin the application process.</h2>
+          </div>
+          <Button variant="accent" size="lg" className="shrink-0" onClick={openSignup}>Create mentor account</Button>
+        </div>
       </section>
     </div>
   );

@@ -55,7 +55,7 @@ export function RateLimitModal({ until, onClose }: { until: number; onClose: () 
     >
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative w-[92vw] max-w-2xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col sm:flex-row"
+          className="relative w-[92vw] max-w-2xl bg-card rounded-[14px] shadow-(--shadow-3) overflow-hidden flex flex-col sm:flex-row"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -70,18 +70,18 @@ export function RateLimitModal({ until, onClose }: { until: number; onClose: () 
             <Image src="/login_left_bg.png" alt="" fill className="object-cover object-bottom" sizes="(max-width: 640px) 92vw, 320px" />
             <div className="absolute inset-0 bg-white/65" />
             <div className="relative z-10 h-full px-6 pt-10 pb-8 flex flex-col items-center text-center">
-              <h2 className="text-lg font-semibold tracking-tight text-[#102a4c]">Groovia has hit its limit</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-brand-900">Groovia has hit its limit</h2>
               {isLong ? (
                 <>
-                  <p className="text-sm text-[#102a4c]/70 mt-2">You can chat again after</p>
+                  <p className="text-sm text-brand-900/70 mt-2">You can chat again after</p>
                   <div className="flex-1 flex items-center">
-                    <p className="text-4xl font-bold text-[#102a4c] tabular-nums">{backAt}</p>
+                    <p className="text-4xl font-bold text-brand-900 tabular-nums">{backAt}</p>
                   </div>
-                  <p className="text-xs text-[#102a4c]/70">Feel free to keep browsing in the meantime.</p>
+                  <p className="text-xs text-brand-900/70">Feel free to keep browsing in the meantime.</p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-[#102a4c]/70 mt-2">Hang tight for:</p>
+                  <p className="text-sm text-brand-900/70 mt-2">Hang tight for:</p>
                   <div className="flex-1 flex items-center">
                     <Ring remaining={remaining} total={totalRef.current} label={clock} />
                   </div>
@@ -91,9 +91,9 @@ export function RateLimitModal({ until, onClose }: { until: number; onClose: () 
           </div>
 
           {/* Right - riddle over the navy hero; white title aligned with the left title */}
-          <div className="relative sm:w-1/2 px-6 pt-10 pb-8 text-white bg-[#102a4c] overflow-hidden flex flex-col min-h-[300px]">
+          <div className="relative sm:w-1/2 px-6 pt-10 pb-8 text-white bg-brand-900 overflow-hidden flex flex-col min-h-[300px]">
             <Image src="/login-bg.jpg" alt="" fill className="object-cover object-center" sizes="(max-width: 640px) 92vw, 320px" />
-            <div className="absolute inset-0 bg-[#0a1e3a]/80" />
+            <div className="absolute inset-0 bg-brand-900/80" />
             <div className="relative z-10 flex flex-col h-full">
               <h2 className="text-lg font-semibold tracking-tight text-white">{isLong ? "While you're away" : 'Try a riddle?'}</h2>
               <div className="flex-1 mt-4">
@@ -120,14 +120,14 @@ function Ring({ remaining, total, label }: { remaining: number; total: number; l
   return (
     <div className="relative h-36 w-36">
       <svg className="h-36 w-36 -rotate-90" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r={R} fill="none" stroke="#dbe3ee" strokeWidth="8" />
+        <circle cx="60" cy="60" r={R} fill="none" stroke="var(--brand-100)" strokeWidth="8" />
         <circle
-          cx="60" cy="60" r={R} fill="none" stroke="#102a4c" strokeWidth="8" strokeLinecap="round"
+          cx="60" cy="60" r={R} fill="none" stroke="var(--brand-900)" strokeWidth="8" strokeLinecap="round"
           strokeDasharray={C} strokeDashoffset={C * (1 - frac)}
           style={{ transition: 'stroke-dashoffset 1s linear' }}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-xl font-bold leading-none text-[#102a4c] tabular-nums">
+      <div className="absolute inset-0 flex items-center justify-center text-xl font-bold leading-none text-brand-900 tabular-nums">
         {label}
       </div>
     </div>
@@ -182,7 +182,7 @@ function RiddlePanel() {
             />
             <button
               type="button" onClick={submit} disabled={!guess.trim()}
-              className="shrink-0 px-5 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600 disabled:opacity-40"
+              className="shrink-0 px-5 h-10 rounded-lg bg-accent-700 text-white text-sm font-semibold hover:bg-brand-900 disabled:opacity-40"
             >
               Submit
             </button>
@@ -199,7 +199,7 @@ function RiddlePanel() {
           )}
           <button
             type="button" onClick={next}
-            className="px-6 h-10 rounded-lg bg-accent-500 text-white text-sm font-semibold hover:bg-accent-600"
+            className="px-6 h-10 rounded-lg bg-accent-700 text-white text-sm font-semibold hover:bg-brand-900"
           >
             New riddle?
           </button>

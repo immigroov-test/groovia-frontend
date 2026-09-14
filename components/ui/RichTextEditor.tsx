@@ -48,19 +48,19 @@ export function RichTextEditor({ value, onChange, placeholder = 'Start typing…
       <div
         className={cn(
           'rounded-lg bg-white overflow-hidden',
-          'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-          focused && 'shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
+          'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+          focused && 'shadow-[0_0_0_2px_rgba(7,63,125,0.25),0_1px_2px_rgba(8,43,82,0.04)]',
         )}
       >
         {/* Toolbar */}
-        <div className="flex items-center gap-0.5 border-b border-[--color-border] px-2 py-1.5 flex-wrap">
+        <div className="flex items-center gap-0.5 border-b border-(--color-border) px-2 py-1.5 flex-wrap">
           <TB onClick={() => exec('bold')} title="Bold"><Bold className="h-4 w-4" /></TB>
           <TB onClick={() => exec('italic')} title="Italic"><Italic className="h-4 w-4" /></TB>
           <TB onClick={() => exec('underline')} title="Underline"><Underline className="h-4 w-4" /></TB>
-          <span className="mx-1 h-5 w-px bg-[--color-border]" />
+          <span className="mx-1 h-5 w-px bg-(--color-border)" />
           <TB onClick={() => exec('insertUnorderedList')} title="Bulleted list"><List className="h-4 w-4" /></TB>
           <TB onClick={() => exec('insertOrderedList')} title="Numbered list"><ListOrdered className="h-4 w-4" /></TB>
-          <span className="mx-1 h-5 w-px bg-[--color-border]" />
+          <span className="mx-1 h-5 w-px bg-(--color-border)" />
           <Type className="h-4 w-4 text-muted" />
           <select
             aria-label="Text size"

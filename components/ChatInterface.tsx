@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Paperclip, Send, Lock, SquarePen, ChevronUp } from 'lucide-react';
+import { Paperclip, Send, Lock, SquarePen, X, ArrowRight } from 'lucide-react';
 import { UI_CONTENT, INTENT_OPTIONS, EXPERTISE_CATEGORY_MAP } from '../lib/content';
 import { countryLabel, flagEmoji } from '../lib/countries';
 import { createClient } from '../lib/supabase/client';
@@ -62,6 +62,8 @@ function readGuestQuestions(): number {
 
 interface Props {
   authed: boolean;
+  featuredMentors?: import('../lib/types').Mentor[];
+  upcomingWebinars?: import('../lib/webinars').Webinar[];
 }
 
 interface ChatMessage {
@@ -84,9 +86,12 @@ function topicLabel(code: string): string {
 
 const LINK_CLASS = '!text-brand-700 !underline !underline-offset-4 hover:!text-brand-900 font-medium';
 
+const ASSISTANT_BUBBLE =
+  'rounded-2xl rounded-bl-md border border-(--color-border) bg-white px-4 py-2.5 text-[15px] leading-relaxed text-foreground shadow-(--shadow-1)';
+
 // Native-select "pill" used by the find-a-mentor topic/country steps.
 const MENTOR_PILL =
-  'w-full sm:w-auto sm:max-w-[16rem] px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40 disabled:cursor-not-allowed';
+  'w-full px-3.5 py-2.5 text-sm font-medium rounded-xl bg-white text-brand-900 border border-(--color-border) shadow-(--shadow-1) hover:border-brand-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40 disabled:cursor-not-allowed';
 
 const MD_COMPONENTS: React.ComponentProps<typeof ReactMarkdown>['components'] = {
   a: ({ href, children, node: _node, ...rest }) => {
@@ -144,13 +149,17 @@ function safeSetMessages(messages: ChatMessage[]): void {
   }
 }
 
-// ↓ Adjust these two values to tune the visual balance
-const LANDMARKS_OPACITY = 0.22;       // 0.0 = invisible  · 1.0 = fully visible
-const CHAT_INPUT_OPACITY = 0.92;      // 0.7 = see-through · 1.0 = fully white
-
-export default function ChatInterface({ authed }: Props) {
+export default function ChatInterface({ authed, featuredMentors = [], upcomingWebinars = [] }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Groovia lives in a panel over the page. Closing it only hides it: the conversation stays.
+  const [chatOpen, setChatOpen] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (searchParams.get('chat') === 'open') setChatOpen(true);
+  }, [searchParams]);
 
   // Guests become "gated" after resume upload - input disables, AuthGateRenderer shows the modal.
   const gated = !authed;
@@ -236,6 +245,7 @@ export default function ChatInterface({ authed }: Props) {
     const theySpoke = !!storedMessages?.some((m) => m.role === 'user');
     if (theySpoke) {
       setMessages(storedMessages!);
+      setChatOpen(true);   // a same-session refresh mid-conversation reopens where they left off
     } else {
       window.localStorage.removeItem(LS_KEYS.messages);
     }
@@ -357,46 +367,11 @@ export default function ChatInterface({ authed }: Props) {
     setPendingQna(false);
     setMentorTopic('');
     setMentorStep('');
-    setWelcomeRevealed(false);
-    // A fresh start replays the landing from the top.
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const intentBlockRef = useRef<HTMLDivElement>(null);
-  const chatStartRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  // The Groovia first message is revealed via the arrows. On mobile the globe is dropped
-  // after the first real scroll.
-  const [welcomeRevealed, setWelcomeRevealed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [scrolledOnce, setScrolledOnce] = useState(false);
-
-  // Is this a phone? (drives dropping the globe)
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 639px)');
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-
-  // Mark the first real user scroll (drops the globe on mobile).
-  useEffect(() => {
-    const root = scrollRef.current;
-    if (!root) return;
-    const onUserScroll = () => setScrolledOnce(true);
-    root.addEventListener('wheel', onUserScroll, { passive: true });
-    root.addEventListener('touchmove', onUserScroll, { passive: true });
-    return () => {
-      root.removeEventListener('wheel', onUserScroll);
-      root.removeEventListener('touchmove', onUserScroll);
-    };
-  }, [hydrated]);
-
-  const scrollToTop = () => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  const panelBodyRef = useRef<HTMLDivElement>(null);
 
   async function loadFacets() {
     if (facets.categories.length || facetsLoading) return;
@@ -427,23 +402,25 @@ export default function ChatInterface({ authed }: Props) {
   // topic is picked, show every country we cover.
   const mentorCountries = mentorTopic ? (facets.by_category[mentorTopic] ?? []) : facets.countries;
 
+  // Keep the newest message (or the options under it) in view inside the panel.
   useEffect(() => {
-    // Stay at the intro while only the welcome message exists; once a real conversation
-    // is active (or restored), follow it to the latest message.
-    if (!resumeUploaded && messages.length <= 1) return;
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading, resumeUploaded]);
-
-  // After "Chat with Groovia" (welcome revealed), bring the welcome + the three intent buttons
-  // into view on every device - on short screens the buttons otherwise sit below the fold.
-  useEffect(() => {
-    if (!welcomeRevealed || intentSelected) return;
-    const t = window.setTimeout(
-      () => intentBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }),
-      160,
-    );
+    if (!chatOpen) return;
+    const t = window.setTimeout(() => {
+      const el = panelBodyRef.current;
+      el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }, 60);
     return () => window.clearTimeout(t);
-  }, [welcomeRevealed, intentSelected, mentorStep]);
+  }, [chatOpen, messages, loading, intentSelected, mentorStep]);
+
+  // Escape closes the panel, unless one of the chat's own popups is on top of it.
+  useEffect(() => {
+    if (!chatOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !searchParams.get('auth')) setChatOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [chatOpen, searchParams]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -779,6 +756,8 @@ export default function ChatInterface({ authed }: Props) {
   // nothing to type into, so it stays out of the way.
   const composerVisible = qnaActive || pendingQna || guestGate;
 
+  const theySpoke = messages.some((m) => m.role === 'user');
+
   return (
     // h-full alone is not safe here. The containing block is PageTransition's motion
     // wrapper, which is display:contents and carries inline opacity/transform from the
@@ -787,16 +766,6 @@ export default function ChatInterface({ authed }: Props) {
     // the footer sitting under the nav. The viewport-based minimum cannot collapse, so it
     // holds the page up whichever way the wrapper resolves. 4rem is the layout's pt-16.
     <div className="flex flex-col h-full min-h-[calc(100dvh-4rem)] relative">
-      {/* Landmarks - fixed to viewport bottom, always visible regardless of chat state.
-          z-index 0 puts it above the body background but below the z-1/z-10 content layers. */}
-      <div
-        className="fixed bottom-0 left-0 md:left-64 right-0 pointer-events-none select-none"
-        style={{ zIndex: 0 }}
-        aria-hidden
-      >
-        <img src="/landmarks.png" alt="" className="w-full block" style={{ opacity: LANDMARKS_OPACITY }} />
-      </div>
-
       <input
         type="file"
         ref={fileInputRef}
@@ -806,264 +775,254 @@ export default function ChatInterface({ authed }: Props) {
         disabled={resumeUploaded}
       />
 
-      {/* Sticky controls: a centered back-to-top arrow and Clear chat. Shown once the chat
-          has started. */}
-      <div
-        className={cn(
-          'absolute top-0 inset-x-0 z-20 h-12 transition-opacity duration-300',
-          messages.length === 0 ? 'opacity-0 pointer-events-none' : 'opacity-100',
-        )}
-      >
+      {/* The page itself never gives way to the chat: Groovia opens in a panel on top of it. */}
+      <div className="flex-1 overflow-y-auto relative">
+        <LandingIntro onReveal={() => setChatOpen(true)} mentors={featuredMentors} webinars={upcomingWebinars} />
+        <SiteFooter />
+      </div>
+
+      {/* Launcher: how Groovia is reopened after being closed. */}
+      {!chatOpen && (
         <button
-          onClick={scrollToTop}
-          aria-label="Back to the top"
-          title="Back to the top"
-          className="absolute top-2 left-1/2 -translate-x-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-white/90 backdrop-blur text-brand-800 shadow-sm hover:bg-white"
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-5 right-5 z-[35] flex items-center gap-3 rounded-full border border-(--color-border) bg-white py-2 pl-2 pr-5 text-left shadow-(--shadow-3) transition-transform hover:-translate-y-0.5 animate-fade-up"
         >
-          <ChevronUp className="h-4 w-4" />
+          <AiAvatar className="h-10 w-10" online blink />
+          <span className="leading-tight">
+            <span className="block text-sm font-semibold text-brand-900">{theySpoke ? 'Continue with Groovia' : 'Ask Groovia'}</span>
+            <span className="hidden sm:block text-xs text-muted">{theySpoke ? 'Your conversation is saved' : 'Your guide to moving abroad'}</span>
+          </span>
         </button>
-        {messages.length > 1 && (
-          <button
-            onClick={handleNewChat}
-            title="Clear chat"
-            className="absolute top-2 right-4 sm:right-auto sm:left-[63%] flex items-center gap-1.5 rounded-full bg-white/90 backdrop-blur px-3 py-1.5 text-xs font-medium text-brand-800 shadow-sm hover:bg-white"
-          >
-            <SquarePen className="h-3.5 w-3.5" />
-            Clear chat
-          </button>
-        )}
-      </div>
+      )}
 
-      {/* z-index: 1 creates a stacking context above the fixed landmarks (z-0), so the
-          intros and message bubbles render on top of the image. */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto relative"
-        style={{ zIndex: 1 }}
-      >
-        {/* The landing: one tight, choreographed column (headline -> boxes -> Chat with
-            Groovia -> ticker -> arrows -> first message). Shown only before the chat begins;
-            once a resume is attached the real conversation takes over below. */}
-        {/* Stays mounted until the visitor actually SAYS something. Unmounting on `messages.length`
-            meant picking "Ask a question" wiped the intro instantly, because that appends Groovia's
-            own prompt as a message - so the brand intro, the three boxes and the ticker all vanished
-            before the person had typed a word, and the back-to-top arrow had nothing left to scroll
-            to. A reply from Groovia is not the conversation starting; their first message is. */}
-        {!resumeUploaded && !messages.some((m) => m.role === 'user') && (
-          <LandingIntro
-            hideGif={isMobile && scrolledOnce}
-            showWelcome={welcomeRevealed}
-            onReveal={() => setWelcomeRevealed(true)}
-          />
-        )}
-
-        <div ref={chatStartRef} className="mx-auto max-w-3xl px-4 pt-6 pb-44 space-y-6">
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={cn('flex gap-3 animate-fade-up', m.role === 'user' ? 'justify-end' : 'justify-start')}
-            >
-              {m.role === 'assistant' && <AiAvatar />}
-              <div
-                className={cn(
-                  'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
-                  m.role === 'user'
-                    ? 'bg-brand-900 text-white rounded-br-sm'
-                    : 'bg-brand-50/60 text-foreground rounded-bl-sm prose-chat',
-                )}
-              >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
-                  {m.content}
-                </ReactMarkdown>
-              </div>
+      {chatOpen && (
+        <aside
+          aria-label="Groovia, AI assistant"
+          className="fixed z-[35] flex flex-col overflow-hidden bg-background animate-panel-in inset-x-0 top-16 bottom-0 sm:inset-x-auto sm:top-auto sm:right-5 sm:bottom-5 sm:h-[min(44rem,calc(100dvh-6.5rem))] sm:w-[25rem] sm:rounded-[1.25rem] sm:border sm:border-(--color-border) sm:shadow-(--shadow-3)"
+        >
+          {/* Header: who you are talking to, and the way out. */}
+          <header className="flex items-center gap-3 border-b border-(--color-border) bg-white px-4 py-3">
+            <AiAvatar className="h-10 w-10" online blink />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold leading-tight text-brand-900">Groovia</p>
+              <p className="truncate text-xs text-muted">Your AI guide to moving abroad</p>
             </div>
-          ))}
-
-          {loading && <ThinkingIndicator />}
-
-          {!intentSelected && !loading && (welcomeRevealed || messages.length > 0) && (
-            <div ref={intentBlockRef} className="pt-2 animate-fade-up">
-              {/* Step 0: pick an intent - shown up front (no résumé/login wall). Mentor = open,
-                  Q&A = login, Report = popup then login + résumé. */}
-              {mentorStep === '' && (
-                <>
-                  {/* The landing welcome already asks "What would you like to do?"; only label
-                      the chips when they're re-offered later (welcome has scrolled away). */}
-                  {messages.length > 0 && <p className="text-sm font-medium text-foreground mb-3">{UI_CONTENT.intentPrompt}</p>}
-                  <div className="flex flex-wrap gap-2">
-                    {INTENT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.label}
-                        onClick={() => handleIntent(opt.kind)}
-                        disabled={loading}
-                        className="px-3.5 py-2 text-sm font-medium rounded-full bg-brand-50/70 text-brand-900 hover:bg-brand-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* Step 1: answer "what do you need help with?" (DB-driven topics). */}
-              {mentorStep === 'topic' && (
-                <select
-                  value={mentorTopic}
-                  disabled={loading}
-                  aria-label="What do you need guidance on?"
-                  onChange={(e) => { if (e.target.value) pickMentorTopic(e.target.value); }}
-                  className={MENTOR_PILL}
-                >
-                  <option value="">🤝 What do you need help with?</option>
-                  {facetsLoading && <option value="" disabled>Loading…</option>}
-                  {facets.categories.map((c) => (
-                    <option key={c} value={c}>{topicLabel(c)}</option>
-                  ))}
-                </select>
-              )}
-
-              {/* Step 2: answer "which country?" (narrowed to the chosen topic). Picking one
-                  makes the single real backend call. */}
-              {mentorStep === 'country' && (
-                <select
-                  value=""
-                  disabled={loading}
-                  aria-label="Which country?"
-                  onChange={(e) => { if (e.target.value) void pickMentorCountry(e.target.value); }}
-                  className={MENTOR_PILL}
-                >
-                  <option value="">🌍 Which country?</option>
-                  {mentorCountries.length === 0 && <option value="" disabled>No countries yet</option>}
-                  {mentorCountries.map((code) => (
-                    <option key={code} value={code}>{flagEmoji(code)} {countryLabel(code)}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
-
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* The footer lives inside THIS scroller, not the layout's. The chat fills the
-            viewport and scrolls its own content, so a footer placed in the outer container
-            makes that scroll as well and the page shows two scrollbars. Landing only:
-            during a conversation the end of the scroll area is where the newest message
-            goes, and a footer there would sit between the reader and the reply. */}
-        {messages.length === 0 && <SiteFooter />}
-      </div>
-
-      {/* z-index: 10 keeps the input bar above both the scroll area (z-1) and landmarks (z-0). */}
-      <div className="bg-transparent relative" style={{ zIndex: 10 }}>
-        <div className="mx-auto max-w-3xl px-4 py-4">
-          {gated && (pendingQna || pendingReport || guestGate) && (
-            <button
-              onClick={openGate}
-              className="w-full flex items-center justify-center gap-2 mb-2 px-4 py-2.5 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium"
-            >
-              <Lock className="h-4 w-4" />
-              {guestGate ? 'Create a free account or sign in' : UI_CONTENT.signInToContinue}
-            </button>
-          )}
-
-          {guestHint && (
-            <p className="mb-2 text-xs text-amber-700 text-center">{UI_CONTENT.guestWordLimit}</p>
-          )}
-
-          {rateLimited && !showRateModal && (
-            <button
-              type="button"
-              onClick={() => setShowRateModal(true)}
-              className="w-full text-center mb-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-medium hover:bg-amber-100"
-            >
-              You can chat again in{' '}
-              <span className="tabular-nums">{formatWait(rlRemaining)}</span>. Tap to pass the time.
-            </button>
-          )}
-
-          {/* BUG-136: the composer is hidden on the landing (dead weight next to the intent buttons)
-              and appears the moment the user picks the Q&A intent - including when they're at the
-              guest limit, where it shows disabled beside the sign-in prompt. Gating this on qnaActive
-              alone made it vanish entirely for a guest at the limit, since that path never activates
-              Q&A: the box has to be there for "Ask Groovia" to lead anywhere. */}
-          {composerVisible && (
-          <div
-            className={cn(
-              "flex items-end gap-2 rounded-2xl px-2 py-1.5",
-              rateLimited && "opacity-60",
-              // Glow only when the composer is actually usable (Q&A active, not rate-limited).
-              !rateLimited && "composer-glow",
-            )}
-            style={{ backgroundColor: `rgba(255,255,255,${CHAT_INPUT_OPACITY})` }}
-          >
-            {FEATURES.resumeUpload && (
+            {theySpoke && (
               <button
                 type="button"
-                onClick={() => { if (!authed) { openGate(); return; } fileInputRef.current?.click(); }}
-                // Attach is only relevant for the career report - blocked (and un-emphasized)
-                // otherwise, so it stops competing with the three intent buttons up front.
-                disabled={loading || resumeUploaded || !pendingReport}
-                title={resumeUploaded ? UI_CONTENT.tooltips.resumeAlreadyUploaded : UI_CONTENT.tooltips.attachResume}
-                className={cn(
-                  "h-9 w-9 flex items-center justify-center rounded-lg hover:bg-brand-50/40 disabled:opacity-30 disabled:cursor-not-allowed",
-                  // Pulse the clip only while the report flow is waiting for the résumé.
-                  pendingReport && !resumeUploaded && !loading
-                    ? "text-accent-600 animate-attach-pulse"
-                    : "text-muted hover:text-foreground",
-                )}
+                onClick={handleNewChat}
+                title="Start a new conversation"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-brand-800 hover:bg-brand-50"
               >
-                <Paperclip className="h-4 w-4" />
+                <SquarePen className="h-3.5 w-3.5" /> New chat
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              aria-label="Close Groovia"
+              title="Close (your conversation is kept)"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-brand-800 hover:bg-brand-50"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </header>
+
+          <div ref={panelBodyRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+            {/* Greeting: always opens the thread, but is not stored as a message, so it never clutters
+                a saved transcript. */}
+            <div className="flex items-end gap-2.5 animate-fade-up">
+              <AiAvatar />
+              <div className="space-y-1.5 max-w-[85%]">
+                <div className={ASSISTANT_BUBBLE}>{UI_CONTENT.welcomeMessage}</div>
+                <div className={ASSISTANT_BUBBLE}>{UI_CONTENT.welcomeFollowUp}</div>
+              </div>
+            </div>
+
+            {messages.map((m, i) => {
+              const firstOfRun = i === 0 || messages[i - 1].role !== m.role;
+              const lastOfRun = i === messages.length - 1 || messages[i + 1].role !== m.role;
+              if (m.role === 'user') {
+                return (
+                  <div key={i} className={cn('flex justify-end animate-fade-up', !firstOfRun && '-mt-2.5')}>
+                    <div className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-900 px-4 py-2.5 text-[15px] leading-relaxed text-white">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>{m.content}</ReactMarkdown>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div key={i} className={cn('flex items-end gap-2.5 animate-fade-up', !firstOfRun && '-mt-2.5')}>
+                  {lastOfRun ? <AiAvatar /> : <span className="w-8 shrink-0" aria-hidden />}
+                  <div className={cn(ASSISTANT_BUBBLE, 'max-w-[85%] prose-chat')}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>{m.content}</ReactMarkdown>
+                  </div>
+                </div>
+              );
+            })}
+
+            {loading && <ThinkingIndicator />}
+
+            {!intentSelected && !loading && (
+              <div className="pl-[2.625rem] animate-fade-up">
+                {/* Step 0: pick an intent - shown up front (no résumé/login wall). Mentor = open,
+                    Q&A = login, Report = popup then login + résumé. */}
+                {mentorStep === '' && (
+                  <>
+                    {messages.length > 0 && <p className="mb-2 text-sm text-muted">{UI_CONTENT.intentPrompt}</p>}
+                    <div className="flex flex-col gap-2">
+                      {INTENT_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.label}
+                          onClick={() => handleIntent(opt.kind)}
+                          disabled={loading}
+                          className="group flex items-center justify-between gap-3 rounded-xl border border-(--color-border) bg-white px-3.5 py-2.5 text-left text-sm font-medium text-brand-900 shadow-(--shadow-1) hover:border-accent-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {opt.label}
+                          <ArrowRight className="h-4 w-4 shrink-0 text-muted transition-colors group-hover:text-accent-600" />
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Step 1: answer "what do you need help with?" (DB-driven topics). */}
+                {mentorStep === 'topic' && (
+                  <select
+                    value={mentorTopic}
+                    disabled={loading}
+                    aria-label="What do you need guidance on?"
+                    onChange={(e) => { if (e.target.value) pickMentorTopic(e.target.value); }}
+                    className={MENTOR_PILL}
+                  >
+                    <option value="">🤝 What do you need help with?</option>
+                    {facetsLoading && <option value="" disabled>Loading…</option>}
+                    {facets.categories.map((c) => (
+                      <option key={c} value={c}>{topicLabel(c)}</option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Step 2: answer "which country?" (narrowed to the chosen topic). Picking one
+                    makes the single real backend call. */}
+                {mentorStep === 'country' && (
+                  <select
+                    value=""
+                    disabled={loading}
+                    aria-label="Which country?"
+                    onChange={(e) => { if (e.target.value) void pickMentorCountry(e.target.value); }}
+                    className={MENTOR_PILL}
+                  >
+                    <option value="">🌍 Which country?</option>
+                    {mentorCountries.length === 0 && <option value="" disabled>No countries yet</option>}
+                    {mentorCountries.map((code) => (
+                      <option key={code} value={code}>{flagEmoji(code)} {countryLabel(code)}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-(--color-border) bg-white px-3 pb-3 pt-2.5">
+            {gated && (pendingQna || pendingReport || guestGate) && (
+              <button
+                onClick={openGate}
+                className="w-full flex items-center justify-center gap-2 mb-2 px-4 py-2.5 rounded-xl bg-accent-50 text-accent-700 hover:bg-accent-100 text-sm font-medium"
+              >
+                <Lock className="h-4 w-4" />
+                {guestGate ? 'Create a free account or sign in' : UI_CONTENT.signInToContinue}
               </button>
             )}
 
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={input}
-              onChange={(e) => { setInput(e.target.value); if (guestHint) setGuestHint(false); }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              placeholder={!qnaActive ? UI_CONTENT.inputPlaceholderBlocked : UI_CONTENT.inputPlaceholder}
-              // Typing is BLOCKED until the user chooses "Ask a Question" (which requires login).
-              // Before that, the three intent buttons are the only way forward.
-              disabled={!qnaActive || rateLimited}
-              className="flex-1 bg-transparent border-none outline-none text-sm leading-relaxed resize-none py-2 max-h-40 disabled:cursor-not-allowed"
-            />
+            {guestHint && (
+              <p className="mb-2 text-xs text-amber-700 text-center">{UI_CONTENT.guestWordLimit}</p>
+            )}
 
-            <button
-              type="button"
-              onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim() || !qnaActive || rateLimited}
-              className="h-9 w-9 flex items-center justify-center rounded-lg bg-brand-900 text-white hover:bg-brand-800 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </div>
-          )}
+            {rateLimited && !showRateModal && (
+              <button
+                type="button"
+                onClick={() => setShowRateModal(true)}
+                className="w-full text-center mb-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-800 text-sm font-medium hover:bg-amber-100"
+              >
+                You can chat again in{' '}
+                <span className="tabular-nums">{formatWait(rlRemaining)}</span>. Tap to pass the time.
+              </button>
+            )}
 
-          {/* The AI disclaimer belongs with the composer: with nothing to type into, it has nothing
-              to disclaim and just adds a line of grey text under the intent buttons. */}
-          {composerVisible && (
-            <p className="text-center text-xs text-muted mt-3 px-4">{UI_CONTENT.disclaimer}</p>
-          )}
-          {/* AI Disclosure Notice (EU AI Act Art. 50): a persistent label at the point of AI
-              interaction, distinct from the caveat above - that one is about the content
-              ("not legal advice"); this discloses that Groovia is an AI system at all. Shown
-              wherever the composer is, not only in the footer. */}
-          {composerVisible && (
-            <p className="text-center text-[11px] text-muted/80 mt-1 px-4">
+            {/* BUG-136: the composer is hidden until the user picks the Q&A intent - including when
+                they're at the guest limit, where it shows disabled beside the sign-in prompt. */}
+            {composerVisible && (
+              <div
+                className={cn(
+                  'flex items-end gap-1.5 rounded-2xl border border-(--color-border) bg-background px-1.5 py-1.5 transition-shadow focus-within:border-brand-300 focus-within:ring-2 focus-within:ring-brand-100',
+                  rateLimited && 'opacity-60',
+                )}
+              >
+                {FEATURES.resumeUpload && (
+                  <button
+                    type="button"
+                    onClick={() => { if (!authed) { openGate(); return; } fileInputRef.current?.click(); }}
+                    // Attach is only relevant for the career report - blocked (and un-emphasized) otherwise.
+                    disabled={loading || resumeUploaded || !pendingReport}
+                    title={resumeUploaded ? UI_CONTENT.tooltips.resumeAlreadyUploaded : UI_CONTENT.tooltips.attachResume}
+                    className={cn(
+                      'h-9 w-9 flex items-center justify-center rounded-xl hover:bg-brand-50 disabled:opacity-30 disabled:cursor-not-allowed',
+                      // Pulse the clip only while the report flow is waiting for the résumé.
+                      pendingReport && !resumeUploaded && !loading
+                        ? 'text-accent-600 animate-attach-pulse'
+                        : 'text-muted hover:text-foreground',
+                    )}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                )}
+
+                <textarea
+                  ref={textareaRef}
+                  rows={1}
+                  value={input}
+                  onChange={(e) => { setInput(e.target.value); if (guestHint) setGuestHint(false); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage(input);
+                    }
+                  }}
+                  placeholder={!qnaActive ? UI_CONTENT.inputPlaceholderBlocked : 'Message Groovia…'}
+                  // Typing is BLOCKED until the user chooses "Ask a Question" (which requires login).
+                  disabled={!qnaActive || rateLimited}
+                  className="flex-1 bg-transparent border-none outline-none text-[15px] leading-relaxed resize-none px-2 py-1.5 max-h-40 disabled:cursor-not-allowed"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => sendMessage(input)}
+                  disabled={loading || !input.trim() || !qnaActive || rateLimited}
+                  aria-label="Send"
+                  className="h-9 w-9 flex items-center justify-center rounded-xl bg-accent-600 text-white hover:bg-accent-700 disabled:bg-brand-200 disabled:cursor-not-allowed shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
+            {composerVisible && (
+              <p className="mt-2 px-2 text-center text-[11px] leading-snug text-muted">{UI_CONTENT.disclaimer}</p>
+            )}
+            {/* AI Disclosure Notice (EU AI Act Art. 50): a persistent label at the point of AI
+                interaction, distinct from the caveat above - that one is about the content
+                ("not legal advice"); this discloses that Groovia is an AI system at all. */}
+            <p className="mt-1 px-2 text-center text-[11px] text-muted/80">
               You&apos;re chatting with Groovia, an AI assistant.{' '}
               <Link href="/privacy#ai-disclosure-notice" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
                 AI Disclosure Notice
               </Link>
             </p>
-          )}
-        </div>
-      </div>
+          </div>
+        </aside>
+      )}
 
       {showReportModal && (
         <ReportInfoModal authed={authed} onProceed={proceedReport} onClose={() => setShowReportModal(false)} />

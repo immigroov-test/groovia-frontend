@@ -53,9 +53,9 @@ export function ServedCountriesEditor({
           <input type="number" min={0} max={60} value={r.years}
             onChange={(e) => setRow(i, { years: e.target.value })}
             placeholder="Years"
-            className="h-11 w-24 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+            className="h-11 w-24 px-3 rounded-[10px] bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]" />
           <button type="button" onClick={() => removeRow(i)} aria-label="Remove country"
-            className="h-11 w-11 flex items-center justify-center rounded-xl text-muted hover:text-red-600 hover:bg-red-50">
+            className="h-11 w-11 flex items-center justify-center rounded-[10px] text-muted hover:text-red-600 hover:bg-red-50">
             <Trash2 className="h-5 w-5" />
           </button>
         </div>

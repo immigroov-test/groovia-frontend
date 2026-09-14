@@ -167,13 +167,15 @@ export function MeetingRoom({ bookingId, accessToken }: {
         </Link>
       </div>
 
-      <div className="text-center">
-        <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 mb-4">{icon}</div>
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-brand-900 text-balance">{title}</h1>
+      <div className="rounded-[1.25rem] border border-(--color-border) bg-white p-6 sm:p-8 shadow-(--shadow-1)">
+        <div className="text-center">
+          <div className="mx-auto h-14 w-14 rounded-full bg-brand-50 flex items-center justify-center text-brand-700 mb-4">{icon}</div>
+          <h1 className="font-display text-2xl sm:text-[1.75rem] font-bold leading-tight text-brand-900 text-balance">{title}</h1>
+        </div>
+        <div className={body === 'left' ? 'text-left' : 'text-center'}>{children}</div>
       </div>
-      <div className={body === 'left' ? 'text-left' : 'text-center'}>{children}</div>
 
-      <div className="mt-10 pt-6 border-t border-[--color-border] text-center">
+      <div className="mt-10 pt-6 border-t border-(--color-border) text-center">
         {isMentor ? (
           <Link href="/mentor" className="text-sm font-medium text-brand-700 hover:text-brand-900">
             Back to my mentor dashboard
@@ -182,7 +184,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
           // A guest has no /account/sessions to go back to. Offer the thing that would actually help:
           // an account tied to the email they already booked with.
           <>
-            <p className="text-xs text-muted leading-relaxed">
+            <p className="text-[13px] text-muted leading-relaxed">
               You booked as a guest. Create a free account with the same email to manage this session
               and see it alongside any others.
             </p>
@@ -196,7 +198,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
             Back to my sessions
           </Link>
         )}
-        <p className="mt-6 text-[11px] text-muted">
+        <p className="mt-6 text-[13px] text-muted">
           Need help? <a href="mailto:support@immigroov.com" className="underline">support@immigroov.com</a>
         </p>
       </div>
@@ -228,7 +230,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
       <Shell icon={<Video className="h-6 w-6" />} title="Your video call is ready" body="left">
         {/* The same facts as the confirmation email, so nobody has to cross-reference their inbox.
             Definition list rather than a table: it stacks cleanly on a phone. */}
-        <dl className="mt-6 rounded-xl bg-brand-50/50 divide-y divide-[--color-border] overflow-hidden">
+        <dl className="mt-6 rounded-xl border border-(--color-border) bg-brand-50/40 divide-y divide-(--color-border) overflow-hidden">
           {([
             info?.service_title && ['Session', <span key="s" className="font-medium">{info.service_title}</span>],
             ['Scheduled for', `${fmt(info?.slot_time)}${info?.duration ? ` · ${info.duration} min` : ''}`],
@@ -238,8 +240,8 @@ export function MeetingRoom({ bookingId, accessToken }: {
             // grid, not flex-wrap: the label keeps its own column at every width instead of dropping
             // onto the line above the value, which is what made this look ragged.
             <div key={label} className="grid grid-cols-[6.5rem_1fr] gap-x-3 px-4 py-3 items-baseline">
-              <dt className="text-xs text-muted">{label}</dt>
-              <dd className="text-sm text-foreground min-w-0 break-words">{value}</dd>
+              <dt className="text-[13px] text-muted">{label}</dt>
+              <dd className="text-[15px] text-foreground min-w-0 break-words">{value}</dd>
             </div>
           ))}
         </dl>
@@ -247,11 +249,11 @@ export function MeetingRoom({ bookingId, accessToken }: {
         <div className="mt-6">
           <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => { void recordJoin(); }}
             className="block">
-            <Button size="lg" className="w-full justify-center">
+            <Button variant="accent" size="lg" className="w-full justify-center">
               <Video className="h-4 w-4" /> Join the call
             </Button>
           </a>
-          <p className="text-xs text-muted mt-2.5 leading-relaxed">
+          <p className="text-[13px] text-muted mt-2.5 leading-relaxed">
             Opens in a new tab. Keep this page open to come back here afterwards.
             {joined && ' You can rejoin from this button at any time during the session.'}
           </p>
@@ -261,9 +263,9 @@ export function MeetingRoom({ bookingId, accessToken }: {
             a no-show puts a strike on a mentor, so it must not be available to someone who never
             opened the call themselves. */}
         {canAct && (
-          <div className="mt-10 pt-6 border-t border-[--color-border]">
-            <p className="text-[11px] font-semibold text-muted uppercase tracking-wider">After your call</p>
-            <p className="text-xs text-muted mt-1 mb-4 leading-relaxed">
+          <div className="mt-10 pt-6 border-t border-(--color-border)">
+            <p className="text-[15px] font-semibold text-brand-900">After your call</p>
+            <p className="text-[13px] text-muted mt-1 mb-4 leading-relaxed">
               These become useful once the session is over. Nothing here is sent until you choose it.
             </p>
 
@@ -292,9 +294,9 @@ export function MeetingRoom({ bookingId, accessToken }: {
             {/* Only after the session has actually ENDED. It used to appear the moment Join was
                 clicked, inviting someone to review a call that had not happened yet. */}
             {isCandidate && sessionEnded && (
-              <div className="mt-8 pt-6 border-t border-[--color-border]">
-                <p className="text-sm font-medium text-foreground">How was your session?</p>
-                <p className="text-xs text-muted mt-1 mb-3">Only the overall rating is required.</p>
+              <div className="mt-8 pt-6 border-t border-(--color-border)">
+                <p className="text-[17px] font-semibold text-brand-900">How was your session?</p>
+                <p className="text-[13px] text-muted mt-1 mb-3">Only the overall rating is required.</p>
                 <ReviewForm bookingId={bookingId} />
               </div>
             )}
@@ -349,7 +351,7 @@ export function MeetingRoom({ bookingId, accessToken }: {
           {info?.slot_time && <> ({fmt(info.slot_time)})</>}.
           {info?.other_name && <> You’ll meet <strong>{info.other_name}</strong>.</>}
         </p>
-        <p className="text-xs text-muted mt-3">This page checks automatically, no need to refresh.</p>
+        <p className="text-[13px] text-muted mt-3">This page checks automatically, no need to refresh.</p>
         <div className="mt-4"><Button variant="ghost" onClick={() => void checkRoom()}>Check now</Button></div>
       </Shell>
     );

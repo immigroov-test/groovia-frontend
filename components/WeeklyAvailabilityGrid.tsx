@@ -126,7 +126,7 @@ export function WeeklyAvailabilityGrid({ value, onChange }: Props) {
               <div
                 key={`label-${start}`}
                 className={cn(
-                  'pr-2 text-right text-[11px] text-muted leading-none',
+                  'pr-2 text-right text-xs text-muted leading-none',
                   rowIdx % 2 === 0 ? 'pt-1' : 'pt-1 text-transparent',
                 )}
               >
@@ -145,7 +145,7 @@ export function WeeklyAvailabilityGrid({ value, onChange }: Props) {
                     onMouseEnter={() => onCellEnter(key)}
                     onMouseLeave={() => setHovered(null)}
                     className={cn(
-                      'h-4 border-b border-r border-[--color-border] cursor-pointer transition-colors',
+                      'h-4 border-b border-r border-(--color-border) cursor-pointer transition-colors',
                       dayIdx === 0 && 'border-l',
                       rowIdx === 0 && 'border-t rounded-tl-sm rounded-tr-sm',
                       isSelected

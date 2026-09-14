@@ -104,7 +104,7 @@ export function CitySelect({
             onChange={(e) => onChange(e.target.value)}
             placeholder="Type your city"
             autoComplete="address-level2"
-            className="w-full h-11 rounded-lg border border-[--color-border] bg-white px-3 pr-9 text-sm outline-none focus:border-brand-500"
+            className="w-full h-11 rounded-lg border border-(--color-border) bg-white px-3 pr-9 text-sm outline-none focus:border-brand-500"
           />
           <button
             type="button"
@@ -147,12 +147,12 @@ export function CitySelect({
           disabled={disabled}
           placeholder={disabled ? 'Select a country first' : loading ? 'Loading cities…' : 'Start typing your city'}
           autoComplete="off"
-          className="w-full h-11 rounded-lg border border-[--color-border] bg-white px-3 pr-9 text-sm outline-none focus:border-brand-500 disabled:bg-black/5 disabled:text-muted"
+          className="w-full h-11 rounded-lg border border-(--color-border) bg-white px-3 pr-9 text-sm outline-none focus:border-brand-500 disabled:bg-black/5 disabled:text-muted"
         />
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
 
         {open && !disabled && (
-          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[--color-border] bg-white shadow-lg">
+          <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-(--color-border) bg-white shadow-(--shadow-2)">
             {matches.map((c) => (
               <button
                 key={c}
@@ -169,7 +169,7 @@ export function CitySelect({
             <button
               type="button"
               onClick={() => { setCustom(true); setOpen(false); onChange(''); }}
-              className="block w-full border-t border-[--color-border] px-3 py-2 text-left text-sm font-medium text-brand-700 hover:bg-brand-50"
+              className="block w-full border-t border-(--color-border) px-3 py-2 text-left text-sm font-medium text-brand-700 hover:bg-brand-50"
             >
               My city isn&apos;t listed
             </button>

@@ -55,10 +55,10 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
           )}
 
           {/* min-h reserves the headline space so typing doesn't shift the layout. Gradient
-              is the exact Immigroov logo colours (blue #00377d -> orange #fe9d1c). */}
+              runs brand navy -> orange. */}
           <motion.h1
             {...rise(headlineOn, 0)}
-            className="min-h-[4rem] sm:min-h-[7rem] text-2xl sm:text-4xl font-bold tracking-tight leading-[1.12] text-center sm:text-left bg-gradient-to-r from-[#00377d] via-[#0a4fa0] to-[#fe9d1c] bg-clip-text text-transparent"
+            className="min-h-[4rem] sm:min-h-[7rem] text-2xl sm:text-4xl font-bold tracking-tight leading-[1.12] text-center sm:text-left bg-gradient-to-r from-brand-900 via-brand-700 to-accent-500 bg-clip-text text-transparent"
           >
             <TypeText text={b.headline} active={headlineOn} speed={TYPE_SPEED} />
           </motion.h1>
@@ -71,8 +71,8 @@ export const ImmigroovIntro = forwardRef<HTMLElement, Props>(function ImmigroovI
           return (
             <motion.div key={text} {...rise(headlineOn, boxStart + i * 0.14)}>
               {/* Icon left-of-text on mobile (compact), centered on top on desktop */}
-              <div className="group h-full rounded-2xl p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
-                <div className="h-full rounded-2xl bg-card/80 backdrop-blur-md px-4 py-4 sm:py-5 flex flex-row sm:flex-col items-center text-left sm:text-center gap-3 sm:gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">
+              <div className="group h-full rounded-[14px] p-[1px] bg-gradient-to-br from-brand-200/80 via-transparent to-accent-200/80 hover:from-brand-300 hover:to-accent-300 transition-colors">
+                <div className="h-full rounded-[14px] bg-card/80 backdrop-blur-md px-4 py-4 sm:py-5 flex flex-row sm:flex-col items-center text-left sm:text-center gap-3 sm:gap-2.5 transition-transform duration-200 group-hover:-translate-y-0.5">
                   <span className="h-9 w-9 shrink-0 rounded-lg bg-gradient-to-br from-brand-700 to-accent-500 text-white flex items-center justify-center shadow-[0_4px_14px_-4px_rgba(245,158,11,0.5)]">
                     <Icon className="h-4 w-4" />
                   </span>

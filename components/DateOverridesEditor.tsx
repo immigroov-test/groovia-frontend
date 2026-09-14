@@ -101,7 +101,7 @@ export function DateOverridesEditor({
               <div key={k} className="flex justify-center">
                 <button type="button" disabled={past} onClick={() => { setSelDate(k); setErr(null); }}
                   className={cn('relative w-9 h-9 rounded-lg text-sm font-medium flex items-center justify-center transition-colors',
-                    past ? 'text-muted/40 cursor-not-allowed' : isSel ? 'bg-brand-900 text-white' : 'text-brand-900 hover:bg-brand-50 border border-[--color-border]')}>
+                    past ? 'text-muted/40 cursor-not-allowed' : isSel ? 'bg-brand-900 text-white' : 'text-brand-900 hover:bg-brand-50 border border-(--color-border)')}>
                   {d.getDate()}
                   {dot && !isSel && <span className={cn('absolute bottom-1 h-1 w-1 rounded-full', dot)} />}
                 </button>
@@ -116,7 +116,7 @@ export function DateOverridesEditor({
         </p>
       </div>
 
-      <div className="rounded-xl border border-[--color-border] p-4">
+      <div className="rounded-[10px] border border-(--color-border) p-4">
         {!selDate ? (
           <p className="text-sm text-muted">Pick a date to block it or set custom hours. Optional.</p>
         ) : (
@@ -135,15 +135,15 @@ export function DateOverridesEditor({
                   <label className="text-xs font-medium text-foreground">Custom hours</label>
                   <div className="flex items-center gap-1.5">
                     <input type="time" value={ovFrom} onChange={(e) => setOvFrom(e.target.value)}
-                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none" />
+                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none" />
                     <span className="text-xs text-muted">-</span>
                     <input type="time" value={ovTo} onChange={(e) => setOvTo(e.target.value)}
-                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.12)] focus:outline-none" />
+                      className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.12)] focus:outline-none" />
                   </div>
                   {err && <p className="text-xs text-red-600">{err}</p>}
                   <Button type="button" size="sm" variant="accent" onClick={() => setCustom(selDate)}>Set hours</Button>
                 </div>
-                <div className="border-t border-[--color-border] pt-3">
+                <div className="border-t border-(--color-border) pt-3">
                   <Button type="button" size="sm" variant="outline" onClick={() => upsert({ slot_date: selDate, is_blackout: true })}
                     className="text-red-600 border-red-200 hover:bg-red-50">
                     <Ban className="h-3.5 w-3.5" /> Block this date

@@ -152,7 +152,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
   if (done) {
     return (
       <>
-        <h1 className="text-2xl font-semibold tracking-tight text-brand-900 mb-2">Request sent</h1>
+        <h1 className="font-display text-3xl font-bold leading-tight text-brand-900 mb-2">Request sent</h1>
         <p className="text-sm text-muted mb-6">{done}</p>
         <Link href={`/session/${bookingId}`}><Button>Back to this session</Button></Link>
       </>
@@ -162,27 +162,27 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
   // Slot picker (shared by both modes).
   const picker = (
     slots.length === 0 ? (
-      <p className="text-sm text-muted mt-8">No open slots in the next 30 days. Please check back later.</p>
+      <p className="mt-8 rounded-[1.25rem] border border-dashed border-brand-200 bg-white/70 px-6 py-8 text-center text-[15px] text-muted">No open slots in the next 30 days. Please check back later.</p>
     ) : (
       <div className="mt-6 grid gap-6 sm:grid-cols-[1fr_260px]">
-        <div className="rounded-2xl border border-[--color-border] p-5">
+        <div className="rounded-[1.25rem] border border-(--color-border) bg-white p-5 shadow-(--shadow-1)">
           <CalendarPanel availableDates={availableDates} selectedDate={selectedDate} onSelect={(d) => { setSelectedDate(d); setSelectedSlot(null); }} />
         </div>
-        <div className="rounded-2xl border border-[--color-border] p-5">
+        <div className="rounded-[1.25rem] border border-(--color-border) bg-white p-5 shadow-(--shadow-1)">
           {!selectedDate ? (
             <p className="text-sm text-muted">Pick a date to see open times.</p>
           ) : timeSlotsForDay.length === 0 ? (
             <p className="text-sm text-muted">No open times on this day.</p>
           ) : (
             <>
-              <h3 className="text-sm font-semibold text-brand-900 mb-1">{formatDate(selectedDate)}</h3>
-              <p className="text-xs text-muted mb-3">{timeSlotsForDay.length} open · your time</p>
-              <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+              <h3 className="text-[15px] font-semibold text-brand-900 mb-1">{formatDate(selectedDate)}</h3>
+              <p className="text-[13px] text-muted mb-3">{timeSlotsForDay.length} open · your time</p>
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:max-h-[320px] sm:overflow-y-auto sm:pr-1">
                 {timeSlotsForDay.map((slot) => {
                   const active = selectedSlot?.slot_start === slot.slot_start;
                   return (
                     <button key={slot.slot_start} type="button" onClick={() => setSelectedSlot(slot)}
-                      className={`px-4 py-2 rounded-lg border text-left text-sm font-medium transition-colors ${active ? 'border-brand-900 bg-brand-900 text-white' : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50'}`}>
+                      className={`min-h-11 px-4 py-2 rounded-[10px] border text-center sm:text-left text-[15px] font-semibold transition-colors ${active ? 'border-brand-900 bg-brand-900 text-white' : 'border-(--color-border) hover:border-brand-500 hover:bg-brand-50'}`}>
                       {formatSlotTime(slot.slot_start)}
                     </button>
                   );
@@ -196,10 +196,10 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
           {!hasProposal && needsApproval ? (
             <>
               <p className="text-sm text-amber-900">This session is now within {hoursText(noticeHours)}, so a reschedule needs your mentor’s approval.</p>
-              <Button onClick={sendRequest} loading={submitting} className="self-start">Send reschedule request</Button>
+              <Button variant="accent" onClick={sendRequest} loading={submitting} className="w-full sm:w-auto sm:self-start">Send reschedule request</Button>
             </>
           ) : (
-            <Button onClick={confirmReschedule} loading={submitting} disabled={!selectedSlot} className="self-start">
+            <Button variant="accent" onClick={confirmReschedule} loading={submitting} disabled={!selectedSlot} className="w-full sm:w-auto sm:self-start">
               <CalendarCheck className="h-4 w-4" /> Confirm new time
             </Button>
           )}
@@ -213,9 +213,9 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
     return (
       <>
         {back}
-        <h1 className="text-2xl font-semibold tracking-tight text-brand-900">Pick your new time</h1>
+        <h1 className="font-display text-3xl sm:text-4xl font-bold leading-tight text-brand-900">Pick your new time</h1>
         {offer?.range_start && offer?.range_end && (
-          <p className="text-sm text-muted mt-1">
+          <p className="text-[15px] leading-relaxed text-muted mt-2">
             Your mentor proposed <span className="text-foreground font-medium">{formatFullDateTime(offer.range_start)}</span> to{' '}
             <span className="text-foreground font-medium">{formatFullDateTime(offer.range_end)}</span> · {shortTz(TZ)}. No extra payment - your session is already paid.
           </p>
@@ -238,9 +238,9 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
   return (
     <>
       {back}
-      <h1 className="text-2xl font-semibold tracking-tight text-brand-900">Reschedule your session</h1>
+      <h1 className="font-display text-3xl sm:text-4xl font-bold leading-tight text-brand-900">Reschedule your session</h1>
       {currentSlot && (
-        <p className="text-sm text-muted mt-1 flex items-center gap-1.5">
+        <p className="text-[15px] text-muted mt-2 flex flex-wrap items-center gap-1.5">
           <Clock className="h-4 w-4" /> Current time: <span className="text-foreground font-medium">{formatFullDateTime(currentSlot)}</span> · {shortTz(TZ)}
         </p>
       )}
@@ -250,7 +250,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
           it's cancelling (no refund this close) that's actually locked, not rescheduling. */}
       {(deadline === 'late' || deadline === 'buffer') && (
         <div className="mt-6 flex flex-col gap-3">
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex items-start gap-2">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-[15px] text-amber-900 flex items-start gap-2.5">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
             <span>
               {deadline === 'buffer'
@@ -259,7 +259,7 @@ export function RescheduleClient({ bookingId }: { bookingId: string }) {
             </span>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button onClick={sendRequest} loading={submitting} className="self-start">Send reschedule request</Button>
+          <Button variant="accent" onClick={sendRequest} loading={submitting} className="w-full sm:w-auto sm:self-start">Send reschedule request</Button>
         </div>
       )}
 

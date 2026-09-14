@@ -113,7 +113,7 @@ export function IdleLogout({ authed }: { authed: boolean }) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-brand-900/50 backdrop-blur-sm">
-      <div className="relative w-full max-w-sm rounded-3xl bg-card shadow-2xl border border-[--color-border] p-7 text-center animate-fade-up">
+      <div className="relative w-full max-w-sm rounded-[14px] bg-card shadow-(--shadow-3) border border-(--color-border) p-7 text-center animate-fade-up">
         <h2 className="text-lg font-semibold text-brand-900">Still there?</h2>
         <p className="mt-2 text-sm text-muted leading-relaxed">
           You&apos;ve been inactive for a while. For your security we&apos;ll sign you out in{' '}

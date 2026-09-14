@@ -350,7 +350,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                   <div className="flex flex-wrap gap-2">
                     {tags.map((cat) => (
                       <button key={cat.code} type="button" onClick={() => openDraftFromCatalog(cat)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                        className="inline-flex items-center gap-1.5 rounded-full border border-(--color-border) bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
                         <Plus className="h-3.5 w-3.5 text-brand-600" /> {cat.title}
                       </button>
                     ))}
@@ -361,7 +361,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
             <div>
               <p className="text-xs font-medium text-muted mb-1.5">Something else</p>
               <button type="button" onClick={openCustomDraft}
-                className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-(--color-border) bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
                 <Plus className="h-3.5 w-3.5" /> Add your own session
               </button>
             </div>
@@ -383,7 +383,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-foreground">Duration *</label>
                   <select value={String(draft.duration)} onChange={e => setDraft(d => d && ({ ...d, duration: parseInt(e.target.value) }))}
-                    className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                    className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300">
                     {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} minutes</option>)}
                   </select>
                 </div>
@@ -395,7 +395,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Category</label>
                 <select value={draft.category} onChange={e => setDraft(d => d && ({ ...d, category: e.target.value }))}
-                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300">
                   <option value="">Select a category</option>
                   {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -419,7 +419,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                   is the actual commit, so it gets its own plain-language confirmation instead of firing
                   the moment "Add session" is clicked. */}
               {confirmingAdd && (
-                <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-4 flex flex-col gap-3">
+                <div className="rounded-[10px] border border-brand-200 bg-brand-50/60 p-4 flex flex-col gap-3">
                   <p className="text-sm text-foreground">
                     Add <strong>{draft.title.trim()}</strong> ({draft.duration} min · {priceText(draft.duration, draft.free)})?
                     It will be submitted for admin approval before it&apos;s bookable.
@@ -441,7 +441,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
         <div className="flex flex-col gap-3">
           <h3 className="text-xs font-semibold text-muted uppercase tracking-wide">Your sessions</h3>
           {services.map(svc => (
-            <div key={svc.id} className={cn('rounded-xl border border-[--color-border] overflow-hidden', !svc.is_active && 'opacity-70')}>
+            <div key={svc.id} className={cn('rounded-[10px] border border-(--color-border) overflow-hidden', !svc.is_active && 'opacity-70')}>
               <div className="flex items-start justify-between gap-3 p-4">
                 <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -497,7 +497,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
               </div>
 
               {expandedId === svc.id && (
-                <div className="border-t border-[--color-border] bg-neutral-50/60 p-4 flex flex-col gap-4">
+                <div className="border-t border-(--color-border) bg-neutral-50/60 p-4 flex flex-col gap-4">
                   {editingId === svc.id && editForm ? (
                     <div className="flex flex-col gap-3">
                       <p className="text-xs font-medium text-muted uppercase tracking-wide">Edit session</p>
@@ -509,7 +509,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                             session's own current length always stays selectable. */}
                         <select value={String(editForm.duration)}
                           onChange={e => setEditForm(f => f && ({ ...f, duration: parseInt(e.target.value) }))}
-                          className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                          className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300">
                           {DURATION_OPTIONS
                             .map(d => <option key={d} value={d}>{d} minutes</option>)}
                         </select>
@@ -522,7 +522,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                       <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium text-foreground">Category</label>
                         <select value={editForm.category} onChange={e => setEditForm(f => f && ({ ...f, category: e.target.value }))}
-                          className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                          className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300">
                           <option value="">Select a category</option>
                           {SERVICE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
@@ -549,7 +549,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                     </button>
                   )}
 
-                  <div className="flex flex-col gap-3 border-t border-[--color-border] pt-4">
+                  <div className="flex flex-col gap-3 border-t border-(--color-border) pt-4">
                     <p className="text-xs font-medium text-muted uppercase tracking-wide">Intake questions</p>
                     {(questions[svc.id] ?? []).map(q => (
                       <div key={q.id} className="flex items-start justify-between gap-2">
@@ -565,7 +565,7 @@ export function ServicesManager({ hourlyRate, currency = 'USD', pricingKey }: {
                     <div className="flex gap-2 mt-1">
                       <input type="text" placeholder="Add a question…" value={newQuestion[svc.id]?.text ?? ''}
                         onChange={e => setNewQuestion(nq => ({ ...nq, [svc.id]: { ...nq[svc.id], text: e.target.value, required: nq[svc.id]?.required ?? false } }))}
-                        className="flex-1 h-8 px-3 text-xs rounded-lg border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
+                        className="flex-1 h-8 px-3 text-xs rounded-lg border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300 bg-white" />
                       <label className="flex items-center gap-1 text-xs text-muted cursor-pointer whitespace-nowrap">
                         <input type="checkbox" checked={newQuestion[svc.id]?.required ?? false}
                           onChange={e => setNewQuestion(nq => ({ ...nq, [svc.id]: { ...nq[svc.id], required: e.target.checked, text: nq[svc.id]?.text ?? '' } }))} />

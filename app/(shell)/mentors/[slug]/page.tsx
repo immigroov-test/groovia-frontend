@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { BadgeCheck, Clock3, ShieldCheck } from 'lucide-react';
 import { Card, CardBody } from '../../../../components/ui/Card';
 import { Badge } from '../../../../components/ui/Badge';
 import { RichText } from '../../../../components/ui/RichText';
@@ -97,19 +98,19 @@ export default async function MentorProfilePage({
         <img
           src={mentor.photo_url}
           alt={mentor.display_name}
-          className="h-20 w-20 rounded-full object-cover"
+          className="h-24 w-24 rounded-full object-cover object-top ring-4 ring-brand-50"
         />
       )}
-      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-brand-900">
-        {mentor.display_name}
-      </h1>
+      <div className="flex items-center gap-2"><h1 className="font-display text-3xl sm:text-4xl font-bold leading-tight text-brand-900">{mentor.display_name}</h1><BadgeCheck className="h-6 w-6 text-brand-500" aria-label="Approved mentor" /></div>
       {mentor.headline && (
         <p className="text-lg text-muted leading-relaxed">{mentor.headline}</p>
       )}
       <div className="flex flex-col gap-2 mt-2">
+        <Link href="/mentor-verification" className="inline-flex w-fit items-center gap-2 text-sm font-medium text-brand-700 hover:text-brand-900"><ShieldCheck className="h-4 w-4" />Approved mentor · See what this means</Link>
+        {mentor.years_lived_experience != null && mentor.years_lived_experience > 0 && <p className="inline-flex items-center gap-2 text-sm text-muted"><Clock3 className="h-4 w-4" />{mentor.years_lived_experience} years of lived experience abroad</p>}
         {mentor.expertise_country_codes.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">Guides moves to</span>
+            <span className="text-[13px] font-medium text-muted">Guides moves to</span>
             {mentor.expertise_country_codes.map((c) => (
               <Badge key={c} tone="brand">{countryLabel(c)}</Badge>
             ))}
@@ -117,9 +118,9 @@ export default async function MentorProfilePage({
         )}
         {(mentor.expertise_categories ?? []).length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">Focus areas</span>
+            <span className="text-[13px] font-medium text-muted">Focus areas</span>
             {(mentor.expertise_categories ?? []).map((cat) => (
-              <Badge key={cat} tone="accent">{cat}</Badge>
+              <Badge key={cat} tone="brand">{cat}</Badge>
             ))}
           </div>
         )}
@@ -127,7 +128,7 @@ export default async function MentorProfilePage({
             offer, so they belong on the profile rather than only feeding search behind the scenes. */}
         {(mentor.specializations ?? []).length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">Specialises in</span>
+            <span className="text-[13px] font-medium text-muted">Specialises in</span>
             {(mentor.specializations ?? []).map((s) => (
               <Badge key={s} tone="neutral">{s}</Badge>
             ))}
@@ -135,7 +136,7 @@ export default async function MentorProfilePage({
         )}
         {mentor.languages.length > 0 && (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">Speaks</span>
+            <span className="text-[13px] font-medium text-muted">Speaks</span>
             {mentor.languages.map((lang) => (
               <Badge key={lang} tone="neutral">{languageLabel(lang)}</Badge>
             ))}
@@ -148,7 +149,7 @@ export default async function MentorProfilePage({
   // ── Direct booking (new system) ──────────────────────────────────────────────
   if (hasDirectBooking) {
     return (
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
+      <div className="container-public py-8 sm:py-12">
         {/* The widget renders its own top nav link (context-aware: "All mentors" on the service
             step, "Back to service" once past it, so it never drops the user out of an in-progress
             booking), plus the mentor header (identity, rating, timezones), bio, stepper and the
@@ -181,8 +182,8 @@ export default async function MentorProfilePage({
           }}
         />
 
-        <section id="reviews" className="mt-10 scroll-mt-24">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Reviews</h2>
+        <section id="reviews" className="mt-12 scroll-mt-24">
+          <h2 className="font-display text-2xl font-bold text-brand-900 mb-5">Reviews</h2>
           <ReviewsList mentorId={mentor.id} />
         </section>
       </div>

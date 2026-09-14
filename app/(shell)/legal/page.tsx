@@ -69,7 +69,7 @@ export default async function LegalIndexPage() {
           <div className="mt-3 flex flex-col gap-2">
             {items.map((d) => (
               <Link key={d.document_id} href={`/legal/${d.slug}`}
-                className="group flex items-center gap-4 rounded-2xl border border-[--color-border] bg-card px-5 py-4 hover:border-brand-300 hover:bg-brand-50/40 transition-colors">
+                className="group flex items-center gap-4 rounded-[14px] border border-(--color-border) bg-card px-5 py-4 hover:border-brand-300 hover:bg-brand-50/40 transition-colors">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-brand-900">{d.title}</p>
                   {d.summary && <p className="text-sm text-muted mt-0.5">{d.summary}</p>}

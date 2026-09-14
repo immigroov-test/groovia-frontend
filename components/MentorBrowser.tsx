@@ -64,6 +64,10 @@ const FILTERS: FilterDef[] = [
     key: 'fair_pricing', label: 'Fair pricing', kind: 'toggle', icon: <Sparkles className="h-3.5 w-3.5" />,
     match: (m, v) => !v || !!m.smart_pricing,
   },
+  {
+    key: 'bookable', label: 'Bookable now', kind: 'toggle',
+    match: (m, v) => !v || !!m.min_price_service_id || !!m.has_free_session,
+  },
 ];
 
 export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
@@ -155,7 +159,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search mentors, roles…"
-              className="w-full h-11 pl-10 pr-3.5 rounded-full bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(0,0,0,0.2)]"
+              className="w-full h-11 pl-10 pr-3.5 rounded-full bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(0,0,0,0.2)]"
             />
           </div>
 
@@ -164,14 +168,14 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
               type="button"
               onClick={() => setAddOpen((o) => !o)}
               disabled={available.length === 0}
-              className="inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-white text-sm font-medium text-brand-900 shadow-[0_0_0_1px_rgba(15,23,42,0.08)] hover:bg-brand-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 h-11 px-4 rounded-full bg-white text-sm font-medium text-brand-900 shadow-[0_0_0_1px_rgba(8,43,82,0.08)] hover:bg-brand-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" /> Add filters
             </button>
             {addOpen && available.length > 0 && (
               <>
                 <div className="fixed inset-0 z-20" onClick={() => setAddOpen(false)} />
-                <div className="absolute left-0 z-30 mt-1 w-52 rounded-xl bg-white border border-[--color-border] shadow-lg py-1">
+                <div className="absolute left-0 z-30 mt-1 w-52 rounded-[10px] bg-white border border-(--color-border) shadow-(--shadow-2) py-1">
                   {available.map((f) => (
                     <button
                       key={f.key}

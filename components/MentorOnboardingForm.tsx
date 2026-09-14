@@ -351,7 +351,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
             Your application was received, but a few items didn&apos;t save. You can re-add them from your dashboard.
           </p>
         </div>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex flex-col gap-2">
+        <div className="rounded-[10px] border border-amber-200 bg-amber-50 p-4 flex flex-col gap-2">
           {saveWarnings.map((w, i) => (
             <p key={i} className="text-sm text-amber-900">{w}</p>
           ))}
@@ -389,7 +389,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                 step >= n ? 'bg-brand-600 text-white' : 'bg-brand-100 text-brand-600')}>{n}</span>
               <span className={cn('text-sm', step === n ? 'font-semibold text-foreground' : 'text-muted')}>{label}</span>
             </div>
-            {i < STEPS.length - 1 && <div className={cn('h-px w-8', step > n ? 'bg-brand-500' : 'bg-[--color-border]')} />}
+            {i < STEPS.length - 1 && <div className={cn('h-px w-8', step > n ? 'bg-brand-500' : 'bg-(--color-border)')} />}
           </div>
         ))}
       </div>
@@ -460,7 +460,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                     <Input type="number" min={0} max={60} value={sc.years}
                       onChange={(e) => updateServedCountry(i, { years: e.target.value })} placeholder="Years" />
                     <button type="button" onClick={() => removeServedCountry(i)} aria-label="Remove country"
-                      className="h-11 w-11 flex items-center justify-center rounded-xl text-muted hover:text-red-600 hover:bg-red-50 transition-colors">
+                      className="h-11 w-11 flex items-center justify-center rounded-[10px] text-muted hover:text-red-600 hover:bg-red-50 transition-colors">
                       <Trash2 className="h-5 w-5" />
                     </button>
                   </div>
@@ -469,7 +469,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
               ))}
               {servedCountries.length < 2 && (
                 <button type="button" onClick={addServedCountry}
-                  className="self-start inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                  className="self-start inline-flex items-center gap-1.5 rounded-full border border-dashed border-(--color-border) bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
                   <Plus className="h-3.5 w-3.5" /> Add a country
                 </button>
               )}
@@ -528,7 +528,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Primary expertise *</label>
                 <select value={primaryDomain} onChange={(e) => setPrimaryDomain(e.target.value)}
-                  className="h-11 px-3 rounded-xl bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
+                  className="h-11 px-3 rounded-[10px] bg-white text-sm text-foreground shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]">
                   <option value="">Select your main field</option>
                   {DOMAIN_OPTIONS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
@@ -563,7 +563,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                     {suggestions.slice(0, 8).map((t) => (
                       <button key={t} type="button"
                         onClick={() => setSpecializations([...specializations, t].slice(0, 12))}
-                        className="rounded-full border border-dashed border-[--color-border] bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                        className="rounded-full border border-dashed border-(--color-border) bg-white px-2.5 py-1 text-xs text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
                         + {t}
                       </button>
                     ))}
@@ -602,8 +602,8 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                 onChange={(e) => setPublicNotes(e.target.value.slice(0, NOTES_MAX))}
                 placeholder="Anything clients should know before booking (visible on your profile)."
                 className={cn('px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-y placeholder:text-muted',
-                  'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-                  'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]')} />
+                  'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+                  'focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]')} />
               <p className="text-xs text-muted">Edit or replace this as you like.</p>
               <p className={cn('text-xs text-right', publicNotes.length >= NOTES_MAX ? 'text-red-500' : 'text-muted')}>{publicNotes.length}/{NOTES_MAX}</p>
             </div>
@@ -681,21 +681,21 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                 <span className="text-xs font-medium text-muted">Book up to (days ahead, 30-90)</span>
                 <input type="number" min={30} max={90} value={daysAhead} aria-invalid={!!daysErr}
                   onChange={(e) => setDaysAhead(parseInt(e.target.value) || 0)}
-                  className={`h-11 w-40 px-3 rounded-xl bg-white text-sm focus:outline-none ${daysErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
+                  className={`h-11 w-40 px-3 rounded-[10px] bg-white text-sm focus:outline-none ${daysErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]'}`} />
                 {daysErr && <span className="text-xs text-red-600">{daysErr}</span>}
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium text-muted">Minimum booking notice (hrs, 2-24)</span>
                 <input type="number" min={2} max={24} step={0.5} value={minNotice} aria-invalid={!!noticeErr}
                   onChange={(e) => setMinNotice(parseFloat(e.target.value) || 0)}
-                  className={`h-11 w-44 px-3 rounded-xl bg-white text-sm focus:outline-none ${noticeErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
+                  className={`h-11 w-44 px-3 rounded-[10px] bg-white text-sm focus:outline-none ${noticeErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]'}`} />
                 {noticeErr && <span className="text-xs text-red-600">{noticeErr}</span>}
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium text-muted">Cancellation / rescheduling time (hrs, 2-48)</span>
                 <input type="number" min={2} max={48} value={cancelHours} aria-invalid={!!cancelErr}
                   onChange={(e) => setCancelHours(parseInt(e.target.value) || 0)}
-                  className={`h-11 w-40 px-3 rounded-xl bg-white text-sm focus:outline-none ${cancelErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]'}`} />
+                  className={`h-11 w-40 px-3 rounded-[10px] bg-white text-sm focus:outline-none ${cancelErr ? 'shadow-[0_0_0_1.5px_rgba(220,38,38,0.6)]' : 'shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]'}`} />
                 {cancelErr && <span className="text-xs text-red-600">{cancelErr}</span>}
               </label>
             </div>
@@ -730,7 +730,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
         <Card id="sec-terms">
           <CardBody className="pt-6 flex flex-col gap-4">
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
-              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorBundle}
+              <input type="checkbox" className="mt-0.5 accent-(--color-brand-500)" checked={agreedMentorBundle}
                 onChange={(e) => setAgreedMentorBundle(e.target.checked)} />
               <span>
                 I agree to the{' '}
@@ -743,7 +743,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                 instrument (controller/processor relationship) and regulators expect
                 distinct consent, not folded into the general agreement. */}
             <label className="text-sm text-muted flex items-start gap-2 select-none cursor-pointer">
-              <input type="checkbox" className="mt-0.5 accent-[--color-brand-500]" checked={agreedMentorDpa}
+              <input type="checkbox" className="mt-0.5 accent-(--color-brand-500)" checked={agreedMentorDpa}
                 onChange={(e) => setAgreedMentorDpa(e.target.checked)} />
               <span>
                 I have read and agree to the{' '}
@@ -765,7 +765,7 @@ export function MentorOnboardingForm({ defaultName = '', defaultPhone = '', defa
                 ref={blockerSummaryRef}
                 tabIndex={-1}
                 role="alert"
-                className="rounded-2xl bg-red-50 p-4 shadow-[0_0_0_1px_rgba(220,38,38,0.35)] focus:outline-none"
+                className="rounded-[14px] bg-red-50 p-4 shadow-[0_0_0_1px_rgba(220,38,38,0.35)] focus:outline-none"
               >
                 <h2 className="text-sm font-semibold text-red-700">
                   {blockers.length === 1

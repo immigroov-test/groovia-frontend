@@ -2,37 +2,40 @@
 @plugin "@tailwindcss/typography";
 
 /* ============================================================================
- * Immigroov design tokens - navy + warm orange, slate neutrals
+ * Immigroov design tokens - deep navy + vivid orange-red, cool neutrals
  * ============================================================================ */
 :root {
-  /* Brand - neutral monochrome (Odyssey black/white/gray). Orange is the only accent. */
-  --brand-50:  #F6F6F5;
-  --brand-100: #ECECEA;
-  --brand-200: #DBDBD8;
-  --brand-300: #C0C0BC;
-  --brand-400: #9A9A95;
-  --brand-500: #737370;
-  --brand-600: #52524F;
-  --brand-700: #383836;
-  --brand-800: #232322;
-  --brand-900: #131312;   /* near-black - headings + primary buttons */
+  /* Brand - navy headings/icons down to link blue and pale icon-chip tints. */
+  --brand-50:  #F3F6FC;
+  --brand-100: #E6EDF9;
+  --brand-200: #CAD8F1;
+  --brand-300: #9DB5E3;
+  --brand-400: #6A8DD2;
+  --brand-500: #3D67C2;
+  --brand-600: #2450B5;
+  --brand-700: #1A3A8F;
+  --brand-800: #142B6B;
+  --brand-900: #0E1E4A;
 
-  /* Accent - warm orange (energy, CTA) */
-  --accent-50:  #FFF7ED;
-  --accent-100: #FFEDD5;
-  --accent-200: #FED7AA;
-  --accent-300: #FDBA74;
-  --accent-400: #FB923C;
-  --accent-500: #F59E0B;
-  --accent-600: #D97706;
-  --accent-700: #B45309;
+  /* Accent - vivid orange-red (CTAs, highlighted headline words) */
+  --accent-50:  #FFF4EE;
+  --accent-100: #FFE6D8;
+  --accent-200: #FFC9AE;
+  --accent-300: #FFA27A;
+  --accent-400: #FF7A45;
+  --accent-500: #FF5A1F;
+  --accent-600: #EB4A12;
+  --accent-700: #C93C0B;
 
-  /* Surfaces - neutral (no blue tint) */
-  --background: #FBFBFA;
-  --foreground: #171716;
-  --muted:      #6B6B67;
-  --border:     #E6E6E3;
+  /* Surfaces - cool, faintly blue-tinted neutrals */
+  --background: #F7F9FD;
+  --foreground: #14213D;
+  --muted:      #4A5670;
+  --border:     #E3E8F1;
   --card:       #FFFFFF;
+  --shadow-1: 0 1px 2px rgba(14, 30, 74, 0.06);
+  --shadow-2: 0 8px 24px rgba(14, 30, 74, 0.08);
+  --shadow-3: 0 20px 50px rgba(14, 30, 74, 0.14);
 }
 
 /* Map to Tailwind's CSS-vars-driven theme (Tailwind v4 style) */
@@ -63,18 +66,18 @@
   --color-accent-600: var(--accent-600);
   --color-accent-700: var(--accent-700);
 
-  --font-sans:  var(--font-lato);
-  --font-serif: var(--font-roboto-serif);
-  --font-mono:  var(--font-geist-mono);
+  --font-sans:  var(--font-jakarta);
+  --font-serif: var(--font-source-serif);
+  --font-mono:  ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Odyssey-style fluid type scale (clamp: scales smoothly with viewport) */
   --text-sm:   clamp(0.875rem, 0.07vw + 0.86rem, 0.9375rem);
   --text-base: clamp(1rem, 0.15vw + 0.97rem, 1.125rem);
-  --text-md:   clamp(1.25rem, 0.3vw + 1.18rem, 1.5rem);
-  --text-lg:   clamp(1.5rem, 0.6vw + 1.35rem, 2rem);
-  --text-xl:   clamp(2rem, 1vw + 1.6rem, 2.75rem);
-  --text-2xl:  clamp(2.5rem, 1.8vw + 1.9rem, 3.75rem);
-  --text-3xl:  clamp(3rem, 2.6vw + 2.2rem, 5rem);
+  --text-md:   clamp(1.0625rem, 0.15vw + 1.03rem, 1.125rem);
+  --text-lg:   clamp(1.125rem, 0.2vw + 1.08rem, 1.25rem);
+  --text-xl:   clamp(1.25rem, 0.3vw + 1.18rem, 1.375rem);
+  --text-2xl:  clamp(1.5rem, 0.5vw + 1.35rem, 1.75rem);
+  --text-3xl:  clamp(1.75rem, 0.9vw + 1.5rem, 2.25rem);
 
   /* Odyssey-style shapes: pill buttons, large-radius cards */
   --radius-pill: 9999px;
@@ -88,26 +91,30 @@ html, body {
 
 body {
   background: var(--background);
-  /* Soft layered gradient - adds depth without visible lines. */
-  background-image:
-    radial-gradient(ellipse 1200px 800px at 0% 0%, rgba(0, 0, 0, 0.025), transparent 60%),
-    radial-gradient(ellipse 1000px 700px at 100% 100%, rgba(245, 158, 11, 0.035), transparent 60%);
-  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-  font-size: 1.0625rem;            /* airier base, Odyssey-style */
+  font-size: 1rem;
+  line-height: 1.625;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Odyssey aesthetic: serif headings everywhere (navy color comes from utility classes) */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif), Georgia, 'Times New Roman', serif;
-  letter-spacing: -0.015em;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+.font-display { font-family: var(--font-sans), system-ui, sans-serif; letter-spacing: -0.03em; }
+.container-public { width: min(100% - 2.5rem, 75rem); margin-inline: auto; }
+.container-reading { width: min(100% - 2.5rem, 47.5rem); margin-inline: auto; }
+.container-form { width: min(100% - 2.5rem, 40rem); margin-inline: auto; }
+@media (min-width: 48rem) {
+  .container-public, .container-reading, .container-form { width: min(100% - 4rem, var(--container-max, 75rem)); }
+  .container-reading { --container-max: 47.5rem; }
+  .container-form { --container-max: 40rem; }
 }
 
 /* Smooth hover transitions everywhere */
-* {
+:where(a, button, input, select, textarea, [role='button']) {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
@@ -119,6 +126,15 @@ h1, h2, h3, h4, h5, h6 {
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up { animation: fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-panel-in { animation: panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: bottom right; }
+/* Groovia's avatar blinks now and then (header and launcher only). */
+@keyframes avatar-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.12); } }
+.avatar-blink { transform-box: fill-box; transform-origin: center; animation: avatar-blink 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .avatar-blink { animation: none; } }
 
 /* Staggered "fall into position" entrance for a page's content blocks.
    Put `reveal-children` on a container; its direct children animate in with a stagger. */
@@ -126,14 +142,7 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.reveal-children > * { animation: reveal-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.reveal-children > *:nth-child(1) { animation-delay: 0.04s; }
-.reveal-children > *:nth-child(2) { animation-delay: 0.12s; }
-.reveal-children > *:nth-child(3) { animation-delay: 0.20s; }
-.reveal-children > *:nth-child(4) { animation-delay: 0.28s; }
-.reveal-children > *:nth-child(5) { animation-delay: 0.36s; }
-.reveal-children > *:nth-child(6) { animation-delay: 0.44s; }
-.reveal-children > *:nth-child(n+7) { animation-delay: 0.5s; }
+.reveal-children > * { animation: reveal-up 0.3s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .reveal-children > * { animation: none; }
 }
@@ -149,9 +158,9 @@ h1, h2, h3, h4, h5, h6 {
 /* Attach-resume nudge: an amber ripple expands and fades out of the clip button while it
    bounces, so first-time users can't miss where to upload. */
 @keyframes attach-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65); transform: scale(1); }
-  70%  { box-shadow: 0 0 0 13px rgba(245, 158, 11, 0); transform: scale(1.18); }
-  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); transform: scale(1); }
+  0%   { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0.6); transform: scale(1); }
+  70%  { box-shadow: 0 0 0 13px rgba(255, 90, 31, 0); transform: scale(1.18); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 90, 31, 0); transform: scale(1); }
 }
 .animate-attach-pulse { animation: attach-pulse 1.3s ease-out infinite; }
 
@@ -173,17 +182,17 @@ h1, h2, h3, h4, h5, h6 {
   padding: 2.5px;
   background: conic-gradient(
     from var(--composer-angle),
-    rgba(245, 158, 11, 0) 0deg,
-    rgba(245, 158, 11, 0.95) 45deg,
-    rgba(37, 99, 235, 0.85) 120deg,
-    rgba(245, 158, 11, 0.95) 195deg,
-    rgba(245, 158, 11, 0) 270deg,
-    rgba(245, 158, 11, 0) 360deg
+    rgba(255, 90, 31, 0) 0deg,
+    rgba(255, 90, 31, 0.9) 45deg,
+    rgba(36, 80, 181, 0.85) 120deg,
+    rgba(255, 90, 31, 0.9) 195deg,
+    rgba(255, 90, 31, 0) 270deg,
+    rgba(255, 90, 31, 0) 360deg
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
-  filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.45));
+  filter: drop-shadow(0 0 5px rgba(255, 90, 31, 0.4));
   pointer-events: none;
   animation: composer-glow-spin 3.5s linear infinite;
 }
@@ -194,8 +203,8 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes gradient-flow { to { background-position: 200% center; } }
 .gradient-flow {
   background-image: linear-gradient(90deg,
-    #00377d 0%, #00377d 8%, #fe9d1c 25%, #00377d 42%,
-    #00377d 58%, #fe9d1c 75%, #00377d 92%, #00377d 100%);
+    #0E1E4A 0%, #0E1E4A 8%, #FF5A1F 25%, #0E1E4A 42%,
+    #0E1E4A 58%, #FF5A1F 75%, #0E1E4A 92%, #0E1E4A 100%);
   background-size: 200% auto;
   animation: gradient-flow 9s linear infinite;   /* slow, gentle drift */
 }
@@ -217,7 +226,33 @@ h1, h2, h3, h4, h5, h6 {
   22%, 100% { transform: translateX(130%); }
 }
 
+/* Auto-scrolling review strip. The track holds the list twice, so sliding it by exactly half
+   loops seamlessly. Pauses on hover/focus; with reduced motion it becomes a manual scroller. */
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+}
+.marquee-track { display: flex; width: max-content; animation: marquee 90s linear infinite; }
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track { animation-play-state: paused; }
+
+/* Vertical variant for the hero photo columns; same half-way loop as .marquee. */
+@keyframes marquee-up { to { transform: translateY(-50%); } }
+.marquee-v {
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-v-track { display: flex; flex-direction: column; animation: marquee-up 60s linear infinite; }
+.marquee-v-track.is-reverse { animation-direction: reverse; }
+.marquee-v:hover .marquee-v-track,
+.marquee-v:focus-within .marquee-v-track { animation-play-state: paused; }
+
 @media (prefers-reduced-motion: reduce) {
+  .marquee-v-track { animation: none; }
+  .marquee { overflow-x: auto; mask-image: none; padding-inline: 1.25rem; }
+  .marquee-track { animation: none; }
+  .marquee-track > ul[aria-hidden] { display: none; }
   .animate-arrow-cascade,
   .animate-attach-pulse,
   .gradient-flow,
@@ -227,7 +262,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Pretty focus rings - brand navy */
 *:focus-visible {
-  outline: 2px solid var(--brand-500);
+  outline: 3px solid var(--brand-300);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -291,7 +326,7 @@ h1, h2, h3, h4, h5, h6 {
 .hero-gradient {
   background:
     radial-gradient(1200px 600px at 20% 0%, rgba(0, 0, 0, 0.04), transparent 60%),
-    radial-gradient(900px 500px at 100% 30%, rgba(245, 158, 11, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 30%, rgba(255, 90, 31, 0.07), transparent 60%),
     var(--background);
 }
 
@@ -331,7 +366,7 @@ h1, h2, h3, h4, h5, h6 {
 .rte h4, .rich-text h4 { font-size: 0.95rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
 .rte p, .rich-text p { margin: 0.35rem 0; }
 .rte p:first-child, .rich-text p:first-child { margin-top: 0; }
-.rich-text a, .rte a { color: var(--color-brand-700, #1d4ed8); text-decoration: underline; }
+.rich-text a, .rte a { color: var(--color-brand-600); text-decoration: underline; }
 
 /* ── Legal documents: long-form contract text (.prose-legal) ───────────────── */
 /* Separate from .prose-chat on purpose. A chat bubble wants tight, compact

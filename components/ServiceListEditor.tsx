@@ -74,7 +74,7 @@ export function ServiceListEditor({
   return (
     <div className="flex flex-col gap-3">
       {value.map((s, i) => (
-        <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-[--color-border] p-3">
+        <div key={i} className="flex items-center justify-between gap-3 rounded-[10px] border border-(--color-border) p-3">
           <div className="flex items-center gap-3 min-w-0">
             <Toggle checked={s.active} onChange={() => toggle(i)} aria-label={`Activate ${s.title}`} />
             <div className="min-w-0">
@@ -89,7 +89,7 @@ export function ServiceListEditor({
                 type="number" min={0} step="0.01" value={s.price}
                 onChange={(e) => setPriceAt(i, parseFloat(e.target.value))}
                 aria-label={`Price for ${s.title}`}
-                className="h-9 w-20 px-2 rounded-lg bg-white text-sm text-right border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
+                className="h-9 w-20 px-2 rounded-lg bg-white text-sm text-right border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300" />
             </div>
             <button type="button" onClick={() => remove(i)} aria-label="Delete session"
               className="h-9 w-9 flex items-center justify-center rounded-lg text-muted hover:text-red-600 hover:bg-red-50 transition-colors">
@@ -100,7 +100,7 @@ export function ServiceListEditor({
       ))}
 
       {adding ? (
-        <div className="rounded-xl border border-[--color-border] p-4 flex flex-col gap-3">
+        <div className="rounded-[10px] border border-(--color-border) p-4 flex flex-col gap-3">
           <Input label="Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Quick career chat" autoFocus />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
@@ -108,17 +108,17 @@ export function ServiceListEditor({
               <input type="number" inputMode="numeric" min={MIN_DURATION_MINUTES} max={MAX_DURATION_MINUTES} step={5}
                 value={duration}
                 onChange={(e) => { const d = parseInt(e.target.value) || 0; setDuration(d); setPrice(proratePrice(hourlyRate, d)); }}
-                className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
+                className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Price ({currency})</label>
               <input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(parseFloat(e.target.value))}
-                className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
+                className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300" />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">Category</label>
               <select value={category} onChange={(e) => setCategory(e.target.value)}
-                className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300">
                 <option value="">Select a category</option>
                 {SERVICE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>

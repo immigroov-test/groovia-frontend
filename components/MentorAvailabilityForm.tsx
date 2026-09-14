@@ -68,7 +68,7 @@ export function MentorAvailabilityForm({ initialSlots, initialDuration }: Props)
                     'flex-1 h-10 rounded-lg border text-sm font-medium transition-colors',
                     duration === minutes
                       ? 'bg-brand-600 border-brand-600 text-white'
-                      : 'border-[--color-border] text-muted hover:text-foreground hover:border-brand-300',
+                      : 'border-(--color-border) text-muted hover:text-foreground hover:border-brand-300',
                   )}
                 >
                   {label}

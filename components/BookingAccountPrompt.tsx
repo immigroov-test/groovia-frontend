@@ -26,7 +26,7 @@ export function BookingAccountPrompt({
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-brand-900/50 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onDismiss} aria-hidden />
 
-      <div className="relative w-full max-w-sm rounded-3xl bg-card shadow-2xl border border-[--color-border] p-7 text-center animate-fade-up">
+      <div className="relative w-full max-w-sm rounded-[14px] bg-card shadow-(--shadow-3) border border-(--color-border) p-7 text-center animate-fade-up">
         <button
           type="button"
           onClick={onDismiss}
@@ -36,7 +36,7 @@ export function BookingAccountPrompt({
           <X className="h-4 w-4" />
         </button>
 
-        <div className="mx-auto w-fit bg-white rounded-full px-4 py-2 shadow-sm">
+        <div className="mx-auto w-fit bg-white rounded-full px-4 py-2 shadow-(--shadow-1)">
           <Image
             src="/Immigroov_Transparent_Logo.png"
             alt="Immigroov"
@@ -76,7 +76,7 @@ export function BookingAccountPrompt({
               <Button variant="outline" onClick={onGuest}>Continue as guest</Button>
             </div>
 
-            <p className="mt-3 text-[11px] text-muted leading-snug">
+            <p className="mt-3 text-xs text-muted leading-snug">
               Booking as a guest? You can create an account later with the same email to join and
               manage your session.
             </p>

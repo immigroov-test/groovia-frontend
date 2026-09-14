@@ -168,10 +168,10 @@ export function AdminReferrals() {
         {(['affiliates', 'commissions', 'review'] as const).map((v) => (
           <button key={v} type="button" onClick={() => { setView(v); if (v === 'affiliates') setFocus(null); }}
             className={`rounded-full px-3 py-1 text-sm font-medium border transition-colors ${
-              view === v ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-[--color-border] text-muted hover:text-foreground'}`}>
+              view === v ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-(--color-border) text-muted hover:text-foreground'}`}>
             {v === 'affiliates' ? 'Affiliates & codes' : v === 'commissions' ? 'Commissions' : 'Review queue'}
             {v === 'review' && openFlags > 0 && (
-              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-[11px] font-semibold text-amber-800">{openFlags}</span>
+              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-800">{openFlags}</span>
             )}
           </button>
         ))}
@@ -216,14 +216,14 @@ export function AdminReferrals() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[960px]">
-                <thead><tr className="text-left text-xs text-muted border-b border-[--color-border]">
+                <thead><tr className="text-left text-xs text-muted border-b border-(--color-border)">
                   <Th>Affiliate</Th><Th>Type</Th><Th>Link</Th><Th>Codes</Th><Th>Redemptions</Th><Th>Referrals</Th>
                   <Th>Earned</Th><Th>Pending</Th><Th></Th>
                 </tr></thead>
                 <tbody>
                   {rows.length === 0 && <tr><td colSpan={9} className="py-4 text-muted">No affiliates yet.</td></tr>}
                   {rows.map((r) => (
-                    <tr key={r.affiliate_id} className="border-b border-[--color-border]/60 align-top">
+                    <tr key={r.affiliate_id} className="border-b border-(--color-border)/60 align-top">
                       <Td>
                         <span className="font-medium text-foreground">{r.name}</span>
                         {r.status !== 'active' && <span className="ml-2 text-xs text-amber-700">({r.status})</span>}
@@ -346,7 +346,7 @@ function AdminFraudQueue({ flags, includeResolved, onToggleResolved, onChanged }
               </div>
               <div className="shrink-0 text-right">
                 <p className="text-sm font-semibold text-foreground">{inr(f.commission_inr ?? 0)}</p>
-                <p className="text-[11px] text-muted">
+                <p className="text-xs text-muted">
                   {f.commission_status ? `commission ${f.commission_status.replace('_', ' ')}` : 'no commission attached'}
                 </p>
               </div>
@@ -380,7 +380,7 @@ function AdminFraudQueue({ flags, includeResolved, onToggleResolved, onChanged }
                   value={notes[f.flag_id] ?? ''}
                   onChange={(e) => setNotes((n) => ({ ...n, [f.flag_id]: e.target.value }))}
                   placeholder="Note (required to approve with one)"
-                  className="h-9 min-w-0 flex-1 rounded-lg bg-white px-3 text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+                  className="h-9 min-w-0 flex-1 rounded-lg bg-white px-3 text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
                 <div className="flex flex-wrap gap-2">
                   <Button variant="accent" size="sm" loading={busy === f.flag_id} onClick={() => decide(f, 'approve')}>Approve</Button>
                   <Button variant="outline" size="sm" onClick={() => decide(f, 'approve_with_note')}>Approve with note</Button>
@@ -398,9 +398,9 @@ function AdminFraudQueue({ flags, includeResolved, onToggleResolved, onChanged }
 function Fact({ label, value, sub }: { label: string; value: string; sub?: string | null }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] text-muted">{label}</dt>
+      <dt className="text-xs text-muted">{label}</dt>
       <dd className="truncate text-sm text-foreground" title={value}>{value}</dd>
-      {sub && <dd className="truncate text-[11px] text-muted" title={sub}>{sub}</dd>}
+      {sub && <dd className="truncate text-xs text-muted" title={sub}>{sub}</dd>}
     </div>
   );
 }
@@ -456,14 +456,14 @@ export function AdminReferralCommissions({ affiliateId, heading, onChanged }: {
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
-          <thead><tr className="text-left text-xs text-muted border-b border-[--color-border]">
+          <thead><tr className="text-left text-xs text-muted border-b border-(--color-border)">
             <Th>Completed</Th><Th>By (code)</Th><Th>Customer</Th><Th>Mentor</Th><Th>Discount</Th>
             <Th>Paid</Th><Th>Split (M/I/P)</Th><Th>Commission</Th><Th>Status</Th><Th></Th>
           </tr></thead>
           <tbody>
             {(rows ?? []).length === 0 && <tr><td colSpan={10} className="py-4 text-muted">No referred bookings yet.</td></tr>}
             {(rows ?? []).map((r: CommissionRow & { ledger_id?: string }) => (
-              <tr key={r.booking_id} className="border-b border-[--color-border]/60 align-top">
+              <tr key={r.booking_id} className="border-b border-(--color-border)/60 align-top">
                 <Td>{r.completed_at ? new Date(r.completed_at).toLocaleDateString() : '-'}</Td>
                 <Td><span className="font-medium text-foreground">{r.affiliate_name}</span>{r.referral_code && <span className="block font-mono text-xs text-muted">{r.referral_code}</span>}</Td>
                 <Td>{r.customer_name || r.customer_email}</Td>
@@ -509,7 +509,7 @@ function AField({ label, value, onChange, type = 'text', placeholder }: {
       <input type={type} value={value} placeholder={placeholder}
         {...(type === 'number' ? { min: 0, step: 1 } : {})}
         onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-full px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+        className="h-9 w-full px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
     </label>
   );
 }
@@ -519,7 +519,7 @@ function RefKpi({ label, value, hint }: { label: string; value: string; hint?: s
     <Card><CardBody className="pt-4 pb-4">
       <p className="text-xs text-muted">{label}</p>
       <p className="text-lg font-bold text-foreground mt-0.5">{value}</p>
-      {hint && <p className="text-[11px] text-muted/70 mt-0.5">{hint}</p>}
+      {hint && <p className="text-xs text-muted/70 mt-0.5">{hint}</p>}
     </CardBody></Card>
   );
 }

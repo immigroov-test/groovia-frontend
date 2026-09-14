@@ -89,7 +89,7 @@ export function ServiceCatalog({
     const expanded = s.code === expandedCode;
     return (
       <div key={s.code} className={cn(
-        'rounded-xl border border-[--color-border] p-3 transition-opacity',
+        'rounded-[10px] border border-(--color-border) p-3 transition-opacity',
         !s.active && 'opacity-60',
       )}>
         <div className="flex items-center justify-between gap-3">
@@ -112,7 +112,7 @@ export function ServiceCatalog({
         </div>
 
         {expanded && (
-          <div className="mt-3 flex flex-col gap-3 border-t border-[--color-border] pt-3">
+          <div className="mt-3 flex flex-col gap-3 border-t border-(--color-border) pt-3">
             {custom && (
               <Input label="Title" value={s.title} onChange={(e) => patch(s.code!, { title: e.target.value })}
                 placeholder="e.g. Portfolio review" />
@@ -122,7 +122,7 @@ export function ServiceCatalog({
                 <label className="text-sm font-medium text-foreground">Category</label>
                 <select value={s.category ?? 'General Guidance'}
                   onChange={(e) => patch(s.code!, { category: e.target.value })}
-                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300">
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300">
                   {SERVICE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
@@ -133,7 +133,7 @@ export function ServiceCatalog({
                 <input type="number" inputMode="numeric" min={MIN_DURATION_MINUTES} max={MAX_DURATION_MINUTES} step={5}
                   value={s.duration}
                   onChange={(e) => { const d = parseInt(e.target.value) || 0; patch(s.code!, { duration: d, price: s.free ? 0 : proratePrice(hourlyRate, d) }); }}
-                  className="h-10 px-3 rounded-lg bg-white text-sm border border-[--color-border] focus:outline-none focus:ring-2 focus:ring-brand-300" />
+                  className="h-10 px-3 rounded-lg bg-white text-sm border border-(--color-border) focus:outline-none focus:ring-2 focus:ring-brand-300" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-foreground">Price</span>
@@ -190,7 +190,7 @@ export function ServiceCatalog({
                 <div className="flex flex-wrap gap-2">
                   {tags.map((cat) => (
                     <button key={cat.code} type="button" onClick={() => addCatalog(cat)}
-                      className="inline-flex items-center rounded-full border border-[--color-border] bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
+                      className="inline-flex items-center rounded-full border border-(--color-border) bg-white px-3 py-1.5 text-sm text-foreground hover:border-brand-500 hover:bg-brand-50 transition-colors">
                       {cat.title}
                     </button>
                   ))}
@@ -201,7 +201,7 @@ export function ServiceCatalog({
           <div>
             <p className="text-xs font-medium text-muted mb-1.5">Something else</p>
             <button type="button" onClick={addCustom}
-              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[--color-border] bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
+              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-(--color-border) bg-white px-3 py-1.5 text-sm text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition-colors">
               <Plus className="h-3.5 w-3.5" /> Add your own service
             </button>
           </div>

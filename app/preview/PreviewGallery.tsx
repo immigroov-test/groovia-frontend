@@ -48,8 +48,8 @@ function LoginPopupPreview({ stage }: { stage: PopupStage }) {
   const input = 'border border-brand-300';
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-4xl bg-card rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-md">
+      <div className="relative w-full max-w-4xl bg-card rounded-[14px] shadow-(--shadow-3) overflow-hidden flex flex-col md:flex-row">
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 bg-white rounded-full px-5 py-2.5 shadow-(--shadow-2)">
           <img src="/Immigroov_Transparent_Logo.png" alt="Immigroov" style={{ height: '26px', width: 'auto' }} className="object-contain" />
         </div>
 
@@ -64,10 +64,10 @@ function LoginPopupPreview({ stage }: { stage: PopupStage }) {
                 <Button className="w-full">{t.continue}</Button>
               </div>
               <div className="my-4 flex items-center gap-3 text-xs text-muted">
-                <div className="h-px flex-1 bg-[--color-border]" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-[--color-border]" />
+                <div className="h-px flex-1 bg-(--color-border)" /><span>{t.orDivider}</span><div className="h-px flex-1 bg-(--color-border)" />
               </div>
               <GoogleButtonMock />
-              <p className="mt-4 text-[11px] leading-snug text-muted">
+              <p className="mt-4 text-xs leading-snug text-muted">
                 {t.termsNote} <span className="underline">{t.terms}</span> and <span className="underline">{t.privacy}</span>.
               </p>
             </>
@@ -247,7 +247,7 @@ export const PREVIEWS: { group: string; title: string; real?: boolean; node: Rea
           <Card><CardBody className="pt-6"><h2 className="text-base font-semibold text-foreground">Your profile is live</h2><p className="text-sm text-muted mt-1">Mentees can discover you on the platform. <span className="text-brand-700">View public profile →</span></p></CardBody></Card>
           <Card><CardBody className="pt-6 flex flex-col gap-3">
             <h2 className="text-base font-semibold text-foreground">Your sessions</h2>
-            <div className="rounded-lg border border-[--color-border] p-4 flex items-center justify-between"><div><p className="text-sm font-medium text-foreground">Aditya Rao · Visa & PR guidance</p><p className="text-xs text-muted mt-0.5">Tomorrow, 15:00-16:00 (CET)</p></div><Badge tone="success">Confirmed</Badge></div>
+            <div className="rounded-lg border border-(--color-border) p-4 flex items-center justify-between"><div><p className="text-sm font-medium text-foreground">Aditya Rao · Visa & PR guidance</p><p className="text-xs text-muted mt-0.5">Tomorrow, 15:00-16:00 (CET)</p></div><Badge tone="success">Confirmed</Badge></div>
           </CardBody></Card>
         </div>
       </PageWrap>
@@ -332,20 +332,20 @@ export function PreviewGallery() {
 
   return (
     <div className="min-h-screen flex bg-slate-50 text-foreground">
-      <aside className="w-64 shrink-0 border-r border-[--color-border] bg-white h-screen sticky top-0 overflow-y-auto">
-        <div className="px-4 py-4 border-b border-[--color-border]">
+      <aside className="w-64 shrink-0 border-r border-(--color-border) bg-white h-screen sticky top-0 overflow-y-auto">
+        <div className="px-4 py-4 border-b border-(--color-border)">
           <p className="text-sm font-semibold text-brand-900">Page preview</p>
-          <p className="text-[11px] text-muted mt-0.5">Mock data · no login · live components</p>
+          <p className="text-xs text-muted mt-0.5">Mock data · no login · live components</p>
         </div>
         <nav className="p-2">
           {GROUPS.map((g) => (
             <div key={g} className="mb-2">
-              <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted">{g}</p>
+              <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted">{g}</p>
               {PREVIEWS.map((p, i) => p.group === g && (
                 <button key={p.title} onClick={() => setActive(i)}
                   className={`w-full text-left px-2 py-1.5 rounded-md text-sm flex items-center justify-between gap-2 transition-colors ${active === i ? 'bg-brand-900 text-white' : 'text-brand-800 hover:bg-brand-50'}`}>
                   <span>{p.title}</span>
-                  {p.real && <span className={`text-[9px] uppercase tracking-wide rounded px-1 ${active === i ? 'bg-white/20' : 'bg-emerald-50 text-emerald-600'}`}>live</span>}
+                  {p.real && <span className={`text-xs uppercase tracking-wide rounded px-1 ${active === i ? 'bg-white/20' : 'bg-emerald-50 text-emerald-600'}`}>live</span>}
                 </button>
               ))}
             </div>
@@ -354,11 +354,11 @@ export function PreviewGallery() {
       </aside>
 
       <main className="flex-1 min-w-0 flex flex-col">
-        <div className="h-12 shrink-0 border-b border-[--color-border] bg-white flex items-center justify-between px-4">
-          <span className="text-sm font-medium text-brand-900">{current.group} / {current.title}{current.real && <span className="ml-2 text-[11px] text-emerald-600">· real component</span>}</span>
+        <div className="h-12 shrink-0 border-b border-(--color-border) bg-white flex items-center justify-between px-4">
+          <span className="text-sm font-medium text-brand-900">{current.group} / {current.title}{current.real && <span className="ml-2 text-xs text-emerald-600">· real component</span>}</span>
           <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs">
-            <button onClick={() => setMobile(false)} className={`px-2.5 py-1 rounded-md ${!mobile ? 'bg-white shadow-sm font-medium' : 'text-muted'}`}>Desktop</button>
-            <button onClick={() => setMobile(true)} className={`px-2.5 py-1 rounded-md ${mobile ? 'bg-white shadow-sm font-medium' : 'text-muted'}`}>Mobile</button>
+            <button onClick={() => setMobile(false)} className={`px-2.5 py-1 rounded-md ${!mobile ? 'bg-white shadow-(--shadow-1) font-medium' : 'text-muted'}`}>Desktop</button>
+            <button onClick={() => setMobile(true)} className={`px-2.5 py-1 rounded-md ${mobile ? 'bg-white shadow-(--shadow-1) font-medium' : 'text-muted'}`}>Mobile</button>
           </div>
         </div>
         {/* Rendered in an iframe so CSS media queries (sm:/md:/lg:) respond to the
@@ -368,7 +368,7 @@ export function PreviewGallery() {
             key={`${active}-${mobile ? 'm' : 'd'}`}
             src={`/preview/frame?i=${active}`}
             title="preview"
-            className={`h-full rounded-xl border border-[--color-border] bg-background shadow-sm ${mobile ? 'w-[390px]' : 'w-full max-w-5xl'}`}
+            className={`h-full rounded-[10px] border border-(--color-border) bg-background shadow-(--shadow-1) ${mobile ? 'w-[390px]' : 'w-full max-w-5xl'}`}
           />
         </div>
       </main>

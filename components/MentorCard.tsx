@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Star, Globe, MapPin, Sparkles, Gift } from 'lucide-react';
+import { Star, Globe, MapPin, Sparkles, Gift, BadgeCheck, Compass, ArrowRight } from 'lucide-react';
 import { Card, CardBody } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EXPERTISE_CATEGORY_MAP } from '../lib/content';
@@ -41,7 +41,7 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
     && money(price.original, price.currency) !== money(price.discounted, price.currency);
 
   return (
-    <Card className="group relative h-full flex flex-col hover:border-brand-300 hover:-translate-y-0.5 transition-transform">
+    <Card className="group relative h-full min-w-0 flex flex-col rounded-[1.25rem] shadow-(--shadow-1) hover:border-brand-300 hover:shadow-(--shadow-2) hover:-translate-y-0.5 transition-[transform,box-shadow]">
       {/* FEAT-036: the whole card opens the mentor's profile, not just Book. The link is STRETCHED
           over the card rather than wrapped around it - wrapping would put the Book anchor inside
           another anchor, which is invalid - and Book itself becomes presentational, so the card
@@ -49,61 +49,70 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
           hover colour via group-hover, since the pointer is over this overlay and never over Book. */}
       <Link href={`/mentors/${mentor.slug}`}
         aria-label={`View ${mentor.display_name}'s profile and book a session`}
-        className="absolute inset-0 z-10 rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2" />
-      <CardBody className="pt-6 flex flex-col gap-4 h-full">
+        className="absolute inset-0 z-10 rounded-[1.25rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2" />
+      <CardBody className="pt-6 flex flex-col gap-5 h-full">
         {/* Identity: photo · name / title / rating */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4">
           {mentor.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-20 w-20 rounded-full object-cover shrink-0" />
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-16 w-16 rounded-full object-cover object-top ring-4 ring-brand-50 shrink-0" />
           ) : (
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-lg font-semibold shrink-0">
+            <div className="h-16 w-16 rounded-full bg-brand-100 ring-4 ring-brand-50 flex items-center justify-center text-brand-800 text-lg font-semibold shrink-0">
               {initials}
             </div>
           )}
-          <div className="min-w-0">
-            <div className="flex items-baseline gap-x-2 gap-y-0.5 flex-wrap">
-              <h3 className="text-base font-semibold text-brand-900 break-words">{mentor.display_name}</h3>
-              {rating > 0 && (
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 shrink-0">
-                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                  {rating.toFixed(1)}
-                  <span className="text-muted font-normal">({mentor.review_count ?? 0})</span>
-                </span>
-              )}
-            </div>
-            {mentor.headline && <p className="text-sm text-muted mt-0.5 break-words">{mentor.headline}</p>}
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[17px] font-semibold leading-snug text-brand-900 break-words">
+              {mentor.display_name}
+              <BadgeCheck className="ml-1.5 inline h-4 w-4 -translate-y-px text-brand-500" aria-label="Approved mentor" />
+            </h3>
+            {mentor.headline && <p className="mt-1 text-sm leading-6 text-muted break-words line-clamp-2">{mentor.headline}</p>}
+            {rating > 0 && (
+              <p className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-brand-900">
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                {rating.toFixed(1)}
+                <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Expertise: category tags + countries (full names). Fair-pricing badge lives by the price. */}
-        <div className="flex flex-wrap gap-1.5">
-          {categories.slice(0, 3).map((cat) => (
-            <Badge key={cat} tone="accent">{cat}</Badge>
-          ))}
-          {countries.slice(0, 2).map((c) => (
-            <Badge key={c} tone="brand">{countryLabel(c)}</Badge>
-          ))}
+        {/* Expertise: one quiet tag style; destination countries read as a sentence, not more tags. */}
+        {categories.length > 0 && (
+          <div className="flex min-w-0 items-center gap-1.5">
+            {categories.slice(0, 2).map((cat) => (
+              <Badge key={cat} tone="neutral" className="min-w-0 px-2.5 py-1 text-[13px] border-transparent" title={cat}>
+                <span className="truncate">{cat}</span>
+              </Badge>
+            ))}
+            {categories.length > 2 && <span className="shrink-0 text-[13px] text-muted">+{categories.length - 2}</span>}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2 text-sm text-muted">
+          {countries.length > 0 && (
+            <p className="flex items-center gap-2">
+              <Compass className="h-4 w-4 shrink-0 text-brand-500" />
+              <span className="break-words">Guides on {countries.slice(0, 2).map((c) => countryLabel(c)).join(' & ')}{countries.length > 2 ? ` +${countries.length - 2}` : ''}</span>
+            </p>
+          )}
+          {/* Where the mentor is based + their origin, on a single line */}
+          {placeLine && (
+            <p className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 shrink-0 text-brand-500" />
+              <span className="break-words">{placeLine}</span>
+            </p>
+          )}
+          {languages.length > 0 && (
+            <p className="flex items-center gap-2">
+              <Globe className="h-4 w-4 shrink-0 text-brand-500" />
+              {languages.map((l) => languageLabel(l)).join(', ')}
+            </p>
+          )}
         </div>
 
-        {/* Languages (full names) */}
-        {languages.length > 0 && (
-          <p className="text-xs text-muted flex items-center gap-1.5">
-            <Globe className="h-3.5 w-3.5 shrink-0" />
-            {languages.map((l) => languageLabel(l)).join(', ')}
-          </p>
-        )}
-
-        {/* Where the mentor is based + their origin, on a single line */}
-        {placeLine && (
-          <p className="text-xs text-muted flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span className="break-words">{placeLine}</span>
-          </p>
-        )}
-
         {/* Footer: starting price + Book */}
-        <div className="mt-auto pt-3 border-t border-[--color-border] flex items-end justify-between gap-3">
+        <div className="mt-auto pt-4 border-t border-(--color-border) flex items-end justify-between gap-3">
           <div className="min-w-0">
             {mentor.min_price != null && mentor.min_price > 0 ? (
               !priceReady ? (
@@ -112,25 +121,25 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
               ) : (
                 <>
                   {/* Reads as "from <cost> per session"; the cheapest PAID session, never the free one. */}
-                  <p className="leading-tight flex flex-wrap items-baseline gap-x-1">
-                    <span className="text-[11px] text-muted">from</span>
+                  <p className="leading-tight flex flex-wrap items-baseline gap-x-1.5">
+                    <span className="text-[13px] text-muted">From</span>
                     {showStrike && price && (
                       <span className="text-sm text-muted line-through">{money(price.original, price.currency)}</span>
                     )}
-                    <span className="text-lg font-bold text-brand-900">
+                    <span className="text-xl font-bold text-brand-900">
                       {price ? money(price.discounted, price.currency) : money(mentor.min_price, mentor.price_currency ?? 'USD')}
                     </span>
-                    <span className="text-[11px] text-muted">per session</span>
+                    <span className="text-[13px] text-muted">/ session</span>
                   </p>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
                     {mentor.smart_pricing && showStrike && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700">
-                        <Sparkles className="h-3 w-3" /> Fair pricing
+                      <span className="inline-flex items-center gap-1 text-[13px] font-medium text-brand-600">
+                        <Sparkles className="h-3.5 w-3.5" /> Fair pricing
                       </span>
                     )}
                     {mentor.has_free_session && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
-                        <Gift className="h-3 w-3" /> Free intro call
+                      <span className="inline-flex items-center gap-1 text-[13px] font-medium text-emerald-700">
+                        <Gift className="h-3.5 w-3.5" /> Free intro call
                       </span>
                     )}
                   </div>
@@ -138,14 +147,14 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
               )
             ) : (
               // No paid session priced: only a free intro (or nothing bookable-paid yet).
-              <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
                 <Gift className="h-4 w-4" /> Free intro call
               </span>
             )}
           </div>
           <span aria-hidden="true"
-            className="inline-flex items-center gap-1 h-9 px-4 rounded-lg bg-accent-500 text-white text-sm font-semibold group-hover:bg-accent-600 transition-colors shrink-0">
-            Book →
+            className="inline-flex items-center gap-1 h-9 px-3.5 rounded-[10px] border border-brand-200 text-brand-800 text-sm font-semibold group-hover:border-accent-600 group-hover:bg-accent-600 group-hover:text-white transition-colors shrink-0">
+            Book <ArrowRight className="h-4 w-4" />
           </span>
         </div>
       </CardBody>

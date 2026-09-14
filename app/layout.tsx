@@ -1,19 +1,18 @@
 import type { Metadata } from 'next';
-import { Lato, Roboto_Serif, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { SITE_URL, IS_PUBLIC_SITE, GOOGLE_SITE_VERIFICATION } from '../lib/site';
 import { BackendWakeOverlay } from '@/components/ui/BackendWakeOverlay';
 import { CookieConsent } from '@/components/CookieConsent';
 import { ReferralCapture } from '@/components/ReferralCapture';
 
-// Odyssey-style pairing: serif headings (Roboto Serif) + clean sans body (Lato).
-const lato = Lato({ variable: '--font-lato', subsets: ['latin'], weight: ['300', '400', '700'] });
-const robotoSerif = Roboto_Serif({ variable: '--font-roboto-serif', subsets: ['latin'], weight: ['500', '600', '700'] });
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta', display: 'swap' });
+const sourceSerif = localFont({ src: './fonts/SourceSerif4-Variable.ttf', variable: '--font-source-serif', display: 'swap', weight: '200 900' });
 
-const SITE_TITLE = 'Immigroov - AI-powered immigration mentorship';
+const SITE_TITLE = 'Immigroov - Practical guidance for moving abroad';
 const SITE_DESCRIPTION =
-  'Discover countries that fit your story, prepare your CV, and connect with mentors who have lived the move.';
+  'Get a clear starting point, connect with mentors who have lived the move, and join focused live webinars.';
 
 export const metadata: Metadata = {
   // BUG-058: metadataBase is what turns every page's (and mentor page's) relative OG/Twitter image
@@ -52,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${lato.variable} ${robotoSerif.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${sourceSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         {children}

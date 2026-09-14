@@ -61,7 +61,7 @@ export function AdminDataSubjectRequests() {
         {(['open', 'in_progress', 'closed', 'all'] as const).map((f) => (
           <button key={f} type="button" onClick={() => setFilter(f)}
             className={`rounded-full px-3 py-1 text-sm font-medium border transition-colors ${
-              filter === f ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-[--color-border] text-muted hover:text-foreground'}`}>
+              filter === f ? 'border-brand-600 bg-brand-50 text-brand-900' : 'border-(--color-border) text-muted hover:text-foreground'}`}>
             {f === 'in_progress' ? 'In progress' : f.charAt(0).toUpperCase() + f.slice(1)} ({counts[f]})
           </button>
         ))}

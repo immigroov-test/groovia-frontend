@@ -227,7 +227,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Filter by name or headline…"
-          className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none w-full sm:max-w-xs"
+          className="h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none w-full sm:max-w-xs"
         />
       )}
       {visible.length === 0 && <p className="text-sm text-muted">No mentors match your search.</p>}
@@ -273,7 +273,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                 <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   <button
                     onClick={() => toggleDetail(mentor.id)}
-                    className="inline-flex items-center h-8 px-3 rounded-lg border border-[--color-border] text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors"
+                    className="inline-flex items-center h-8 px-3 rounded-lg border border-(--color-border) text-xs font-medium text-muted hover:text-foreground hover:border-brand-300 transition-colors"
                   >
                     {isExpanded ? 'Hide details' : 'View details'}
                   </button>
@@ -297,7 +297,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
 
               {/* Per-mentor commission override - on the card itself for active mentors */}
               {mentor.status === 'approved' && (
-                <div className="mt-4 pt-4 border-t border-[--color-border]">
+                <div className="mt-4 pt-4 border-t border-(--color-border)">
                   <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">Commission</p>
                   <CommissionEditor mentorId={mentor.id} initialPct={mentor.commission_pct} initialExpiry={mentor.commission_expires_at} />
                 </div>
@@ -305,7 +305,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
 
               {/* Reviewer note (decline / request changes) - stored + shown to the mentor + emailed */}
               {commentFor?.id === mentor.id && COMMENT_ACTIONS[commentFor.action] && (
-                <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[--color-border] bg-brand-50/40 p-3">
+                <div className="mt-4 flex flex-col gap-2 rounded-[10px] border border-(--color-border) bg-brand-50/40 p-3">
                   <label className="text-xs font-medium text-foreground">
                     {COMMENT_ACTIONS[commentFor.action].title}{' '}
                     <span className="text-muted font-normal">({COMMENT_ACTIONS[commentFor.action].hint})</span>
@@ -316,7 +316,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                     rows={3}
                     maxLength={500}
                     placeholder={COMMENT_ACTIONS[commentFor.action].placeholder}
-                    className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none"
+                    className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none"
                   />
                   <div className="flex gap-2">
                     <Button variant="primary" size="sm"
@@ -332,7 +332,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
 
               {/* Detail panel */}
               {isExpanded && (
-                <div className="mt-5 pt-5 border-t border-[--color-border]">
+                <div className="mt-5 pt-5 border-t border-(--color-border)">
                   {isDetailLoading && <p className="text-sm text-muted">Loading profile…</p>}
                   {!isDetailLoading && !detail && (
                     <p className="text-sm text-red-600">Could not load profile details.</p>
@@ -340,7 +340,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
                   {!isDetailLoading && detail && <MentorDetailView detail={detail} />}
                   {/* Suspend (and any other confirm-action) sits at the very bottom of the details. */}
                   {actions.some(({ action }) => CONFIRM_ACTIONS[action]) && (
-                    <div className="mt-6 pt-4 border-t border-[--color-border] flex flex-wrap justify-end gap-2">
+                    <div className="mt-6 pt-4 border-t border-(--color-border) flex flex-wrap justify-end gap-2">
                       {actions.filter(({ action }) => CONFIRM_ACTIONS[action]).map(({ action }) => (
                         <Button key={action} variant="outline" size="sm"
                           disabled={!!pending[mentor.id]}
@@ -361,7 +361,7 @@ export function AdminMentorList({ initialMentors, actions, removeOnAction = true
       {confirmFor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           role="dialog" aria-modal="true" onClick={() => setConfirmFor(null)}>
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl flex flex-col gap-3"
+          <div className="w-full max-w-md rounded-[14px] bg-white p-6 shadow-(--shadow-2) flex flex-col gap-3"
             onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-semibold text-foreground">
               {CONFIRM_ACTIONS[confirmFor.action].label}?
@@ -660,12 +660,12 @@ function CommissionEditor({ mentorId, initialPct, initialExpiry }: { mentorId: s
         <label className="flex flex-col gap-1 text-xs">
           <span className="text-muted">Commission %</span>
           <input type="number" min={0} max={100} step={0.5} value={pct} onChange={(e) => setPct(e.target.value)} placeholder="e.g. 12"
-            className="h-9 w-24 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+            className="h-9 w-24 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
         </label>
         <label className="flex flex-col gap-1 text-xs">
           <span className="text-muted">Expires (optional)</span>
           <input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)}
-            className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+            className="h-9 px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
         </label>
         <Button variant="primary" size="sm" loading={saving} disabled={pct.trim() === ''} onClick={() => save(false)}>Set</Button>
         {current.pct != null && <Button variant="ghost" size="sm" onClick={() => save(true)}>Clear</Button>}
@@ -710,7 +710,7 @@ function BankSection({ mentorId, bank }: { mentorId: string; bank?: MaskedBank |
       <Field label="Account">{revealed ? '' : (bank.account_masked || '••••')}</Field>
       <div className="sm:col-span-2">
         {revealed ? (
-          <div className="rounded-lg border border-[--color-border] p-3 flex flex-col gap-1 text-xs">
+          <div className="rounded-lg border border-(--color-border) p-3 flex flex-col gap-1 text-xs">
             {Object.entries(revealed).map(([k, v]) => (
               <div key={k} className="flex justify-between gap-3">
                 <span className="text-muted">{BANK_FIELD_LABELS[k] ?? k}</span>
@@ -738,10 +738,10 @@ const BANK_FIELD_LABELS: Record<string, string> = {
 function Avatar({ url, name }: { url?: string | null; name: string }) {
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt={name} className="h-12 w-12 shrink-0 rounded-full object-cover border border-[--color-border]" />;
+    return <img src={url} alt={name} className="h-12 w-12 shrink-0 rounded-full object-cover border border-(--color-border)" />;
   }
   return (
-    <div className="h-12 w-12 shrink-0 rounded-full bg-brand-50 border border-[--color-border] flex items-center justify-center text-brand-300">
+    <div className="h-12 w-12 shrink-0 rounded-full bg-brand-50 border border-(--color-border) flex items-center justify-center text-brand-300">
       <User className="h-6 w-6" />
     </div>
   );

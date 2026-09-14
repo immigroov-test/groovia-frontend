@@ -170,7 +170,7 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
           onClick={() => { setDropdownOpen((o) => !o); setHighlight(0); }}
           className={cn(
             'flex items-center gap-1.5 px-3 h-10 rounded-l-lg border-r-0 text-sm bg-white',
-            'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
+            'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
             'hover:bg-brand-50 whitespace-nowrap shrink-0',
           )}
         >
@@ -195,8 +195,8 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
           autoComplete="tel-national"
           className={cn(
             'flex-1 h-10 px-3 rounded-r-lg text-sm bg-white text-foreground',
-            'shadow-[0_0_0_1px_rgba(15,23,42,0.06),0_1px_2px_rgba(15,23,42,0.04)]',
-            'focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25),0_1px_2px_rgba(15,23,42,0.04)]',
+            'shadow-[0_0_0_1px_rgba(8,43,82,0.06),0_1px_2px_rgba(8,43,82,0.04)]',
+            'focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25),0_1px_2px_rgba(8,43,82,0.04)]',
             'placeholder:text-muted',
             invalid && 'shadow-[0_0_0_1px_rgba(220,38,38,0.5)] focus:shadow-[0_0_0_2px_rgba(220,38,38,0.35)]',
           )}
@@ -204,8 +204,8 @@ export function PhoneInput({ value, onChange, label = 'Phone Number', required, 
 
         {/* Dropdown */}
         {dropdownOpen && (
-          <div className="absolute top-full left-0 z-50 mt-1 w-64 bg-white rounded-xl border border-[--color-border] shadow-xl overflow-hidden">
-            <div className="p-2 border-b border-[--color-border]">
+          <div className="absolute top-full left-0 z-50 mt-1 w-64 bg-white rounded-[10px] border border-(--color-border) shadow-(--shadow-2) overflow-hidden">
+            <div className="p-2 border-b border-(--color-border)">
               <input
                 type="text"
                 autoFocus

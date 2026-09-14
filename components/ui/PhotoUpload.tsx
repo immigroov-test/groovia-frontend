@@ -83,7 +83,7 @@ export function PhotoUpload({ value, onChange, userId }: Props) {
       {value ? (
         <div className="relative w-24 h-24">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="Profile photo" className="w-24 h-24 rounded-full object-cover border-2 border-brand-100 shadow-sm" />
+          <img src={value} alt="Profile photo" className="w-24 h-24 rounded-full object-cover border-2 border-brand-100 shadow-(--shadow-1)" />
           <button
             type="button"
             onClick={() => onChange(null)}
@@ -107,8 +107,8 @@ export function PhotoUpload({ value, onChange, userId }: Props) {
           onDrop={onDrop}
           onClick={() => inputRef.current?.click()}
           className={cn(
-            'w-full border-2 border-dashed rounded-xl px-6 py-8 flex flex-col items-center gap-2 cursor-pointer transition-colors',
-            dragging ? 'border-brand-500 bg-brand-50' : 'border-[--color-border] hover:border-brand-300 hover:bg-brand-50/40',
+            'w-full border-2 border-dashed rounded-[10px] px-6 py-8 flex flex-col items-center gap-2 cursor-pointer transition-colors',
+            dragging ? 'border-brand-500 bg-brand-50' : 'border-(--color-border) hover:border-brand-300 hover:bg-brand-50/40',
             uploading && 'pointer-events-none opacity-60',
           )}
         >
@@ -131,8 +131,8 @@ export function PhotoUpload({ value, onChange, userId }: Props) {
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md rounded-2xl bg-card shadow-xl overflow-hidden flex flex-col">
-            <div className="px-5 py-3 border-b border-[--color-border] flex items-center justify-between">
+          <div className="w-full max-w-md rounded-[14px] bg-card shadow-(--shadow-2) overflow-hidden flex flex-col">
+            <div className="px-5 py-3 border-b border-(--color-border) flex items-center justify-between">
               <h3 className="text-sm font-semibold text-foreground">Adjust your photo</h3>
               <button type="button" onClick={() => setRawSrc(null)} className="text-muted hover:text-foreground" aria-label="Cancel">
                 <X className="h-4 w-4" />
@@ -164,7 +164,7 @@ export function PhotoUpload({ value, onChange, userId }: Props) {
                   step={0.01}
                   value={zoom}
                   onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-full accent-[--color-brand-600]"
+                  className="w-full accent-(--color-brand-600)"
                   aria-label="Zoom"
                 />
               </div>

@@ -103,7 +103,7 @@ export function AdminActivity() {
           <input value={bookingId} onChange={(e) => setBookingId(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') setQuery(bookingId); }}
             placeholder="Paste a booking id"
-            className="h-9 w-72 max-w-full px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.1)] focus:outline-none" />
+            className="h-9 w-72 max-w-full px-2 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.1)] focus:outline-none" />
         </label>
         <Button variant="outline" size="sm" onClick={() => setQuery(bookingId)}><Search className="h-4 w-4" /> Filter</Button>
         {query && <Button variant="ghost" size="sm" onClick={() => { setBookingId(''); setQuery(''); }}>Clear</Button>}
@@ -124,10 +124,10 @@ export function AdminActivity() {
             return (
               <Card key={e.id}><CardBody className="py-3">
                 <div className="flex items-start gap-3">
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>{e.entity_type}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>{e.entity_type}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-foreground break-words">{e.summary ?? e.action}</p>
-                    <p className="text-[11px] text-muted mt-0.5">
+                    <p className="text-xs text-muted mt-0.5">
                       {fmtTime(e.occurred_at)}
                       {e.actor && e.actor !== 'system' && <> · {e.actor}</>}
                       {e.booking_id && <> · booking {e.booking_id.slice(0, 8)}</>}
@@ -141,7 +141,7 @@ export function AdminActivity() {
                   )}
                 </div>
                 {open && hasDetails && (
-                  <pre className="mt-2 overflow-x-auto rounded-lg bg-neutral-50 p-2 text-[11px] text-neutral-700">
+                  <pre className="mt-2 overflow-x-auto rounded-lg bg-neutral-50 p-2 text-xs text-neutral-700">
                     {JSON.stringify(e.details, null, 2)}
                   </pre>
                 )}

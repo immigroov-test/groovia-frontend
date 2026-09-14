@@ -52,7 +52,7 @@ export function ShareButton({ url, title, text, label = 'Share', className = '' 
       aria-label={`${label}: ${title}`}
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
         text-brand-700 hover:text-brand-900 hover:bg-brand-50 transition-colors
-        shadow-[0_0_0_1px_rgba(15,23,42,0.08)] ${className}`}
+        shadow-[0_0_0_1px_rgba(8,43,82,0.08)] ${className}`}
     >
       {copied
         ? <><Check className="h-3.5 w-3.5 text-emerald-600" /> Link copied</>

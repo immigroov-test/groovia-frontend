@@ -81,7 +81,7 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
         {docs.map((d) => {
           const isOpen = open === d.slug;
           return (
-            <div key={d.document_id} className="rounded-2xl border border-[--color-border] bg-card overflow-hidden">
+            <div key={d.document_id} className="rounded-[14px] border border-(--color-border) bg-card overflow-hidden">
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : d.slug)}
@@ -97,7 +97,7 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
                 <ChevronDown className={cn('h-5 w-5 text-muted shrink-0 transition-transform', isOpen && 'rotate-180')} />
               </button>
               {isOpen && (
-                <div className="px-5 pb-6 pt-1 border-t border-[--color-border]">
+                <div className="px-5 pb-6 pt-1 border-t border-(--color-border)">
                   {d.summary && <p className="text-sm text-muted mt-3 mb-4">{d.summary}</p>}
                   <LegalMarkdown content={d.content} />
                 </div>
@@ -110,7 +110,7 @@ export function LegalUpdatesReview({ docs }: { docs: PendingLegalDocument[] }) {
       {/* Fixed to the bottom rather than inline after the list, so the single action
           that clears every pending document is reachable without scrolling back down
           through documents the user has already opened and closed. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[--color-border] bg-card/95 backdrop-blur-md px-4 py-4 sm:px-6">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-(--color-border) bg-card/95 backdrop-blur-md px-4 py-4 sm:px-6">
         <div className="mx-auto max-w-3xl flex flex-wrap items-center gap-3">
           {material && (
             <label className="flex items-start gap-2 text-sm text-muted cursor-pointer select-none w-full sm:w-auto sm:mr-2">

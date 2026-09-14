@@ -23,7 +23,7 @@ export function ReviewStars({ rating, size = 16 }: { rating: number; size?: numb
     <span className="inline-flex items-center gap-0.5" aria-label={`${rating} out of 5`}>
       {[1, 2, 3, 4, 5].map((i) => (
         <Star key={i} width={size} height={size}
-          className={i <= Math.round(rating) ? 'text-amber-500 fill-amber-500' : 'text-slate-300'} />
+          className={i <= Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-brand-100 fill-brand-100'} />
       ))}
     </span>
   );
@@ -34,11 +34,11 @@ function StarPicker({ value, onChange, label }: { value: number; onChange: (v: n
   const [hover, setHover] = useState(0);
   return (
     <div className="flex items-center gap-3">
-      {label && <span className="text-sm text-muted w-32 shrink-0">{label}</span>}
+      {label && <span className="text-[15px] text-foreground w-28 sm:w-32 shrink-0">{label}</span>}
       <div className="flex items-center gap-1" onMouseLeave={() => setHover(0)}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <button key={i} type="button" onMouseEnter={() => setHover(i)} onClick={() => onChange(i)} aria-label={`${i} stars`}>
-            <Star width={24} height={24} className={i <= (hover || value) ? 'text-amber-500 fill-amber-500' : 'text-slate-300'} />
+          <button key={i} type="button" onMouseEnter={() => setHover(i)} onClick={() => onChange(i)} aria-label={`${i} stars`} className="rounded-md p-1">
+            <Star width={26} height={26} className={i <= (hover || value) ? 'text-amber-400 fill-amber-400' : 'text-brand-100 fill-brand-100'} />
           </button>
         ))}
       </div>
@@ -99,7 +99,7 @@ export function ReviewForm({ bookingId, onDone }: { bookingId: string; onDone?: 
   }
 
   if (!loaded) return <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>;
-  if (done) return <p className="text-sm text-green-700">Thanks! Your review was submitted and will appear on the mentor&apos;s profile once it&apos;s approved.</p>;
+  if (done) return <p className="rounded-xl bg-emerald-50 px-4 py-3 text-[15px] text-emerald-800">Thanks! Your review was submitted and will appear on the mentor&apos;s profile once it&apos;s approved.</p>;
 
   return (
     <div className="flex flex-col gap-4">
@@ -123,7 +123,7 @@ function SubBadges({ r }: { r: Review }) {
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
       {shown.map(([k, v]) => (
-        <span key={k} className="text-xs text-muted inline-flex items-center gap-1">{k} <ReviewStars rating={v as number} size={11} /></span>
+        <span key={k} className="text-[13px] text-muted inline-flex items-center gap-1.5">{k} <ReviewStars rating={v as number} size={12} /></span>
       ))}
     </div>
   );
@@ -148,28 +148,33 @@ export function ReviewsList({ mentorId }: { mentorId: string }) {
   }, [mentorId]);
 
   if (reviews === null) return <div className="flex items-center gap-2 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading reviews…</div>;
-  if (reviews.length === 0) return <p className="text-sm text-muted">No reviews yet.</p>;
+  if (reviews.length === 0) return (
+    <div className="rounded-[1.25rem] border border-dashed border-brand-200 bg-white/70 px-6 py-8 text-center">
+      <p className="text-[15px] font-medium text-brand-900">No written reviews to show yet</p>
+      <p className="mt-1 text-sm text-muted">Reviews from verified sessions appear here once they are published.</p>
+    </div>
+  );
 
   const total = summary?.count || reviews.length;
 
   return (
     <div className="flex flex-col gap-6">
       {summary && summary.count > 0 && (
-        <div className="flex flex-col sm:flex-row gap-6">
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-4xl font-bold text-foreground">{Number(summary.avg).toFixed(1)}</span>
-            <ReviewStars rating={summary.avg} />
-            <span className="text-xs text-muted mt-1">{summary.count} review{summary.count === 1 ? '' : 's'}</span>
+        <div className="flex flex-col sm:flex-row gap-6 rounded-[1.25rem] border border-(--color-border) bg-white p-5 sm:p-6 shadow-(--shadow-1)">
+          <div className="flex flex-col items-center justify-center sm:px-4">
+            <span className="font-display text-5xl font-bold text-brand-900">{Number(summary.avg).toFixed(1)}</span>
+            <ReviewStars rating={summary.avg} size={18} />
+            <span className="text-[13px] text-muted mt-1.5">{summary.count} review{summary.count === 1 ? '' : 's'}</span>
           </div>
           <div className="flex-1 flex flex-col gap-1 justify-center min-w-[180px]">
             {[5, 4, 3, 2, 1].map((star) => {
               const n = summary.distribution?.[String(star)] || 0;
               const pct = total ? Math.round((n / total) * 100) : 0;
               return (
-                <div key={star} className="flex items-center gap-2 text-xs text-muted">
+                <div key={star} className="flex items-center gap-2 text-[13px] text-muted">
                   <span className="w-3 text-right">{star}</span>
                   <Star width={12} height={12} className="text-amber-500 fill-amber-500 shrink-0" />
-                  <span className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden"><span className="block h-full bg-amber-400" style={{ width: `${pct}%` }} /></span>
+                  <span className="flex-1 h-2 rounded-full bg-brand-50 overflow-hidden"><span className="block h-full rounded-full bg-amber-400" style={{ width: `${pct}%` }} /></span>
                   <span className="w-6 text-right">{n}</span>
                 </div>
               );
@@ -178,16 +183,16 @@ export function ReviewsList({ mentorId }: { mentorId: string }) {
         </div>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {reviews.map((r) => (
-          <div key={r.id} className="border-b border-[--color-border]/60 pb-4 last:border-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <ReviewStars rating={r.rating} />
-              <span className="text-sm font-medium text-foreground">{r.reviewer_name || 'Member'}</span>
-              {r.verified && <span className="inline-flex items-center gap-1 text-xs text-green-700"><BadgeCheck className="h-3.5 w-3.5" /> Verified session</span>}
-              <span className="text-xs text-muted">{new Date(r.created_at).toLocaleDateString()}</span>
+          <div key={r.id} className="rounded-[1.25rem] border border-(--color-border) bg-white p-4 sm:p-5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="text-[15px] font-semibold text-brand-900">{r.reviewer_name || 'Member'}</span>
+              {r.verified && <span className="inline-flex items-center gap-1 text-[13px] font-medium text-emerald-700"><BadgeCheck className="h-4 w-4" /> Verified session</span>}
+              <span className="text-[13px] text-muted sm:ml-auto">{new Date(r.created_at).toLocaleDateString()}</span>
             </div>
-            {r.body && <RichText html={r.body} className="mt-1.5" />}
+            <div className="mt-1.5"><ReviewStars rating={r.rating} /></div>
+            {r.body && <RichText html={r.body} className="mt-2" />}
             <SubBadges r={r} />
           </div>
         ))}

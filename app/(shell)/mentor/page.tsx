@@ -12,15 +12,7 @@ export default async function MentorPage() {
   const { user, token } = await serverAuth();
 
   if (!user) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight text-brand-900">Become a mentor</h1>
-          <p className="text-base text-muted mt-2">Help immigrants navigate their career journey.</p>
-        </div>
-        <MentorLanding />
-      </div>
-    );
+    return <MentorLanding />;
   }
 
   // serverAuth can hand back a user with a NULL token when the access token in the cookie has

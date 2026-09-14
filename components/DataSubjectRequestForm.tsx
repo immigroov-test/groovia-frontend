@@ -52,7 +52,7 @@ export function DataSubjectRequestForm() {
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-[--color-border] bg-card px-6 py-8 text-center">
+      <div className="rounded-[14px] border border-(--color-border) bg-card px-6 py-8 text-center">
         <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
           <Check className="h-5 w-5" />
         </span>
@@ -63,7 +63,7 @@ export function DataSubjectRequestForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4 rounded-2xl border border-[--color-border] bg-card p-6">
+    <form onSubmit={submit} className="flex flex-col gap-4 rounded-[14px] border border-(--color-border) bg-card p-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" aria-label="Name" />
         <Input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email" aria-label="Email" />
@@ -75,7 +75,7 @@ export function DataSubjectRequestForm() {
           id="dsr-type"
           value={requestType}
           onChange={(e) => setRequestType(e.target.value)}
-          className="mt-1.5 w-full h-11 px-3 rounded-xl bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+          className="mt-1.5 w-full h-11 px-3 rounded-[10px] bg-white text-sm shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]"
         >
           {REQUEST_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -90,7 +90,7 @@ export function DataSubjectRequestForm() {
           value={details}
           onChange={(e) => setDetails(e.target.value)}
           placeholder="Anything that helps us handle your request"
-          className="mt-1.5 w-full px-3 py-2 rounded-xl bg-white text-sm resize-y shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]"
+          className="mt-1.5 w-full px-3 py-2 rounded-[10px] bg-white text-sm resize-y shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]"
         />
       </div>
 

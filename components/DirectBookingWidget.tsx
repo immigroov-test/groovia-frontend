@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Bell, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, MapPin, MessageSquare, Star, Video,
+  ArrowRight, BadgeCheck, Bell, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Loader2, Lock, MapPin, MessageSquare, ReceiptText, RefreshCcw, ShieldCheck, Sparkles, Star, Video, X,
 } from 'lucide-react';
 import { ShareButton } from './ui/ShareButton';
 import { REMINDER_NOTICE } from '../lib/content';
@@ -26,6 +26,7 @@ import { BookingAccountPrompt } from './BookingAccountPrompt';
 import { cn, hoursText } from '../lib/utils';
 
 const NOTES_MAX = 500;
+const FACT_CHIP = 'rounded-full bg-brand-50 text-brand-800 px-2.5 py-1 text-[13px] font-medium';
 
 // Customer country comes from detectCountry() (IP geo with a timezone fallback),
 // which drives PPP + display currency in the price quote; the backend defaults to
@@ -164,20 +165,20 @@ function StepBar({ step }: { step: Step }) {
   ] as const;
   const idx = steps.findIndex((s) => s.key === step);
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       {steps.map((s, i) => {
         const done = i < idx;
         const active = i === idx;
         return (
-          <div key={s.key} className="flex items-center gap-2">
+          <div key={s.key} className="flex items-center gap-1.5 sm:gap-2">
             <span className={cn(
               'h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0',
-              done ? 'bg-emerald-500 text-white' : active ? 'bg-brand-900 text-white' : 'bg-brand-100 text-muted',
+              done ? 'bg-brand-600 text-white' : active ? 'bg-brand-900 text-white' : 'bg-brand-100 text-muted',
             )}>
               {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
             </span>
-            <span className={cn('text-sm font-medium', active || done ? 'text-brand-900' : 'text-muted')}>{s.label}</span>
-            {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted/40 mx-1 shrink-0" />}
+            <span className={cn('whitespace-nowrap text-[13px] sm:text-sm font-medium', active || done ? 'text-brand-900' : 'text-muted')}>{s.label}</span>
+            {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted/40 mx-0 sm:mx-1 shrink-0" />}
           </div>
         );
       })}
@@ -261,11 +262,13 @@ function CalendarPanel({
         </h3>
         <div className="flex gap-1">
           <button type="button" onClick={prevMonth}
-            className="p-1.5 rounded-md text-muted hover:text-foreground hover:bg-brand-50 transition-colors">
+            aria-label="Previous month"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-foreground hover:bg-brand-50 transition-colors">
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button type="button" onClick={nextMonth}
-            className="p-1.5 rounded-md text-muted hover:text-foreground hover:bg-brand-50 transition-colors">
+            aria-label="Next month"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-foreground hover:bg-brand-50 transition-colors">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
@@ -291,7 +294,7 @@ function CalendarPanel({
                 disabled={past || !hasSlots}
                 onClick={() => onSelect(k)}
                 className={cn(
-                  'relative w-9 h-9 rounded-full text-sm font-medium transition-colors',
+                  'relative w-10 h-10 rounded-full text-sm font-medium transition-colors',
                   selected          ? 'bg-brand-900 text-white'
                   : hasSlots && !past ? 'bg-brand-50 text-brand-900 hover:bg-brand-100 font-semibold'
                   : 'text-muted/40 cursor-not-allowed',
@@ -893,13 +896,13 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         <Link href="/mentors" className="text-sm text-muted hover:text-foreground inline-flex items-center gap-1 w-fit">
           <ChevronLeft className="h-4 w-4" /> All mentors
         </Link>
-        <div className="rounded-2xl border border-[--color-border] bg-white px-6 py-10 sm:px-8 max-w-lg mx-auto">
+        <div className="w-full rounded-[1.25rem] border border-(--color-border) bg-white px-5 py-10 sm:px-8 max-w-lg mx-auto shadow-(--shadow-1)">
         <div className="text-center">
           <div className="mx-auto h-14 w-14 rounded-full bg-emerald-50 flex items-center justify-center">
             <Check className="h-7 w-7 text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-semibold text-brand-900 mt-4">Your session is confirmed</h2>
-          <p className="text-sm text-muted mt-1">
+          <h2 className="font-display text-2xl font-bold text-brand-900 mt-4">Your session is confirmed</h2>
+          <p className="text-[15px] leading-relaxed text-muted mt-2">
             You&apos;re all set with {mentor.display_name}. A confirmation is on its way to{' '}
             <span className="font-medium text-foreground break-words">{email}</span>.
           </p>
@@ -910,13 +913,13 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
           {mentor.photo_url ? (
             <img src={mentor.photo_url} alt={mentor.display_name} className="h-14 w-14 rounded-full object-cover shrink-0" />
           ) : (
-            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white font-semibold shrink-0">{initials}</div>
+            <div className="h-14 w-14 rounded-full bg-brand-100 flex items-center justify-center text-brand-800 font-semibold shrink-0">{initials}</div>
           )}
           <div className="min-w-0">
             <p className="font-semibold text-brand-900 break-words">{mentor.display_name}</p>
-            {mentor.headline && <p className="text-xs text-muted break-words">{mentor.headline}</p>}
+            {mentor.headline && <p className="text-sm text-muted break-words">{mentor.headline}</p>}
             {mentorLocation && (
-              <p className="text-xs text-muted mt-0.5 flex items-center gap-1"><MapPin className="h-3 w-3 shrink-0" /> {mentorLocation}</p>
+              <p className="text-[13px] text-muted mt-0.5 flex items-center gap-1"><MapPin className="h-3.5 w-3.5 shrink-0" /> {mentorLocation}</p>
             )}
           </div>
         </div>
@@ -926,16 +929,16 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
           <dl className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
             {detailRows.map(([k, v]) => (
               <div key={k}>
-                <dt className="text-[11px] font-medium uppercase tracking-wider text-muted">{k}</dt>
-                <dd className="mt-1 text-sm font-semibold text-foreground break-words">{v}</dd>
+                <dt className="text-[13px] text-muted">{k}</dt>
+                <dd className="mt-0.5 text-[15px] font-semibold text-foreground break-words">{v}</dd>
               </div>
             ))}
           </dl>
         )}
 
         {/* What happens next - BUG-080: reassure the customer and set expectations. */}
-        <div className="mt-8 rounded-2xl border border-[--color-border] bg-brand-50/50 p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted">What happens next</p>
+        <div className="mt-8 rounded-xl border border-(--color-border) bg-brand-50/50 p-4">
+          <p className="text-sm font-semibold text-brand-900">What happens next</p>
           {/* Only the two facts the actions below don't already state (no repetition). Reminder timing
               comes from REMINDER_NOTICE so it stays in sync with the actual schedule. */}
           <ul className="mt-2 flex flex-col gap-2 text-sm text-foreground">
@@ -1005,54 +1008,56 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
       )}
 
       {/* ── Header: identity + rating + timezones ─────────────────── */}
-      <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
-        <div className="flex items-start gap-4">
+      <div className="rounded-[1.25rem] border border-(--color-border) bg-white p-5 sm:p-7 shadow-(--shadow-1)">
+        {/* Phone: photo + name share a row and the headline runs full width beneath them, so the text
+            never gets squeezed into a narrow column. From sm up the photo spans both rows beside it. */}
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-x-5 sm:gap-y-0">
           {mentor.photo_url ? (
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover shrink-0" />
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-16 w-16 sm:row-span-2 sm:h-28 sm:w-28 rounded-full object-cover object-top ring-4 ring-brand-50" />
           ) : (
-            <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-gradient-to-br from-brand-700 to-accent-500 flex items-center justify-center text-white text-2xl font-semibold shrink-0">
+            <div className="h-16 w-16 sm:row-span-2 sm:h-28 sm:w-28 rounded-full bg-brand-100 ring-4 ring-brand-50 flex items-center justify-center text-brand-800 text-xl sm:text-2xl font-semibold">
               {initials}
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            {/* Full name + rating on one line; headline + location below. Never truncated. */}
-            <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
-              <h1 className="text-lg sm:text-2xl font-semibold tracking-tight text-brand-900 break-words">{mentor.display_name}</h1>
-              {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
-                // BUG-100: the rating jumps straight to where reviews are written, not just displayed.
-                <a href="#reviews" className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 shrink-0 hover:underline">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  {mentor.avg_rating.toFixed(1)}
-                  <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
-                </a>
-              )}
-            </div>
-            {mentor.headline && <p className="text-sm text-muted mt-1 break-words">{mentor.headline}</p>}
-            {mentorLocation && (
-              <p className="text-xs text-muted mt-1.5 flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5 shrink-0" /> {mentorLocation}
-              </p>
+          <div className="min-w-0 sm:self-end">
+            <h1 className="font-display text-[1.625rem] sm:text-[2rem] font-bold leading-tight text-brand-900 break-words">{mentor.display_name}</h1>
+            {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
+              // BUG-100: the rating jumps straight to where reviews are written, not just displayed.
+              <a href="#reviews" className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-brand-900 hover:underline">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                {mentor.avg_rating.toFixed(1)}
+                <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
+              </a>
             )}
           </div>
 
-          {/* Top-right of the card, in the space the name leaves. shrink-0 so a long name wraps
-              rather than squeezing the button, and self-start so it stays level with the name however
-              tall the text column grows. Below sm it drops under the header and spans the width,
-              because at phone widths there is no blank space to sit in and a 100px pill beside a
-              wrapping name just makes both cramped. */}
-          <ShareButton
-            url={typeof window !== 'undefined' ? window.location.href : ''}
-            title={`${mentor.display_name} on Immigroov`}
-            text={mentor.headline
-              ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
-              : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
-            label="Share profile"
-            className="hidden sm:inline-flex shrink-0 self-start"
-          />
+          {/* Wrapped because ShareButton sets its own display, which beats a `hidden` passed in. */}
+          <div className="hidden sm:block sm:col-start-3 sm:row-start-1">
+            <ShareButton
+              url={typeof window !== 'undefined' ? window.location.href : ''}
+              title={`${mentor.display_name} on Immigroov`}
+              text={mentor.headline
+                ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
+                : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
+              label="Share profile"
+            />
+          </div>
+
+          <div className="col-span-2 min-w-0 sm:col-start-2 sm:mt-1.5">
+            {mentor.headline && <p className="text-[15px] sm:text-base leading-relaxed text-muted break-words">{mentor.headline}</p>}
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted">
+              {mentorLocation && (
+                <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 shrink-0 text-brand-500" /> {mentorLocation}</span>
+              )}
+              <Link href="/mentor-verification" className="inline-flex items-center gap-1.5 font-medium text-brand-700 hover:text-brand-900">
+                <BadgeCheck className="h-4 w-4 shrink-0" /> Approved mentor
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Phone: full-width under the header, where it does not compete with the name. */}
-        <div className="sm:hidden mt-3">
+        <div className="sm:hidden mt-4">
           <ShareButton
             url={typeof window !== 'undefined' ? window.location.href : ''}
             title={`${mentor.display_name} on Immigroov`}
@@ -1071,7 +1076,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
           || (mentor.specializations?.length ?? 0) > 0
           || (mentor.expertise_country_codes?.length ?? 0) > 0
           || (mentor.languages?.length ?? 0) > 0) && (
-          <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-col gap-2 text-xs text-muted">
+          <div className="mt-5 pt-5 border-t border-(--color-border) flex flex-col gap-3 text-sm text-muted">
             {(mentor.home_country_code || mentor.years_lived_experience) && (
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 {mentor.home_country_code && (
@@ -1085,34 +1090,34 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
             )}
             {(mentor.professional_domains?.length ?? 0) > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="shrink-0">Domain expertise</span>
+                <span className="shrink-0 w-full sm:w-36 text-[13px]">Domain expertise</span>
                 {mentor.professional_domains!.map((d) => (
-                  <span key={d} className="rounded-full bg-neutral-100 text-foreground px-2 py-0.5 font-medium">{d}</span>
+                  <span key={d} className={FACT_CHIP}>{d}</span>
                 ))}
               </div>
             )}
             {/* BUG-128: the mentor's own specialisations, the most specific thing they offer. */}
             {(mentor.specializations?.length ?? 0) > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="shrink-0">Specialises in</span>
+                <span className="shrink-0 w-full sm:w-36 text-[13px]">Specialises in</span>
                 {mentor.specializations!.map((sp) => (
-                  <span key={sp} className="rounded-full bg-neutral-100 text-foreground px-2 py-0.5 font-medium">{sp}</span>
+                  <span key={sp} className={FACT_CHIP}>{sp}</span>
                 ))}
               </div>
             )}
             {(mentor.expertise_country_codes?.length ?? 0) > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="shrink-0">Guides moves to</span>
+                <span className="shrink-0 w-full sm:w-36 text-[13px]">Guides moves to</span>
                 {mentor.expertise_country_codes!.map((c) => (
-                  <span key={c} className="rounded-full bg-brand-50 text-brand-700 px-2 py-0.5 font-medium">{countryLabel(c)}</span>
+                  <span key={c} className={FACT_CHIP}>{countryLabel(c)}</span>
                 ))}
               </div>
             )}
             {(mentor.languages?.length ?? 0) > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="shrink-0">Speaks</span>
+                <span className="shrink-0 w-full sm:w-36 text-[13px]">Speaks</span>
                 {mentor.languages!.map((l) => (
-                  <span key={l} className="rounded-full bg-neutral-100 text-foreground px-2 py-0.5 font-medium">{languageLabel(l)}</span>
+                  <span key={l} className={FACT_CHIP}>{languageLabel(l)}</span>
                 ))}
               </div>
             )}
@@ -1120,7 +1125,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         )}
 
         {/* Timezones on their own row so they never squeeze the name/headline on mobile. */}
-        <div className="mt-4 pt-3 border-t border-[--color-border] flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
+        <div className="mt-5 pt-4 border-t border-(--color-border) flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted">
           <span className="inline-flex items-center gap-1">
             Your time <TimezoneSelect value={userTz} onChange={setPickedTz} />
           </span>
@@ -1132,8 +1137,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
             </button>
           )}
           {mentor.smart_pricing && hasFairDiscount && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 font-medium">
-              Fair pricing
+            <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 text-brand-700 px-2.5 py-1 font-medium">
+              <Sparkles className="h-3.5 w-3.5" /> Fair pricing
             </span>
           )}
         </div>
@@ -1141,11 +1146,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         {/* Bio lives INSIDE the card, aligned with the identity above it (clamped to ~4 lines;
             Read more only when it actually overflows). */}
         {mentor.bio && !isRichTextEmpty(mentor.bio) && (
-          <div className="mt-4 pt-4 border-t border-[--color-border]">
+          <div className="mt-5 pt-5 border-t border-(--color-border)">
             {/* Justify + tighten: migrated bios arrive as many short one-line paragraphs, which
                 otherwise read as a choppy, spaced-out list. Tight paragraph margins + hidden empty
                 paragraphs make it flow as continuous prose. */}
-            <div ref={bioRef} className={cn('text-sm text-foreground leading-relaxed text-justify [&_p]:my-1 [&_p:empty]:hidden transition-all', !bioExpanded && 'line-clamp-4')}>
+            <div ref={bioRef} className={cn('text-[15px] text-foreground leading-7 [&_p]:my-1 [&_p:empty]:hidden transition-all', !bioExpanded && 'line-clamp-4')}>
               <RichText html={mentor.bio} />
             </div>
             {bioOverflows && (
@@ -1169,8 +1174,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         {/* CONTENT: service list, or calendar + slots once a service is picked */}
         <div className="min-w-0">
           {!selectedService ? (
-            <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
-              <h3 className="text-base font-semibold text-brand-900 mb-4">Choose a service</h3>
+            <div className="rounded-[1.25rem] border border-(--color-border) bg-white p-5 sm:p-6 shadow-(--shadow-1)">
+              <h2 className="text-lg font-semibold text-brand-900 mb-4">Choose a session</h2>
               {servicesError ? (
                 <p className="text-sm text-red-600">{servicesError}</p>
               ) : services === null ? (
@@ -1186,22 +1191,27 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                     // description toggle stopping propagation so it can expand independently.
                     <div key={svc.id} role="button" tabIndex={0} onClick={() => selectService(svc)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectService(svc); } }}
-                      className="text-left rounded-xl border border-[--color-border] p-4 hover:border-brand-400 hover:bg-brand-50/60 transition-colors cursor-pointer">
+                      className="group text-left rounded-xl border border-(--color-border) bg-white p-4 sm:p-5 hover:border-accent-400 hover:shadow-(--shadow-2) transition-[border-color,box-shadow] cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex flex-col gap-1 flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             {svc.type === 'video'
                               ? <Video className="h-4 w-4 text-brand-600 shrink-0" />
                               : <MessageSquare className="h-4 w-4 text-brand-600 shrink-0" />}
-                            <span className="text-sm font-semibold text-foreground">{svc.title}</span>
+                            <span className="text-base font-semibold text-brand-900">{svc.title}</span>
                           </div>
                           {!isRichTextEmpty(svc.description) && <ExpandableRichText html={svc.description ?? ''} />}
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted">
-                            <Clock className="h-3 w-3" />{svc.duration} min · {svc.type === 'video' ? 'Video call' : 'Direct message'}
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5 text-[13px] text-muted">
+                            <Clock className="h-3.5 w-3.5" />{svc.duration} min · {svc.type === 'video' ? 'Video call' : 'Direct message'}
                             {svc.category && <span>· {svc.category}</span>}
                           </div>
                         </div>
-                        <PriceLabel service={svc} price={priceMap[svc.id]} priceReady={priceReady} className="shrink-0 text-base font-semibold text-brand-700" />
+                        <PriceLabel service={svc} price={priceMap[svc.id]} priceReady={priceReady} className="shrink-0 text-lg font-bold text-brand-900" />
+                      </div>
+                      <div className="mt-3 flex justify-end">
+                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 group-hover:text-accent-600">
+                          Select <ArrowRight className="h-4 w-4" />
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -1209,11 +1219,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
               )}
             </div>
           ) : (
-            <div className="rounded-2xl border border-[--color-border] bg-white p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <h3 className="text-base font-semibold text-brand-900">Pick a date &amp; time</h3>
+            <div className="rounded-[1.25rem] border border-(--color-border) bg-white p-5 sm:p-6 shadow-(--shadow-1)">
+              <div className="flex items-center justify-between gap-3 mb-5">
+                <h2 className="text-lg font-semibold text-brand-900">Pick a date &amp; time</h2>
                 <button type="button" onClick={changeService}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[--color-border] px-2.5 py-1.5 text-xs font-medium text-brand-700 hover:border-brand-400 hover:bg-brand-50 transition-colors shrink-0">
+                  className="inline-flex h-9 items-center gap-1 rounded-[10px] border border-(--color-border) px-3 text-sm font-medium text-brand-700 hover:border-brand-400 hover:bg-brand-50 transition-colors shrink-0">
                   <ChevronLeft className="h-3.5 w-3.5" /> Back to services
                 </button>
               </div>
@@ -1235,11 +1245,11 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                       <p className="text-sm text-muted pt-1">Select a highlighted date to see open times.</p>
                     ) : (
                       <>
-                        <h4 className="text-sm font-semibold text-brand-900">{formatDate(selectedDate)}</h4>
-                        <p className="text-xs text-muted mb-3">
+                        <h3 className="text-[15px] font-semibold text-brand-900">{formatDate(selectedDate)}</h3>
+                        <p className="text-[13px] text-muted mb-3">
                           {timeSlotsForDay.length} available slot{timeSlotsForDay.length === 1 ? '' : 's'}
                         </p>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-[360px] overflow-y-auto pr-1">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:max-h-[360px] sm:overflow-y-auto sm:pr-1">
                           {timeSlotsForDay.map(slot => {
                             const sel = selectedSlot?.slot_start === slot.slot_start;
                             return (
@@ -1248,15 +1258,15 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                               // state, so which time you picked is unmistakable.
                               <button key={slot.slot_start} type="button" onClick={() => selectSlot(slot)}
                                 aria-pressed={sel}
-                                className={cn('flex flex-col items-center gap-0.5 px-2 py-2 rounded-lg border text-center transition-colors',
+                                className={cn('flex min-h-11 flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-[10px] border text-center transition-colors',
                                   sel
                                     ? 'border-brand-900 bg-brand-900 text-white'
-                                    : 'border-[--color-border] hover:border-brand-500 hover:bg-brand-50')}>
+                                    : 'border-(--color-border) hover:border-brand-500 hover:bg-brand-50')}>
                                 <span className={cn('text-sm font-semibold', sel ? 'text-white' : 'text-foreground')}>
                                   {formatSlotTime(slot.slot_start, userTz)}
                                 </span>
                                 {showMentorTz && (
-                                  <span className={cn('text-[11px] leading-tight', sel ? 'text-white/80' : 'text-muted')}>
+                                  <span className={cn('text-xs leading-tight', sel ? 'text-white/80' : 'text-muted')}>
                                     {formatSlotTimeInTz(slot.slot_start, mentorTz)} for mentor
                                   </span>
                                 )}
@@ -1274,17 +1284,25 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
         </div>
 
         {/* SUMMARY: booking details + confirm form (guest fields only when logged out) */}
-        <aside className="rounded-2xl border border-[--color-border] bg-white p-5 flex flex-col gap-3 lg:sticky lg:top-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Your booking</p>
+        <aside className="rounded-[1.25rem] border border-(--color-border) bg-white p-5 sm:p-6 flex flex-col gap-3 shadow-(--shadow-1) lg:sticky lg:top-24">
+          <h2 className="text-lg font-semibold text-brand-900">Your booking</h2>
           {!selectedService ? (
-            <p className="text-sm text-muted">Pick a service to get started.</p>
+            <>
+              <p className="text-[15px] text-muted">Choose a session to see times and the price in your currency.</p>
+              <ul className="mt-1 flex flex-col gap-2.5 border-t border-(--color-border) pt-4 text-sm text-foreground">
+                <li className="flex items-start gap-2.5"><ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-brand-600" /> Reviewed and approved by Immigroov</li>
+                <li className="flex items-start gap-2.5"><ReceiptText className="h-4 w-4 mt-0.5 shrink-0 text-brand-600" /> Full price shown before you pay</li>
+                <li className="flex items-start gap-2.5"><RefreshCcw className="h-4 w-4 mt-0.5 shrink-0 text-brand-600" /> Free cancellation or reschedule up to {cancelNoticeText} before</li>
+                {paymentsEnabled && <li className="flex items-start gap-2.5"><Lock className="h-4 w-4 mt-0.5 shrink-0 text-brand-600" /> Secure payment via Razorpay</li>}
+              </ul>
+            </>
           ) : (
             <>
               <div>
                 <p className="font-semibold text-foreground">{selectedService.title}</p>
                 <p className="text-sm text-muted">{selectedService.duration} min · {selectedService.type === 'video' ? 'Video call' : 'Direct message'}</p>
               </div>
-              <div className="border-y border-[--color-border] py-3 flex flex-col gap-1.5">
+              <div className="border-y border-(--color-border) py-3 flex flex-col gap-1.5">
                 <Row k="When" v={selectedSlot ? `${formatDate(slotDateKey(selectedSlot.slot_start, userTz))}, ${formatSlotTime(selectedSlot.slot_start, userTz)}` : 'Not selected yet'} />
                 {showMentorTz && <Row k="Mentor's time" v={selectedSlot ? `${formatSlotTimeInTz(selectedSlot.slot_start, mentorTz)} ${tzShort(mentorTz)}` : 'Not selected yet'} />}
               </div>
@@ -1293,20 +1311,20 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 <PriceLabel service={selectedService} price={priceMap[selectedService.id]} priceReady={priceReady} className="text-lg font-semibold text-brand-900" />
               </div>
               {selectedService.set_price > 0 && (
-                <p className="-mt-1.5 text-[11px] text-muted text-right">Platform fee and tax shown at checkout</p>
+                <p className="-mt-1.5 text-[13px] text-muted text-right">Platform fee and tax shown at checkout</p>
               )}
               {(() => {
                 const p = priceMap[selectedService.id];
                 if (!p || p.discounted >= p.original) return null;
                 return (
-                  <p className="-mt-1.5 text-[11px] font-medium text-amber-700 text-right">
+                  <p className="-mt-1.5 text-[13px] font-medium text-brand-600 text-right">
                     Fair-price discount applied
                   </p>
                 );
               })()}
 
               {selectedSlot && (
-                <div className="border-t border-[--color-border] pt-3 flex flex-col gap-3">
+                <div className="border-t border-(--color-border) pt-3 flex flex-col gap-3">
                   {questions.map(q => (
                     <div key={q.id} className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-foreground">
@@ -1324,7 +1342,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                         </div>
                       ) : (
                         <textarea rows={2} value={answers[q.id] ?? ''} onChange={e => setAnswers(a => ({ ...a, [q.id]: e.target.value }))}
-                          className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                          className="px-3.5 py-2.5 rounded-[10px] border border-(--color-border) bg-white text-base text-foreground resize-none placeholder:text-muted shadow-(--shadow-1) focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
                       )}
                     </div>
                   ))}
@@ -1348,7 +1366,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                         placeholder="you@email.com" autoComplete="email"
                         hint={email.trim() && !isValidEmail(email) ? undefined : "We'll send your confirmation here."} />
                       {email.trim() && !isValidEmail(email) && (
-                        <p className="text-xs text-red-600 -mt-1.5">Please enter a valid email address.</p>
+                        <p className="text-[13px] text-red-600 -mt-1.5">Please enter a valid email address.</p>
                       )}
                     </>
                   )}
@@ -1362,7 +1380,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                     </label>
                     <textarea rows={3} maxLength={NOTES_MAX} value={notes} onChange={e => setNotes(e.target.value)}
                       placeholder="Share your goal or specific questions so your mentor can prepare."
-                      className="px-3 py-2 rounded-lg bg-white text-sm text-foreground resize-none placeholder:text-muted shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                      className="px-3.5 py-2.5 rounded-[10px] border border-(--color-border) bg-white text-base text-foreground resize-none placeholder:text-muted shadow-(--shadow-1) focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
                   </div>
 
                   {formError && <p className="text-sm text-red-600">{formError}</p>}
@@ -1370,18 +1388,18 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                     Review &amp; confirm
                   </Button>
                   {paymentsEnabled && selectedService.set_price > 0 && (
-                    <p className="text-[11px] text-muted leading-snug text-center">
+                    <p className="text-[13px] text-muted leading-snug text-center">
                       Secure payment via Razorpay, charged in your local currency.
                     </p>
                   )}
                   {!isLoggedIn && (
-                    <p className="text-[11px] text-muted leading-snug">
+                    <p className="text-[13px] text-muted leading-snug">
                       You&apos;ll be asked to log in or create a free account to complete your booking.
                     </p>
                   )}
                   {/* BUG-134: this mentor's own notice window, not a generic "cancel anytime" -
                       matches what cancel_booking/customer_reschedule actually enforce. */}
-                  <p className="text-[11px] text-muted text-center">
+                  <p className="text-[13px] text-muted text-center">
                     Free cancellation or reschedule up to {cancelNoticeText} before your session · confirmation emailed
                   </p>
                 </div>
@@ -1393,31 +1411,31 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
 
       {showReview && selectedService && selectedSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl flex flex-col max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-3 p-5 border-b border-[--color-border]">
+          <div className="w-full max-w-md rounded-[1.25rem] bg-white shadow-(--shadow-3) flex flex-col max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-(--color-border)">
               <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted">Review &amp; payment</p>
-                <h3 className="text-base font-semibold text-brand-900 break-words">{selectedService.title}</h3>
-                <p className="text-xs text-muted mt-1">
+                <p className="text-[13px] font-medium text-muted">Review &amp; payment</p>
+                <h3 className="text-lg font-semibold text-brand-900 break-words">{selectedService.title}</h3>
+                <p className="text-sm text-muted mt-1">
                   {formatDate(slotDateKey(selectedSlot.slot_start, userTz))} · {formatSlotTime(selectedSlot.slot_start, userTz)} · {selectedService.duration} min
                 </p>
               </div>
-              <button type="button" onClick={() => setShowReview(false)} aria-label="Close" className="text-muted hover:text-foreground shrink-0 text-lg leading-none">✕</button>
+              <button type="button" onClick={() => setShowReview(false)} aria-label="Close" className="-mr-2 -mt-1 flex h-9 w-9 items-center justify-center rounded-full text-muted hover:bg-brand-50 hover:text-foreground shrink-0"><X className="h-5 w-5" /></button>
             </div>
 
             {/* Referral code: validated in the backend; a valid code applies its discount below. */}
-            <div className="p-5 border-b border-[--color-border] flex flex-col gap-2">
+            <div className="p-5 border-b border-(--color-border) flex flex-col gap-2">
               <label className="text-sm font-medium text-foreground">Referral code</label>
               <div className="flex gap-2">
                 <input value={referralCode}
                   onChange={(e) => { setReferralCode(e.target.value); setReferralInfo(null); setReferralMsg(null); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyReferral(); } }}
                   placeholder="Enter code"
-                  className="flex-1 h-10 px-3 rounded-lg bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]" />
+                  className="flex-1 min-w-0 h-11 px-3.5 rounded-[10px] border border-(--color-border) bg-white text-base shadow-(--shadow-1) focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" />
                 <Button variant="outline" className="shrink-0" onClick={applyReferral}
                   loading={referralChecking} disabled={!referralCode.trim()}>Apply</Button>
               </div>
-              {referralMsg && <p className={`text-xs ${referralInfo ? 'text-green-600' : 'text-red-600'}`}>{referralMsg}</p>}
+              {referralMsg && <p className={`text-[13px] ${referralInfo ? 'text-emerald-700' : 'text-red-600'}`}>{referralMsg}</p>}
             </div>
 
             {/* Price breakdown - all amounts come straight from the backend quote */}
@@ -1436,14 +1454,14 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                     <Row k={`Tax${reviewQuote.tax_pct ? ` (${reviewQuote.tax_pct}%)` : ''}`} v={formatPrice(reviewQuote.tax_amount, reviewQuote.customer_currency)} />
                   )}
                   {referralInfo && referralInfo.discount_pct > 0 && (
-                    <div className="flex items-center justify-between text-green-700">
+                    <div className="flex items-center justify-between text-emerald-700">
                       <span className="text-sm">Referral discount ({referralInfo.discount_pct}%)</span>
                       <span className="text-sm">- {formatPrice(reviewQuote.gross_customer * referralInfo.discount_pct / 100, reviewQuote.customer_currency)}</span>
                     </div>
                   )}
-                  <div className="mt-1 pt-2 border-t border-[--color-border] flex items-center justify-between">
+                  <div className="mt-1 pt-2 border-t border-(--color-border) flex items-center justify-between">
                     <span className="text-sm font-semibold text-foreground">Total to pay</span>
-                    <span className="text-base font-bold text-brand-900">{formatPrice(reviewQuote.gross_customer * (1 - (referralInfo?.discount_pct || 0) / 100), reviewQuote.customer_currency)}</span>
+                    <span className="text-lg font-bold text-brand-900">{formatPrice(reviewQuote.gross_customer * (1 - (referralInfo?.discount_pct || 0) / 100), reviewQuote.customer_currency)}</span>
                   </div>
                 </>
               ) : (
@@ -1455,7 +1473,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
               {formError && <p className="text-sm text-red-600 mt-1">{formError}</p>}
               {/* BUG-134: restate this mentor's actual notice window right before payment, not a
                   generic promise - matches cancel_booking/customer_reschedule enforcement. */}
-              <p className="text-[11px] text-muted mt-1">
+              <p className="text-[13px] text-muted mt-1">
                 Free cancellation or reschedule up to {cancelNoticeText} before your session.
               </p>
             </div>
@@ -1463,7 +1481,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
             <label className="mx-5 mb-2 flex items-start gap-2.5 cursor-pointer">
               <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)}
                 className="mt-0.5 h-4 w-4 shrink-0 rounded accent-brand-700" />
-              <span className="text-xs text-muted leading-relaxed">
+              <span className="text-[13px] text-muted leading-relaxed">
                 I agree to the{' '}
                 {/* India is the default geography: an unresolved userCountry binds the India
                     edition, and only a country we positively know is NOT India moves this
@@ -1491,7 +1509,7 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
                 highest-dispute-risk document, worth surfacing a second time right where
                 money changes hands, not just inside the bundle above. All 14 legal
                 documents are public, so this works for a guest with no account too. */}
-            <p className="mx-5 mb-3 text-xs text-muted leading-relaxed">
+            <p className="mx-5 mb-3 text-[13px] text-muted leading-relaxed">
               Review the{' '}
               <a href="/privacy#refund-cancellation-policy" target="_blank" rel="noopener noreferrer"
                 className="underline hover:text-foreground" onClick={(e) => e.stopPropagation()}>
@@ -1501,14 +1519,14 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
             </p>
 
             {selfBooking && (
-              <div className="mx-5 mb-4 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900">
+              <div className="mx-5 mb-4 rounded-[10px] bg-amber-50 border border-amber-200 px-3 py-2 text-[13px] text-amber-900">
                 This is your own profile, so booking is locked. Everything above is exactly what a
                 mentee sees.
               </div>
             )}
 
             {/* Actions: confirm, or go back to change the slot */}
-            <div className="p-5 border-t border-[--color-border] flex flex-col-reverse sm:flex-row gap-2">
+            <div className="p-5 border-t border-(--color-border) flex flex-col-reverse sm:flex-row gap-2">
               <Button variant="outline" className="flex-1" onClick={() => { setShowReview(false); setStep('datetime'); }}>Modify booking</Button>
               <Button variant="accent" className="flex-1" loading={submitting || paying || checkingEmail}
                 disabled={selfBooking || !acceptedTerms} onClick={handleConfirm}>

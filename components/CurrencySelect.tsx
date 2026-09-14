@@ -31,14 +31,14 @@ export function CurrencySelect({ value, onChange, options, className = '' }: {
   return (
     <div ref={ref} className={`relative ${className}`}>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open}
-        className="h-11 w-full pl-3 pr-2 rounded-xl bg-white text-sm flex items-center gap-2 shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]">
+        className="h-11 w-full pl-3 pr-2 rounded-[10px] bg-white text-sm flex items-center gap-2 shadow-[0_0_0_1px_rgba(8,43,82,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]">
         {sel && <Flag code={sel.country} className="w-5 h-auto rounded-[2px] shrink-0" />}
         <span className="flex-1 min-w-0 text-left truncate text-foreground">{sel?.name ?? value}</span>
         <ChevronDown className="h-4 w-4 text-muted shrink-0" />
       </button>
       {open && (
         <ul role="listbox" tabIndex={-1}
-          className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-xl bg-white py-1 shadow-[0_8px_28px_rgba(15,23,42,0.16),0_0_0_1px_rgba(15,23,42,0.08)]">
+          className="absolute z-30 mt-1 max-h-64 w-full overflow-auto rounded-[10px] bg-white py-1 shadow-[0_8px_28px_rgba(8,43,82,0.16),0_0_0_1px_rgba(8,43,82,0.08)]">
           {items.map((c) => (
             <li key={c.code} role="option" aria-selected={c.code === value}
               onClick={() => { onChange(c.code); setOpen(false); }}

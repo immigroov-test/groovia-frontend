@@ -102,7 +102,7 @@ export function SocialLinks({ value, onChange, hint }: Props) {
             onChange={(e) => { setAddType(e.target.value); setAddUrl(''); setUrlError(''); }}
             className={cn(
               'h-10 px-2 rounded-lg text-sm bg-white text-foreground shrink-0',
-              'shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]',
+              'shadow-[0_0_0_1px_rgba(8,43,82,0.06)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]',
             )}
           >
             {PLATFORM_OPTIONS.map((p) => (
@@ -116,10 +116,10 @@ export function SocialLinks({ value, onChange, hint }: Props) {
             placeholder={platformPlaceholder(addType)}
             className={cn(
               'flex-1 h-10 px-3 rounded-lg text-sm bg-white text-foreground',
-              'shadow-[0_0_0_1px_rgba(15,23,42,0.06)] focus:outline-none',
+              'shadow-[0_0_0_1px_rgba(8,43,82,0.06)] focus:outline-none',
               urlError
                 ? 'shadow-[0_0_0_1px_rgba(220,38,38,0.5)]'
-                : 'focus:shadow-[0_0_0_2px_rgba(29,78,216,0.25)]',
+                : 'focus:shadow-[0_0_0_2px_rgba(7,63,125,0.25)]',
               'placeholder:text-muted',
             )}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addLink(); } }}
