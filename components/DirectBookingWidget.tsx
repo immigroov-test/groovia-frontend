@@ -165,20 +165,20 @@ function StepBar({ step }: { step: Step }) {
   ] as const;
   const idx = steps.findIndex((s) => s.key === step);
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       {steps.map((s, i) => {
         const done = i < idx;
         const active = i === idx;
         return (
-          <div key={s.key} className="flex items-center gap-2">
+          <div key={s.key} className="flex items-center gap-1.5 sm:gap-2">
             <span className={cn(
               'h-6 w-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0',
               done ? 'bg-brand-600 text-white' : active ? 'bg-brand-900 text-white' : 'bg-brand-100 text-muted',
             )}>
               {done ? <Check className="h-3.5 w-3.5" /> : i + 1}
             </span>
-            <span className={cn('text-sm font-medium', active || done ? 'text-brand-900' : 'text-muted')}>{s.label}</span>
-            {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted/40 mx-1 shrink-0" />}
+            <span className={cn('whitespace-nowrap text-[13px] sm:text-sm font-medium', active || done ? 'text-brand-900' : 'text-muted')}>{s.label}</span>
+            {i < steps.length - 1 && <ChevronRight className="h-4 w-4 text-muted/40 mx-0 sm:mx-1 shrink-0" />}
           </div>
         );
       })}
@@ -1009,28 +1009,42 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
 
       {/* ── Header: identity + rating + timezones ─────────────────── */}
       <div className="rounded-[1.25rem] border border-(--color-border) bg-white p-5 sm:p-7 shadow-(--shadow-1)">
-        <div className="flex items-start gap-4 sm:gap-5">
+        {/* Phone: photo + name share a row and the headline runs full width beneath them, so the text
+            never gets squeezed into a narrow column. From sm up the photo spans both rows beside it. */}
+        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start sm:gap-x-5 sm:gap-y-0">
           {mentor.photo_url ? (
-            <img src={mentor.photo_url} alt={mentor.display_name} className="h-20 w-20 sm:h-28 sm:w-28 rounded-full object-cover object-top ring-4 ring-brand-50 shrink-0" />
+            <img src={mentor.photo_url} alt={mentor.display_name} className="h-16 w-16 sm:row-span-2 sm:h-28 sm:w-28 rounded-full object-cover object-top ring-4 ring-brand-50" />
           ) : (
-            <div className="h-20 w-20 sm:h-28 sm:w-28 rounded-full bg-brand-100 ring-4 ring-brand-50 flex items-center justify-center text-brand-800 text-2xl font-semibold shrink-0">
+            <div className="h-16 w-16 sm:row-span-2 sm:h-28 sm:w-28 rounded-full bg-brand-100 ring-4 ring-brand-50 flex items-center justify-center text-brand-800 text-xl sm:text-2xl font-semibold">
               {initials}
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            {/* Full name + rating on one line; headline + location below. Never truncated. */}
-            <div className="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
-              <h1 className="font-display text-2xl sm:text-[2rem] font-bold leading-tight text-brand-900 break-words">{mentor.display_name}</h1>
-              {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
-                // BUG-100: the rating jumps straight to where reviews are written, not just displayed.
-                <a href="#reviews" className="inline-flex items-center gap-1 text-sm font-semibold text-brand-900 shrink-0 hover:underline">
-                  <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  {mentor.avg_rating.toFixed(1)}
-                  <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
-                </a>
-              )}
-            </div>
-            {mentor.headline && <p className="text-[15px] sm:text-base leading-relaxed text-muted mt-1.5 break-words">{mentor.headline}</p>}
+          <div className="min-w-0 sm:self-end">
+            <h1 className="font-display text-[1.625rem] sm:text-[2rem] font-bold leading-tight text-brand-900 break-words">{mentor.display_name}</h1>
+            {typeof mentor.avg_rating === 'number' && mentor.avg_rating > 0 && (
+              // BUG-100: the rating jumps straight to where reviews are written, not just displayed.
+              <a href="#reviews" className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-brand-900 hover:underline">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                {mentor.avg_rating.toFixed(1)}
+                <span className="text-muted font-normal">({mentor.review_count ?? 0} reviews)</span>
+              </a>
+            )}
+          </div>
+
+          {/* Wrapped because ShareButton sets its own display, which beats a `hidden` passed in. */}
+          <div className="hidden sm:block sm:col-start-3 sm:row-start-1">
+            <ShareButton
+              url={typeof window !== 'undefined' ? window.location.href : ''}
+              title={`${mentor.display_name} on Immigroov`}
+              text={mentor.headline
+                ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
+                : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
+              label="Share profile"
+            />
+          </div>
+
+          <div className="col-span-2 min-w-0 sm:col-start-2 sm:mt-1.5">
+            {mentor.headline && <p className="text-[15px] sm:text-base leading-relaxed text-muted break-words">{mentor.headline}</p>}
             <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted">
               {mentorLocation && (
                 <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4 shrink-0 text-brand-500" /> {mentorLocation}</span>
@@ -1040,25 +1054,10 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
               </Link>
             </div>
           </div>
-
-          {/* Top-right of the card, in the space the name leaves. shrink-0 so a long name wraps
-              rather than squeezing the button, and self-start so it stays level with the name however
-              tall the text column grows. Below sm it drops under the header and spans the width,
-              because at phone widths there is no blank space to sit in and a 100px pill beside a
-              wrapping name just makes both cramped. */}
-          <ShareButton
-            url={typeof window !== 'undefined' ? window.location.href : ''}
-            title={`${mentor.display_name} on Immigroov`}
-            text={mentor.headline
-              ? `${mentor.display_name} - ${mentor.headline}. Book a 1-on-1 session on Immigroov.`
-              : `Book a 1-on-1 session with ${mentor.display_name} on Immigroov.`}
-            label="Share profile"
-            className="hidden sm:inline-flex shrink-0 self-start"
-          />
         </div>
 
         {/* Phone: full-width under the header, where it does not compete with the name. */}
-        <div className="sm:hidden mt-3">
+        <div className="sm:hidden mt-4">
           <ShareButton
             url={typeof window !== 'undefined' ? window.location.href : ''}
             title={`${mentor.display_name} on Immigroov`}
