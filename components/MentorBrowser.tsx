@@ -7,6 +7,7 @@ import { Flag } from './ui/Flag';
 import { pricingCountry } from '../lib/geo';
 import { countryLabel } from '../lib/countries';
 import { languageLabel } from '../lib/languages';
+import { richTextToPlain } from '../lib/sanitizeHtml';
 import type { Mentor } from '../lib/types';
 
 interface DisplayPrice { original: number; discounted: number; currency: string }
@@ -127,12 +128,36 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
     setActive((a) => { const n = { ...a }; delete n[key]; return n; });
   }
 
+  // Everything a card or profile shows about a mentor, once per mentor, as the words a visitor
+  // would type. Countries and languages are stored as codes, so "Germany" only matches if the
+  // label is in here beside the code; this is why a search for a tagged country found nothing.
+  const haystacks = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of mentors) {
+      const countries = [
+        ...(m.expertise_country_codes ?? []),
+        ...(m.country ? [m.country] : []),
+        ...(m.home_country_code ? [m.home_country_code] : []),
+      ];
+      const parts = [
+        m.display_name, m.headline ?? '', richTextToPlain(m.bio), m.city ?? '',
+        ...countries.flatMap((c) => [c, countryLabel(c)]),
+        ...(m.languages ?? []).flatMap((l) => [l, languageLabel(l)]),
+        ...(m.professional_domains ?? []), ...(m.service_categories ?? []),
+        ...(m.expertise_categories ?? []), ...(m.specializations ?? []),
+      ];
+      map.set(m.id, parts.join(' ').toLowerCase());
+    }
+    return map;
+  }, [mentors]);
+
   const filtered = useMemo(() => {
-    const ql = q.trim().toLowerCase();
+    // Every word typed has to appear somewhere: "germany visa" narrows, it does not widen.
+    const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return mentors.filter((m) => {
-      if (ql) {
-        const hay = `${m.display_name} ${m.headline ?? ''} ${(m.professional_domains ?? []).join(' ')} ${(m.service_categories ?? []).join(' ')} ${(m.specializations ?? []).join(' ')}`.toLowerCase();
-        if (!hay.includes(ql)) return false;
+      if (words.length > 0) {
+        const hay = haystacks.get(m.id) ?? '';
+        if (!words.every((w) => hay.includes(w))) return false;
       }
       for (const key of activeKeys) {
         const def = FILTERS.find((f) => f.key === key);
@@ -140,7 +165,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
       }
       return true;
     });
-  }, [mentors, q, active, activeKeys]);
+  }, [mentors, q, active, activeKeys, haystacks]);
 
   const hasFilters = !!q || activeKeys.length > 0;
 
@@ -154,7 +179,7 @@ export function MentorBrowser({ mentors }: { mentors: Mentor[] }) {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search mentors, roles…"
+              placeholder="Search by name, country, language, topic…"
               className="w-full h-11 pl-10 pr-3.5 rounded-full bg-white text-sm shadow-[0_0_0_1px_rgba(15,23,42,0.08)] focus:outline-none focus:shadow-[0_0_0_2px_rgba(0,0,0,0.2)]"
             />
           </div>
