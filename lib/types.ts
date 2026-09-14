@@ -3,6 +3,8 @@
 export interface Mentor {
   id: string;
   slug: string;
+  /** Referral link slug, present only while the mentor is in the referral programme. */
+  referral_slug?: string | null;
   display_name: string;
   headline: string | null;
   bio: string | null;

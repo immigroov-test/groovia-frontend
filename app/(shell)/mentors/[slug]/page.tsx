@@ -6,6 +6,7 @@ import { Card, CardBody } from '../../../../components/ui/Card';
 import { Badge } from '../../../../components/ui/Badge';
 import { RichText } from '../../../../components/ui/RichText';
 import { DirectBookingWidget } from '../../../../components/DirectBookingWidget';
+import { ProfileReferralCapture } from '../../../../components/ProfileReferralCapture';
 import { ReviewsList } from '../../../../components/Reviews';
 import type { Mentor } from '../../../../lib/types';
 import { backendBaseUrl, serverGet } from '../../../../lib/backend';
@@ -94,6 +95,7 @@ export default async function MentorProfilePage({
 
   const profileBlock = (
     <header className="flex flex-col gap-3 mb-8">
+      <ProfileReferralCapture slug={mentor.referral_slug ?? null} />
       {mentor.photo_url && (
         <img
           src={mentor.photo_url}

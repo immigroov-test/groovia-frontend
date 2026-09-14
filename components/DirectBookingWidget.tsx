@@ -632,6 +632,8 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
       case 'inactive': return 'That code is no longer active.';
       case 'cap_reached': return 'That code has reached its usage limit.';
       case 'affiliate_inactive': return 'That code is no longer active.';
+      case 'wrong_service': return 'That code is for a different session type.';
+      case 'already_used': return 'You have already used this code.';
       default: return 'That code is not valid.';
     }
   }
@@ -644,7 +646,9 @@ export function DirectBookingWidget({ mentor, mentorTimezone, selfBooking = fals
     try {
       const res = await fetch('/api/referrals/validate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }), cache: 'no-store',
+        // The session type and the email travel with the code: a code limited to one session type
+        // is refused for another, and a repeat use is refused here rather than after payment.
+        body: JSON.stringify({ code, service_id: selectedService?.id, email: email.trim() || undefined }), cache: 'no-store',
       });
       const d = await res.json().catch(() => ({}));
       if (res.ok && d?.valid) {

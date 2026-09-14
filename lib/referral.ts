@@ -13,6 +13,29 @@ export const REFERRAL_COOKIE = 'groovia_ref';
  *  long the browser bothers to keep the token. */
 export const REFERRAL_WINDOW_DAYS = 60;
 
+/** Where a pending referral slug waits until consent allows it to be recorded. */
+export const PENDING_KEY = 'groovia.pendingRef';
+const ENTRY_KEY = 'groovia.entry';
+
+/** Hand a referral slug to ReferralCapture, which records it once the cookie choice allows. */
+export function rememberReferral(slug: string): void {
+  try { sessionStorage.setItem(PENDING_KEY, slug); } catch { /* private mode */ }
+  window.dispatchEvent(new CustomEvent('groovia:ref'));
+}
+
+/** True on the first page of this tab's visit, false on every page reached by navigating within
+ *  the site afterwards. Client-side navigation never updates document.referrer, so this is what
+ *  tells an arrival from outside apart from ordinary browsing. */
+export function markEntry(): boolean {
+  try {
+    if (sessionStorage.getItem(ENTRY_KEY)) return false;
+    sessionStorage.setItem(ENTRY_KEY, window.location.pathname);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function referralToken(): string | undefined {
   if (typeof document === 'undefined') return undefined;
   const prefix = `${REFERRAL_COOKIE}=`;

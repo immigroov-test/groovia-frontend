@@ -2,9 +2,7 @@
 import { useEffect } from 'react';
 import { detectCountry } from '../lib/geo';
 import { consentMode, readConsent } from '../lib/consent';
-import { REFERRAL_COOKIE, REFERRAL_WINDOW_DAYS, referralToken } from '../lib/referral';
-
-const PENDING_KEY = 'groovia.pendingRef';
+import { REFERRAL_COOKIE, REFERRAL_WINDOW_DAYS, PENDING_KEY, markEntry, referralToken } from '../lib/referral';
 
 /** Records a referral link click, but only once the visitor's cookie choice allows it.
  *
@@ -19,6 +17,9 @@ const PENDING_KEY = 'groovia.pendingRef';
  */
 export function ReferralCapture() {
   useEffect(() => {
+    // Remember that this page is where the visit began, for the profile-page capture.
+    markEntry();
+
     // Take the code off the URL straight away: it should not survive a copy-paste or a share,
     // or one person's link ends up crediting them for someone else's booking.
     const url = new URL(window.location.href);
@@ -72,8 +73,15 @@ export function ReferralCapture() {
 
     void attempt();
     const onConsent = () => { void attempt(); };
+    // A mentor's profile page hands its slug over the same way the /r route does.
+    const onRef = () => { void attempt(); };
     window.addEventListener('groovia:consent', onConsent);
-    return () => { cancelled = true; window.removeEventListener('groovia:consent', onConsent); };
+    window.addEventListener('groovia:ref', onRef);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('groovia:consent', onConsent);
+      window.removeEventListener('groovia:ref', onRef);
+    };
   }, []);
 
   return null;

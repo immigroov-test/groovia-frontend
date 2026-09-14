@@ -48,7 +48,11 @@ interface Detail extends Booking {
               commission_amount_inr: number | null; customer_currency: string | null } | null;
   } | null;
 }
-interface Split { mentor_pct: number; immigroov_pct: number; promoter_pct: number; }
+interface Split {
+  mentor_pct: number; immigroov_pct: number; promoter_pct: number;
+  basis?: 'paid' | 'list'; price_list?: number; price_paid?: number;
+  mentor_amount?: number; immigroov_amount?: number; promoter_amount?: number;
+}
 interface LegacyRow {
   id: string; status: string | null; service_title: string | null; customer_name: string | null;
   slot_start: string | null; duration_min: number | null; amount_total: number | null;
@@ -399,6 +403,12 @@ export function AdminBookings() {
                                             {r.code && <span>Code <b className="font-mono text-foreground">{r.code}</b>{r.discount_pct ? ` (${r.discount_pct}% off)` : ''}</span>}
                                             {!r.code && <span className="text-muted/70">via link</span>}
                                             {sp && <span>Split M/I/P <b className="text-foreground">{sp.mentor_pct}/{sp.immigroov_pct}/{sp.promoter_pct}</b></span>}
+                                            {sp?.mentor_amount != null && (
+                                              <span>Mentor <b className="text-foreground">{money(sp.mentor_amount, r.ledger?.customer_currency ?? cc)}</b>
+                                                {sp.basis === 'list' && sp.price_list != null && sp.price_paid != null && sp.price_list !== sp.price_paid
+                                                  ? <span className="text-muted/70"> (70% of the {money(sp.price_list, r.ledger?.customer_currency ?? cc)} list price)</span> : null}
+                                                {' '}· Immigroov <b className="text-foreground">{money(sp.immigroov_amount ?? 0, r.ledger?.customer_currency ?? cc)}</b></span>
+                                            )}
                                             {r.ledger && r.ledger.commission_amount != null && (
                                               <span>Promoter <b className="text-foreground">{money(r.ledger.commission_amount, r.ledger.customer_currency ?? cc)}</b> <span className="text-muted/70">({r.ledger.status.replace('_', ' ')})</span></span>
                                             )}

@@ -7,9 +7,11 @@ import { Button } from './ui/Button';
 
 interface AffiliateRow {
   affiliate_id: string; type: string; name: string; mentor_id: string | null; status: string;
-  email: string | null; audience_corridor: string | null; link_slug: string | null;
-  is_house_channel: boolean; tier: string | null; open_flags: number;
+  enrolled: boolean; enrolled_at: string | null; left_at: string | null;
+  email: string | null; audience_corridor: string | null; link_slug: string | null; profile_slug: string | null;
+  is_house_channel: boolean; open_flags: number;
   codes: number; active_codes: number; redemptions: number; referrals: number;
+  paid_inr: number; pending_inr: number; frozen_inr: number; upcoming_count: number;
   commission_inr: number; commission_pending_inr: number;
 }
 interface Split { mentor_pct: number; immigroov_pct: number; promoter_pct: number; }
@@ -135,7 +137,7 @@ export function AdminReferrals() {
   }
 
   async function newCode(r: AffiliateRow) {
-    const raw = window.prompt(`Discount % for ${r.name}'s new code (0 for none):`, '10');
+    const raw = window.prompt(`Discount % for ${r.name}'s new code (0 to 20):`, '10');
     if (raw === null) return;
     setRowBusy(r.affiliate_id);
     try {
@@ -160,8 +162,9 @@ export function AdminReferrals() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <RefKpi label="Affiliates" value={String(rows.length)} />
           <RefKpi label="Referrals" value={String(rows.reduce((s, r) => s + r.referrals, 0))} />
-          <RefKpi label="Commission earned" value={inr(rows.reduce((s, r) => s + (r.commission_inr || 0), 0))} hint="approved + paid" />
-          <RefKpi label="Commission pending" value={inr(rows.reduce((s, r) => s + (r.commission_pending_inr || 0), 0))} hint="under review" />
+          <RefKpi label="Paid" value={inr(rows.reduce((s, r) => s + (r.paid_inr || 0), 0))} hint="already sent" />
+          <RefKpi label="Pending" value={inr(rows.reduce((s, r) => s + (r.pending_inr || 0), 0))}
+                  hint={`next payout window · frozen ${inr(rows.reduce((s, r) => s + (r.frozen_inr || 0), 0))}`} />
         </div>
       )}
       <div className="flex gap-2">
@@ -196,7 +199,7 @@ export function AdminReferrals() {
                   <AField label="Name" value={addForm.display_name} onChange={(v) => setAddForm((f) => ({ ...f, display_name: v }))} />
                   <AField label="Email" type="email" value={addForm.email} onChange={(v) => setAddForm((f) => ({ ...f, email: v }))} />
                   <AField label="Audience (optional)" placeholder="e.g. India to Netherlands" value={addForm.audience_corridor} onChange={(v) => setAddForm((f) => ({ ...f, audience_corridor: v }))} />
-                  <AField label="Code discount % (blank = no code)" type="number" value={addForm.discount_pct} onChange={(v) => setAddForm((f) => ({ ...f, discount_pct: v }))} />
+                  <AField label="Code discount %, up to 20 (blank = no code)" type="number" value={addForm.discount_pct} onChange={(v) => setAddForm((f) => ({ ...f, discount_pct: v }))} />
                   <AField label="Code usage limit" type="number" placeholder="100" value={addForm.redemption_cap} onChange={(v) => setAddForm((f) => ({ ...f, redemption_cap: v }))} />
                   <label className="flex items-center gap-2 text-xs text-muted self-end pb-2">
                     <input type="checkbox" checked={addForm.is_house_channel} onChange={(e) => setAddForm((f) => ({ ...f, is_house_channel: e.target.checked }))} />
@@ -218,10 +221,10 @@ export function AdminReferrals() {
               <table className="w-full text-sm min-w-[960px]">
                 <thead><tr className="text-left text-xs text-muted border-b border-(--color-border)">
                   <Th>Affiliate</Th><Th>Type</Th><Th>Link</Th><Th>Codes</Th><Th>Redemptions</Th><Th>Referrals</Th>
-                  <Th>Earned</Th><Th>Pending</Th><Th></Th>
+                  <Th>Paid</Th><Th>Pending</Th><Th>Frozen</Th><Th>Upcoming</Th><Th></Th>
                 </tr></thead>
                 <tbody>
-                  {rows.length === 0 && <tr><td colSpan={9} className="py-4 text-muted">No affiliates yet.</td></tr>}
+                  {rows.length === 0 && <tr><td colSpan={11} className="py-4 text-muted">No affiliates yet.</td></tr>}
                   {rows.map((r) => (
                     <tr key={r.affiliate_id} className="border-b border-(--color-border)/60 align-top">
                       <Td>
@@ -233,15 +236,18 @@ export function AdminReferrals() {
                         {r.audience_corridor && <span className="block text-xs text-muted">{r.audience_corridor}</span>}
                         {rowMsg[r.affiliate_id] && <span className="block text-xs text-brand-700">{rowMsg[r.affiliate_id]}</span>}
                       </Td>
-                      <Td>{r.type === 'mentor' ? 'Mentor' : 'Influencer'}{r.tier && <span className="block text-xs text-muted capitalize">{r.tier}</span>}</Td>
+                      <Td>{r.type === 'mentor' ? 'Mentor' : 'Influencer'}
+                        {!r.enrolled && <span className="block text-xs text-amber-700">{r.left_at ? 'Left the programme' : 'Not joined'}</span>}</Td>
                       <Td>{r.link_slug
                         ? <button type="button" onClick={() => copyLink(r)} className="font-mono text-xs text-brand-700 hover:underline" title="Copy link">/r/{r.link_slug}</button>
                         : <span className="text-muted">-</span>}</Td>
                       <Td>{r.active_codes}/{r.codes}</Td>
                       <Td>{r.redemptions}</Td>
                       <Td>{r.referrals}</Td>
-                      <Td>{inr(r.commission_inr)}</Td>
-                      <Td className="text-amber-700">{inr(r.commission_pending_inr)}</Td>
+                      <Td>{inr(r.paid_inr)}</Td>
+                      <Td className="text-amber-700">{inr(r.pending_inr)}</Td>
+                      <Td className="text-red-600">{r.frozen_inr ? inr(r.frozen_inr) : '-'}</Td>
+                      <Td>{r.upcoming_count || '-'}</Td>
                       <Td>
                         <div className="flex flex-wrap gap-1">
                           <Button variant="outline" size="sm" onClick={() => { setFocus({ id: r.affiliate_id, name: r.name }); setView('commissions'); }}>View</Button>
