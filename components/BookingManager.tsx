@@ -1,9 +1,10 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, CreditCard, Loader2, Star, Video } from 'lucide-react';
+import { CalendarDays, ChevronRight, CreditCard, Loader2, Star, Video } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import { Badge } from './ui/Badge';
+import { EmptyState } from './ui/EmptyState';
 import { cn } from '../lib/utils';
 import { mentorDisplayTz, tzOffset } from '../lib/timezone';
 
@@ -119,16 +120,25 @@ export function BookingManager({ role }: { role: Role }) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (error) return <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[15px] text-red-800">{error}</p>;
   if (bookings === null) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted">
+      <div className="flex items-center gap-2 py-6 text-[15px] text-muted">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading your bookings…
       </div>
     );
   }
   if (bookings.length === 0) {
-    return <p className="text-sm text-muted">No bookings yet.</p>;
+    return role === 'mentee' ? (
+      <EmptyState
+        icon={<CalendarDays className="h-5 w-5" />}
+        title="No sessions booked yet"
+        description="When you book a session with a mentor, it appears here with the time, how to join, and options to reschedule."
+        action={<Link href="/mentors" className="inline-flex h-11 items-center rounded-[10px] bg-accent-600 px-5 text-[15px] font-semibold text-white hover:bg-accent-700">Find a mentor</Link>}
+      />
+    ) : (
+      <EmptyState icon={<CalendarDays className="h-5 w-5" />} title="No sessions yet" description="Sessions booked with you will appear here." />
+    );
   }
 
   const isPendingPay = (b: ManagedBooking) => b.status === 'pending';
@@ -155,10 +165,10 @@ export function BookingManager({ role }: { role: Role }) {
 
   const Section = ({ title, count, dim, children }: { title: React.ReactNode; count: number; dim?: boolean; children: React.ReactNode }) => (
     <section>
-      <h3 className="text-sm font-semibold text-brand-900 mb-3">
+      <h2 className="text-lg font-semibold text-brand-900 mb-3">
         {title} <span className="text-muted font-normal">· {count}</span>
-      </h3>
-      <div className={cn('flex flex-col gap-4', dim && 'opacity-80')}>{children}</div>
+      </h2>
+      <div className={cn('flex flex-col gap-3', dim && 'opacity-85')}>{children}</div>
     </section>
   );
 
@@ -206,52 +216,58 @@ function BookingCard({ b, role }: { b: ManagedBooking; role: Role }) {
   return (
     <Link
       href={`/session/${b.id}`}
-      className="group block rounded-[14px] border border-(--color-border) bg-white p-4 sm:p-5 transition-colors hover:border-brand-400 hover:bg-brand-50/30"
+      className="group block rounded-[1.25rem] border border-(--color-border) bg-white p-4 sm:p-5 shadow-(--shadow-1) transition-[border-color,box-shadow] hover:border-brand-300 hover:shadow-(--shadow-2)"
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3.5 sm:gap-4">
         {/* Date chip */}
         <div className={cn(
-          'shrink-0 w-14 h-14 rounded-[10px] border flex flex-col items-center justify-center',
+          'shrink-0 w-14 h-16 rounded-xl border flex flex-col items-center justify-center',
           pending ? 'bg-amber-50 border-amber-200' : 'bg-brand-50 border-(--color-border)',
         )}>
           <span className={cn('text-xs font-semibold uppercase tracking-wide', pending ? 'text-amber-700' : 'text-brand-700')}>{monthAbbr(b.slot_time)}</span>
-          <span className="text-xl font-bold text-brand-900 leading-none">{dayNum(b.slot_time)}</span>
+          <span className="mt-0.5 text-2xl font-bold text-brand-900 leading-none">{dayNum(b.slot_time)}</span>
         </div>
 
         {/* Details */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-foreground truncate">{b.service_title ?? 'Session'}</h3>
+            <h3 className="text-base font-semibold text-brand-900 break-words">{b.service_title ?? 'Session'}</h3>
             <Badge tone={STATUS_TONE[b.status] ?? 'neutral'}>{STATUS_LABEL[b.status] ?? b.status.replace('_', ' ')}</Badge>
           </div>
-          <p className="text-xs text-muted mt-0.5 truncate">
+          <p className="text-sm text-muted mt-0.5 truncate">
             {role === 'mentee' ? 'with ' : ''}{b.other_name ?? (role === 'mentee' ? 'your mentor' : 'your attendee')}
           </p>
           {b.slot_time && (
-            <p className="text-sm text-foreground mt-1.5 font-medium">
+            <p className="text-[15px] text-foreground mt-2 font-semibold">
               {timeOnly(b.slot_time)} <span className="text-muted font-normal">· {dateLong(b.slot_time)}</span>
             </p>
           )}
-          <p className="text-xs text-muted mt-0.5 truncate">
+          <p className="text-[13px] text-muted mt-0.5 break-words">
             Your time ({shortTz(TZ)})
             {showMentorTz && <> · mentor {timeInTz(b.slot_time!, mentorTz)} ({shortTz(mentorTz)})</>}
             {b.service_duration ? ` · ${b.service_duration} min` : ''}
           </p>
           {(() => {
             const pl = payLine(b, role);
-            return pl ? <p className="text-xs font-medium text-brand-700 mt-1 truncate">{pl}</p> : null;
+            return pl ? <p className="text-[13px] font-medium text-brand-700 mt-1 break-words">{pl}</p> : null;
           })()}
         </div>
 
         {/* Right: state hint + chevron, vertically centered */}
         <div className="shrink-0 self-center flex items-center gap-1.5">
-          <span className={cn('hidden sm:inline-flex items-center gap-1 text-xs font-semibold', hint.cls)}>
+          <span className={cn('hidden sm:inline-flex items-center gap-1 text-sm font-semibold', hint.cls)}>
             {HintIcon && <HintIcon className="h-3.5 w-3.5" />}
             {hint.label}
           </span>
           <ChevronRight className="h-5 w-5 text-muted group-hover:text-brand-700 transition-colors" />
         </div>
       </div>
+      {/* Phone: the next step gets its own line instead of disappearing. */}
+      {HintIcon && (
+        <p className={cn('sm:hidden mt-3 flex items-center gap-1.5 border-t border-(--color-border) pt-3 text-sm font-semibold', hint.cls)}>
+          <HintIcon className="h-4 w-4" /> {hint.label}
+        </p>
+      )}
     </Link>
   );
 }

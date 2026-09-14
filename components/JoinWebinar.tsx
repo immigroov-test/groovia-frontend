@@ -13,5 +13,5 @@ export function JoinWebinar({ webinarId }: { webinarId: string }) {
     window.open(result.data.meeting_url, '_blank', 'noopener,noreferrer');
     setBusy(false);
   }
-  return <div><Button variant="accent" loading={busy} onClick={join}>Join webinar</Button>{error && <p className="mt-2 text-sm text-red-600">{error}</p>}</div>;
+  return <div><Button variant="accent" size="lg" className="w-full sm:w-auto" loading={busy} onClick={join}>Join webinar</Button>{error && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[15px] text-red-800">{error}</p>}</div>;
 }

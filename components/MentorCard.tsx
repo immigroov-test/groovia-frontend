@@ -41,7 +41,7 @@ export function MentorCard({ mentor, price, priceReady = true }: { mentor: Mento
     && money(price.original, price.currency) !== money(price.discounted, price.currency);
 
   return (
-    <Card className="group relative h-full flex flex-col rounded-[1.25rem] shadow-(--shadow-1) hover:border-brand-300 hover:shadow-(--shadow-2) hover:-translate-y-0.5 transition-[transform,box-shadow]">
+    <Card className="group relative h-full min-w-0 flex flex-col rounded-[1.25rem] shadow-(--shadow-1) hover:border-brand-300 hover:shadow-(--shadow-2) hover:-translate-y-0.5 transition-[transform,box-shadow]">
       {/* FEAT-036: the whole card opens the mentor's profile, not just Book. The link is STRETCHED
           over the card rather than wrapped around it - wrapping would put the Book anchor inside
           another anchor, which is invalid - and Book itself becomes presentational, so the card

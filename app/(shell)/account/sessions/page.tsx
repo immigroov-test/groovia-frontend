@@ -1,4 +1,5 @@
 import { BookingManager } from '../../../../components/BookingManager';
+import { AppPageHeader } from '../../../../components/ui/AppPageHeader';
 
 export const metadata = { title: 'My sessions - Immigroov',
   // BUG-144: private page. robots.txt stops the crawl, but a Disallow does not prevent
@@ -9,11 +10,8 @@ export const metadata = { title: 'My sessions - Immigroov',
 
 export default function AccountSessionsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 reveal-children">
-      <h1 className="text-3xl font-semibold tracking-tight text-brand-900">My sessions</h1>
-      <p className="text-sm text-muted mt-1">
-        Manage your bookings - reschedule, cancel, or report a no-show.
-      </p>
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 sm:py-12 reveal-children">
+      <AppPageHeader eyebrow="Your account" title="My sessions" description="Join, reschedule, or cancel your bookings, and review past sessions." />
       <div className="mt-8">
         <BookingManager role="mentee" />
       </div>

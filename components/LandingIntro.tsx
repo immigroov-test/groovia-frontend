@@ -87,7 +87,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
     </section>
 
     {mentors.length > 0 && <section className="container-public pb-20">
-      <div className="flex items-end justify-between gap-4"><div><p className={EYEBROW}>Mentors</p><h2 className="font-display mt-3 text-3xl font-bold text-brand-900">Meet people guiding the Immigroov community.</h2><p className="mt-3 text-base text-muted">Approved mentors currently available on Immigroov.</p></div><Link href="/mentors" className="shrink-0 text-sm font-semibold text-brand-600 hover:text-brand-900">View all mentors →</Link></div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4"><div><p className={EYEBROW}>Mentors</p><h2 className="font-display mt-3 text-3xl font-bold text-brand-900">Meet people guiding the Immigroov community.</h2><p className="mt-3 text-base text-muted">Approved mentors currently available on Immigroov.</p></div><Link href="/mentors" className="shrink-0 text-sm font-semibold text-brand-600 hover:text-brand-900">View all mentors →</Link></div>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{mentors.slice(0, 3).map((mentor) => <MentorCard key={mentor.id} mentor={mentor} />)}</div>
       <p className="mt-5 inline-flex items-center gap-2 text-sm text-muted"><ShieldCheck className="h-4 w-4" />Approval reflects Immigroov’s profile and service review. <Link href="/mentor-verification" className="font-semibold text-brand-600 hover:text-brand-900">How approval works</Link></p>
     </section>}
@@ -95,7 +95,7 @@ export const LandingIntro = forwardRef<HTMLDivElement, Props>(function LandingIn
     <ReviewsMarquee />
 
     {webinars.length > 0 && <section className="container-public py-20">
-      <div className="flex items-end justify-between gap-4"><div><p className={EYEBROW}>Live learning</p><h2 className="font-display mt-3 text-3xl font-bold text-brand-900">Upcoming webinars</h2></div><Link href="/webinars" className="shrink-0 text-sm font-semibold text-brand-600 hover:text-brand-900">View all →</Link></div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4"><div><p className={EYEBROW}>Live learning</p><h2 className="font-display mt-3 text-3xl font-bold text-brand-900">Upcoming webinars</h2></div><Link href="/webinars" className="shrink-0 text-sm font-semibold text-brand-600 hover:text-brand-900">View all →</Link></div>
       <div className="mt-8 grid gap-4 sm:grid-cols-2">{webinars.slice(0, 2).map((webinar) => <Link key={webinar.id} href={`/webinars/${webinar.slug}`} className="overflow-hidden rounded-[14px] border border-(--color-border) bg-white hover:border-brand-400">{webinar.banner_url && <img src={webinar.banner_url} alt="" className="aspect-[16/7] w-full border-b border-(--color-border) object-cover" />}<div className="p-6"><div className="flex justify-between gap-4 text-xs"><span className="font-semibold text-accent-700">{webinarPrice(webinar)}</span><span className="text-muted">{webinar.duration_minutes} min</span></div><h3 className="mt-4 text-xl font-semibold text-brand-900">{webinar.title}</h3><p className="mt-4 text-sm text-muted">{webinarWhen(webinar)}</p>{webinar.mentor && <p className="mt-1 text-sm text-muted">Hosted by {webinar.mentor.display_name}</p>}</div></Link>)}</div>
     </section>}
 
